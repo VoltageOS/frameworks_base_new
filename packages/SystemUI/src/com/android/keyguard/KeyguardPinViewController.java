@@ -19,6 +19,8 @@ package com.android.keyguard;
 import static com.android.systemui.flags.Flags.LOCKSCREEN_ENABLE_LANDSCAPE;
 
 import android.hardware.input.InputManager;
+import android.os.UserHandle;
+import android.provider.Settings;
 import android.uilatencystats.UiLatencyStatsManager;
 import android.view.View;
 
@@ -106,6 +108,10 @@ public class KeyguardPinViewController
         mPostureController.addCallback(mPostureCallback);
         mPasswordEntry.setUsePinShapes(true);
         updateAutoConfirmationState();
+        mView.updatePinScrambling(
+                Settings.System.getIntForUser(getContext().getContentResolver(),
+                        Settings.System.LOCKSCREEN_PIN_SCRAMBLE_LAYOUT, 0,
+                        mSelectedUserInteractor.getSelectedUserId()) == 1);
     }
 
     protected void onUserInput() {
@@ -129,6 +135,10 @@ public class KeyguardPinViewController
     @Override
     public void startAppearAnimation() {
         super.startAppearAnimation();
+        mView.updatePinScrambling(
+                Settings.System.getIntForUser(getContext().getContentResolver(),
+                        Settings.System.LOCKSCREEN_PIN_SCRAMBLE_LAYOUT, 0,
+                        mSelectedUserInteractor.getSelectedUserId()) == 1);
     }
 
     @Override
