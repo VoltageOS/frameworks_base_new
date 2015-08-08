@@ -86,6 +86,8 @@ import static android.view.WindowManager.LayoutParams.TYPE_VOICE_INTERACTION;
 import static android.view.WindowManager.LayoutParams.TYPE_VOICE_INTERACTION_STARTING;
 import static android.view.WindowManager.LayoutParams.TYPE_WALLPAPER;
 import static android.view.WindowManager.LayoutParams.isSystemAlertWindowType;
+import static android.view.WindowManager.ScreenshotSource.SCREENSHOT_KEY_OTHER;
+import static android.view.WindowManager.TAKE_SCREENSHOT_FULLSCREEN;
 import static android.view.WindowManagerGlobal.ADD_OKAY;
 import static android.view.WindowManagerGlobal.ADD_PERMISSION_DENIED;
 import static android.view.contentprotection.flags.Flags.createAccessibilityOverlayAppOpEnabled;
@@ -236,6 +238,8 @@ import com.android.internal.policy.KeyInterceptionInfo;
 import com.android.internal.policy.PhoneWindow;
 import com.android.internal.statusbar.IStatusBarService;
 import com.android.internal.util.NamedLock;
+import com.android.internal.util.ScreenshotHelper;
+import com.android.internal.util.ScreenshotRequest;
 import com.android.internal.widget.LockPatternUtils;
 import com.android.server.AccessibilityManagerInternal;
 import com.android.server.DockObserverInternal;
@@ -693,6 +697,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     boolean mHavePendingMediaKeyRepeatWithWakeLock;
 
     private int mCurrentUserId;
+    private boolean haveEnableGesture = false;
 
     private AssistUtils mAssistUtils;
 
@@ -741,6 +746,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     private static final int MSG_SWITCH_KEYBOARD_LAYOUT = 25;
     private static final int MSG_SET_DEFERRED_KEY_ACTIONS_EXECUTABLE = 27;
     private static final int MSG_DISPATCH_VOLKEY_WITH_WAKE_LOCK = 29;
+
+    private SwipeToScreenshotListener mSwipeToScreenshot;
+    private ScreenshotHelper mScreenshotHelper;
 
     private class PolicyHandler extends Handler {
 
@@ -925,6 +933,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     UserHandle.USER_ALL);
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.VOLUME_BUTTON_MUSIC_CONTROL), false, this,
+                    UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.THREE_FINGER_GESTURE), false, this,
                     UserHandle.USER_ALL);
             updateSettings();
         }
@@ -2370,6 +2381,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         }
 
         mHandler = new PolicyHandler(injector.getLooper());
+
+        mScreenshotHelper = new ScreenshotHelper(mContext);
+        mSwipeToScreenshot = new SwipeToScreenshotListener(mContext, () -> takeScreenshot(
+                TAKE_SCREENSHOT_FULLSCREEN, SCREENSHOT_KEY_OTHER));
         mWakeGestureListener = new MyWakeGestureListener(mContext, mHandler);
         mSettingsObserver = new SettingsObserver(mHandler);
         mSettingsObserver.observe();
@@ -2911,6 +2926,24 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         mSingleKeyGestureDetector.addRule(new StylusTailButtonRule());
     }
 
+    private void takeScreenshot(int screenshotType, int source) {
+        mScreenshotHelper.takeScreenshot(
+                new ScreenshotRequest.Builder(screenshotType, source).build(),
+                mHandler, null);
+    }
+
+    private void enableSwipeThreeFingerGesture(boolean enable){
+        if (enable) {
+            if (haveEnableGesture) return;
+            haveEnableGesture = true;
+            mWindowManagerFuncs.registerPointerEventListener(mSwipeToScreenshot, DEFAULT_DISPLAY);
+        } else {
+            if (!haveEnableGesture) return;
+            haveEnableGesture = false;
+            mWindowManagerFuncs.unregisterPointerEventListener(mSwipeToScreenshot, DEFAULT_DISPLAY);
+        }
+    }
+
     /**
      * Read values from config.xml that may be overridden depending on
      * the configuration of the device.
@@ -2985,6 +3018,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             // volume rocker wake
             mVolumeRockerWake = Settings.System.getIntForUser(resolver,
                     Settings.System.VOLUME_ROCKER_WAKE, 0, UserHandle.USER_CURRENT) != 0;
+
+            //Three Finger Gesture
+            boolean threeFingerGesture = Settings.System.getIntForUser(resolver,
+                    Settings.System.THREE_FINGER_GESTURE, 0, UserHandle.USER_CURRENT) == 1;
+            enableSwipeThreeFingerGesture(threeFingerGesture);
 
             // Configure wake gesture.
             boolean wakeGestureEnabledSetting = Settings.Secure.getIntForUser(resolver,
