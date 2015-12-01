@@ -647,6 +647,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
     private boolean mHandleVolumeKeysInWM;
 
+    // Volume rocker wake
+    boolean mVolumeRockerWake;
+
     private boolean mPendingKeyguardOccluded;
     private boolean mKeyguardOccludedChanged;
 
@@ -954,6 +957,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     UserHandle.USER_ALL);
             resolver.registerContentObserver(Settings.Secure.getUriFor(
                     Settings.Secure.NAV_BAR_KIDS_MODE), false, this,
+                    UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.VOLUME_ROCKER_WAKE), false, this,
                     UserHandle.USER_ALL);
             updateSettings();
         }
@@ -3101,6 +3107,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 mRingerToggleChord = VOLUME_HUSH_OFF;
             }
 
+
+            // volume rocker wake
+            mVolumeRockerWake = Settings.System.getIntForUser(resolver,
+                    Settings.System.VOLUME_ROCKER_WAKE, 0, UserHandle.USER_CURRENT) != 0;
+
             // Configure wake gesture.
             boolean wakeGestureEnabledSetting = Settings.Secure.getIntForUser(resolver,
                     Settings.Secure.WAKE_GESTURE_ENABLED, 0,
@@ -5169,8 +5180,12 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     public int interceptKeyBeforeQueueing(KeyEvent event, int policyFlags) {
         final int keyCode = event.getKeyCode();
         final boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
+        final boolean isVolumeRockerWake = !isScreenOn()
+                && mVolumeRockerWake
+                && (keyCode == KeyEvent.KEYCODE_VOLUME_UP
+                || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN);
         boolean isWakeKey = (policyFlags & WindowManagerPolicy.FLAG_WAKE) != 0
-                || event.isWakeKey();
+                || event.isWakeKey() || isVolumeRockerWake;
         boolean isKeyGestureTriggered = (policyFlags & FLAG_KEY_GESTURE_TRIGGERED) != 0;
 
         // There are key events that perform the operation as the current user,
@@ -5829,6 +5844,12 @@ public class PhoneWindowManager implements WindowManagerPolicy {
      */
     private boolean isWakeKeyWhenScreenOff(int keyCode) {
         switch (keyCode) {
+            case KeyEvent.KEYCODE_VOLUME_UP:
+            case KeyEvent.KEYCODE_VOLUME_DOWN:
+                if (mVolumeRockerWake) {
+                    return true;
+                }
+
             case KeyEvent.KEYCODE_DPAD_UP:
             case KeyEvent.KEYCODE_DPAD_DOWN:
             case KeyEvent.KEYCODE_DPAD_LEFT:
