@@ -20,8 +20,11 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.annotation.DrawableRes
 import android.annotation.SuppressLint
+import android.content.Context;
 import android.graphics.Point
 import android.graphics.Rect
+import android.os.UserHandle;
+import android.provider.Settings
 import android.view.HapticFeedbackConstants
 import android.view.InputDevice
 import android.view.MotionEvent
@@ -96,6 +99,7 @@ object KeyguardRootViewBinder {
         viewModel: KeyguardRootViewModel,
         blueprintViewModel: KeyguardBlueprintViewModel,
         configuration: ConfigurationState,
+        context: Context,
         occludingAppDeviceEntryMessageViewModel: OccludingAppDeviceEntryMessageViewModel?,
         chipbarCoordinator: ChipbarCoordinator?,
         shadeInteractor: ShadeInteractor,
@@ -148,32 +152,48 @@ object KeyguardRootViewBinder {
                     if (deviceEntryHapticsInteractor != null && vibratorHelper != null) {
                         launch {
                             deviceEntryHapticsInteractor.playSuccessHapticOnDeviceEntry.collect {
-                                if (msdlFeedback()) {
-                                    msdlPlayer?.playToken(
-                                        MSDLToken.UNLOCK,
-                                        authInteractionProperties,
-                                    )
-                                } else {
-                                    vibratorHelper.performHapticFeedback(
-                                        view,
-                                        HapticFeedbackConstants.BIOMETRIC_CONFIRM,
-                                    )
+                                val fpSuccessVibrate = Settings.System.getIntForUser(
+                                    context.contentResolver,
+                                    Settings.System.FP_SUCCESS_VIBRATE,
+                                    1,
+                                    UserHandle.USER_CURRENT
+                                ) == 1
+                                if (fpSuccessVibrate) {
+                                    if (msdlFeedback()) {
+                                        msdlPlayer?.playToken(
+                                            MSDLToken.UNLOCK,
+                                            authInteractionProperties,
+                                        )
+                                    } else {
+                                        vibratorHelper.performHapticFeedback(
+                                            view,
+                                            HapticFeedbackConstants.BIOMETRIC_CONFIRM,
+                                        )
+                                    }
                                 }
                             }
                         }
 
                         launch {
                             deviceEntryHapticsInteractor.playErrorHaptic.collect {
-                                if (msdlFeedback()) {
-                                    msdlPlayer?.playToken(
-                                        MSDLToken.FAILURE,
-                                        authInteractionProperties,
-                                    )
-                                } else {
-                                    vibratorHelper.performHapticFeedback(
-                                        view,
-                                        HapticFeedbackConstants.BIOMETRIC_REJECT,
-                                    )
+                                val fpErrorVibrate = Settings.System.getIntForUser(
+                                    context.contentResolver,
+                                    Settings.System.FP_ERROR_VIBRATE,
+                                    1,
+                                    UserHandle.USER_CURRENT
+                                ) == 1
+                                if (fpErrorVibrate) {
+                                    if (msdlFeedback()) {
+                                        msdlPlayer?.playToken(
+                                            MSDLToken.FAILURE,
+                                            authInteractionProperties,
+                                        )
+                                    } else {
+                                        vibratorHelper.performHapticFeedback(
+                                            view,
+                                            HapticFeedbackConstants.BIOMETRIC_REJECT,
+                                        )
+                                    }
                                 }
                             }
                         }
