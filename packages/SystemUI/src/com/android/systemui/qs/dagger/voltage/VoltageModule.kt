@@ -29,6 +29,7 @@ import com.android.systemui.qs.tiles.HeadsUpTile
 import com.android.systemui.qs.tiles.SyncTile
 import com.android.systemui.qs.tiles.AmbientDisplayTile
 import com.android.systemui.qs.tiles.AODTile
+import com.android.systemui.qs.tiles.CaffeineTile
 import com.android.systemui.qs.tiles.SoundTile
 import com.android.systemui.qs.tiles.UsbTetherTile
 import com.android.systemui.qs.tiles.base.shared.model.QSTileConfig;
@@ -49,6 +50,12 @@ interface VoltageModule {
     @IntoMap
     @StringKey(RefreshRateTile.TILE_SPEC)
     fun bindRefreshRateTile(refreshRateTile: RefreshRateTile): QSTileImpl<*>
+
+    /** Inject CaffeineTile into tileMap in QSModule */
+    @Binds
+    @IntoMap
+    @StringKey(CaffeineTile.TILE_SPEC)
+    fun bindCaffeineTile(caffeineTile: CaffeineTile): QSTileImpl<*>
 
     /** Inject CellularTileLegacy into tileMap in QSModule */
     @Binds
@@ -214,6 +221,21 @@ interface VoltageModule {
                 uiConfig = QSTileUIConfig.Resource(
                     iconRes = R.drawable.ic_qs_aod,
                     labelRes = R.string.quick_settings_aod_label
+                ),
+                instanceId = uiEventLogger.getNewInstanceId(),
+                category = TileCategory.DISPLAY
+            )
+        }
+
+        @Provides
+        @IntoMap
+        @StringKey(CaffeineTile.TILE_SPEC)
+        fun provideCaffeineConfig(uiEventLogger: QsEventLogger): QSTileConfig {
+            return QSTileConfig(
+                tileSpec = TileSpec.create(CaffeineTile.TILE_SPEC),
+                uiConfig = QSTileUIConfig.Resource(
+                    iconRes = R.drawable.ic_qs_caffeine,
+                    labelRes = R.string.quick_settings_caffeine_label
                 ),
                 instanceId = uiEventLogger.getNewInstanceId(),
                 category = TileCategory.DISPLAY
