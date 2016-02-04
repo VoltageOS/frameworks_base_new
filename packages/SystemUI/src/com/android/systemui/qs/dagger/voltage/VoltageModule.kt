@@ -24,6 +24,7 @@ import com.android.systemui.qs.tiles.HeadsUpTile
 import com.android.systemui.qs.tiles.SyncTile
 import com.android.systemui.qs.tiles.AmbientDisplayTile
 import com.android.systemui.qs.tiles.AODTile
+import com.android.systemui.qs.tiles.CaffeineTile
 import com.android.systemui.qs.tiles.SoundTile
 import com.android.systemui.qs.tiles.UsbTetherTile
 
@@ -40,6 +41,12 @@ interface VoltageModule {
     @IntoMap
     @StringKey(AODTile.TILE_SPEC)
     fun bindAODTile(aodTile: AODTile): QSTileImpl<*>
+
+    /** Inject CaffeineTile into tileMap in QSModule */
+    @Binds
+    @IntoMap
+    @StringKey(CaffeineTile.TILE_SPEC)
+    fun bindCaffeineTile(caffeineTile: CaffeineTile): QSTileImpl<*>
 
     /** Inject CellularTile into tileMap in QSModule */
     @Binds
