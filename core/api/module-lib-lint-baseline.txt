@@ -1815,6 +1815,10 @@ UnflaggedApi: android.ext.settings.WidevineProvisioningSettings:
     New API must be flagged with @FlaggedApi: class android.ext.settings.WidevineProvisioningSettings
 UnflaggedApi: android.ext.settings.WidevineProvisioningSettings#getServerHostnameOverride(android.content.Context):
     New API must be flagged with @FlaggedApi: method android.ext.settings.WidevineProvisioningSettings.getServerHostnameOverride(android.content.Context)
+UnflaggedApi: android.net.NetworkPolicyManager#notifyDenylistChanged(int[], int[]):
+    New API must be flagged with @FlaggedApi: method android.net.NetworkPolicyManager.notifyDenylistChanged(int[],int[])
+UnflaggedApi: android.net.NetworkPolicyManager.NetworkPolicyCallback#onUidsAllowedTransportsChanged(int[], long[]):
+    New API must be flagged with @FlaggedApi: method android.net.NetworkPolicyManager.NetworkPolicyCallback.onUidsAllowedTransportsChanged(int[],long[])
 UnflaggedApi: android.os.IpcDataCache#MODULE_TELEPHONY:
     New API must be flagged with @FlaggedApi: field android.os.IpcDataCache.MODULE_TELEPHONY
 UnflaggedApi: android.os.UserHandle#getUid(int, int):
