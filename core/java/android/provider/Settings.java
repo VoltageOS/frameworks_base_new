@@ -6997,6 +6997,12 @@ public final class Settings {
                 "screen_flash_notification_color_global";
 
         /**
+         * Whether or not volume button music controls should be enabled to seek media tracks
+         * @hide
+         */
+        public static final String VOLUME_BUTTON_MUSIC_CONTROL = "volume_button_music_control";
+
+        /**
          * Whether to wake the display when plugging or unplugging the charger
          *
          * @hide
