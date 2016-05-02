@@ -29,11 +29,14 @@ import android.app.IActivityManager;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
+import android.database.ContentObserver;
 import android.graphics.Rect;
 import android.graphics.Region;
+import android.os.Handler;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.os.Trace;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Display;
 import android.view.IWindow;
@@ -297,6 +300,19 @@ public class NotificationShadeWindowControllerImpl
         }
     }
 
+    private boolean shouldEnableKeyguardScreenRotation() {
+        boolean enableAccelerometerRotation =
+                Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.ACCELEROMETER_ROTATION, 0) != 0;
+        boolean enableLockScreenRotation =
+                Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.LOCKSCREEN_ROTATION,
+                mContext.getResources().getBoolean(com.android.internal.R.bool.
+                        config_lockScreenRotationEnabledByDefault) ? 1 : 0) != 0;
+        return mKeyguardStateController.isKeyguardScreenRotationAllowed()
+                && (enableLockScreenRotation && enableAccelerometerRotation);
+    }
+
     /** Adds the notification shade view to the window manager. */
     @Override
     public void attach() {
@@ -334,6 +350,8 @@ public class NotificationShadeWindowControllerImpl
         }
 
         mLpChanged.copyFrom(mLp);
+        SettingsObserver observer = new SettingsObserver(new Handler());
+        observer.observe(mContext);
         onThemeChanged();
 
         // Make the state consistent with KeyguardViewMediator#setupLocked during initialization.
@@ -507,7 +525,7 @@ public class NotificationShadeWindowControllerImpl
         if (state.bouncerShowing
                 || (state.isKeyguardShowingAndNotOccluded() && !dreamShowingAndRotationAllowed)
                 || state.dozing) {
-            if (mKeyguardStateController.isKeyguardScreenRotationAllowed()) {
+            if (shouldEnableKeyguardScreenRotation()) {
                 mLpChanged.screenOrientation = ActivityInfo.SCREEN_ORIENTATION_USER;
             } else {
                 mLpChanged.screenOrientation = ActivityInfo.SCREEN_ORIENTATION_NOSENSOR;
@@ -1189,4 +1207,29 @@ public class NotificationShadeWindowControllerImpl
             apply(mCurrentState);
         }
     };
+
+    private class SettingsObserver extends ContentObserver {
+        public SettingsObserver(Handler handler) {
+            super(handler);
+        }
+
+        public void observe(Context context) {
+            context.getContentResolver().registerContentObserver(
+                    Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION),
+                    false, this);
+            context.getContentResolver().registerContentObserver(
+                    Settings.System.getUriFor(Settings.System.LOCKSCREEN_ROTATION),
+                    false, this);
+        }
+
+        public void unobserve(Context context) {
+            context.getContentResolver().unregisterContentObserver(this);
+        }
+
+        @Override
+        public void onChange(boolean selfChange) {
+            // update the state
+            apply(mCurrentState);
+        }
+    }
 }

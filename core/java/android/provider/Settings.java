@@ -6223,6 +6223,14 @@ public final class Settings {
         public static final String ACCELEROMETER_ROTATION_ANGLES = "accelerometer_rotation_angles";
 
         /**
+          * Whether keyguard will rotate
+          * 0 = false, 1 = true
+           * @hide
+          */
+         @SuppressLint("NoSettingsProvider")
+         public static final String LOCKSCREEN_ROTATION = "lockscreen_rotation";
+
+        /**
          * Default screen rotation when no other policy applies.
          * When {@link #ACCELEROMETER_ROTATION} is zero and no on-screen Activity expresses a
          * preference, this rotation value will be used. Must be one of the
