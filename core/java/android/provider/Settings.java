@@ -6376,6 +6376,14 @@ public final class Settings {
         public static final String ENABLE_TASKBAR = "enable_taskbar";
 
         /**
+         * Whether keyguard will rotate
+         * 0 = false, 1 = true
+          * @hide
+         */
+        @SuppressLint("NoSettingsProvider")
+        public static final String LOCKSCREEN_ROTATION = "lockscreen_rotation";
+
+        /**
          * Keys we no longer back up under the current schema, but want to continue to
          * process when restoring historical backup datasets.
          *
