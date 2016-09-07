@@ -244,4 +244,7 @@ interface IStatusBarService
 
     /** Shows rear display educational dialog */
     void showRearDisplayDialog(int currentBaseState);
+
+    /** Voltage additions. */
+    void toggleCameraFlash();
 }

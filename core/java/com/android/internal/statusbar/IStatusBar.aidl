@@ -413,4 +413,7 @@ oneway interface IStatusBar
     * @param displayId the id of the current display.
     */
     void moveFocusedTaskToDesktop(int displayId);
+
+    /** Voltage additions. */
+    void toggleCameraFlash();
 }
