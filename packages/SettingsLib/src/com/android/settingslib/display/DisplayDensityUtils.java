@@ -57,8 +57,10 @@ public class DisplayDensityUtils {
      * Summaries for scales smaller than "default" in order of smallest to
      * largest.
      */
-    private static final int[] SUMMARIES_SMALLER = new int[]{
-            R.string.screen_zoom_summary_small
+    private static final int[] SUMMARIES_SMALLER = new int[] {
+            R.string.screen_zoom_summary_small,
+            R.string.screen_zoom_summary_smaller,
+            R.string.screen_zoom_summary_smallest
     };
 
     /**
