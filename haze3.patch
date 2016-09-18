@@ -1,0 +1,1723 @@
+From d285b77fba12affcd14b03bee18c2d56373f9450 Mon Sep 17 00:00:00 2001
+From: Dmitrii <bankersenator@gmail.com>
+Date: Sun, 19 Jul 2026 12:32:55 +0000
+Subject: [PATCH] SystemUI: haze effects
+
+---
+ .../systemui/wallpapers/ImageWallpaper.java   | 210 +++++++-
+ .../ImageWallpaperColorExtractor.java         |   7 +
+ .../wallpapers/haze/HazeColorExtractor.java   | 182 +++++++
+ .../wallpapers/haze/HazeRenderThread.java     | 489 ++++++++++++++++++
+ .../wallpapers/haze/HazeRenderer.java         | 469 +++++++++++++++++
+ .../wallpapers/haze/HazeSettings.java         |  24 +
+ .../systemui/wallpapers/haze/HazeShaders.java | 154 ++++++
+ 7 files changed, 1533 insertions(+), 2 deletions(-)
+ create mode 100644 packages/SystemUI/src/com/android/systemui/wallpapers/haze/HazeColorExtractor.java
+ create mode 100644 packages/SystemUI/src/com/android/systemui/wallpapers/haze/HazeRenderThread.java
+ create mode 100644 packages/SystemUI/src/com/android/systemui/wallpapers/haze/HazeRenderer.java
+ create mode 100644 packages/SystemUI/src/com/android/systemui/wallpapers/haze/HazeSettings.java
+ create mode 100644 packages/SystemUI/src/com/android/systemui/wallpapers/haze/HazeShaders.java
+
+diff --git a/packages/SystemUI/src/com/android/systemui/wallpapers/ImageWallpaper.java b/packages/SystemUI/src/com/android/systemui/wallpapers/ImageWallpaper.java
+index b938c46..2c38f42 100644
+--- a/packages/SystemUI/src/com/android/systemui/wallpapers/ImageWallpaper.java
++++ b/packages/SystemUI/src/com/android/systemui/wallpapers/ImageWallpaper.java
+@@ -24,6 +24,7 @@ import android.annotation.Nullable;
+ import android.app.WallpaperColors;
+ import android.app.WallpaperManager;
+ import android.content.Context;
++import android.database.ContentObserver;
+ import android.graphics.Bitmap;
+ import android.graphics.Canvas;
+ import android.graphics.RecordingCanvas;
+@@ -32,10 +33,12 @@ import android.graphics.RectF;
+ import android.graphics.Paint;
+ import android.hardware.display.DisplayManager;
+ import android.hardware.display.DisplayManager.DisplayListener;
++import android.os.Handler;
+ import android.os.HandlerThread;
+ import android.os.Looper;
+ import android.os.SystemProperties;
+ import android.os.Trace;
++import android.provider.Settings;
+ import android.service.wallpaper.WallpaperService;
+ import android.util.Log;
+ import android.view.Surface;
+@@ -45,9 +48,13 @@ import androidx.annotation.NonNull;
+ 
+ import com.android.internal.annotations.VisibleForTesting;
+ import com.android.systemui.dagger.qualifiers.LongRunning;
++import com.android.systemui.keyguard.WakefulnessLifecycle;
+ import com.android.systemui.settings.UserTracker;
++import com.android.systemui.statusbar.policy.KeyguardStateController;
+ import com.android.systemui.util.concurrency.DelayableExecutor;
+ import com.android.systemui.utils.windowmanager.WindowManagerProvider;
++import com.android.systemui.wallpapers.haze.HazeRenderThread;
++import com.android.systemui.wallpapers.haze.HazeSettings;
+ 
+ import java.io.FileDescriptor;
+ import java.io.PrintWriter;
+@@ -70,6 +77,8 @@ public class ImageWallpaper extends WallpaperService {
+ 
+     private final UserTracker mUserTracker;
+     private final WindowManagerProvider mWindowManagerProvider;
++    private final KeyguardStateController mKeyguardStateController;
++    private final WakefulnessLifecycle mWakefulnessLifecycle;
+ 
+     // used to handle WallpaperService messages (e.g. DO_ATTACH, MSG_UPDATE_SURFACE)
+     // and to receive WallpaperService callbacks (e.g. onCreateEngine, onSurfaceRedrawNeeded)
+@@ -84,11 +93,15 @@ public class ImageWallpaper extends WallpaperService {
+ 
+     @Inject
+     public ImageWallpaper(@LongRunning DelayableExecutor longExecutor, UserTracker userTracker,
+-            WindowManagerProvider windowManagerProvider) {
++            WindowManagerProvider windowManagerProvider,
++            KeyguardStateController keyguardStateController,
++            WakefulnessLifecycle wakefulnessLifecycle) {
+         super();
+         mLongExecutor = longExecutor;
+         mUserTracker = userTracker;
+         mWindowManagerProvider = windowManagerProvider;
++        mKeyguardStateController = keyguardStateController;
++        mWakefulnessLifecycle = wakefulnessLifecycle;
+     }
+ 
+     @Override
+@@ -112,7 +125,8 @@ public class ImageWallpaper extends WallpaperService {
+         return new CanvasEngine();
+     }
+ 
+-    class CanvasEngine extends WallpaperService.Engine implements DisplayListener {
++    class CanvasEngine extends WallpaperService.Engine implements DisplayListener,
++            HazeRenderThread.Callbacks {
+         private WallpaperManager mWallpaperManager;
+         private final ImageWallpaperColorExtractor mColorExtractor;
+         private SurfaceHolder mSurfaceHolder;
+@@ -142,6 +156,60 @@ public class ImageWallpaper extends WallpaperService {
+          */
+         private final Object mSurfaceLock = new Object();
+ 
++        private final Object mHazeLock = new Object();
++        private volatile HazeRenderThread mHazeThread;
++        private volatile boolean mIsHazeEnabled;
++        private volatile boolean mHazeUnsupported;
++
++        private final ContentObserver mHazeObserver =
++                new ContentObserver(new Handler(Looper.getMainLooper())) {
++                    @Override
++                    public void onChange(boolean selfChange) {
++                        updateHazeState();
++                    }
++                };
++
++        private final KeyguardStateController.Callback mKeyguardCallback =
++                new KeyguardStateController.Callback() {
++                    @Override
++                    public void onKeyguardGoingAwayChanged() {
++                        if (mKeyguardStateController.isKeyguardGoingAway()) {
++                            triggerHazeTransition(HazeRenderThread.STATE_UNLOCKED);
++                        }
++                    }
++
++                    @Override
++                    public void onKeyguardShowingChanged() {
++                        if (mKeyguardStateController.isShowing()) {
++                            triggerHazeTransition(HazeRenderThread.STATE_KEYGUARD);
++                        } else if (!mKeyguardStateController.isKeyguardGoingAway()) {
++                            triggerHazeTransition(HazeRenderThread.STATE_UNLOCKED);
++                        }
++                    }
++                };
++
++        private final WakefulnessLifecycle.Observer mWakefulnessObserver =
++                new WakefulnessLifecycle.Observer() {
++                    @Override
++                    public void onFinishedGoingToSleep() {
++                        triggerHazeTransition(HazeRenderThread.STATE_SCREEN_OFF);
++                    }
++
++                    @Override
++                    public void onStartedWakingUp() {
++                        if (mKeyguardStateController.isShowing()) {
++                            triggerHazeTransition(HazeRenderThread.STATE_KEYGUARD);
++                        }
++                    }
++                };
++
++        private void triggerHazeTransition(int state) {
++            HazeRenderThread thread = mHazeThread;
++            if (thread != null) {
++                thread.triggerTransition(state);
++            }
++        }
++
+         CanvasEngine() {
+             super();
+             setFixedSizeAllowed(true);
+@@ -201,17 +269,71 @@ public class ImageWallpaper extends WallpaperService {
+             getDisplayContext().getSystemService(DisplayManager.class)
+                     .registerDisplayListener(this, null);
+             getDisplaySizeAndUpdateColorExtractor();
++
++            getDisplayContext().getContentResolver().registerContentObserver(
++                    Settings.System.getUriFor(HazeSettings.KEY_ENABLED), false, mHazeObserver);
++            getDisplayContext().getContentResolver().registerContentObserver(
++                    Settings.System.getUriFor(HazeSettings.KEY_STYLE), false, mHazeObserver);
++            getDisplayContext().getContentResolver().registerContentObserver(
++                    Settings.System.getUriFor(HazeSettings.KEY_INTENSITY), false, mHazeObserver);
++            mKeyguardStateController.addCallback(mKeyguardCallback);
++            mWakefulnessLifecycle.addObserver(mWakefulnessObserver);
++            updateHazeState();
+             Trace.endSection();
+         }
+ 
++        private void updateHazeState() {
++            boolean wasHazeEnabled = mIsHazeEnabled;
++            mIsHazeEnabled = !mHazeUnsupported && Settings.System.getInt(
++                    getDisplayContext().getContentResolver(), HazeSettings.KEY_ENABLED, 0) == 1;
++
++            if (wasHazeEnabled != mIsHazeEnabled) {
++                synchronized (mLock) {
++                    mDrawn = false;
++                }
++                boolean surfaceValid;
++                synchronized (mSurfaceLock) {
++                    surfaceValid = mSurfaceHolder != null
++                            && mSurfaceHolder.getSurface().isValid();
++                }
++                if (surfaceValid) {
++                    drawFrame();
++                }
++            } else if (mIsHazeEnabled) {
++                HazeRenderThread thread = mHazeThread;
++                if (thread != null) {
++                    thread.updateSettings();
++                    thread.requestRender();
++                }
++            }
++        }
++
++        @Override
++        public void onVisibilityChanged(boolean visible) {
++            super.onVisibilityChanged(visible);
++            HazeRenderThread thread = mHazeThread;
++            if (thread != null) {
++                thread.onVisibilityChanged(visible);
++                if (mIsHazeEnabled && visible) {
++                    thread.triggerTransition(mKeyguardStateController.isShowing()
++                            ? HazeRenderThread.STATE_KEYGUARD
++                            : HazeRenderThread.STATE_UNLOCKED);
++                }
++            }
++        }
++
+         @Override
+         public void onDestroy() {
+             Context context = getDisplayContext();
+             if (context != null) {
+                 DisplayManager displayManager = context.getSystemService(DisplayManager.class);
+                 if (displayManager != null) displayManager.unregisterDisplayListener(this);
++                context.getContentResolver().unregisterContentObserver(mHazeObserver);
+             }
+             mColorExtractor.cleanUp();
++            mKeyguardStateController.removeCallback(mKeyguardCallback);
++            mWakefulnessLifecycle.removeObserver(mWakefulnessObserver);
++            stopHazeThread(500);
+         }
+ 
+         @Override
+@@ -229,6 +351,10 @@ public class ImageWallpaper extends WallpaperService {
+             if (DEBUG) {
+                 Log.d(TAG, "onSurfaceChanged: width=" + width + ", height=" + height);
+             }
++            HazeRenderThread thread = mHazeThread;
++            if (thread != null) {
++                thread.resize(width, height);
++            }
+         }
+ 
+         @Override
+@@ -239,6 +365,7 @@ public class ImageWallpaper extends WallpaperService {
+             synchronized (mSurfaceLock) {
+                 mSurfaceHolder = null;
+             }
++            stopHazeThread(250);
+         }
+ 
+         @Override
+@@ -256,6 +383,54 @@ public class ImageWallpaper extends WallpaperService {
+             drawFrame();
+         }
+ 
++        @Override
++        public void onContextLost() {
++            mLongExecutor.execute(() -> {
++                Log.i(TAG, "Re-initializing haze thread after context loss");
++                stopHazeThread(0);
++                synchronized (mLock) {
++                    mDrawn = false;
++                }
++                drawFrame();
++            });
++        }
++
++        @Override
++        public void onUnsupported() {
++            Log.w(TAG, "Haze rendering unsupported, falling back to static path");
++            mHazeUnsupported = true;
++            mIsHazeEnabled = false;
++            mLongExecutor.execute(() -> {
++                stopHazeThread(0);
++                synchronized (mLock) {
++                    mDrawn = false;
++                }
++                drawFrame();
++            });
++        }
++
++        @Override
++        public void onBitmapConsumed() {
++            unloadBitmapIfNotUsed();
++        }
++
++        private void stopHazeThread(long joinMillis) {
++            synchronized (mHazeLock) {
++                HazeRenderThread thread = mHazeThread;
++                if (thread == null) return;
++                mHazeThread = null;
++                thread.quitSafely();
++                if (joinMillis > 0) {
++                    try {
++                        thread.join(joinMillis);
++                    } catch (InterruptedException e) {
++                        Thread.currentThread().interrupt();
++                        Log.e(TAG, "Interrupted while waiting for haze thread to quit");
++                    }
++                }
++            }
++        }
++
+         private void drawFrame() {
+             mLongExecutor.execute(this::drawFrameSynchronized);
+         }
+@@ -288,6 +463,29 @@ public class ImageWallpaper extends WallpaperService {
+         @VisibleForTesting
+         void drawFrameOnCanvas(Bitmap bitmap) {
+             Trace.beginSection("ImageWallpaper.CanvasEngine#drawFrame");
++            if (mIsHazeEnabled) {
++                if (bitmap != null && mSurfaceHolder != null
++                        && mSurfaceHolder.getSurface().isValid()) {
++                    mBitmapUsages++;
++                    synchronized (mHazeLock) {
++                        if (mHazeThread == null) {
++                            mHazeThread = new HazeRenderThread(getDisplayContext(), mSurfaceHolder,
++                                    bitmap, mColorExtractor.getMiniBitmap(), this);
++                            mHazeThread.start();
++                            mHazeThread.triggerTransition(mKeyguardStateController.isShowing()
++                                    ? HazeRenderThread.STATE_KEYGUARD
++                                    : HazeRenderThread.STATE_UNLOCKED);
++                        } else {
++                            mHazeThread.setBitmap(bitmap);
++                        }
++                    }
++                    mDrawn = true;
++                }
++                Trace.endSection();
++                return;
++            }
++
++            stopHazeThread(250);
+             Surface surface = mSurfaceHolder.getSurface();
+             Canvas canvas = null;
+             try {
+@@ -474,6 +672,10 @@ public class ImageWallpaper extends WallpaperService {
+ 
+         @VisibleForTesting
+         void onMiniBitmapUpdated() {
++            HazeRenderThread thread = mHazeThread;
++            if (thread != null) {
++                thread.setMiniBitmap(mColorExtractor.getMiniBitmap());
++            }
+             unloadBitmapIfNotUsed();
+         }
+ 
+@@ -576,6 +778,10 @@ public class ImageWallpaper extends WallpaperService {
+                     : mBitmap.isRecycled() ? "recycled"
+                     : mBitmap.getWidth() + "x" + mBitmap.getHeight());
+ 
++            out.print(prefix); out.print("mIsHazeEnabled="); out.println(mIsHazeEnabled);
++            out.print(prefix); out.print("mHazeUnsupported="); out.println(mHazeUnsupported);
++            out.print(prefix); out.print("mHazeThread="); out.println(mHazeThread);
++
+             mColorExtractor.dump(prefix, fd, out, args);
+         }
+     }
+diff --git a/packages/SystemUI/src/com/android/systemui/wallpapers/ImageWallpaperColorExtractor.java b/packages/SystemUI/src/com/android/systemui/wallpapers/ImageWallpaperColorExtractor.java
+index d21aec6..4b0e985 100644
+--- a/packages/SystemUI/src/com/android/systemui/wallpapers/ImageWallpaperColorExtractor.java
++++ b/packages/SystemUI/src/com/android/systemui/wallpapers/ImageWallpaperColorExtractor.java
+@@ -352,6 +352,13 @@ public class ImageWallpaperColorExtractor {
+         }
+     }
+ 
++    public Bitmap getMiniBitmap() {
++        synchronized (mLock) {
++            if (mMiniBitmap == null || mMiniBitmap.isRecycled()) return null;
++            return mMiniBitmap.copy(Bitmap.Config.ARGB_8888, false);
++        }
++    }
++
+     private Bitmap createMiniBitmap(@NonNull Bitmap bitmap) {
+         Trace.beginSection("ImageWallpaperColorExtractor#createMiniBitmap");
+         // if the area of the image is greater than MINI_BITMAP_MAX_AREA, downscale the bitmap.
+diff --git a/packages/SystemUI/src/com/android/systemui/wallpapers/haze/HazeColorExtractor.java b/packages/SystemUI/src/com/android/systemui/wallpapers/haze/HazeColorExtractor.java
+new file mode 100644
+index 0000000..442e34b
+--- /dev/null
++++ b/packages/SystemUI/src/com/android/systemui/wallpapers/haze/HazeColorExtractor.java
+@@ -0,0 +1,182 @@
++/*
++ * Copyright 2026 (C) VoltageOS
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package com.android.systemui.wallpapers.haze;
++
++import android.graphics.Bitmap;
++import android.graphics.Color;
++import java.util.ArrayList;
++import java.util.Collections;
++import java.util.List;
++
++public class HazeColorExtractor {
++
++  public static class ColorCluster {
++    public int color;
++    public float centerX;
++    public float centerY;
++
++    public ColorCluster(int color, float centerX, float centerY) {
++      this.color = color;
++      this.centerX = centerX;
++      this.centerY = centerY;
++    }
++  }
++
++  private static class Bucket {
++    int start, end;
++    Bucket(int s, int e) { start = s; end = e; }
++    int size() { return end - start; }
++  }
++
++  public static List<ColorCluster> extractColors(Bitmap original, int targetColors) {
++    Bitmap bitmap = original;
++    boolean didScale = false;
++
++    if (original.getWidth() > 128 || original.getHeight() > 128) {
++      float scale = Math.min(128f / original.getWidth(), 128f / original.getHeight());
++      bitmap =
++          Bitmap.createScaledBitmap(
++              original,
++              Math.max(1, Math.round(original.getWidth() * scale)),
++              Math.max(1, Math.round(original.getHeight() * scale)),
++              true);
++      didScale = true;
++    }
++
++    int w = bitmap.getWidth();
++    int h = bitmap.getHeight();
++
++    int[] pixels = new int[w * h];
++    bitmap.getPixels(pixels, 0, w, 0, 0, w, h);
++
++    int stepX = Math.max(1, w / 32);
++    int stepY = Math.max(1, h / 32);
++
++    int maxSamples = ((w - 1) / stepX + 1) * ((h - 1) / stepY + 1);
++    int[] sampleColors = new int[maxSamples];
++    int[] sampleXs = new int[maxSamples];
++    int[] sampleYs = new int[maxSamples];
++    int[] indices = new int[maxSamples];
++    int sampleCount = 0;
++
++    for (int y = 0; y < h; y += stepY) {
++      for (int x = 0; x < w; x += stepX) {
++        sampleColors[sampleCount] = pixels[y * w + x];
++        sampleXs[sampleCount] = x;
++        sampleYs[sampleCount] = y;
++        indices[sampleCount] = sampleCount;
++        sampleCount++;
++      }
++    }
++
++    List<Bucket> buckets = new ArrayList<>();
++    buckets.add(new Bucket(0, sampleCount));
++
++    while (buckets.size() < targetColors) {
++      Bucket largestBucket = null;
++      int largestRange = 0;
++      int splitChannel = 0;
++
++      for (Bucket bucket : buckets) {
++        if (bucket.size() <= 1) continue;
++        int minR = 255, maxR = 0, minG = 255, maxG = 0, minB = 255, maxB = 0;
++        for (int i = bucket.start; i < bucket.end; i++) {
++          int c = sampleColors[indices[i]];
++          int r = Color.red(c);
++          int g = Color.green(c);
++          int b = Color.blue(c);
++          if (r < minR) minR = r;
++          if (r > maxR) maxR = r;
++          if (g < minG) minG = g;
++          if (g > maxG) maxG = g;
++          if (b < minB) minB = b;
++          if (b > maxB) maxB = b;
++        }
++        int rRange = maxR - minR, gRange = maxG - minG, bRange = maxB - minB;
++        int maxRange = Math.max(rRange, Math.max(gRange, bRange));
++        if (maxRange > largestRange) {
++          largestRange = maxRange;
++          largestBucket = bucket;
++          splitChannel = (maxRange == rRange) ? 0 : (maxRange == gRange) ? 1 : 2;
++        }
++      }
++      if (largestBucket == null) break;
++
++      final int channel = splitChannel;
++      quickSortIndices(indices, sampleColors, largestBucket.start, largestBucket.end - 1, channel);
++
++      int median = largestBucket.start + largestBucket.size() / 2;
++      Bucket bucket1 = new Bucket(largestBucket.start, median);
++      Bucket bucket2 = new Bucket(median, largestBucket.end);
++      buckets.remove(largestBucket);
++      buckets.add(bucket1);
++      buckets.add(bucket2);
++    }
++
++    List<ColorCluster> clusters = new ArrayList<>();
++    for (Bucket bucket : buckets) {
++      if (bucket.size() == 0) continue;
++      long sumR = 0, sumG = 0, sumB = 0;
++      float sumX = 0, sumY = 0;
++      for (int i = bucket.start; i < bucket.end; i++) {
++        int idx = indices[i];
++        int c = sampleColors[idx];
++        sumR += Color.red(c);
++        sumG += Color.green(c);
++        sumB += Color.blue(c);
++        sumX += sampleXs[idx];
++        sumY += sampleYs[idx];
++      }
++      int count = bucket.size();
++      int avgColor = Color.rgb((int) (sumR / count), (int) (sumG / count), (int) (sumB / count));
++      float[] hsv = new float[3];
++      Color.colorToHSV(avgColor, hsv);
++      hsv[1] = Math.min(1f, hsv[1] * 1.45f + 0.05f);
++      hsv[2] = Math.min(1f, hsv[2] * 1.05f);
++      clusters.add(new ColorCluster(Color.HSVToColor(hsv), sumX / count / w, sumY / count / h));
++    }
++
++    if (didScale) {
++      bitmap.recycle();
++    }
++
++    return clusters;
++  }
++
++  private static void quickSortIndices(int[] indices, int[] colors, int low, int high, int channel) {
++   if (low < high) {
++      int pi = partition(indices, colors, low, high, channel);
++      quickSortIndices(indices, colors, low, pi - 1, channel);
++      quickSortIndices(indices, colors, pi + 1, high, channel);
++    }
++  }
++
++  private static int partition(int[] indices, int[] colors, int low, int high, int channel) {
++    int pivotColor = colors[indices[high]];
++    int pivotVal = (channel == 0) ? Color.red(pivotColor) : ((channel == 1) ? Color.green(pivotColor) : Color.blue(pivotColor));
++    int i = (low - 1);
++    for (int j = low; j < high; j++) {
++      int c = colors[indices[j]];
++      int val = (channel == 0) ? Color.red(c) : ((channel == 1) ? Color.green(c) : Color.blue(c));
++      if (val <= pivotVal) {
++        i++;
++        int temp = indices[i]; indices[i] = indices[j]; indices[j] = temp;
++      }
++    }
++    int temp = indices[i + 1]; indices[i + 1] = indices[high]; indices[high] = temp;
++    return i + 1;
++  }
++}
+diff --git a/packages/SystemUI/src/com/android/systemui/wallpapers/haze/HazeRenderThread.java b/packages/SystemUI/src/com/android/systemui/wallpapers/haze/HazeRenderThread.java
+new file mode 100644
+index 0000000..83b928f
+--- /dev/null
++++ b/packages/SystemUI/src/com/android/systemui/wallpapers/haze/HazeRenderThread.java
+@@ -0,0 +1,489 @@
++/*
++ * Copyright 2026 (C) VoltageOS
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package com.android.systemui.wallpapers.haze;
++
++import android.content.Context;
++import android.graphics.Bitmap;
++import android.opengl.EGL14;
++import android.opengl.EGLConfig;
++import android.opengl.EGLContext;
++import android.opengl.EGLDisplay;
++import android.opengl.EGLExt;
++import android.opengl.EGLSurface;
++import android.os.Handler;
++import android.os.HandlerThread;
++import android.os.Looper;
++import android.os.SystemClock;
++import android.provider.Settings;
++import android.util.Log;
++import android.view.Choreographer;
++import android.view.SurfaceHolder;
++
++public class HazeRenderThread extends HandlerThread {
++  private static final String TAG = "HazeRenderThread";
++
++  public interface Callbacks {
++    void onContextLost();
++
++    void onUnsupported();
++
++    void onBitmapConsumed();
++  }
++
++  public static final int STATE_SCREEN_OFF = 0;
++  public static final int STATE_KEYGUARD = 1;
++  public static final int STATE_UNLOCKED = 2;
++
++  private static final long AMBIENT_FRAME_INTERVAL_MS = 50L;
++  private static final long TIME_WRAP_MS = 3600000L;
++
++  private static final float[][] STYLE_TARGETS = {
++    {0f, 0f, 1f},
++    {1f, 1f, 0f},
++    {0f, 0f, 1f},
++    {1f, 1f, 0f},
++    {1f, 0f, 1f},
++  };
++  private static final long[] STYLE_DURATIONS = {2500L, 1500L, 500L, 500L, 2000L};
++
++  private final SurfaceHolder mHolder;
++  private final Context mContext;
++  private final Callbacks mCallbacks;
++  private Bitmap mBitmap;
++  private Bitmap mMiniBitmap;
++  private volatile Handler mHandler;
++  private Choreographer mChoreographer;
++
++  private volatile boolean mIsRunning = false;
++  private volatile boolean mVisible = true;
++  private volatile boolean mRenderRequested = true;
++
++  private EGLDisplay mEglDisplay;
++  private EGLContext mEglContext;
++  private EGLSurface mEglSurface;
++  private HazeRenderer mRenderer;
++
++  private volatile boolean mIsAnimating = false;
++  private long mStartTime;
++  private long mDuration;
++  private volatile float mStartBlur;
++  private volatile float mTargetBlur;
++
++  private volatile float mCurrentBlur = 0f;
++  private volatile int mStyle = 0;
++  private volatile float mIntensity = 0.5f;
++  private volatile int mCurrentState = -1;
++
++  private boolean mNeedsReblur = false;
++  private float mLastIntensity = -1f;
++  private long mLastDrawTime = 0L;
++
++  private final Choreographer.FrameCallback mFrameCallback =
++      new Choreographer.FrameCallback() {
++        @Override
++        public void doFrame(long frameTimeNanos) {
++          if (!mIsRunning || !mVisible) return;
++          renderFrame();
++        }
++      };
++
++  public HazeRenderThread(
++      Context ctx, SurfaceHolder holder, Bitmap bitmap, Bitmap miniBitmap, Callbacks callbacks) {
++    super(TAG);
++    mContext = ctx;
++    mHolder = holder;
++    mBitmap = bitmap;
++    mMiniBitmap = miniBitmap;
++    mCallbacks = callbacks;
++    updateSettings();
++  }
++
++  @Override
++  public synchronized void start() {
++    mIsRunning = true;
++    super.start();
++  }
++
++  @Override
++  protected void onLooperPrepared() {
++    if (!mIsRunning) {
++      getLooper().quitSafely();
++      return;
++    }
++    mHandler = new Handler(getLooper());
++    mChoreographer = Choreographer.getInstance();
++    try {
++      if (!initEGL()) {
++        Log.w(TAG, "Surface invalid during EGL init");
++        quitSafely();
++        mCallbacks.onContextLost();
++        return;
++      }
++      mRenderer = new HazeRenderer();
++      mRenderer.init(
++          mHolder.getSurfaceFrame().width(),
++          mHolder.getSurfaceFrame().height(),
++          mBitmap,
++          mMiniBitmap,
++          mStyle,
++          mIntensity);
++      mBitmap = null;
++      mMiniBitmap = null;
++      mCallbacks.onBitmapConsumed();
++      requestRender();
++    } catch (RuntimeException e) {
++      Log.e(TAG, "GL initialization failed, disabling haze", e);
++      quitSafely();
++      mCallbacks.onUnsupported();
++    }
++  }
++
++  @Override
++  public void run() {
++    try {
++      super.run();
++    } finally {
++      if (mBitmap != null) {
++        mBitmap = null;
++        mCallbacks.onBitmapConsumed();
++      }
++      if (mMiniBitmap != null) {
++        mMiniBitmap.recycle();
++        mMiniBitmap = null;
++      }
++      if (mRenderer != null) {
++        mRenderer.destroy();
++        mRenderer = null;
++      }
++      releaseEGL();
++    }
++  }
++
++  public void setBitmap(Bitmap bitmap) {
++    Handler handler = mHandler;
++    boolean posted =
++        handler != null
++            && handler.post(
++                () -> {
++                  if (mRenderer != null) {
++                    mRenderer.setBitmap(bitmap, mIntensity, mStyle);
++                    requestRender();
++                  }
++                  mCallbacks.onBitmapConsumed();
++                });
++    if (!posted) {
++      mCallbacks.onBitmapConsumed();
++    }
++  }
++
++  public void setMiniBitmap(Bitmap miniBitmap) {
++    if (miniBitmap == null) return;
++    Handler handler = mHandler;
++    boolean posted =
++        handler != null
++            && handler.post(
++                () -> {
++                  if (mRenderer != null) {
++                    mRenderer.setMiniBitmap(miniBitmap);
++                    requestRender();
++                  } else {
++                    miniBitmap.recycle();
++                  }
++                });
++    if (!posted) {
++      miniBitmap.recycle();
++    }
++  }
++
++  public void onVisibilityChanged(boolean visible) {
++    mVisible = visible;
++    if (visible) {
++      requestRender();
++    }
++  }
++
++  public void updateSettings() {
++    Handler handler = mHandler;
++    if (handler != null) {
++      handler.post(this::handleUpdateSettings);
++    } else {
++      handleUpdateSettings();
++    }
++  }
++
++  private void handleUpdateSettings() {
++    int oldStyle = mStyle;
++    mStyle = Settings.System.getInt(mContext.getContentResolver(), HazeSettings.KEY_STYLE, 0);
++    float rawIntensity =
++        Settings.System.getInt(mContext.getContentResolver(), HazeSettings.KEY_INTENSITY, 50)
++            / 100f;
++    float newIntensity = rawIntensity * 0.55f;
++
++    if (mLastIntensity != -1f
++        && (oldStyle != mStyle || Math.abs(mLastIntensity - newIntensity) > 0.01f)) {
++      mNeedsReblur = true;
++    }
++    mIntensity = newIntensity;
++    mLastIntensity = mIntensity;
++    requestRender();
++  }
++
++  public void triggerTransition(int state) {
++    Handler handler = mHandler;
++    if (handler != null) {
++      handler.post(() -> handleTriggerTransition(state));
++    } else {
++      handleTriggerTransition(state);
++    }
++  }
++
++  private void handleTriggerTransition(int state) {
++    if (mCurrentState == state) return;
++    if (state < 0 || state > STATE_UNLOCKED) return;
++
++    int previousState = mCurrentState;
++    boolean forceSnap = (previousState == -1);
++    mCurrentState = state;
++
++    int style = (mStyle >= 0 && mStyle < STYLE_TARGETS.length) ? mStyle : 0;
++    float target = STYLE_TARGETS[style][state];
++    long duration = STYLE_DURATIONS[style];
++
++    if (style == 4) {
++      if (state == STATE_SCREEN_OFF) {
++        duration = 0L;
++      } else {
++        mCurrentBlur = 1f - target;
++      }
++    } else if (state == STATE_KEYGUARD
++        && target > 0f
++        && (previousState == STATE_SCREEN_OFF || previousState == -1)) {
++      mCurrentBlur = 0f;
++      forceSnap = false;
++    }
++
++    if (forceSnap || state == STATE_SCREEN_OFF || duration == 0L) {
++      mCurrentBlur = target;
++      mIsAnimating = false;
++      requestRender();
++      return;
++    }
++
++    mStartBlur = mCurrentBlur;
++    mTargetBlur = target;
++    float distance = Math.abs(mTargetBlur - mStartBlur);
++    mDuration = (long) (duration * distance);
++
++    if (mDuration <= 16L) {
++      mCurrentBlur = target;
++      mIsAnimating = false;
++      requestRender();
++      return;
++    }
++    if (mRenderer != null
++        && isBlobStyle(style)
++        && mStartBlur <= 0.1f
++        && mTargetBlur > mStartBlur) {
++      mRenderer.reRollTargets();
++    }
++    mStartTime = SystemClock.uptimeMillis();
++    mIsAnimating = true;
++    requestRender();
++  }
++
++  public void requestRender() {
++    mRenderRequested = true;
++    Handler handler = mHandler;
++    if (handler != null && mChoreographer != null && mVisible) {
++      if (Looper.myLooper() == handler.getLooper()) {
++        mChoreographer.postFrameCallback(mFrameCallback);
++      } else {
++        handler.post(() -> mChoreographer.postFrameCallback(mFrameCallback));
++      }
++    }
++  }
++
++  public void resize(int width, int height) {
++    Handler handler = mHandler;
++    if (handler != null) {
++      handler.post(
++          () -> {
++            if (mRenderer != null) {
++              mRenderer.resize(width, height);
++              mNeedsReblur = true;
++              requestRender();
++            }
++          });
++    }
++  }
++
++  @Override
++  public boolean quitSafely() {
++    mIsRunning = false;
++    return super.quitSafely();
++  }
++
++  @Override
++  public boolean quit() {
++    return quitSafely();
++  }
++
++  private static boolean isBlobStyle(int style) {
++    return style == 0 || style == 1 || style == 4;
++  }
++
++  private boolean isAmbientActive() {
++    return mVisible && !mIsAnimating && isBlobStyle(mStyle) && mCurrentBlur > 0.15f;
++  }
++
++  private void renderFrame() {
++    if (mEglDisplay == null || mEglSurface == null || mRenderer == null) return;
++
++    boolean ambient = isAmbientActive();
++    long now = SystemClock.uptimeMillis();
++
++    if (!mIsAnimating && !mRenderRequested && !mNeedsReblur) {
++      if (!ambient) return;
++      long sinceLastDraw = now - mLastDrawTime;
++      if (sinceLastDraw < AMBIENT_FRAME_INTERVAL_MS) {
++        mChoreographer.postFrameCallbackDelayed(
++            mFrameCallback, AMBIENT_FRAME_INTERVAL_MS - sinceLastDraw);
++        return;
++      }
++    }
++
++    boolean needsNextFrame = ambient;
++
++    if (mIsAnimating) {
++      float t = (float) (now - mStartTime) / mDuration;
++      if (t >= 1f) {
++        t = 1f;
++        mIsAnimating = false;
++      }
++
++      float smoothT;
++      if (mStyle == 4 && mCurrentState == STATE_UNLOCKED) {
++        float invT = 1.0f - t;
++        smoothT = 1.0f - (invT * invT * invT);
++      } else {
++        smoothT = t * t * (3.0f - 2.0f * t);
++      }
++      mCurrentBlur = mStartBlur + (mTargetBlur - mStartBlur) * smoothT;
++      needsNextFrame = true;
++    }
++
++    if (mRenderRequested) {
++      needsNextFrame = true;
++      mRenderRequested = false;
++    }
++
++    if (mNeedsReblur) {
++      mRenderer.updateBlur(mIntensity, mStyle);
++      mNeedsReblur = false;
++      needsNextFrame = true;
++    }
++
++    mRenderer.drawFrame(mCurrentBlur, mIntensity, mStyle, (now % TIME_WRAP_MS) / 1000f);
++    mLastDrawTime = now;
++    boolean swapSuccess = EGL14.eglSwapBuffers(mEglDisplay, mEglSurface);
++
++    if (!swapSuccess) {
++      int error = EGL14.eglGetError();
++      Log.w(TAG, "EGL swap failed: " + error);
++      if (error == EGL14.EGL_CONTEXT_LOST
++          || error == EGL14.EGL_BAD_SURFACE
++          || error == EGL14.EGL_BAD_DISPLAY) {
++        mCallbacks.onContextLost();
++        return;
++      }
++    }
++
++    if (needsNextFrame && mIsRunning && mVisible) {
++      if (mIsAnimating || mRenderRequested || mNeedsReblur) {
++        mChoreographer.postFrameCallback(mFrameCallback);
++      } else {
++        mChoreographer.postFrameCallbackDelayed(mFrameCallback, AMBIENT_FRAME_INTERVAL_MS);
++      }
++    }
++  }
++
++  private boolean initEGL() {
++    if (mHolder == null || mHolder.getSurface() == null || !mHolder.getSurface().isValid()) {
++      return false;
++    }
++
++    mEglDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY);
++    if (mEglDisplay == EGL14.EGL_NO_DISPLAY) throw new RuntimeException("eglGetDisplay failed");
++
++    int[] version = new int[2];
++    if (!EGL14.eglInitialize(mEglDisplay, version, 0, version, 1)) {
++      throw new RuntimeException("eglInitialize failed");
++    }
++
++    int[] configAttribs = {
++      EGL14.EGL_RENDERABLE_TYPE, EGLExt.EGL_OPENGL_ES3_BIT_KHR,
++      EGL14.EGL_SURFACE_TYPE, EGL14.EGL_WINDOW_BIT,
++      EGL14.EGL_RED_SIZE, 8,
++      EGL14.EGL_GREEN_SIZE, 8,
++      EGL14.EGL_BLUE_SIZE, 8,
++      EGL14.EGL_ALPHA_SIZE, 8,
++      EGL14.EGL_NONE
++    };
++
++    EGLConfig[] configs = new EGLConfig[1];
++    int[] numConfigs = new int[1];
++    if (!EGL14.eglChooseConfig(mEglDisplay, configAttribs, 0, configs, 0, 1, numConfigs, 0)
++        || numConfigs[0] <= 0
++        || configs[0] == null) {
++      throw new RuntimeException("No ES3 RGBA8888 window config");
++    }
++
++    int[] contextAttribs = {EGL14.EGL_CONTEXT_CLIENT_VERSION, 3, EGL14.EGL_NONE};
++    mEglContext =
++        EGL14.eglCreateContext(mEglDisplay, configs[0], EGL14.EGL_NO_CONTEXT, contextAttribs, 0);
++    if (mEglContext == EGL14.EGL_NO_CONTEXT) throw new RuntimeException("eglCreateContext failed");
++
++    int[] surfaceAttribs = {EGL14.EGL_NONE};
++    mEglSurface =
++        EGL14.eglCreateWindowSurface(
++            mEglDisplay, configs[0], mHolder.getSurface(), surfaceAttribs, 0);
++    if (mEglSurface == EGL14.EGL_NO_SURFACE)
++      throw new RuntimeException("eglCreateWindowSurface failed");
++
++    if (!EGL14.eglMakeCurrent(mEglDisplay, mEglSurface, mEglSurface, mEglContext)) {
++      throw new RuntimeException("eglMakeCurrent failed");
++    }
++    EGL14.eglSwapInterval(mEglDisplay, 1);
++    return true;
++  }
++
++  private void releaseEGL() {
++    if (mEglDisplay != null) {
++      EGL14.eglMakeCurrent(
++          mEglDisplay, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_CONTEXT);
++      if (mEglSurface != null) {
++        EGL14.eglDestroySurface(mEglDisplay, mEglSurface);
++        mEglSurface = null;
++      }
++      if (mEglContext != null) {
++        EGL14.eglDestroyContext(mEglDisplay, mEglContext);
++        mEglContext = null;
++      }
++      EGL14.eglTerminate(mEglDisplay);
++      mEglDisplay = null;
++    }
++  }
++}
+diff --git a/packages/SystemUI/src/com/android/systemui/wallpapers/haze/HazeRenderer.java b/packages/SystemUI/src/com/android/systemui/wallpapers/haze/HazeRenderer.java
+new file mode 100644
+index 0000000..4ee3540
+--- /dev/null
++++ b/packages/SystemUI/src/com/android/systemui/wallpapers/haze/HazeRenderer.java
+@@ -0,0 +1,469 @@
++/*
++ * Copyright 2026 (C) VoltageOS
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package com.android.systemui.wallpapers.haze;
++
++import android.graphics.Bitmap;
++import android.graphics.Color;
++import android.opengl.GLES30;
++import android.opengl.GLUtils;
++import java.nio.ByteBuffer;
++import java.nio.ByteOrder;
++import java.nio.FloatBuffer;
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Random;
++
++public class HazeRenderer {
++  private static final String TAG = "HazeRenderer";
++
++  private static class BlobPhysics {
++    float startX, startY, p1x, p1y, endX, endY, startSize, endSize, massScale;
++
++    BlobPhysics(float sx, float sy, float ms) {
++      startX = sx;
++      startY = sy;
++      massScale = ms;
++    }
++  }
++
++  private int mProgramId;
++  private int mKawaseDownProgramId;
++  private int mKawaseUpProgramId;
++
++  private int mSharpTextureId;
++  private int mBlurTextureId;
++
++  private int mVaoScreenId;
++  private int mVaoFboId;
++
++  private static final int MAX_KAWASE_PASSES = 6;
++  private int[] mKawaseFbos = new int[MAX_KAWASE_PASSES];
++  private int[] mKawaseTextures = new int[MAX_KAWASE_PASSES];
++
++  private float mAspectRatio = 1.0f;
++
++  private FloatBuffer mVertexBufferScreen;
++  private FloatBuffer mVertexBufferFbo;
++
++  private int mWidth;
++  private int mHeight;
++
++  private List<BlobPhysics> mBlobs = new ArrayList<>();
++  private Random mRandom = new Random();
++
++  private float[] mBlobColorsBuffer = new float[16 * 3];
++  private float[] mBlobPosBuffer = new float[16 * 2];
++  private float[] mBlobSizesBuffer = new float[16];
++  private int mBlobCount = 0;
++
++  private boolean mBlobsDirty = true;
++  private float mLastPhysicsT = -1f;
++  private int mLastStyle = -1;
++
++  private int uBlobColorsLoc, uBlobPositionsLoc, uBlobSizesLoc, uBlobCountLoc;
++  private int uAspectRatioLoc, uBlurStrengthLoc, uDimLevelLoc, uStyleLoc, uTimeLoc;
++  private int uTextureSharpLoc, uTextureBlurLoc;
++  private int uDownTextureLoc, uDownResolutionLoc, uDownOffsetLoc;
++  private int uUpTextureLoc, uUpResolutionLoc, uUpOffsetLoc;
++
++  public void init(
++      int width,
++      int height,
++      Bitmap originalBitmap,
++      Bitmap miniBitmap,
++      int style,
++      float intensity) {
++    mWidth = width;
++    mHeight = height;
++    mAspectRatio = (float) width / height;
++
++    float[] screenVerts = {-1f, -1f, 0f, 1f, 1f, -1f, 1f, 1f, -1f, 1f, 0f, 0f, 1f, 1f, 1f, 0f};
++    mVertexBufferScreen =
++        ByteBuffer.allocateDirect(screenVerts.length * 4)
++            .order(ByteOrder.nativeOrder())
++            .asFloatBuffer();
++    mVertexBufferScreen.put(screenVerts).position(0);
++
++    float[] fboVerts = {-1f, -1f, 0f, 0f, 1f, -1f, 1f, 0f, -1f, 1f, 0f, 1f, 1f, 1f, 1f, 1f};
++    mVertexBufferFbo =
++        ByteBuffer.allocateDirect(fboVerts.length * 4)
++            .order(ByteOrder.nativeOrder())
++            .asFloatBuffer();
++    mVertexBufferFbo.put(fboVerts).position(0);
++
++    mProgramId = createProgram(HazeShaders.VERTEX_SHADER, HazeShaders.HAZE_FRAGMENT_SHADER);
++    mKawaseDownProgramId =
++        createProgram(HazeShaders.VERTEX_SHADER, HazeShaders.KAWASE_DOWN_FRAGMENT_SHADER);
++    mKawaseUpProgramId =
++        createProgram(HazeShaders.VERTEX_SHADER, HazeShaders.KAWASE_UP_FRAGMENT_SHADER);
++
++    cacheUniforms();
++    setupVAOs();
++
++    GLES30.glGenFramebuffers(MAX_KAWASE_PASSES, mKawaseFbos, 0);
++    allocateKawaseBuffers(mWidth, mHeight);
++
++    mSharpTextureId = uploadTexture(originalBitmap);
++    updateBlur(intensity, style);
++
++    if (miniBitmap != null && !miniBitmap.isRecycled()) {
++      initBaseBlobs(miniBitmap);
++      miniBitmap.recycle();
++    } else if (originalBitmap != null && !originalBitmap.isRecycled()) {
++      initBaseBlobs(originalBitmap);
++    }
++
++    GLES30.glViewport(0, 0, width, height);
++  }
++
++  public void setBitmap(Bitmap originalBitmap, float intensity, int style) {
++    if (mSharpTextureId != 0) {
++      GLES30.glDeleteTextures(1, new int[] {mSharpTextureId}, 0);
++    }
++    mSharpTextureId = uploadTexture(originalBitmap);
++    updateBlur(intensity, style);
++  }
++
++  public void setMiniBitmap(Bitmap miniBitmap) {
++    if (miniBitmap == null || miniBitmap.isRecycled()) return;
++    initBaseBlobs(miniBitmap);
++    miniBitmap.recycle();
++  }
++
++  private void allocateKawaseBuffers(int w, int h) {
++    if (mKawaseTextures[0] != 0) {
++      GLES30.glDeleteTextures(MAX_KAWASE_PASSES, mKawaseTextures, 0);
++    }
++    for (int i = 0; i < MAX_KAWASE_PASSES; i++) {
++      int downW = chainSize(w, i);
++      int downH = chainSize(h, i);
++      mKawaseTextures[i] = createEmptyTexture(downW, downH);
++      GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, mKawaseFbos[i]);
++      GLES30.glFramebufferTexture2D(
++          GLES30.GL_FRAMEBUFFER,
++          GLES30.GL_COLOR_ATTACHMENT0,
++          GLES30.GL_TEXTURE_2D,
++          mKawaseTextures[i],
++          0);
++    }
++    mBlurTextureId = mKawaseTextures[0];
++  }
++
++  private void setupVAOs() {
++    int[] vaos = new int[2];
++    GLES30.glGenVertexArrays(2, vaos, 0);
++    mVaoScreenId = vaos[0];
++    mVaoFboId = vaos[1];
++
++    int[] vbos = new int[2];
++    GLES30.glGenBuffers(2, vbos, 0);
++
++    GLES30.glBindVertexArray(mVaoScreenId);
++    GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, vbos[0]);
++    GLES30.glBufferData(
++        GLES30.GL_ARRAY_BUFFER,
++        mVertexBufferScreen.capacity() * 4,
++        mVertexBufferScreen,
++        GLES30.GL_STATIC_DRAW);
++    int aPosLoc = GLES30.glGetAttribLocation(mProgramId, "aPosition");
++    GLES30.glVertexAttribPointer(aPosLoc, 2, GLES30.GL_FLOAT, false, 16, 0);
++    GLES30.glEnableVertexAttribArray(aPosLoc);
++    int aTexLoc = GLES30.glGetAttribLocation(mProgramId, "aTexCoord");
++    GLES30.glVertexAttribPointer(aTexLoc, 2, GLES30.GL_FLOAT, false, 16, 8);
++    GLES30.glEnableVertexAttribArray(aTexLoc);
++
++    GLES30.glBindVertexArray(mVaoFboId);
++    GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, vbos[1]);
++    GLES30.glBufferData(
++        GLES30.GL_ARRAY_BUFFER,
++        mVertexBufferFbo.capacity() * 4,
++        mVertexBufferFbo,
++        GLES30.GL_STATIC_DRAW);
++    int aPosLocFbo = GLES30.glGetAttribLocation(mKawaseDownProgramId, "aPosition");
++    GLES30.glVertexAttribPointer(aPosLocFbo, 2, GLES30.GL_FLOAT, false, 16, 0);
++    GLES30.glEnableVertexAttribArray(aPosLocFbo);
++    int aTexLocFbo = GLES30.glGetAttribLocation(mKawaseDownProgramId, "aTexCoord");
++    GLES30.glVertexAttribPointer(aTexLocFbo, 2, GLES30.GL_FLOAT, false, 16, 8);
++    GLES30.glEnableVertexAttribArray(aTexLocFbo);
++
++    GLES30.glBindVertexArray(0);
++  }
++
++  private void cacheUniforms() {
++    uBlobColorsLoc = GLES30.glGetUniformLocation(mProgramId, "uBlobColors");
++    uBlobPositionsLoc = GLES30.glGetUniformLocation(mProgramId, "uBlobPositions");
++    uBlobSizesLoc = GLES30.glGetUniformLocation(mProgramId, "uBlobSizes");
++    uBlobCountLoc = GLES30.glGetUniformLocation(mProgramId, "uBlobCount");
++    uAspectRatioLoc = GLES30.glGetUniformLocation(mProgramId, "uAspectRatio");
++    uBlurStrengthLoc = GLES30.glGetUniformLocation(mProgramId, "uBlurStrength");
++    uDimLevelLoc = GLES30.glGetUniformLocation(mProgramId, "uDimLevel");
++    uStyleLoc = GLES30.glGetUniformLocation(mProgramId, "uStyle");
++    uTimeLoc = GLES30.glGetUniformLocation(mProgramId, "uTime");
++    uTextureSharpLoc = GLES30.glGetUniformLocation(mProgramId, "uTextureSharp");
++    uTextureBlurLoc = GLES30.glGetUniformLocation(mProgramId, "uTextureBlur");
++
++    uDownTextureLoc = GLES30.glGetUniformLocation(mKawaseDownProgramId, "uTexture");
++    uDownResolutionLoc = GLES30.glGetUniformLocation(mKawaseDownProgramId, "uResolution");
++    uDownOffsetLoc = GLES30.glGetUniformLocation(mKawaseDownProgramId, "uOffset");
++
++    uUpTextureLoc = GLES30.glGetUniformLocation(mKawaseUpProgramId, "uTexture");
++    uUpResolutionLoc = GLES30.glGetUniformLocation(mKawaseUpProgramId, "uResolution");
++    uUpOffsetLoc = GLES30.glGetUniformLocation(mKawaseUpProgramId, "uOffset");
++  }
++
++  public void updateBlur(float intensity, int style) {
++    boolean isBlob = (style == 0 || style == 1 || style == 4);
++    float blurOffset;
++    int passes;
++
++    if (isBlob) {
++        blurOffset = 0.5f + (intensity * 2.0f);
++        passes = 3;
++    } else {
++        float normalizedIntensity = Math.max(0f, Math.min(1f, intensity / 0.55f));
++        passes = 2 + Math.round(normalizedIntensity * 4.0f);
++        blurOffset = 0.5f + (normalizedIntensity * 3.0f);
++    }
++    gpuKawaseBlur(mSharpTextureId, blurOffset, passes);
++  }
++
++  private void gpuKawaseBlur(int inputTex, float offset, int passes) {
++    GLES30.glBindVertexArray(mVaoFboId);
++
++    GLES30.glUseProgram(mKawaseDownProgramId);
++    GLES30.glUniform1f(uDownOffsetLoc, offset);
++
++    for (int i = 0; i < passes; i++) {
++      int currentW = chainSize(mWidth, i);
++      int currentH = chainSize(mHeight, i);
++      GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, mKawaseFbos[i]);
++      GLES30.glViewport(0, 0, currentW, currentH);
++
++      GLES30.glActiveTexture(GLES30.GL_TEXTURE0);
++      GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, i == 0 ? inputTex : mKawaseTextures[i - 1]);
++      GLES30.glUniform1i(uDownTextureLoc, 0);
++      GLES30.glUniform2f(uDownResolutionLoc, currentW, currentH);
++
++      GLES30.glDrawArrays(GLES30.GL_TRIANGLE_STRIP, 0, 4);
++    }
++
++    GLES30.glUseProgram(mKawaseUpProgramId);
++    GLES30.glUniform1f(uUpOffsetLoc, offset);
++
++    for (int i = passes - 2; i >= 0; i--) {
++      int currentW = chainSize(mWidth, i);
++      int currentH = chainSize(mHeight, i);
++      GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, mKawaseFbos[i]);
++      GLES30.glViewport(0, 0, currentW, currentH);
++
++      GLES30.glActiveTexture(GLES30.GL_TEXTURE0);
++      GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, mKawaseTextures[i + 1]);
++      GLES30.glUniform1i(uUpTextureLoc, 0);
++      GLES30.glUniform2f(uUpResolutionLoc, currentW, currentH);
++
++      GLES30.glDrawArrays(GLES30.GL_TRIANGLE_STRIP, 0, 4);
++    }
++
++    GLES30.glBindVertexArray(0);
++    GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, 0);
++    GLES30.glViewport(0, 0, mWidth, mHeight);
++  }
++
++  public void resize(int width, int height) {
++    if (width == mWidth && height == mHeight) return;
++    mWidth = width;
++    mHeight = height;
++    mAspectRatio = (float) width / height;
++    GLES30.glViewport(0, 0, width, height);
++    allocateKawaseBuffers(width, height);
++  }
++
++  private void initBaseBlobs(Bitmap bitmap) {
++    int targetBlobs = Math.min(16, Math.max(4, mWidth / 80));
++    List<HazeColorExtractor.ColorCluster> clusters =
++        HazeColorExtractor.extractColors(bitmap, targetBlobs);
++
++    mBlobs.clear();
++    int idx = 0;
++    for (HazeColorExtractor.ColorCluster c : clusters) {
++      mBlobColorsBuffer[idx * 3] = Color.red(c.color) / 255f;
++      mBlobColorsBuffer[idx * 3 + 1] = Color.green(c.color) / 255f;
++      mBlobColorsBuffer[idx * 3 + 2] = Color.blue(c.color) / 255f;
++
++      mBlobs.add(new BlobPhysics(c.centerX, c.centerY, 1.0f + (mRandom.nextFloat() * 0.4f)));
++      idx++;
++    }
++    mBlobCount = mBlobs.size();
++    reRollTargets();
++  }
++
++  public void reRollTargets() {
++    for (BlobPhysics b : mBlobs) {
++      b.endX = 0.05f + mRandom.nextFloat() * 0.9f;
++      b.endY = 0.05f + mRandom.nextFloat() * 0.9f;
++      float midX = (b.startX + b.endX) / 2f;
++      float midY = (b.startY + b.endY) / 2f;
++      b.p1x = midX + (mRandom.nextFloat() - 0.5f) * 0.5f;
++      b.p1y = midY + (mRandom.nextFloat() - 0.5f) * 0.5f;
++      b.startSize = 0.05f;
++      b.endSize = (0.12f + mRandom.nextFloat() * 0.08f) * b.massScale;
++    }
++    mBlobsDirty = true;
++    mLastPhysicsT = -1f;
++  }
++
++  private static int chainSize(int dim, int i) {
++    return Math.max(32, dim >> (i + 1));
++  }
++
++  public void drawFrame(float blurStrength, float dimLevel, int style, float time) {
++    GLES30.glUseProgram(mProgramId);
++
++    if (mBlobsDirty && mBlobCount > 0) {
++      GLES30.glUniform3fv(uBlobColorsLoc, mBlobCount, mBlobColorsBuffer, 0);
++      GLES30.glUniform1i(uBlobCountLoc, mBlobCount);
++      mBlobsDirty = false;
++    }
++
++    float t = Math.max(0f, Math.min(1f, blurStrength));
++
++    if (style == 0 || style == 1 || style == 4) {
++      float physicsT = Math.max(0f, Math.min(1f, (t - 0.1f) / 0.9f));
++
++      if (Math.abs(physicsT - mLastPhysicsT) > 0.001f || mLastStyle != style) {
++        mLastPhysicsT = physicsT;
++        float progress = 1.0f - (float) Math.pow(1.0f - physicsT, 3);
++
++        int idx = 0;
++        for (BlobPhysics b : mBlobs) {
++          float u = 1.0f - progress;
++          float bx =
++              (u * u * b.startX) + (2 * u * progress * b.p1x) + (progress * progress * b.endX);
++          float by =
++              (u * u * b.startY) + (2 * u * progress * b.p1y) + (progress * progress * b.endY);
++          mBlobPosBuffer[idx * 2] = bx;
++          mBlobPosBuffer[idx * 2 + 1] = by;
++          mBlobSizesBuffer[idx] = b.startSize + (b.endSize - b.startSize) * progress;
++          idx++;
++        }
++        if (idx > 0) {
++          GLES30.glUniform2fv(uBlobPositionsLoc, idx, mBlobPosBuffer, 0);
++          GLES30.glUniform1fv(uBlobSizesLoc, idx, mBlobSizesBuffer, 0);
++        }
++      }
++    }
++    mLastStyle = style;
++
++    GLES30.glUniform1f(uAspectRatioLoc, mAspectRatio);
++    GLES30.glUniform1f(uTimeLoc, time);
++    GLES30.glUniform1f(uBlurStrengthLoc, blurStrength);
++    GLES30.glUniform1f(uDimLevelLoc, dimLevel);
++    GLES30.glUniform1i(uStyleLoc, style);
++
++    GLES30.glActiveTexture(GLES30.GL_TEXTURE0);
++    GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, mSharpTextureId);
++    GLES30.glUniform1i(uTextureSharpLoc, 0);
++
++    GLES30.glActiveTexture(GLES30.GL_TEXTURE1);
++    GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, mBlurTextureId);
++    GLES30.glUniform1i(uTextureBlurLoc, 1);
++
++    GLES30.glBindVertexArray(mVaoScreenId);
++    GLES30.glDrawArrays(GLES30.GL_TRIANGLE_STRIP, 0, 4);
++    GLES30.glBindVertexArray(0);
++  }
++
++  public void destroy() {
++    if (mSharpTextureId != 0) GLES30.glDeleteTextures(1, new int[] {mSharpTextureId}, 0);
++    GLES30.glDeleteTextures(MAX_KAWASE_PASSES, mKawaseTextures, 0);
++    GLES30.glDeleteFramebuffers(MAX_KAWASE_PASSES, mKawaseFbos, 0);
++    GLES30.glDeleteVertexArrays(2, new int[] {mVaoScreenId, mVaoFboId}, 0);
++    GLES30.glDeleteProgram(mProgramId);
++    GLES30.glDeleteProgram(mKawaseDownProgramId);
++    GLES30.glDeleteProgram(mKawaseUpProgramId);
++  }
++
++  private int createEmptyTexture(int w, int h) {
++    int[] t = new int[1];
++    GLES30.glGenTextures(1, t, 0);
++    GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, t[0]);
++    GLES30.glTexImage2D(
++        GLES30.GL_TEXTURE_2D,
++        0,
++        GLES30.GL_RGB8,
++        w,
++        h,
++        0,
++        GLES30.GL_RGB,
++        GLES30.GL_UNSIGNED_BYTE,
++        null);
++    GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MIN_FILTER, GLES30.GL_LINEAR);
++    GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MAG_FILTER, GLES30.GL_LINEAR);
++    GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_S, GLES30.GL_CLAMP_TO_EDGE);
++    GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_T, GLES30.GL_CLAMP_TO_EDGE);
++    return t[0];
++  }
++
++  private int uploadTexture(Bitmap b) {
++    if (b == null || b.isRecycled()) return 0;
++    int[] t = new int[1];
++    GLES30.glGenTextures(1, t, 0);
++    GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, t[0]);
++
++    GLES30.glTexParameteri(
++        GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MIN_FILTER, GLES30.GL_LINEAR_MIPMAP_LINEAR);
++    GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MAG_FILTER, GLES30.GL_LINEAR);
++    GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_S, GLES30.GL_CLAMP_TO_EDGE);
++    GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_T, GLES30.GL_CLAMP_TO_EDGE);
++    GLUtils.texImage2D(GLES30.GL_TEXTURE_2D, 0, b, 0);
++    GLES30.glGenerateMipmap(GLES30.GL_TEXTURE_2D);
++
++    return t[0];
++  }
++
++  private int compileShader(int type, String src) {
++    int shader = GLES30.glCreateShader(type);
++    GLES30.glShaderSource(shader, src);
++    GLES30.glCompileShader(shader);
++    int[] status = new int[1];
++    GLES30.glGetShaderiv(shader, GLES30.GL_COMPILE_STATUS, status, 0);
++    if (status[0] == 0) {
++      String log = GLES30.glGetShaderInfoLog(shader);
++      GLES30.glDeleteShader(shader);
++      throw new RuntimeException("Shader compile failed: " + log);
++    }
++    return shader;
++  }
++
++  private int createProgram(String v, String f) {
++    int vs = compileShader(GLES30.GL_VERTEX_SHADER, v);
++    int fs = compileShader(GLES30.GL_FRAGMENT_SHADER, f);
++    int p = GLES30.glCreateProgram();
++    GLES30.glAttachShader(p, vs);
++    GLES30.glAttachShader(p, fs);
++    GLES30.glLinkProgram(p);
++    GLES30.glDeleteShader(vs);
++    GLES30.glDeleteShader(fs);
++    int[] status = new int[1];
++    GLES30.glGetProgramiv(p, GLES30.GL_LINK_STATUS, status, 0);
++    if (status[0] == 0) {
++      String log = GLES30.glGetProgramInfoLog(p);
++      GLES30.glDeleteProgram(p);
++      throw new RuntimeException("Program link failed: " + log);
++    }
++    return p;
++  }
++}
+diff --git a/packages/SystemUI/src/com/android/systemui/wallpapers/haze/HazeSettings.java b/packages/SystemUI/src/com/android/systemui/wallpapers/haze/HazeSettings.java
+new file mode 100644
+index 0000000..e442302
+--- /dev/null
++++ b/packages/SystemUI/src/com/android/systemui/wallpapers/haze/HazeSettings.java
+@@ -0,0 +1,24 @@
++/*
++ * Copyright 2026 (C) VoltageOS
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package com.android.systemui.wallpapers.haze;
++
++public final class HazeSettings {
++  public static final String KEY_ENABLED = "haze_enabled";
++  public static final String KEY_STYLE = "haze_style";
++  public static final String KEY_INTENSITY = "haze_intensity";
++
++  private HazeSettings() {}
++}
+diff --git a/packages/SystemUI/src/com/android/systemui/wallpapers/haze/HazeShaders.java b/packages/SystemUI/src/com/android/systemui/wallpapers/haze/HazeShaders.java
+new file mode 100644
+index 0000000..b89b3c2
+--- /dev/null
++++ b/packages/SystemUI/src/com/android/systemui/wallpapers/haze/HazeShaders.java
+@@ -0,0 +1,154 @@
++/*
++ * Copyright 2026 (C) VoltageOS
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package com.android.systemui.wallpapers.haze;
++
++public class HazeShaders {
++  public static final String VERTEX_SHADER =
++      "#version 300 es\n"
++          + "in vec4 aPosition;\n"
++          + "in vec2 aTexCoord;\n"
++          + "out vec2 vTexCoord;\n"
++          + "void main() {\n"
++          + "    gl_Position = aPosition;\n"
++          + "    vTexCoord = aTexCoord;\n"
++          + "}\n";
++
++  public static final String KAWASE_DOWN_FRAGMENT_SHADER =
++      "#version 300 es\n"
++          + "precision mediump float;\n"
++          + "in vec2 vTexCoord;\n"
++          + "out vec4 fragColor;\n"
++          + "uniform sampler2D uTexture;\n"
++          + "uniform vec2 uResolution;\n"
++          + "uniform float uOffset;\n"
++          + "void main() {\n"
++          + "    vec2 halfpixel = uOffset / uResolution;\n"
++          + "    vec3 sum = texture(uTexture, vTexCoord).rgb * 4.0;\n"
++          + "    sum += texture(uTexture, vTexCoord - halfpixel).rgb;\n"
++          + "    sum += texture(uTexture, vTexCoord + halfpixel).rgb;\n"
++          + "    sum += texture(uTexture, vTexCoord + vec2(halfpixel.x, -halfpixel.y)).rgb;\n"
++          + "    sum += texture(uTexture, vTexCoord - vec2(halfpixel.x, -halfpixel.y)).rgb;\n"
++          + "    fragColor = vec4(sum / 8.0, 1.0);\n"
++          + "}\n";
++
++  public static final String KAWASE_UP_FRAGMENT_SHADER =
++      "#version 300 es\n"
++          + "precision mediump float;\n"
++          + "in vec2 vTexCoord;\n"
++          + "out vec4 fragColor;\n"
++          + "uniform sampler2D uTexture;\n"
++          + "uniform vec2 uResolution;\n"
++          + "uniform float uOffset;\n"
++          + "void main() {\n"
++          + "    vec2 halfpixel = uOffset / uResolution;\n"
++          + "    vec3 sum = texture(uTexture, vTexCoord + vec2(-halfpixel.x * 2.0, 0.0)).rgb;\n"
++          + "    sum += texture(uTexture, vTexCoord + vec2(-halfpixel.x, halfpixel.y)).rgb * 2.0;\n"
++          + "    sum += texture(uTexture, vTexCoord + vec2(0.0, halfpixel.y * 2.0)).rgb;\n"
++          + "    sum += texture(uTexture, vTexCoord + vec2(halfpixel.x, halfpixel.y)).rgb * 2.0;\n"
++          + "    sum += texture(uTexture, vTexCoord + vec2(halfpixel.x * 2.0, 0.0)).rgb;\n"
++          + "    sum += texture(uTexture, vTexCoord + vec2(halfpixel.x, -halfpixel.y)).rgb * 2.0;\n"
++          + "    sum += texture(uTexture, vTexCoord + vec2(0.0, -halfpixel.y * 2.0)).rgb;\n"
++          + "    sum += texture(uTexture, vTexCoord + vec2(-halfpixel.x, -halfpixel.y)).rgb *"
++          + " 2.0;\n"
++          + "    fragColor = vec4(sum / 12.0, 1.0);\n"
++          + "}\n";
++
++  public static final String HAZE_FRAGMENT_SHADER =
++      "#version 300 es\n"
++          + "precision highp float;\n"
++          + "in vec2 vTexCoord;\n"
++          + "out vec4 fragColor;\n"
++          + "uniform sampler2D uTextureSharp;\n"
++          + "uniform sampler2D uTextureBlur;\n"
++          + "#define MAX_BLOBS 16\n"
++          + "uniform vec3 uBlobColors[MAX_BLOBS];\n"
++          + "uniform vec2 uBlobPositions[MAX_BLOBS];\n"
++          + "uniform float uBlobSizes[MAX_BLOBS];\n"
++          + "uniform int uBlobCount;\n"
++          + "uniform float uAspectRatio;\n"
++          + "uniform float uBlurStrength;\n"
++          + "uniform float uDimLevel;\n"
++          + "uniform float uTime;\n"
++          + "uniform int uStyle;\n"
++          + "float IGN(vec2 p) {\n"
++          + "    vec3 magic = vec3(0.06711056, 0.00583715, 52.9829189);\n"
++          + "    return fract(magic.z * fract(dot(p, magic.xy)));\n"
++          + "}\n"
++          + "void main() {\n"
++          + "    float t = clamp(uBlurStrength, 0.0, 1.0);\n"
++          + "    vec2 uv = vTexCoord;\n"
++          + "    vec3 finalColor;\n"
++          + "    float cloud = 0.0;\n"
++          + "    if (uStyle == 0 || uStyle == 1 || uStyle == 4) {\n"
++          + "        vec3 sharp = texture(uTextureSharp, vTexCoord).rgb;\n"
++          + "        uv.x *= uAspectRatio;\n"
++          + "        vec2 bgUv = vTexCoord\n"
++          + "            + (0.006 * t) * vec2(sin(uTime * 0.05), cos(uTime * 0.041));\n"
++          + "        vec3 frosted = texture(uTextureBlur, bgUv).rgb;\n"
++          + "        finalColor = mix(sharp, frosted, smoothstep(0.0, 0.2, t));\n"
++          + "        cloud = smoothstep(0.15, 0.5, t);\n"
++          + "        if (cloud > 0.0 && uBlobCount > 0) {\n"
++          + "            vec3 cloudSum = vec3(0.0);\n"
++          + "            float cloudWeight = 0.0;\n"
++          + "            float blobOpacity = smoothstep(0.15, 0.3, t);\n"
++          + "            vec3 overlaidColor = vec3(0.0);\n"
++          + "            float accumulatedAlpha = 0.0;\n"
++          + "            for (int i = 0; i < MAX_BLOBS; i++) {\n"
++          + "                if (i >= uBlobCount) break;\n"
++          + "                float fi = float(i);\n"
++          + "                vec2 pos = uBlobPositions[i];\n"
++          + "                float depth = clamp(0.5 + 3.0 * uBlobSizes[i], 0.6, 1.4);\n"
++          + "                pos += (0.035 * depth) * vec2(\n"
++          + "                    sin(uTime * (0.11 + 0.017 * fi) + fi * 2.39),\n"
++          + "                    cos(uTime * (0.09 + 0.013 * fi) + fi * 1.73));\n"
++          + "                pos.x *= uAspectRatio;\n"
++          + "                vec2 diff = uv - pos;\n"
++          + "                float distSq = dot(diff, diff);\n"
++          + "                float s = uBlobSizes[i]\n"
++          + "                    * (1.0 + 0.15 * sin(uTime * (0.07 + 0.011 * fi) + fi * 3.1));\n"
++          + "                float w = (s * s) / (distSq + 0.003);\n"
++          + "                cloudSum += uBlobColors[i] * w;\n"
++          + "                cloudWeight += w;\n"
++          + "                float sizeSq = s * s;\n"
++          + "                if (distSq < sizeSq) {\n"
++          + "                    float dist = sqrt(distSq);\n"
++          + "                    float alpha = (1.0 - smoothstep(0.0, s, dist)) *"
++          + " blobOpacity;\n"
++          + "                    overlaidColor = mix(overlaidColor, uBlobColors[i], alpha);\n"
++          + "                    accumulatedAlpha = accumulatedAlpha + alpha * (1.0 -"
++          + " accumulatedAlpha);\n"
++          + "                }\n"
++          + "            }\n"
++          + "            if (cloudWeight > 0.0) {\n"
++          + "                finalColor = mix(finalColor, cloudSum / cloudWeight, cloud);\n"
++          + "            }\n"
++          + "            if (accumulatedAlpha > 0.0) {\n"
++          + "                finalColor = mix(finalColor, overlaidColor, accumulatedAlpha);\n"
++          + "            }\n"
++          + "        }\n"
++          + "        finalColor = mix(finalColor, vec3(0.0), uDimLevel * t);\n"
++          + "    } else {\n"
++          + "        vec3 sharpLod = textureLod(uTextureSharp, vTexCoord, t * 4.0).rgb;\n"
++          + "        vec3 frosted = texture(uTextureBlur, vTexCoord).rgb;\n"
++          + "        finalColor = mix(sharpLod, frosted, t);\n"
++          + "    }\n"
++          + "    if (t > 0.0) {\n"
++          + "        float grain = IGN(gl_FragCoord.xy + vec2(mod(uTime, 64.0) * 137.0));\n"
++          + "        finalColor += (grain - 0.5) * (mix(4.0, 14.0, cloud) / 255.0);\n"
++          + "    }\n"
++          + "    fragColor = vec4(finalColor, 1.0);\n"
++          + "}\n";
++}
+-- 
+2.49.0
+
