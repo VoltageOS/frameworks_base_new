@@ -25,6 +25,9 @@ import java.util.function.ToIntFunction;
  */
 public class ExtSettings {
 
+    public static final BoolSetting ALLOW_KEYGUARD_CAMERA = new BoolSetting(
+            Setting.Scope.SYSTEM_PROPERTY, "persist.keyguard.camera", true);
+
     public static final BoolSetting AUTO_GRANT_OTHER_SENSORS_PERMISSION = new BoolSetting(
             Setting.Scope.PER_USER, Settings.Secure.AUTO_GRANT_OTHER_SENSORS_PERMISSION, true);
 
