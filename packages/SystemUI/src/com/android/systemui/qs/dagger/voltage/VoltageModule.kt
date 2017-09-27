@@ -32,6 +32,7 @@ import com.android.systemui.qs.tiles.FPSInfoTile
 import com.android.systemui.qs.tiles.AmbientDisplayTile
 import com.android.systemui.qs.tiles.AODTile
 import com.android.systemui.qs.tiles.CaffeineTile
+import com.android.systemui.qs.tiles.CompassTile
 import com.android.systemui.qs.tiles.SoundTile
 import com.android.systemui.qs.tiles.UsbTetherTile
 import com.android.systemui.qs.tiles.VPNTetheringTile
@@ -71,6 +72,12 @@ interface VoltageModule {
     @IntoMap
     @StringKey(WifiTile.TILE_SPEC)
     fun bindWifiTile(wifiTile: WifiTile): QSTileImpl<*>
+
+    /** Inject CompassTile into tileMap in QSModule */
+    @Binds
+    @IntoMap
+    @StringKey(CompassTile.TILE_SPEC)
+    fun bindCompassTile(compassTile: CompassTile): QSTileImpl<*>
 
     /** Inject HeadsUpTile into tileMap in QSModule */
     @Binds
@@ -272,6 +279,21 @@ interface VoltageModule {
                 uiConfig = QSTileUIConfig.Resource(
                     iconRes = R.drawable.ic_qs_ringer_audible,
                     labelRes = R.string.quick_settings_sound_label
+                ),
+                instanceId = uiEventLogger.getNewInstanceId(),
+                category = TileCategory.UTILITIES
+            )
+        }
+
+       @Provides
+        @IntoMap
+        @StringKey(CompassTile.TILE_SPEC)
+        fun provideCompassConfig(uiEventLogger: QsEventLogger): QSTileConfig {
+            return QSTileConfig(
+                tileSpec = TileSpec.create(CompassTile.TILE_SPEC),
+                uiConfig = QSTileUIConfig.Resource(
+                    iconRes = R.drawable.ic_qs_compass,
+                    labelRes = R.string.quick_settings_compass_label
                 ),
                 instanceId = uiEventLogger.getNewInstanceId(),
                 category = TileCategory.UTILITIES
