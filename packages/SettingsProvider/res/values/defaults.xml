@@ -355,4 +355,6 @@
 
     <!-- Default for Settings.Global.AIRPLANE_MODE_SYNC -->
     <bool name="def_airplane_mode_sync_enabled">true</bool>
+
+    <integer name="def_ota_disable_automatic_update">1</integer>
 </resources>
