@@ -352,4 +352,6 @@
         devices without forcing it on other form factors.
     -->
     <bool name="def_text_show_password"></bool>
+
+    <integer name="def_ota_disable_automatic_update">1</integer>
 </resources>
