@@ -344,4 +344,6 @@
 
     <!-- Caps minsum contrast from -1.0 (Material API) to 0.0 (Android Support)-->
     <bool name="config_increaseMinContrast">true</bool>
+
+    <integer name="def_ota_disable_automatic_update">1</integer>
 </resources>
