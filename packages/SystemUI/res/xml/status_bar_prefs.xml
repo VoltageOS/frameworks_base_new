@@ -76,10 +76,11 @@
         android:key="mute"
         android:title="@string/volume_ringer_status_silent" />
 
-    <com.android.systemui.tuner.StatusBarSwitch
+    <com.android.systemui.tuner.TunerSwitch
+        android:key="status_bar_show_vibrate_icon"
+        android:title="@string/volume_ringer_status_vibrate"
         android:icon="@drawable/ic_statusbar_vibrate"
-        android:key="volume"
-        android:title="@string/volume_ringer_status_vibrate" />
+        sysui:defValue="true" />
 
     <com.android.systemui.tuner.StatusBarSwitch
         android:icon="@drawable/ic_statusbar_wifi"
