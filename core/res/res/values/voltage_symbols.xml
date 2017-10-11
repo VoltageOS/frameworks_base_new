@@ -87,6 +87,11 @@
     <!-- KeyboxImitationHooks -->
     <java-symbol type="array" name="config_certifiedKeybox" />
 
-  <!-- Power menu -->
-  <java-symbol type="array" name="config_restartActionsList" />
+    <!-- Power menu -->
+    <java-symbol type="array" name="config_restartActionsList" />
+
+    <!-- Device keyhandlers -->
+    <java-symbol type="array" name="config_deviceKeyHandlerLibs" />
+    <java-symbol type="array" name="config_deviceKeyHandlerClasses" />
+
 </resources>
