@@ -517,6 +517,7 @@ android_library {
         "keepanno-annotations",
     ],
     manifest: "AndroidManifest.xml",
+    additional_manifests: ["VoltageManifest.xml"],
 
     javacflags: [
         "-Adagger.fastInit=enabled",
