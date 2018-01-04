@@ -52,6 +52,7 @@ import com.android.systemui.mediaprojection.taskswitcher.MediaProjectionTaskSwit
 import com.android.systemui.shortcut.ShortcutKeyDispatcher
 import com.android.systemui.statusbar.ImmersiveModeConfirmation
 import com.android.systemui.statusbar.gesture.GesturePointerEventListener
+import com.android.systemui.smartpixels.SmartPixelsReceiver
 import com.android.systemui.statusbar.notification.InstantAppNotifier
 import com.android.systemui.statusbar.notification.headsup.StatusBarHeadsUpChangeListener
 import com.android.systemui.stylus.StylusUsiPowerStartable
@@ -316,6 +317,12 @@ abstract class SystemUICoreStartableModule {
     abstract fun bindDreamClockTimeComplicationRegistrant(
         registrant: DreamClockTimeComplication.Registrant
     ): CoreStartable
+
+    /** Inject into SmartPixelsReceiver.  */
+    @Binds
+    @IntoMap
+    @ClassKey(SmartPixelsReceiver::class)
+    abstract fun bindSmartPixelsReceiver(sysui: SmartPixelsReceiver): CoreStartable
 
     /** Inject into ComplicationTypesUpdater. */
     @Binds
