@@ -148,4 +148,7 @@
          charging enabled status regardless of the current status. -->
     <bool name="config_chargingControlToggleSetAlways">false</bool>
 
+    <!-- Whether the device supports Smart Pixels -->
+    <bool name="config_supportSmartPixels">false</bool>
+
 </resources>
