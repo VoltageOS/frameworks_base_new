@@ -521,5 +521,6 @@ public class SecureSettingsValidators {
         VALIDATORS.put(Secure.IDENTITY_CHECK_NOTIFICATION_VIEW_DETAILS_CLICKED,
                 new InclusiveIntegerRangeValidator(0, 1));
         VALIDATORS.put(Secure.KEYBOX_DATA, ANY_STRING_VALIDATOR);
+        VALIDATORS.put(Secure.ADVANCED_REBOOT, BOOLEAN_VALIDATOR);
     }
 }

@@ -69,4 +69,11 @@
         <item>RSA.CERT_3:</item>
       -->
     </string-array>
+
+    <!-- Defines the actions shown in advanced reboot submenu -->
+    <string-array name="config_restartActionsList">
+        <item>restart</item>
+        <item>restart_recovery</item>
+        <item>restart_bootloader</item>
+    </string-array>
 </resources>
