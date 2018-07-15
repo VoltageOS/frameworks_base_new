@@ -7057,6 +7057,18 @@ public final class Settings {
                 "screen_flash_notification_color_global";
 
         /**
+          * Whether to show the clock in the right or left position or show it in the
+          * center
+          * 0: show the clock in the left position (LTR)
+          * 1: show the clock in the center
+          * 2: show the clock in the right position (LTR)
+          * default: 0
+          *
+          * @hide
+          */
+         public static final String STATUS_BAR_CLOCK = "status_bar_clock";
+
+	/**
          * Whether or not volume button music controls should be enabled to seek media tracks
          * @hide
          */
@@ -7108,16 +7120,15 @@ public final class Settings {
          public static final String PROGRESS_BAR_OPACITY = "progress_bar_opacity";
 
         /**
-          * Whether to show the clock in the right or left position or show it in the
-          * center
-          * 0: show the clock in the left position (LTR)
-          * 1: show the clock in the center
-          * 2: show the clock in the right position (LTR)
+         * Display style of AM/PM next to clock in status bar
+          * 0: No display (Gingerbread/ICS stock)
+          * 1: Small display (Froyo stock)
+          * 2: Normal display (Eclair stock)
           * default: 0
           * 
           * @hide
           */
-         public static final String STATUS_BAR_CLOCK = "status_bar_clock";
+        public static final String STATUS_BAR_AM_PM = "status_bar_am_pm";
 
         /**
          * IMPORTANT: If you add a new public settings you also have to add it to

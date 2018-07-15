@@ -24,6 +24,7 @@ import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.content.res.TypedArray;
+import android.database.ContentObserver;
 import android.graphics.Rect;
 import android.icu.lang.UCharacter;
 import android.icu.text.DateTimePatternGenerator;
@@ -93,7 +94,8 @@ public class Clock extends TextView implements
     private static final int AM_PM_STYLE_SMALL   = 1;
     private static final int AM_PM_STYLE_GONE    = 2;
 
-    private final int mAmPmStyle;
+    private int mAmPmStyle = AM_PM_STYLE_GONE;
+    private ContentObserver mContentObserver;
     private boolean mShowSeconds;
     private Handler mSecondsHandler;
 
@@ -129,7 +131,22 @@ public class Clock extends TextView implements
                 R.styleable.Clock,
                 0, 0);
         try {
-            mAmPmStyle = a.getInt(R.styleable.Clock_amPmStyle, AM_PM_STYLE_GONE);
+            mAmPmStyle = Settings.System.getInt(mContext.getContentResolver(),
+                    Settings.System.STATUS_BAR_AM_PM, AM_PM_STYLE_GONE);
+            mContentObserver = new ContentObserver(null) {
+                @Override
+                public void onChange(boolean selfChange) {
+                    mAmPmStyle = Settings.System.getInt(
+                            mContext.getContentResolver(),
+                            Settings.System.STATUS_BAR_AM_PM, AM_PM_STYLE_GONE);
+                    // Force refresh of dependent variables.
+                    mContentDescriptionFormatString = "";
+                    mDateTimePatternGenerator = null;
+                    mContext.getMainExecutor().execute(() -> {
+                        updateClock(true);
+                    });
+                }
+            };
             mNonAdaptedColor = getCurrentTextColor();
         } finally {
             a.recycle();
@@ -191,6 +208,9 @@ public class Clock extends TextView implements
                     Dependency.get(Dependency.TIME_TICK_HANDLER), UserHandle.ALL);
             Dependency.get(TunerService.class).addTunable(this, CLOCK_SECONDS,
                     StatusBarIconController.ICON_HIDE_LIST);
+            mContext.getContentResolver().registerContentObserver(
+                    Settings.System.getUriFor(Settings.System.STATUS_BAR_AM_PM),
+                    false, mContentObserver);
             mUserTracker.addCallback(mUserChangedCallback, mContext.getMainExecutor());
             mCurrentUserId = mUserTracker.getUserId();
         }
@@ -219,6 +239,7 @@ public class Clock extends TextView implements
         if (mAttached) {
             mBroadcastDispatcher.unregisterReceiver(mIntentReceiver);
             mAttached = false;
+            mContext.getContentResolver().unregisterContentObserver(mContentObserver);
             Dependency.get(TunerService.class).removeTunable(this);
             mUserTracker.removeCallback(mUserChangedCallback);
         }
@@ -260,17 +281,58 @@ public class Clock extends TextView implements
         }
     };
 
-    final void updateClock() {
-        if (mDemoMode) return;
+    @Override
+    public void setVisibility(int visibility) {
+        if (!StatusBarRootModernization.isEnabled()) {
+            if (visibility == View.VISIBLE && !shouldBeVisible()) {
+                return;
+            }
+        }
+
+        super.setVisibility(visibility);
+    }
+
+    private void setClockVisibleByUser(boolean visible) {
+        StatusBarRootModernization.assertInLegacyMode();
+
+        mClockVisibleByUser = visible;
+        updateClockVisibility();
+    }
+
+    private void setClockVisibilityByPolicy(boolean visible) {
+        StatusBarRootModernization.assertInLegacyMode();
+
+        mClockVisibleByPolicy = visible;
+        updateClockVisibility();
+    }
+
+    private boolean shouldBeVisible() {
+        return mClockVisibleByPolicy && mClockVisibleByUser;
+    }
+
+    private void updateClockVisibility() {
+        StatusBarRootModernization.assertInLegacyMode();
+
+        boolean visible = shouldBeVisible();
+        int visibility = visible ? View.VISIBLE : View.GONE;
+        super.setVisibility(visibility);
+    }
+
+    final void updateClock(boolean forceTextUpdate) {
+        if (mDemoMode || mCalendar == null) return;
         mCalendar.setTimeInMillis(System.currentTimeMillis());
         CharSequence smallTime = getSmallTime();
         // Setting text actually triggers a layout pass (because the text view is set to
         // wrap_content width and TextView always relayouts for this). Avoid needless
         // relayout if the text didn't actually change.
-        if (!TextUtils.equals(smallTime, getText())) {
+        if (forceTextUpdate || !TextUtils.equals(smallTime, getText())) {
             setText(smallTime);
         }
         setContentDescription(mContentDescriptionFormat.format(mCalendar.getTime()));
+    }
+
+    final void updateClock() {
+        updateClock(false);
     }
 
     @Override
