@@ -1090,8 +1090,8 @@
     <string name="right_keycode" msgid="2480715509844798438">"Código de tecla à direita"</string>
     <string name="left_icon" msgid="5036278531966897006">"Ícone à esquerda"</string>
     <string name="right_icon" msgid="1103955040645237425">"Ícone à direita"</string>
-    <string name="drag_to_add_tiles" msgid="8933270127508303672">"Mantenha pressionado e arraste para adicionar blocos"</string>
-    <string name="drag_to_rearrange_tiles" msgid="2143204300089638620">"Para reorganizar, toque no bloco sem soltar e arraste"</string>
+    <string name="drag_to_rearrange_tiles" msgid="2143204300089638620">"Para reorganizar, toque no bloco sem soltar e arraste."</string>
+    <string name="drag_to_add_tiles" msgid="8933270127508303672">"Toque para adicionar ou remover blocos"</string>
     <string name="select_to_rearrange_tiles" msgid="6166153534235179148">"Selecione blocos para reorganizar e redimensionar"</string>
     <string name="tap_to_remove_tiles" msgid="76564688376603718">"Toque para remover os blocos"</string>
     <string name="resize_and_reorder_tiles" msgid="5530933353774871231">"Redimensionar e reorganizar o layout"</string>
