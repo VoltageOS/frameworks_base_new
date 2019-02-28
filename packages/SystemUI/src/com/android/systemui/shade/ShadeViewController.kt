@@ -42,6 +42,12 @@ interface ShadeViewController {
     fun setAlpha(alpha: Int, animate: Boolean)
 
     /**
+     * Returns whether the shade height is greater than zero or the shade is expecting a synthesized
+     * down event.
+     */
+    val isPanelExpanded: Boolean
+
+    /**
      * Sets the runnable to run after the alpha change animation completes.
      *
      * @see .setAlpha
