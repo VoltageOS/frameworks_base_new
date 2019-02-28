@@ -207,7 +207,9 @@ public interface CentralSurfaces extends Dumpable, LifecycleOwner, CoreStartable
 
     void onKeyguardViewManagerStatesUpdated();
 
-    /**  */
+    void toggleSettingsPanel();
+
+    /** */
     boolean getCommandQueuePanelsEnabled();
 
     void showWirelessChargingAnimation(int batteryLevel);
