@@ -383,6 +383,22 @@ interface ConnectivityModule {
                 category = TileCategory.CONNECTIVITY,
             )
 
+
+        @Provides
+        @IntoMap
+        @StringKey(NfcTile.TILE_SPEC)
+        fun provideNfcTileConfig(uiEventLogger: QsEventLogger): QSTileConfig =
+            QSTileConfig(
+                tileSpec = TileSpec.create(NfcTile.TILE_SPEC),
+                uiConfig =
+                    QSTileUIConfig.Resource(
+                        iconRes = R.drawable.ic_qs_nfc,
+                        labelRes = R.string.quick_settings_nfc_label,
+                    ),
+                instanceId = uiEventLogger.getNewInstanceId(),
+                category = TileCategory.CONNECTIVITY,
+            )
+
         @Provides
         @IntoMap
         @StringKey(BLUETOOTH_TILE_SPEC)
