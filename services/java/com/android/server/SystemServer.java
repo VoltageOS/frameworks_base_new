@@ -357,6 +357,9 @@ import com.android.server.custom.LineageHardwareService;
 
 import com.android.server.VoltageSystemExService;
 
+// LiveDisplay
+import com.android.server.custom.display.LiveDisplayService;
+
 /**
  * Entry point to {@code system_server}.
  */
@@ -2953,6 +2956,11 @@ public final class SystemServer implements Dumpable {
 	    // GameSpace
             t.traceBegin("GameSpaceManagerService");
             mSystemServiceManager.startService(GameSpaceManagerService.class);
+            t.traceEnd();
+
+            // LiveDisplay
+            t.traceBegin("StartLiveDisplayService");
+            mSystemServiceManager.startService(LiveDisplayService.class);
             t.traceEnd();
         }
 
