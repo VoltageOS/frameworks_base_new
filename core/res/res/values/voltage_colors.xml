@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-     Copyright (C) 2023 VoltageOS
+     Copyright (C) 2024 VoltageOS
      SPDX-License-Identifier: Apache-2.0
 -->
 <resources>
-
     <!-- Parallel space badge colors -->
     <color name="parallel_badge_1">#025fee</color>
     <color name="parallel_badge_2">#ee9002</color>
@@ -15,5 +14,4 @@
     <color name="parallel_badge_7">#7200b6</color>
     <color name="parallel_badge_8">#006f72</color>
     <color name="parallel_badge_9">#eed315</color>
-
 </resources>
