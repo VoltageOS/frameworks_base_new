@@ -275,5 +275,8 @@ public class SystemSettingsValidators {
         VALIDATORS.put(System.CV_ENABLED,
                 new InclusiveIntegerRangeValidator(0, 1));
         VALIDATORS.put(System.WAKE_WHEN_PLUGGED_OR_UNPLUGGED, BOOLEAN_VALIDATOR);
+        VALIDATORS.put(System.LOCKSCREEN_ROTATION, BOOLEAN_VALIDATOR);
+        VALIDATORS.put(System.ACCELEROMETER_ROTATION_ANGLES, NON_NEGATIVE_INTEGER_VALIDATOR);
+        VALIDATORS.put(System.SWIPE_TO_SCREENSHOT, BOOLEAN_VALIDATOR);
     }
 }

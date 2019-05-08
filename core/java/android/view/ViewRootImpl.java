@@ -8225,6 +8225,10 @@ public final class ViewRootImpl implements ViewParent,
                 mLastClickToolType = event.getToolType(event.getActionIndex());
             }
 
+            if (event.getPointerCount() == 3 && isSwipeToScreenshotGestureActive()) {
+                event.setAction(MotionEvent.ACTION_CANCEL);
+            }
+
             mAttachInfo.mUnbufferedDispatchRequested = false;
             mAttachInfo.mHandlingPointerEvent = true;
             // If the event was fully handled by the handwriting initiator, then don't dispatch it
@@ -13154,7 +13158,6 @@ public final class ViewRootImpl implements ViewParent,
         scheduleTraversals();
     }
 
-
     private void logAndTrace(String msg) {
         if (Trace.isTagEnabled(Trace.TRACE_TAG_VIEW)) {
             Trace.instant(Trace.TRACE_TAG_VIEW, mTag + "-" + msg);
@@ -13588,6 +13591,15 @@ public final class ViewRootImpl implements ViewParent,
         mHandler.removeMessages(MSG_TOUCH_BOOST_TIMEOUT);
         mHandler.sendEmptyMessageDelayed(MSG_TOUCH_BOOST_TIMEOUT,
                 boostTimeOut);
+
+    }
+
+    private boolean isSwipeToScreenshotGestureActive() {
+        try {
+            return ActivityManager.getService().isSwipeToScreenshotGestureActive();
+        } catch (RemoteException e) {
+            return false;
+        }
     }
 
     /**
