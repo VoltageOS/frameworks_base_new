@@ -776,6 +776,17 @@ public class VpnManager {
     }
 
     /**
+     * @hide
+     */
+    public VpnProfile[] getAllLegacyVpns() {
+        try {
+            return mService.getAllLegacyVpns();
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
      * Returns a list of the name suffixes of the vpn profiles owned by the calling uid in the vpn
      * database matching the given prefix, sorted in ascending order.
      *
