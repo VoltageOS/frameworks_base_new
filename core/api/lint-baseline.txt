@@ -1604,6 +1604,8 @@ UnflaggedApi: android.telecom.Call#setAudioProcessingUseCase(int):
     New API must be flagged with @FlaggedApi: method android.telecom.Call.setAudioProcessingUseCase(int)
 UnflaggedApi: android.telecom.Call.AudioProcessingUseCase:
     New API must be flagged with @FlaggedApi: class android.telecom.Call.AudioProcessingUseCase
+UnflaggedApi: android.provider.Settings.Secure#TETHERING_ALLOW_VPN_UPSTREAMS:
+    New API must be flagged with @FlaggedApi: field android.provider.Settings.Secure.TETHERING_ALLOW_VPN_UPSTREAMS
 UnflaggedApi: android.telecom.Call.Details#getId():
     New API must be flagged with @FlaggedApi: method android.telecom.Call.Details.getId()
 UnflaggedApi: android.telecom.Connection#STATE_AUDIO_PROCESSING:
