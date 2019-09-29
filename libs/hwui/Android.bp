@@ -83,6 +83,10 @@ cc_defaults {
         "external/skia/src/utils",
     ],
 
+    lto: {
+        thin: true,
+    },
+
     target: {
         android: {
             include_dirs: [
