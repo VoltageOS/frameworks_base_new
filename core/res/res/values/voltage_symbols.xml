@@ -201,4 +201,6 @@
     <java-symbol type="string" name="app_lock_credential_set_done" />
     <java-symbol type="string" name="app_lock_credential_cleared" />
 
+    <!-- Whether device has physical tri state switch -->
+    <java-symbol type="bool" name="config_hasAlertSlider" />
 </resources>
