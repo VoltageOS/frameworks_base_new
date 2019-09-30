@@ -6522,6 +6522,12 @@ public final class Settings {
          */
         public static final String CLICK_PARTIAL_SCREENSHOT = "click_partial_screenshot";
 
+	/**
+         * Whether to show or hide alert slider notifications on supported devices
+         * @hide
+         */
+        public static final String ALERT_SLIDER_NOTIFICATIONS = "alert_slider_notifications";
+
         /**
          * Network traffic indicator location
          * 0 = Disabled
