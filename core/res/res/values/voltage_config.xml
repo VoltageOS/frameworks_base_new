@@ -129,4 +129,8 @@
     </string>
     <string name="config_batterymeterRLandErrorPerimeterPath" translatable="false">@string/config_batterymeterRLandPerimeterPath</string>
 
+    <!-- Defines the sysfs attribute path used by pocket bridge
+         to communicate pocket state to the pocket judge kernel driver. -->
+    <string name="config_pocketBridgeSysfsInpocket"></string>
+
 </resources>
