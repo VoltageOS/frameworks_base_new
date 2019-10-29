@@ -89,6 +89,8 @@ import android.os.RemoteException;
 import android.os.Trace;
 import android.os.UserHandle;
 import android.os.UserManager;
+import android.pocket.IPocketCallback;
+import android.pocket.PocketManager;
 import android.provider.Settings;
 import android.service.dreams.IDreamManager;
 import android.telephony.CarrierConfigManager;
@@ -227,6 +229,9 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener, Dumpab
     private static final int MSG_KEYGUARD_DISMISS_ANIMATION_FINISHED = 346;
     private static final int MSG_SERVICE_PROVIDERS_UPDATED = 347;
     private static final int MSG_BIOMETRIC_ENROLLMENT_STATE_CHANGED = 348;
+
+    // Additional messages should be 600+
+    private static final int MSG_POCKET_STATE_CHANGED = 600;
 
     /** Biometric authentication state: Not listening. */
     @VisibleForTesting
@@ -427,6 +432,26 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener, Dumpab
     }
 
     private final Handler mHandler;
+    private PocketManager mPocketManager;
+    private boolean mIsDeviceInPocket;
+    private final IPocketCallback mPocketCallback = new IPocketCallback.Stub() {
+        @Override
+        public void onStateChanged(boolean isDeviceInPocket, int reason) {
+            boolean changed = false;
+            if (reason == PocketManager.REASON_SENSOR) {
+                if (isDeviceInPocket != mIsDeviceInPocket) {
+                    mIsDeviceInPocket = isDeviceInPocket;
+                    changed = true;
+                }
+            } else {
+                changed = isDeviceInPocket != mIsDeviceInPocket;
+                mIsDeviceInPocket = false;
+            }
+            if (changed) {
+                mHandler.sendEmptyMessage(MSG_POCKET_STATE_CHANGED);
+            }
+        }
+    };
 
     private final IBiometricEnabledOnKeyguardCallback mBiometricEnabledCallback =
             new IBiometricEnabledOnKeyguardCallback.Stub() {
@@ -2224,6 +2249,11 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener, Dumpab
         mJavaAdapter = javaAdapter;
         mSceneInteractor = sceneInteractor;
 
+        mPocketManager = (PocketManager) context.getSystemService(Context.POCKET_SERVICE);
+        if (mPocketManager != null) {
+            mPocketManager.addCallback(mPocketCallback);
+        }
+
         mHandler = new Handler(mainLooper) {
             @Override
             public void handleMessage(Message msg) {
@@ -2330,6 +2360,9 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener, Dumpab
                         break;
                     case MSG_BIOMETRIC_ENROLLMENT_STATE_CHANGED:
                         notifyAboutEnrollmentChange(msg.arg1);
+                        break;
+                    case MSG_POCKET_STATE_CHANGED:
+                        updateFingerprintListeningState(BIOMETRIC_ACTION_UPDATE);
                         break;
                     default:
                         super.handleMessage(msg);
@@ -2948,7 +2981,7 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener, Dumpab
 
         boolean shouldListen = shouldListenKeyguardState && shouldListenUserState
                 && shouldListenBouncerState && shouldListenUdfpsState && !mBiometricPromptShowing
-                && shouldListenFpsState;
+                && shouldListenFpsState && !mIsDeviceInPocket;
         logListenerModelData(
                 new KeyguardFingerprintListenModel(
                     System.currentTimeMillis(),
@@ -2989,7 +3022,6 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener, Dumpab
     public boolean shouldListenForFace() {
         return getFaceAuthInteractor() != null && getFaceAuthInteractor().canFaceAuthRun();
     }
-
 
     private void logListenerModelData(@NonNull KeyguardListenModel model) {
         mLogger.logKeyguardListenerModel(model);
