@@ -177,4 +177,7 @@
 
     <!-- Screenshot Tile -->
     <string name="screenshot_long_press">Long press - selected region</string>
+
+    <!-- DataSwitch Tile -->
+    <string name="qs_data_switch_label">Switch data card</string>
 </resources>
