@@ -195,4 +195,6 @@
     <!-- Content description indicating that tapping the element will allow deleting the screenshot [CHAR LIMIT=NONE] -->
     <string name="screenshot_delete_description">Delete screenshot</string>
 
+    <!-- DataSwitch Tile -->
+    <string name="qs_data_switch_label">Switch data card</string>
 </resources>
