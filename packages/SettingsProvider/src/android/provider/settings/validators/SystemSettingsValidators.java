@@ -283,5 +283,6 @@ public class SystemSettingsValidators {
                 new InclusiveFloatRangeValidator(
                         CV_PREFERRED_INTENSITY_MIN, CV_PREFERRED_INTENSITY_MAX));
         VALIDATORS.put(System.WAKE_WHEN_PLUGGED_OR_UNPLUGGED, BOOLEAN_VALIDATOR);
+        VALIDATORS.put(System.TOUCHSCREEN_GESTURE_HAPTIC_FEEDBACK, BOOLEAN_VALIDATOR);
     }
 }
