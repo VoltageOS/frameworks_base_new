@@ -94,4 +94,8 @@
 
     <!-- GameSpace -->
     <java-symbol type="string" name="gamespace_new_game_added" />
+
+    <!-- Light / Regular style fonts -->
+    <java-symbol type="string" name="config_lightFontFamily" />
+    <java-symbol type="string" name="config_regularFontFamily" />
 </resources>
