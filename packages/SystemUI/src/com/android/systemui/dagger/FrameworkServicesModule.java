@@ -130,6 +130,7 @@ import com.android.systemui.user.utils.UserScopedService;
 import com.android.systemui.user.utils.UserScopedServiceImpl;
 import com.android.systemui.utils.windowmanager.WindowManagerProvider;
 import com.android.systemui.utils.windowmanager.WindowManagerProviderImpl;
+import com.android.systemui.statusbar.policy.TaskHelper;
 
 import dagger.Module;
 import dagger.Provides;
@@ -803,6 +804,12 @@ public class FrameworkServicesModule {
     @Singleton
     static Optional<SatelliteManager> provideSatelliteManager(Context context) {
         return Optional.ofNullable(context.getSystemService(SatelliteManager.class));
+    }
+
+    @Provides
+    @Singleton
+    public TaskHelper provideTaskHelper(Context context) {
+        return new TaskHelper(context);
     }
 
     @Provides
