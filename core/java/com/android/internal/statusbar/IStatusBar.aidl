@@ -446,4 +446,6 @@ oneway interface IStatusBar
 
     /** Voltage additions. */
     void toggleCameraFlash();
+
+    void killForegroundApp();
 }
