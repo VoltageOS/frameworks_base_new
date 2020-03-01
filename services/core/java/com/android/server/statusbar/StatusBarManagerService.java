@@ -1300,6 +1300,15 @@ public class StatusBarManagerService extends IStatusBarService.Stub implements D
         }
     }
 
+    public void killForegroundApp() {
+        if (mBar != null) {
+            try {
+                mBar.killForegroundApp();
+            } catch (RemoteException ex) {
+            }
+        }
+    }
+
     @Override
     public void startTracing() {
         enforceValidCallingUser();
