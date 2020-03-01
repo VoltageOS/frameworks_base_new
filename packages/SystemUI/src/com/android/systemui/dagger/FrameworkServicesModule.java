@@ -134,6 +134,7 @@ import com.android.systemui.dagger.qualifiers.TestHarness;
 import com.android.systemui.shared.system.PackageManagerWrapper;
 import com.android.systemui.user.utils.UserScopedService;
 import com.android.systemui.user.utils.UserScopedServiceImpl;
+import com.android.systemui.statusbar.policy.TaskHelper;
 
 import dagger.Lazy;
 import dagger.Module;
@@ -808,6 +809,12 @@ public class FrameworkServicesModule {
     @Singleton
     static Optional<SatelliteManager> provideSatelliteManager(Context context) {
         return Optional.ofNullable(context.getSystemService(SatelliteManager.class));
+    }
+
+    @Provides
+    @Singleton
+    public TaskHelper provideTaskHelper(Context context) {
+        return new TaskHelper(context);
     }
 
     @Provides
