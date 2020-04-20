@@ -26,6 +26,7 @@ import com.android.systemui.qs.tiles.CellularTileLegacy
 import com.android.systemui.qs.tiles.WifiTileLegacy
 import com.android.systemui.qs.tiles.NfcTile
 import com.android.systemui.qs.tiles.HeadsUpTile
+import com.android.systemui.qs.tiles.PowerShareTile
 import com.android.systemui.qs.tiles.SyncTile
 import com.android.systemui.qs.tiles.CPUInfoTile
 import com.android.systemui.qs.tiles.FPSInfoTile
@@ -87,6 +88,12 @@ interface VoltageModule {
     @IntoMap
     @StringKey(HeadsUpTile.TILE_SPEC)
     fun bindHeadsUpTile(headsUpTile: HeadsUpTile): QSTileImpl<*>
+
+    /** Inject PowerShareTile into tileMap in QSModule */
+    @Binds
+    @IntoMap
+    @StringKey(PowerShareTile.TILE_SPEC)
+    fun bindPowerShareTile(powerShareTile: PowerShareTile): QSTileImpl<*>
 
     /** Inject ScreenshotTile into tileMap in QSModule */
     @Binds
@@ -315,6 +322,21 @@ interface VoltageModule {
                 uiConfig = QSTileUIConfig.Resource(
                     iconRes = R.drawable.ic_qs_compass,
                     labelRes = R.string.quick_settings_compass_label
+                ),
+                instanceId = uiEventLogger.getNewInstanceId(),
+                category = TileCategory.UTILITIES
+            )
+        }
+
+       @Provides
+        @IntoMap
+        @StringKey(PowerShareTile.TILE_SPEC)
+        fun providePowerShareConfig(uiEventLogger: QsEventLogger): QSTileConfig {
+            return QSTileConfig(
+                tileSpec = TileSpec.create(PowerShareTile.TILE_SPEC),
+                uiConfig = QSTileUIConfig.Resource(
+                    iconRes = R.drawable.ic_qs_powershare,
+                    labelRes = R.string.quick_settings_powershare_enabled_label  
                 ),
                 instanceId = uiEventLogger.getNewInstanceId(),
                 category = TileCategory.UTILITIES
