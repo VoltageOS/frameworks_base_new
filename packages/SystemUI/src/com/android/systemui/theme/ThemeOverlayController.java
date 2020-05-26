@@ -130,6 +130,8 @@ import javax.inject.Inject;
 public class ThemeOverlayController implements CoreStartable, Dumpable {
     protected static final String TAG = "ThemeOverlayController";
     private static final boolean DEBUG = false;
+    protected static final String OVERLAY_BERRY_BLACK_THEME =
+            "com.android.system.theme.black";
 
     private final ThemeOverlayApplier mThemeManager;
     private final UserManager mUserManager;
@@ -520,6 +522,27 @@ public class ThemeOverlayController implements CoreStartable, Dumpable {
             reevaluateSystemTheme(true /* forceReload */);
         });
 
+        mSecureSettings.registerContentObserverForUserSync(
+                Settings.Secure.getUriFor(Settings.Secure.BERRY_BLACK_THEME),
+                false,
+                new ContentObserver(mBgHandler) {
+                    @Override
+                    public void onChange(boolean selfChange, Collection<Uri> collection, int flags,
+                            int userId) {
+                        if (DEBUG) Log.d(TAG, "Overlay changed for user: " + userId);
+                        if (mUserTracker.getUserId() != userId) {
+                            return;
+                        }
+                        if (!mDeviceProvisionedController.isUserSetup(userId)) {
+                            Log.i(TAG, "Theme application deferred when setting changed.");
+                            mDeferredThemeEvaluation = true;
+                            return;
+                        }
+                        reevaluateSystemTheme(true /* forceReload */);
+                    }
+                },
+                UserHandle.USER_ALL);
+
         mUserTracker.addCallback(mUserTrackerCallback, mMainExecutor);
         mConfigurationController.addCallback(mConfigurationListener);
         mDeviceProvisionedController.addCallback(mDeviceProvisionedListener);
@@ -863,6 +886,14 @@ public class ThemeOverlayController implements CoreStartable, Dumpable {
         if (!categoryToPackage.containsKey(OVERLAY_CATEGORY_DYNAMIC_COLOR)
                 && mDynamicOverlay != null) {
             categoryToPackage.put(OVERLAY_CATEGORY_DYNAMIC_COLOR, mDynamicOverlay.getIdentifier());
+        }
+
+        boolean isBlackMode = (Settings.Secure.getIntForUser(
+                mContext.getContentResolver(), Settings.Secure.BERRY_BLACK_THEME,
+                0, currentUser) == 1) && isNightMode();
+        if (categoryToPackage.containsKey(OVERLAY_CATEGORY_SYSTEM_PALETTE) && isBlackMode) {
+            OverlayIdentifier blackTheme = new OverlayIdentifier(OVERLAY_BERRY_BLACK_THEME);
+            categoryToPackage.put(OVERLAY_CATEGORY_SYSTEM_PALETTE, blackTheme);
         }
 
         Set<UserHandle> managedProfiles = new HashSet<>();

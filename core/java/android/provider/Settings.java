@@ -13656,6 +13656,12 @@ public final class Settings {
          * @hide
          */
         public static final String AAPM_USB_DATA_PROTECTION = "aapm_usb_data_protection";
+
+	/**
+         * Whether to use black theme for dark mode
+         * @hide
+         */
+        public static final String BERRY_BLACK_THEME = "berry_black_theme";
     }
 
     /**
