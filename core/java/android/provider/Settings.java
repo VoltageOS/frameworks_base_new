@@ -13077,6 +13077,12 @@ public final class Settings {
          */
         @Readable
         public static final String CONTEXTUAL_SEARCH_PACKAGE = "contextual_search_package";
+
+        /**
+         * Whether to use black theme for dark mode
+         * @hide
+         */
+        public static final String BERRY_BLACK_THEME = "berry_black_theme";
     }
 
     /**
