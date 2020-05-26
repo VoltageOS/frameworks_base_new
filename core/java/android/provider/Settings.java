@@ -14117,6 +14117,12 @@ public final class Settings {
          */
         public static final String IDENTITY_CHECK_NOTIFICATION_VIEW_DETAILS_CLICKED =
                 "identity_check_notification_view_details_clicked";
+
+	/**
+         * Whether to use black theme for dark mode
+         * @hide
+         */
+        public static final String BERRY_BLACK_THEME = "berry_black_theme";
     }
 
     /**
