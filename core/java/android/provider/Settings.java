@@ -13304,6 +13304,12 @@ public final class Settings {
          * @hide
          */
         public static final String ADVANCED_PROTECTION_MODE = "advanced_protection_mode";
+
+	/**
+         * Whether to use black theme for dark mode
+         * @hide
+         */
+        public static final String BERRY_BLACK_THEME = "berry_black_theme";
     }
 
     /**
