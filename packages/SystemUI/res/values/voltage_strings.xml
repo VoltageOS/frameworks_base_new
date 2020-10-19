@@ -26,4 +26,9 @@
     <!-- Refresh rate QS tile -->
     <string name="refresh_rate_tile_label">Refresh rate</string>
     <string name="refresh_rate_unknown">Unknown</string>
+
+    <!-- Label for UI element which allows deleting the screenshot [CHAR LIMIT=30] -->
+    <string name="screenshot_delete_label">Delete</string>
+    <!-- Content description indicating that tapping the element will allow deleting the screenshot [CHAR LIMIT=NONE] -->
+    <string name="screenshot_delete_description">Delete screenshot</string>
 </resources>
