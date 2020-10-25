@@ -248,4 +248,6 @@ interface IStatusBarService
 
     /** Voltage additions. */
     void toggleCameraFlash();
+
+    void screenPinningStateChanged(boolean enabled);
 }
