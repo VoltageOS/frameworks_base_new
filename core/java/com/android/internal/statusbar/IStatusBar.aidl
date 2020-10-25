@@ -393,4 +393,7 @@ oneway interface IStatusBar
 
     /** Voltage additions. */
     void toggleCameraFlash();
+
+    void screenPinningStateChanged(boolean enabled);
+    void leftInLandscapeChanged(boolean isLeft);
 }

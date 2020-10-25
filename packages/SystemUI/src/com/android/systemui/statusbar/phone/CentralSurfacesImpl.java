@@ -161,6 +161,8 @@ import com.android.systemui.plugins.PluginManager;
 import com.android.systemui.plugins.qs.QS;
 import com.android.systemui.plugins.statusbar.StatusBarStateController;
 import com.android.systemui.power.domain.interactor.PowerInteractor;
+import com.android.systemui.pulse.PulseControllerImpl;
+import com.android.systemui.pulse.VisualizerView;
 import com.android.systemui.qs.QSFragmentLegacy;
 import com.android.systemui.qs.QSPanelController;
 import com.android.systemui.qs.composefragment.QSFragmentCompose;
@@ -467,6 +469,9 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
     private final UserTracker mUserTracker;
     private final Provider<FingerprintManager> mFingerprintManager;
     private final ActivityStarter mActivityStarter;
+
+    private final PulseControllerImpl mPulseController;
+    private VisualizerView mVisualizerView;
 
     private final DisplayMetrics mDisplayMetrics;
 
@@ -818,6 +823,8 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
         mBrightnessMirrorShowingInteractor = brightnessMirrorShowingInteractor;
         mGlanceableHubContainerController = glanceableHubContainerController;
         mEmergencyGestureIntentFactory = emergencyGestureIntentFactory;
+        mPulseController = new PulseControllerImpl(mContext, this,
+                mCommandQueue, mUiBgExecutor, mConfigurationController);
 
         mLockscreenShadeTransitionController = lockscreenShadeTransitionController;
         mStartingSurfaceOptional = startingSurfaceOptional;
@@ -1188,6 +1195,9 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
         mCommandQueueCallbacks = mCommandQueueCallbacksLazy.get();
         mCommandQueue.addCallback(mCommandQueueCallbacks);
 
+        // this will initialize Pulse and begin listening for media events
+        mMediaManager.addCallback(mPulseController);
+
         // TODO: Deal with the ugliness that comes from having some of the status bar broken out
         // into fragments, but the rest here, it leaves some awkward lifecycle and whatnot.
         ShadeExpansionChangeEvent currentState =
@@ -1317,6 +1327,8 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
                 }
             });
         }
+
+        mVisualizerView = (VisualizerView) getNotificationShadeWindowView().findViewById(R.id.visualizerview);
 
         mReportRejectedTouch = getNotificationShadeWindowView()
                 .findViewById(R.id.report_rejected_touch);
@@ -2259,6 +2271,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
         // bar.
         mKeyguardStateController.notifyKeyguardGoingAway(true);
         mCommandQueue.appTransitionPending(mDisplayId, true /* forced */);
+        mPulseController.notifyKeyguardGoingAway();
         updateScrimController();
     }
 
@@ -2347,6 +2360,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
                 || (mDozing && mDozeParameters.shouldControlScreenOff() && keyguardVisibleOrWillBe);
 
         mShadeSurface.setDozing(mDozing, animate);
+        mPulseController.setDozing(mDozing);
         Trace.endSection();
     }
 
@@ -3153,6 +3167,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
                     updateDozingState();
                     checkBarModes();
                     updateScrimController();
+                    mPulseController.setKeyguardShowing(mState == StatusBarState.KEYGUARD);
                     Trace.endSection();
                 }
 
@@ -3198,6 +3213,10 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
                     Trace.endSection();
                 }
             };
+
+    public VisualizerView getLsVisualizer() {
+        return mVisualizerView;
+    }
 
     private final BatteryController.BatteryStateChangeCallback mBatteryStateChangeCallback =
             new BatteryController.BatteryStateChangeCallback() {
