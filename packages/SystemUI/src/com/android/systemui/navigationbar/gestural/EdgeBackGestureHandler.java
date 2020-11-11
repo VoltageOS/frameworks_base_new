@@ -54,7 +54,9 @@ import android.os.RemoteException;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.Trace;
+import android.os.UserHandle;
 import android.provider.DeviceConfig;
+import android.provider.Settings;
 import android.util.ArraySet;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -78,6 +80,7 @@ import androidx.annotation.DimenRes;
 import com.android.internal.config.sysui.SystemUiDeviceConfigFlags;
 import com.android.internal.policy.GestureNavigationSettingsObserver;
 import com.android.systemui.LauncherProxyService;
+import com.android.systemui.Dependency;
 import com.android.systemui.contextualeducation.GestureType;
 import com.android.systemui.dagger.qualifiers.Background;
 import com.android.systemui.model.SysUiState;
@@ -96,6 +99,7 @@ import com.android.systemui.shared.system.TaskStackChangeListener;
 import com.android.systemui.shared.system.TaskStackChangeListeners;
 import com.android.systemui.statusbar.phone.LightBarController;
 import com.android.systemui.topui.TopUiController;
+import com.android.systemui.tuner.TunerService;
 import com.android.systemui.util.concurrency.BackPanelUiThread;
 import com.android.systemui.util.concurrency.UiThreadContext;
 import com.android.systemui.util.kotlin.JavaAdapter;
@@ -130,11 +134,14 @@ import javax.inject.Provider;
 /**
  * Utility class to handle edge swipes for back gesture
  */
-public class EdgeBackGestureHandler {
+public class EdgeBackGestureHandler implements TunerService.Tunable {
 
     private static final String TAG = "EdgeBackGestureHandler";
     private static final int MAX_LONG_PRESS_TIMEOUT = SystemProperties.getInt(
             "gestures.back_timeout", 250);
+
+    private static final String BACK_GESTURE_HEIGHT =
+            "system:" + Settings.System.BACK_GESTURE_HEIGHT;
 
     private static final int MAX_NUM_LOGGED_PREDICTIONS = 10;
     private static final int MAX_NUM_LOGGED_GESTURES = 10;
@@ -236,6 +243,8 @@ public class EdgeBackGestureHandler {
 
     private final JavaAdapter mJavaAdapter;
 
+    private final TunerService mTunerService;
+
     // The left side edge width where touch down is allowed
     private int mEdgeWidthLeft;
     // The right side edge width where touch down is allowed
@@ -287,6 +296,9 @@ public class EdgeBackGestureHandler {
     private int mRightInset;
     @SystemUiStateFlags
     private long mSysUiFlags;
+
+    private int mEdgeHeight;
+    private int mEdgeHeightSetting = 0;
 
     // For Tf-Lite model.
     private BackGestureTfClassifierProvider mBackGestureTfClassifierProvider;
@@ -492,6 +504,7 @@ public class EdgeBackGestureHandler {
         mLightBarControllerProvider = lightBarControllerProvider;
         mGestureInteractor = gestureInteractor;
         mJavaAdapter = javaAdapter;
+        mTunerService = Dependency.get(TunerService.class);
         mLastReportedConfig.setTo(mContext.getResources().getConfiguration());
         mDisplayManager = displayManager;
         mDisplayBackGestureHandlerFactory = displayBackGestureHandlerFactory;
@@ -588,6 +601,10 @@ public class EdgeBackGestureHandler {
         if (mMLEnableWidth > mEdgeWidthRight) mMLEnableWidth = mEdgeWidthRight;
         if (mMLEnableWidth > mEdgeWidthLeft) mMLEnableWidth = mEdgeWidthLeft;
 
+        mEdgeHeightSetting = Settings.System.getIntForUser(mContext.getContentResolver(),
+                        Settings.System.BACK_GESTURE_HEIGHT, 0, UserHandle.USER_CURRENT);
+        updateEdgeHeightValue();
+
         // Reduce the default touch slop to ensure that we can intercept the gesture
         // before the app starts to react to it.
         // TODO(b/130352502) Tune this value and extract into a constant
@@ -638,6 +655,7 @@ public class EdgeBackGestureHandler {
         }
         updateIsEnabled();
         mUserTracker.addCallback(mUserChangedCallback, mUiThreadContext.getExecutor());
+        mTunerService.addTunable(this, BACK_GESTURE_HEIGHT);
     }
 
     /**
@@ -651,6 +669,7 @@ public class EdgeBackGestureHandler {
         mTrackpadsConnected.clear();
         updateIsEnabled();
         mUserTracker.removeCallback(mUserChangedCallback);
+        mTunerService.removeTunable(this);
     }
 
     /**
@@ -824,6 +843,8 @@ public class EdgeBackGestureHandler {
                 for (Display display : mDisplayManager.getDisplays()) {
                     mDisplayBackGestureHandlers.put(display.getDisplayId(),
                             createDisplayBackGestureHandler(display));
+
+                    updateEdgeHeightValue();
                 }
 
                 // Begin listening to changes in blocked activities list
@@ -848,6 +869,34 @@ public class EdgeBackGestureHandler {
 
     public boolean isButtonForcedVisible() {
         return mIsButtonForcedVisible;
+    }
+
+    @Override
+    public void onTuningChanged(String key, String newValue) {
+        if (BACK_GESTURE_HEIGHT.equals(key)) {
+            mEdgeHeightSetting = TunerService.parseInteger(newValue, 0);
+            updateEdgeHeightValue();
+        }
+    }
+
+    private void updateEdgeHeightValue() {
+        if (mDisplaySize == null) {
+            return;
+        }
+        // mEdgeHeightSetting cant be range 0 - 3
+        // 0 means full height
+        // 1 measns half of the screen
+        // 2 means lower third of the screen
+        // 3 means lower sicth of the screen
+        if (mEdgeHeightSetting == 0) {
+            mEdgeHeight = mDisplaySize.y;
+        } else if (mEdgeHeightSetting == 1) {
+            mEdgeHeight = mDisplaySize.y / 2;
+        } else if (mEdgeHeightSetting == 2) {
+            mEdgeHeight = mDisplaySize.y / 3;
+        } else {
+            mEdgeHeight = mDisplaySize.y / 6;
+        }
     }
 
     /**
@@ -983,6 +1032,11 @@ public class EdgeBackGestureHandler {
         // Disallow if we are in the bottom gesture area
         if (y >= (mDisplaySize.y - mBottomGestureHeight)) {
             return false;
+        }
+        if (mEdgeHeight != 0) {
+            if (y < (mDisplaySize.y - mBottomGestureHeight - mEdgeHeight)) {
+                return false;
+            }
         }
         // If the point is way too far (twice the margin), it is
         // not interesting to us for logging purposes, nor we
@@ -1310,6 +1364,7 @@ public class EdgeBackGestureHandler {
         }
 
         updateBackAnimationThresholds();
+        updateEdgeHeightValue();
     }
 
     private void updateBackAnimationThresholds() {
