@@ -73,6 +73,10 @@ constructor(
             interactor.shouldShowFrontCamera = value
         }
 
+    val lowQuality: Boolean by interactor::lowQuality
+
+    val longerDuration: Boolean by interactor::longerDuration
+
     var shouldRecordDevice: Boolean
         get() =
             with(interactor) {
@@ -142,6 +146,14 @@ constructor(
 
     suspend fun onCameraHintShown() {
         screenCaptureCameraHintInteractor.onHintShown()
+    }
+
+    fun setLowQuality(lowQuality: Boolean) {
+        interactor.lowQuality = lowQuality
+    }
+
+    fun setLongerDuration(longerDuration: Boolean) {
+        interactor.longerDuration = longerDuration
     }
 
     @AssistedFactory
