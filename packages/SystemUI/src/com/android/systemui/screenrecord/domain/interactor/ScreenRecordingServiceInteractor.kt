@@ -59,3 +59,5 @@ constructor(private val repository: ScreenRecordingServiceRepository) {
         repository.updateParameters { copy(shouldShowTaps = shouldShowTaps) }
     }
 }
+    }
+}

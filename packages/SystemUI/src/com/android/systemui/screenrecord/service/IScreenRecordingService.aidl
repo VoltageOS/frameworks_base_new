@@ -26,7 +26,6 @@ interface IScreenRecordingService {
     void setCallback(IScreenRecordingServiceCallback callback);
 
     void stopRecording(int reason);
-
     void startRecording(in ScreenRecordingParameters parameters);
 
     void updateParameters(in ScreenRecordingParameters parameters);

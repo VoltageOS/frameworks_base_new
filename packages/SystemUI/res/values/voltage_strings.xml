@@ -255,4 +255,7 @@
     <!-- Bluetooth battery icon -->
     <string name="bluetooth_battery_icon_title">Bluetooth battery</string>
 
+    <!-- Screen record -->
+    <string name="screenrecord_lowquality_label">Lower quality</string>
+    <string name="screenrecord_lowquality_summary">For smaller file size</string>
 </resources>
