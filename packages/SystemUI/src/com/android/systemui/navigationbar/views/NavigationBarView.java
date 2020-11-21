@@ -583,6 +583,7 @@ public class NavigationBarView extends FrameLayout {
         if (!isBackDismissIme) {
             mTransitionListener.onBackDismissImeCleared();
         }
+    mEdgeBackGestureHandler.setImeVisible(isBackDismissIme);
     }
 
     void setDisabledFlags(int disabledFlags, SysUiState sysUiState) {
