@@ -1912,8 +1912,12 @@ public final class KeyGestureController {
                 case KeyGestureEvent.KEY_GESTURE_TYPE_TAKE_SCREENSHOT:
                     if (complete) {
                         mHandler.sendMessage(mHandler.obtainMessage(MSG_SCREENSHOT_SHORTCUT,
-                                SCREENSHOT_KEY_OTHER, event.getDisplayId()));
-                    }
+                        new TakeScreenshotData(
+                                2 /* SCREENSHOT_KEY_OTHER */,
+                                WindowManager.TAKE_SCREENSHOT_FULLSCREEN,
+                                event.getDisplayId()
+                        )));
+                     }
                     break;
                 case KeyGestureEvent.KEY_GESTURE_TYPE_SCREENSHOT_CHORD:
                     if (cancel) {

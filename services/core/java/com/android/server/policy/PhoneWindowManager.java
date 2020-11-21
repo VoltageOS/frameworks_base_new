@@ -6869,9 +6869,12 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         String action = intent.getAction();
         if (action != null) {
             if (VoltageUtils.INTENT_SCREENSHOT.equals(action)) {
-                interceptScreenshotChord(TAKE_SCREENSHOT_FULLSCREEN, SCREENSHOT_KEY_OTHER, 0);
-            } else if (VoltageUtils.INTENT_REGION_SCREENSHOT.equals(action)) {
-                interceptScreenshotChord(TAKE_SCREENSHOT_SELECTED_REGION, SCREENSHOT_KEY_OTHER, 0);
+                mInputManagerInternal.handleKeyGestureInKeyGestureController(
+                        new KeyGestureEvent.Builder()
+                                .setKeyGestureType(KeyGestureEvent.KEY_GESTURE_TYPE_TAKE_SCREENSHOT)
+                                .setAction(KeyGestureEvent.ACTION_GESTURE_COMPLETE)
+                                .setDisplayId(DEFAULT_DISPLAY)
+                                .build());
             }
         }
     }
