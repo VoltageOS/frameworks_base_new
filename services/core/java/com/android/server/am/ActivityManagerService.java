@@ -5285,7 +5285,7 @@ public class ActivityManagerService extends IActivityManager.Stub
     }
 
     private void showConsoleNotificationIfActive() {
-        if (!isUartEnabled()) {
+        if (!SystemProperties.get("init.svc.console").equals("running") || true) {
             return;
         }
         String title = mContext
