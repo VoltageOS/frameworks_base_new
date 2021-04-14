@@ -177,6 +177,7 @@ class DisplayDeviceRepository implements DisplayAdapter.Listener {
                         "handleDisplayDeviceChanged");
             }
             int diff = device.mDebugLastLoggedDeviceInfo.diff(info);
+            if (DEBUG) {
             if (diff == DisplayDeviceInfo.DIFF_STATE) {
                 Slog.i(TAG, "Display device changed state: \"" + info.name
                         + "\", " + Display.stateToString(info.state));
@@ -196,6 +197,7 @@ class DisplayDeviceRepository implements DisplayAdapter.Listener {
                 }
             } else if (diff != DisplayDeviceInfo.DIFF_HDR_SDR_RATIO) {
                 Slog.i(TAG, "Display device changed: " + info);
+                }
             }
 
             if ((diff & DisplayDeviceInfo.DIFF_COLOR_MODE) != 0) {
