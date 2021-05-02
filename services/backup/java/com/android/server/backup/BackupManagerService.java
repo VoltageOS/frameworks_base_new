@@ -42,6 +42,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.content.pm.UserInfo;
 import android.os.Binder;
 import android.os.FileUtils;
 import android.os.Handler;
@@ -54,6 +55,8 @@ import android.os.SystemProperties;
 import android.os.Trace;
 import android.os.UserHandle;
 import android.os.UserManager;
+import android.provider.Settings;
+import android.util.Log;
 import android.util.Slog;
 import android.util.SparseArray;
 
@@ -169,6 +172,19 @@ public class BackupManagerService extends IBackupManager.Stub implements BackupM
 
     private boolean mHasFirstUserUnlockedSinceBoot = false;
 
+    private final BroadcastReceiver mUserAddedReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (Intent.ACTION_USER_ADDED.equals(intent.getAction())) {
+                int userId = intent.getIntExtra(Intent.EXTRA_USER_HANDLE, UserHandle.USER_NULL);
+                Log.d(TAG, "new user added User ID : " + userId);
+                if (userId > 0) {
+                mHandler.post(() -> setBackupServiceActive(userId, true));
+                }
+            }
+        }
+    };
+
     public BackupManagerService(Context context) {
         mContext = context;
         mGlobalDisable = isBackupDisabled();
@@ -186,6 +202,36 @@ public class BackupManagerService extends IBackupManager.Stub implements BackupM
         UserHandle mainUser = getUserManager().getMainUser();
         mDefaultBackupUserId = mainUser == null ? UserHandle.USER_SYSTEM : mainUser.getIdentifier();
         Slog.d(TAG, "Default backup user id = " + mDefaultBackupUserId);
+
+        mContext.registerReceiver(
+                mUserAddedReceiver, new IntentFilter(Intent.ACTION_USER_ADDED));
+
+        if (shouldMigrateExistingUser(context)) {
+            List<UserInfo> managerUsers = mUserManager.getUsers();
+                for (UserInfo userInfo : managerUsers) {
+                    setBackupServiceActive(
+                        userInfo.getUserHandle().getIdentifier(),
+                        true
+                    );
+            }
+
+            markExistingUserMigrated(context);
+        }
+
+    }
+
+    private static final String PROFILE_MIGRATION_COMPLETED = "graphene_existing_users_migration";
+
+    private boolean markExistingUserMigrated(Context context) {
+        return Settings.Global.putInt(context.getContentResolver(), PROFILE_MIGRATION_COMPLETED, 1);
+    }
+
+    private boolean shouldMigrateExistingUser(Context context) {
+        return Settings.Global.getInt(
+                context.getContentResolver(),
+                PROFILE_MIGRATION_COMPLETED,
+                0
+            ) != 1;
     }
 
     @VisibleForTesting
