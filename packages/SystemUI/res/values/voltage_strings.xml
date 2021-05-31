@@ -220,4 +220,7 @@
     <string name="weather_condition_wind">Windy</string>
     <string name="weather_condition_mist">Misty</string>
 
+    <!-- Sleep Mode -->
+    <string name="quick_settings_sleep_mode_label">Sleep Mode</string>
+
 </resources>
