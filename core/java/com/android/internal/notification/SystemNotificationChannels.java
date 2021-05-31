@@ -74,6 +74,7 @@ public class SystemNotificationChannels {
     public static final String ACCESSIBILITY_SECURITY_POLICY = "ACCESSIBILITY_SECURITY_POLICY";
     public static final String ABUSIVE_BACKGROUND_APPS = "ABUSIVE_BACKGROUND_APPS";
     public static final String PARENTAL_CONTROLS = "PARENTAL_CONTROLS";
+    public static String SLEEP = "SLEEP";
 
     @VisibleForTesting
     static final String OBSOLETE_DO_NOT_DISTURB = "DO_NOT_DISTURB";
@@ -215,6 +216,11 @@ public class SystemNotificationChannels {
         otherUsers.setDescription(context.getString(R.string.notification_channel_other_users_description));
         otherUsers.setBlockable(true);
         channelsList.add(otherUsers);
+
+        NotificationChannel sleepModeChanges = new NotificationChannel(SLEEP,
+                context.getString(R.string.notification_channel_sleep),
+                NotificationManager.IMPORTANCE_LOW);
+        channelsList.add(sleepModeChanges);
 
         final NotificationChannel newFeaturePrompt = new NotificationChannel(
                 ACCESSIBILITY_MAGNIFICATION,
