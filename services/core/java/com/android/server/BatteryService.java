@@ -62,6 +62,7 @@ import android.os.UserHandle;
 import android.provider.Settings;
 import android.service.battery.BatteryServiceDumpProto;
 import android.sysprop.PowerProperties;
+import android.text.TextUtils;
 import android.util.EventLog;
 import android.util.Slog;
 import android.util.proto.ProtoOutputStream;
@@ -75,9 +76,12 @@ import com.android.server.health.HealthServiceWrapper;
 import com.android.server.lights.LightsManager;
 import com.android.server.lights.LogicalLight;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileDescriptor;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayDeque;
@@ -187,6 +191,10 @@ public final class BatteryService extends SystemService {
 
     private boolean mBatteryLevelLow;
 
+    private boolean mOemCharger;
+    private boolean mHasOemCharger;
+    private boolean mLastOemCharger;
+
     private long mDischargeStartTime;
     private int mDischargeStartLevel;
 
@@ -289,6 +297,12 @@ public final class BatteryService extends SystemService {
         mLed = new Led(context, getLocalService(LightsManager.class));
         mBatteryStats = BatteryStatsService.getService();
         mActivityManagerInternal = LocalServices.getService(ActivityManagerInternal.class);
+
+        mHasOemCharger = mContext.getResources().getBoolean(
+                com.android.internal.R.bool.config_hasDashCharger) ||
+                mContext.getResources().getBoolean(com.android.internal.R.bool.config_hasWarpCharger) ||
+                mContext.getResources().getBoolean(com.android.internal.R.bool.config_hasVoocCharger) ||
+                mContext.getResources().getBoolean(com.android.internal.R.bool.config_hasTurboPowerCharger);
 
         mCriticalBatteryLevel = mContext.getResources().getInteger(
                 com.android.internal.R.integer.config_criticalBatteryWarningLevel);
@@ -592,6 +606,8 @@ public final class BatteryService extends SystemService {
         shutdownIfNoPowerLocked();
         shutdownIfOverTempLocked();
 
+        mOemCharger = mHasOemCharger && isOemCharger();
+
         if (force || mHealthInfo.chargingPolicy != mLastChargingPolicy) {
             mLastChargingPolicy = mHealthInfo.chargingPolicy;
             mHandler.post(this::notifyChargingPolicyChanged);
@@ -610,6 +626,7 @@ public final class BatteryService extends SystemService {
                         || mHealthInfo.batteryChargeCounterUah != mLastChargeCounter
                         || mInvalidCharger != mLastInvalidCharger
                         || mHealthInfo.batteryCycleCount != mLastBatteryCycleCount
+                        || mOemCharger != mLastOemCharger
                         || mHealthInfo.chargingState != mLastChargingState
                         || mHealthInfo.batteryCapacityLevel != mLastBatteryCapacityLevel)) {
 
@@ -832,6 +849,7 @@ public final class BatteryService extends SystemService {
             mLastBatteryCycleCount = mHealthInfo.batteryCycleCount;
             mLastChargingState = mHealthInfo.chargingState;
             mLastBatteryCapacityLevel = mHealthInfo.batteryCapacityLevel;
+            mLastOemCharger = mOemCharger;
         }
     }
 
@@ -866,6 +884,7 @@ public final class BatteryService extends SystemService {
         intent.putExtra(BatteryManager.EXTRA_CYCLE_COUNT, mHealthInfo.batteryCycleCount);
         intent.putExtra(BatteryManager.EXTRA_CHARGING_STATUS, mHealthInfo.chargingState);
         intent.putExtra(BatteryManager.EXTRA_CAPACITY_LEVEL, mHealthInfo.batteryCapacityLevel);
+        intent.putExtra(BatteryManager.EXTRA_OEM_CHARGER, mOemCharger);
         if (DEBUG) {
             Slog.d(TAG, "Sending ACTION_BATTERY_CHANGED. scale:" + BATTERY_SCALE
                     + ", info:" + mHealthInfo.toString());
@@ -1009,6 +1028,34 @@ public final class BatteryService extends SystemService {
                 : mChargingPolicyChangeListeners) {
             listener.onChargingPolicyChanged(newPolicy);
         }
+    }
+
+    private boolean isOemCharger() {
+        String path = mContext.getResources().getString(
+                com.android.internal.R.string.config_oemFastChargerStatusPath);
+        String path2 = mContext.getResources().getString(
+                com.android.internal.R.string.config_oemFastChargerStatusPath2);
+        if (TextUtils.isEmpty(path) && TextUtils.isEmpty(path2))
+            return false;
+        String value = mContext.getResources().getString(
+                com.android.internal.R.string.config_oemFastChargerStatusValue);
+        if (TextUtils.isEmpty(value))
+            value = "1";
+        try {
+            boolean isFastCharge = false;
+            boolean isFastCharge2 = false;
+            if (!TextUtils.isEmpty(path)) {
+                isFastCharge = FileUtils.readTextFile(new File(path), value.length(), null).equals(value);
+            } 
+            if (!TextUtils.isEmpty(path2)) {
+                isFastCharge2 = FileUtils.readTextFile(new File(path2), value.length(), null).equals(value);
+            } 
+            return isFastCharge || isFastCharge2;
+        } catch (IOException e) {
+            Slog.e(TAG, "Failed to read oem fast charger status path: "
+                + path + " " + path2);
+        }
+        return false;
     }
 
     // TODO: Current code doesn't work since "--unplugged" flag in BSS was purposefully removed.
