@@ -19095,6 +19095,12 @@ public final class Settings {
         public static final String HEARING_DEVICE_LOCAL_NOTIFICATION =
                 "hearing_device_local_notification";
 
+	/**
+         * Package designated as global VPN provider.
+         * @hide
+         */
+        public static final String GLOBAL_VPN_APP = "global_vpn_app";
+
         /**
          * Global settings that shouldn't be persisted.
          *
