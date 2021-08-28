@@ -6917,6 +6917,11 @@ public final class Settings {
         public static final String VOLUME_ROCKER_WAKE = "volume_rocker_wake";
 
         /**
+         * @hide
+         */
+        public static final String RECENTS_LOCKED_TASKS = "recents_locked_tasks";
+
+        /**
          * Whether to show or hide alert slider notifications on supported devices
          * @hide
          */
