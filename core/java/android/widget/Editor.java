@@ -5030,7 +5030,7 @@ public class Editor {
          * animation is added to the jump.
          */
         private void show(final float x, final float y) {
-            final boolean startNewAnimation = mMagnifierIsShowing && y != mLastY;
+            final boolean startNewAnimation = false;
 
             if (startNewAnimation) {
                 if (mAnimator.isRunning()) {
