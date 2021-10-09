@@ -75,4 +75,8 @@
 
     <!-- Biometric view -->
     <dimen name="biometric_indicator_above_margin_bottom">8dp</dimen>
+
+    <!-- StatusBar burn-in protection -->
+    <dimen name="horizontal_max_shift">4dp</dimen>
+    <dimen name="vertical_max_shift">4dp</dimen>
 </resources>
