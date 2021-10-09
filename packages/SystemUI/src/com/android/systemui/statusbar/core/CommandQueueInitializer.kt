@@ -31,6 +31,7 @@ import com.android.systemui.dagger.SysUISingleton
 import com.android.systemui.display.dagger.SystemUIDisplaySubcomponent
 import com.android.systemui.navigationbar.NavigationBarController
 import com.android.systemui.statusbar.CommandQueue
+import com.android.systemui.statusbar.policy.BurnInProtectionController
 import dagger.Lazy
 import javax.inject.Inject
 
@@ -45,6 +46,7 @@ constructor(
     private val initController: InitController,
     private val barService: IStatusBarService,
     private val navigationBarController: NavigationBarController,
+    private val burnInProtectionController: BurnInProtectionController,
 ) : CoreStartable {
 
     override fun start() {
@@ -117,5 +119,8 @@ constructor(
 
     private fun createNavigationBar(result: RegisterStatusBarResult) {
         navigationBarController.createNavigationBars(/* includeDefaultDisplay= */ true, result)
+        burnInProtectionController.setNavigationBarView(
+            navigationBarController.getDefaultNavigationBarView()
+        )
     }
 }

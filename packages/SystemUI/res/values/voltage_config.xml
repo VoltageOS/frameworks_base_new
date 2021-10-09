@@ -108,4 +108,9 @@
 
     <!-- Whether key handler sends intent when changing slider position -->
     <string name="config_alertSliderIntent"></string>
+
+    <!-- Whether to enable burn-in protection for statusbar and navbar -->
+    <bool name="config_systemBarBurnInProtection">@*android:bool/config_enableBurnInProtection</bool>
+    <!-- Interval between subsequent shifting of statusbar and navbar contents, in seconds -->
+    <integer name="config_systemBarBurnInProtectionShiftInterval">60</integer>
 </resources>
