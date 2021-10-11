@@ -16,9 +16,18 @@
 
 package com.android.server.appop;
 
+import static android.app.AppOpsManager.OP_ACCEPT_HANDOVER;
 import static android.app.AppOpsManager.OP_ACCESS_ACCESSIBILITY;
+import static android.app.AppOpsManager.OP_ACCESS_MEDIA_LOCATION;
 import static android.app.AppOpsManager.OP_ACCESS_NOTIFICATIONS;
+import static android.app.AppOpsManager.OP_ACTIVITY_RECOGNITION;
+import static android.app.AppOpsManager.OP_ADD_VOICEMAIL;
+import static android.app.AppOpsManager.OP_ANSWER_PHONE_CALLS;
 import static android.app.AppOpsManager.OP_BIND_ACCESSIBILITY_SERVICE;
+import static android.app.AppOpsManager.OP_BLUETOOTH_ADVERTISE;
+import static android.app.AppOpsManager.OP_BLUETOOTH_CONNECT;
+import static android.app.AppOpsManager.OP_BLUETOOTH_SCAN;
+import static android.app.AppOpsManager.OP_CALL_PHONE;
 import static android.app.AppOpsManager.OP_CAMERA;
 import static android.app.AppOpsManager.OP_COARSE_LOCATION;
 import static android.app.AppOpsManager.OP_EMERGENCY_LOCATION;
@@ -26,20 +35,40 @@ import static android.app.AppOpsManager.OP_FINE_LOCATION;
 import static android.app.AppOpsManager.OP_FLAG_SELF;
 import static android.app.AppOpsManager.OP_FLAG_TRUSTED_PROXIED;
 import static android.app.AppOpsManager.OP_FLAG_TRUSTED_PROXY;
+import static android.app.AppOpsManager.OP_GET_ACCOUNTS;
 import static android.app.AppOpsManager.OP_GPS;
 import static android.app.AppOpsManager.OP_MONITOR_HIGH_POWER_LOCATION;
 import static android.app.AppOpsManager.OP_MONITOR_LOCATION;
 import static android.app.AppOpsManager.OP_PHONE_CALL_CAMERA;
 import static android.app.AppOpsManager.OP_PHONE_CALL_MICROPHONE;
+import static android.app.AppOpsManager.OP_PROCESS_OUTGOING_CALLS;
+import static android.app.AppOpsManager.OP_READ_CALENDAR;
+import static android.app.AppOpsManager.OP_READ_CALL_LOG;
+import static android.app.AppOpsManager.OP_READ_CELL_BROADCASTS;
+import static android.app.AppOpsManager.OP_READ_CONTACTS;
 import static android.app.AppOpsManager.OP_READ_DEVICE_IDENTIFIERS;
+import static android.app.AppOpsManager.OP_READ_EXTERNAL_STORAGE;
 import static android.app.AppOpsManager.OP_READ_HEART_RATE;
 import static android.app.AppOpsManager.OP_READ_OXYGEN_SATURATION;
+import static android.app.AppOpsManager.OP_READ_PHONE_NUMBERS;
+import static android.app.AppOpsManager.OP_READ_PHONE_STATE;
 import static android.app.AppOpsManager.OP_READ_SKIN_TEMPERATURE;
+import static android.app.AppOpsManager.OP_READ_SMS;
 import static android.app.AppOpsManager.OP_RECEIVE_AMBIENT_TRIGGER_AUDIO;
+import static android.app.AppOpsManager.OP_RECEIVE_MMS;
 import static android.app.AppOpsManager.OP_RECEIVE_SANDBOX_TRIGGER_AUDIO;
+import static android.app.AppOpsManager.OP_RECEIVE_SMS;
+import static android.app.AppOpsManager.OP_RECEIVE_WAP_PUSH;
 import static android.app.AppOpsManager.OP_RECORD_AUDIO;
 import static android.app.AppOpsManager.OP_RESERVED_FOR_TESTING;
 import static android.app.AppOpsManager.OP_RUN_IN_BACKGROUND;
+import static android.app.AppOpsManager.OP_SEND_SMS;
+import static android.app.AppOpsManager.OP_USE_SIP;
+import static android.app.AppOpsManager.OP_UWB_RANGING;
+import static android.app.AppOpsManager.OP_WRITE_CALENDAR;
+import static android.app.AppOpsManager.OP_WRITE_CALL_LOG;
+import static android.app.AppOpsManager.OP_WRITE_CONTACTS;
+import static android.app.AppOpsManager.OP_WRITE_EXTERNAL_STORAGE;
 
 import static java.lang.Long.min;
 import static java.lang.Math.max;
@@ -123,7 +152,44 @@ abstract class DiscreteOpsRegistry {
             + OP_PHONE_CALL_MICROPHONE + "," + OP_PHONE_CALL_CAMERA + ","
             + OP_RECEIVE_AMBIENT_TRIGGER_AUDIO + "," + OP_RECEIVE_SANDBOX_TRIGGER_AUDIO
             + "," + OP_READ_HEART_RATE + "," + OP_READ_OXYGEN_SATURATION + ","
-            + OP_READ_SKIN_TEMPERATURE + "," + OP_RESERVED_FOR_TESTING;
+            + OP_READ_SKIN_TEMPERATURE + "," + OP_RESERVED_FOR_TESTING
+            /*
+             * Keep track of more app ops for privacy dashboard display.
+             *
+             * Important: When the flags android.permission.flags.record_all_runtime_appops_sqlite
+             * and android.permission.flags.enable_sqlite_appops_accesses are enabled upstream, this
+             * LEGACY_OPS string might be removed entirely.
+             *
+             * From AppOpsManager.RUNTIME_AND_APPOP_PERMISSIONS_OPS:
+             * Location: COARSE_LOCATION, FINE_LOCATION
+             * Camera: CAMERA
+             * Microphone: RECORD_AUDIO
+             * Calendar: READ_CALENDAR, WRITE_CALENDAR
+             * Call logs: READ_CALL_LOG, WRITE_CALL_LOG
+             * Contacts: READ_CONTACTS, WRITE_CONTACTS, GET_ACCOUNTS
+             * Files and media: READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE, ACCESS_MEDIA_LOCATION
+             * Nearby devices: BLUETOOTH_SCAN, BLUETOOTH_CONNECT, BLUETOOTH_ADVERTISE, UWB_RANGING
+             * Phone: READ_PHONE_STATE, READ_PHONE_NUMBERS, CALL_PHONE, READ_CALL_LOG, WRITE_CALL_LOG, ADD_VOICEMAIL, USE_SIP, PROCESS_OUTGOING_CALLS, ANSWER_PHONE_CALLS, ACCEPT_HANDOVER
+             * Body sensors: ACTIVITY_RECOGNITION
+             * SMS: SEND_SMS, RECEIVE_SMS, READ_SMS, RECEIVE_WAP_PUSH, RECEIVE_MMS, READ_CELL_BROADCASTS
+             *
+             * From PrivacyItemController:
+             * Camera: PHONE_CALL_CAMERA
+             * Microphone: PHONE_CALL_MICROPHONE
+             */
+            + "," + OP_READ_CALENDAR + "," +
+            OP_WRITE_CALENDAR + "," + OP_READ_CALL_LOG + "," +
+            OP_READ_CONTACTS + "," + OP_WRITE_CONTACTS + "," + OP_GET_ACCOUNTS + "," +
+            OP_READ_EXTERNAL_STORAGE + "," + OP_WRITE_EXTERNAL_STORAGE + "," +
+            OP_ACCESS_MEDIA_LOCATION + "," + OP_BLUETOOTH_SCAN + "," + OP_BLUETOOTH_CONNECT + "," +
+            OP_BLUETOOTH_ADVERTISE + "," + OP_UWB_RANGING + "," + OP_READ_PHONE_STATE + "," +
+            OP_READ_PHONE_NUMBERS + "," + OP_CALL_PHONE + "," +
+            OP_WRITE_CALL_LOG + "," + OP_ADD_VOICEMAIL + "," + OP_USE_SIP + "," +
+            OP_PROCESS_OUTGOING_CALLS + "," + OP_ANSWER_PHONE_CALLS + "," + OP_ACCEPT_HANDOVER +
+            "," + OP_ACTIVITY_RECOGNITION + "," + OP_SEND_SMS + "," + OP_RECEIVE_SMS + "," +
+            OP_READ_SMS + "," + OP_RECEIVE_WAP_PUSH + "," + OP_RECEIVE_MMS + "," +
+            OP_READ_CELL_BROADCASTS
+            ;
 
     static final long DEFAULT_DISCRETE_HISTORY_CUTOFF = Duration.ofDays(7).toMillis();
     static final long MAXIMUM_DISCRETE_HISTORY_CUTOFF = Duration.ofDays(30).toMillis();
