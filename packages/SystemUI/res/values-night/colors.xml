@@ -22,7 +22,7 @@
     <color name="shade_header_text_color">#FFFFFFFF</color>
 
     <!-- The dark background color behind the shade -->
-    <color name="shade_scrim_background_dark">@androidprv:color/system_under_surface_dark</color>
+    <color name="shade_scrim_background_dark">@android:color/transparent</color>
     
     <color name="shade_tile_color">@android:color/system_neutral1_900</color>
     <color name="shade_tile_color_fallback">@android:color/system_neutral1_800</color>
