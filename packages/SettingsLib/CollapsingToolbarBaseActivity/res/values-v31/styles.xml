@@ -33,7 +33,7 @@
         <item name="maxLines">3</item>
         <item name="contentScrim">@color/settingslib_colorPrimaryBackground</item>
         <item name="statusBarScrim">@null</item>
-        <item name="scrimAnimationDuration">50</item>
+        <item name="scrimAnimationDuration">150</item>
     </style>
 
     <style name="CollapsingToolbarLayoutStyle.SettingsLib" parent="@style/Base.CollapsingToolbarLayoutStyle.SettingsLib">
