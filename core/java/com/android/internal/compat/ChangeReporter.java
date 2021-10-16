@@ -46,6 +46,7 @@ public class ChangeReporter {
     private static final String TAG = "CompatChangeReporter";
     private static final Function<Integer, Set<ChangeReport>> NEW_CHANGE_REPORT_SET =
             uid -> Collections.synchronizedSet(new HashSet<>());
+    private static final boolean DBG = false;
     private int mSource;
 
     private static final class ChangeReport {
@@ -258,6 +259,7 @@ public class ChangeReporter {
     }
 
     private void debugLog(int uid, long changeId, int state) {
+        if (!DBG) return;
         String message = formatSimple("Compat change id reported: %d; UID %d; state: %s", changeId,
                 uid, stateToString(state));
         if (mSource == SOURCE_SYSTEM_SERVER) {
