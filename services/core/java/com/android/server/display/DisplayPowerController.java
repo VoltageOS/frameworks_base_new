@@ -698,7 +698,7 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
     }
 
     private void handleOnSwitchUser(@UserIdInt int newUserId, int userSerial, float newBrightness) {
-        Slog.i(mTag, "Switching user newUserId=" + newUserId + " userSerial=" + userSerial
+        if (DEBUG) Slog.i(mTag, "Switching user newUserId=" + newUserId + " userSerial=" + userSerial
                 + " newBrightness=" + newBrightness);
 
         if (mAutomaticBrightnessController != null) {
@@ -1606,13 +1606,13 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
 
         // Log any changes to what is currently driving the brightness setting.
         if (!mBrightnessReasonTemp.equals(mBrightnessReason) || brightnessAdjustmentFlags != 0) {
-            Slog.v(mTag, "Brightness [" + brightnessState + "] reason changing to: '"
+            if (DEBUG) Slog.v(mTag, "Brightness [" + brightnessState + "] reason changing to: '"
                     + mBrightnessReasonTemp.toString(brightnessAdjustmentFlags)
                     + "', previous reason: '" + mBrightnessReason + "'.");
             mBrightnessReason.set(mBrightnessReasonTemp);
         } else if (mBrightnessReasonTemp.getReason() == BrightnessReason.REASON_MANUAL
                 && userSetBrightnessChanged) {
-            Slog.v(mTag, "Brightness [" + brightnessState + "] manual adjustment.");
+            if (DEBUG) Slog.v(mTag, "Brightness [" + brightnessState + "] manual adjustment.");
         }
 
 
@@ -1957,7 +1957,7 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
             Trace.asyncTraceBegin(Trace.TRACE_TAG_POWER, SCREEN_ON_BLOCKED_TRACE_NAME, 0);
             mPendingScreenOnUnblocker = new ScreenOnUnblocker();
             mScreenOnBlockStartRealTime = SystemClock.elapsedRealtime();
-            Slog.i(mTag, "Blocking screen on until initial contents have been drawn.");
+            if (DEBUG) Slog.i(mTag, "Blocking screen on until initial contents have been drawn.");
         }
     }
 
@@ -1965,7 +1965,7 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
         if (mPendingScreenOnUnblocker != null) {
             mPendingScreenOnUnblocker = null;
             long delay = SystemClock.elapsedRealtime() - mScreenOnBlockStartRealTime;
-            Slog.i(mTag, "Unblocked screen on after " + delay + " ms");
+            if (DEBUG) Slog.i(mTag, "Unblocked screen on after " + delay + " ms");
             Trace.asyncTraceEnd(Trace.TRACE_TAG_POWER, SCREEN_ON_BLOCKED_TRACE_NAME, 0);
         }
     }
@@ -1975,7 +1975,7 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
             Trace.asyncTraceBegin(Trace.TRACE_TAG_POWER, SCREEN_OFF_BLOCKED_TRACE_NAME, 0);
             mPendingScreenOffUnblocker = new ScreenOffUnblocker();
             mScreenOffBlockStartRealTime = SystemClock.elapsedRealtime();
-            Slog.i(mTag, "Blocking screen off");
+            if (DEBUG) Slog.i(mTag, "Blocking screen off");
         }
     }
 
@@ -1983,7 +1983,7 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
         if (mPendingScreenOffUnblocker != null) {
             mPendingScreenOffUnblocker = null;
             long delay = SystemClock.elapsedRealtime() - mScreenOffBlockStartRealTime;
-            Slog.i(mTag, "Unblocked screen off after " + delay + " ms");
+            if (DEBUG) Slog.i(mTag, "Unblocked screen off after " + delay + " ms");
             Trace.asyncTraceEnd(Trace.TRACE_TAG_POWER, SCREEN_OFF_BLOCKED_TRACE_NAME, 0);
         }
     }
@@ -2010,7 +2010,7 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
                     Trace.TRACE_TAG_POWER, SCREEN_ON_BLOCKED_BY_DISPLAYOFFLOAD_TRACE_NAME, 0);
             return;
         }
-        Slog.i(mTag, "Blocking screen on for offloading.");
+        if (DEBUG) Slog.i(mTag, "Blocking screen on for offloading.");
     }
 
     private void onDisplayOffloadUnblockScreenOn(DisplayOffloadSession displayOffloadSession) {
@@ -2025,7 +2025,7 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
         }
         mPendingScreenOnUnblockerByDisplayOffload = null;
         long delay = SystemClock.elapsedRealtime() - mScreenOnBlockByDisplayOffloadStartRealTime;
-        Slog.i(mTag, "Unblocked screen on for offloading after " + delay + " ms");
+        if (DEBUG) Slog.i(mTag, "Unblocked screen on for offloading after " + delay + " ms");
         Trace.asyncTraceEnd(
                 Trace.TRACE_TAG_POWER, SCREEN_ON_BLOCKED_BY_DISPLAYOFFLOAD_TRACE_NAME, 0);
     }
@@ -3009,7 +3009,7 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
                         Settings.System.SCREEN_BRIGHTNESS_FOR_ALS,
                         Settings.System.SCREEN_BRIGHTNESS_AUTOMATIC_NORMAL,
                         UserHandle.USER_CURRENT);
-                Slog.i(mTag, "Setting up auto-brightness for preset "
+                if (DEBUG) Slog.i(mTag, "Setting up auto-brightness for preset "
                         + autoBrightnessPresetToString(preset));
                 setUpAutoBrightness(mContext, mHandler);
                 sendUpdatePowerState();

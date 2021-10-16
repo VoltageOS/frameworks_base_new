@@ -480,7 +480,7 @@ import java.util.stream.Collectors;
 /** @hide */
 public class NotificationManagerService extends SystemService {
     public static final String TAG = "NotificationService";
-    public static final boolean DBG = Log.isLoggable(TAG, Log.DEBUG);
+    public static final boolean DBG = false;
     public static final boolean ENABLE_CHILD_NOTIFICATIONS
             = SystemProperties.getBoolean("debug.child_notifs", true);
 
@@ -1570,9 +1570,9 @@ public class NotificationManagerService extends SystemService {
                         .addTaggedData(MetricsEvent.NOTIFICATION_SHADE_COUNT, nv.count));
                 mNotificationRecordLogger.log(
                         NotificationRecordLogger.NotificationEvent.NOTIFICATION_CLICKED, r);
-                EventLogTags.writeNotificationClicked(key,
+                /* EventLogTags.writeNotificationClicked(key,
                         r.getLifespanMs(now), r.getFreshnessMs(now), r.getExposureMs(now),
-                        nv.rank, nv.count);
+                        nv.rank, nv.count); */
 
                 StatusBarNotification sbn = r.getSbn();
                 Notification notification = sbn.getNotification();
@@ -1723,7 +1723,7 @@ public class NotificationManagerService extends SystemService {
             MetricsLogger.histogram(getContext(), "note_load", items);
             mNotificationRecordLogger.log(
                     NotificationRecordLogger.NotificationPanelEvent.NOTIFICATION_PANEL_OPEN);
-            EventLogTags.writeNotificationPanelRevealed(items);
+            // EventLogTags.writeNotificationPanelRevealed(items);
             if (clearEffects) {
                 clearEffects();
             }
@@ -1735,7 +1735,7 @@ public class NotificationManagerService extends SystemService {
             MetricsLogger.hidden(getContext(), MetricsEvent.NOTIFICATION_PANEL);
             mNotificationRecordLogger.log(
                     NotificationRecordLogger.NotificationPanelEvent.NOTIFICATION_PANEL_CLOSE);
-            EventLogTags.writeNotificationPanelHidden();
+            //EventLogTags.writeNotificationPanelHidden();
             mAssistants.onPanelHidden();
         }
 
@@ -8305,7 +8305,7 @@ public class NotificationManagerService extends SystemService {
             }
 
             addAutoGroupAdjustment(r, groupName);
-            EventLogTags.writeNotificationAutogrouped(key);
+            //EventLogTags.writeNotificationAutogrouped(key);
 
             if (requestSort) {
                 mRankingHandler.requestSort();
@@ -10845,9 +10845,9 @@ public class NotificationManagerService extends SystemService {
                         enqueueStatus = EVENTLOG_ENQUEUE_STATUS_UPDATE;
                     }
                     int appProvided = isAppProvided ? 1 : 0;
-                    EventLogTags.writeNotificationEnqueue(callingUid, callingPid,
+                    /* EventLogTags.writeNotificationEnqueue(callingUid, callingPid,
                             pkg, id, tag, userId, notification.toString(),
-                            enqueueStatus, appProvided);
+                            enqueueStatus, appProvided); */
                 }
 
                 // tell the assistant service about the notification
@@ -12155,9 +12155,9 @@ public class NotificationManagerService extends SystemService {
                     .addTaggedData(MetricsEvent.NOTIFICATION_SHADE_COUNT, count);
         }
         MetricsLogger.action(logMaker);
-        EventLogTags.writeNotificationCanceled(canceledKey, reason,
+        /* EventLogTags.writeNotificationCanceled(canceledKey, reason,
                 r.getLifespanMs(now), r.getFreshnessMs(now), r.getExposureMs(now),
-                rank, count, listenerName);
+                rank, count, listenerName); */
         if (wasPosted) {
             mNotificationRecordLogger.logNotificationCancelled(r, reason,
                     r.getStats().getDismissalSurface());
@@ -12395,9 +12395,9 @@ public class NotificationManagerService extends SystemService {
         mHandler.post(new Runnable() {
             @Override
             public void run() {
-                EventLogTags.writeNotificationCancelAll(callingUid, callingPid,
+                /* EventLogTags.writeNotificationCancelAll(callingUid, callingPid,
                         pkg, userId, mustHaveFlags, mustNotHaveFlags, reason,
-                        /* listener= */ null);
+                        /* listener= null); */
 
                 synchronized (mNotificationLock) {
                     FlagChecker flagChecker =
@@ -12648,8 +12648,8 @@ public class NotificationManagerService extends SystemService {
                 synchronized (mNotificationLock) {
                     String listenerName =
                             listener == null ? null : listener.component.toShortString();
-                    EventLogTags.writeNotificationCancelAll(callingUid, callingPid,
-                            null, userId, 0, 0, reason, listenerName);
+                   /*  EventLogTags.writeNotificationCancelAll(callingUid, callingPid,
+                            null, userId, 0, 0, reason, listenerName); */
 
                     FlagChecker flagChecker = (int flags) -> {
                         int flagsToCheck = mustNotHaveFlags;
@@ -12713,8 +12713,8 @@ public class NotificationManagerService extends SystemService {
             if (grouChildChecker.apply(childR, userId, pkg, groupKey)
                 && (flagChecker == null || flagChecker.apply(childR.getFlags()))
                 && (!isPromotedOutOfGroup(childR) || reason != REASON_CANCEL)) {
-                EventLogTags.writeNotificationCancel(callingUid, callingPid, pkg, childSbn.getId(),
-                        childSbn.getTag(), userId, 0, 0, childReason, listenerName);
+                /*EventLogTags.writeNotificationCancel(callingUid, callingPid, pkg, childSbn.getId(),
+                        childSbn.getTag(), userId, 0, 0, childReason, listenerName); */
                 notificationList.remove(i);
                 mNotificationsByKey.remove(childR.getKey());
                 cancelNotificationLocked(childR, sendDelete, childReason, wasPosted, listenerName,
