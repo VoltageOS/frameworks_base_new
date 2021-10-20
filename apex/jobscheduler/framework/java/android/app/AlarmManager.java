@@ -1061,6 +1061,12 @@ public class AlarmManager {
             flags &= ~FLAG_PRIORITIZE;
         }
 
+        if (mPackageName.equals("com.google.android.gms")) {
+            if (windowMillis == WINDOW_EXACT && !canScheduleExactAlarms()) {
+                windowMillis = WINDOW_HEURISTIC;
+            }
+        }
+
         if (triggerAtMillis < 0) {
             /* NOTYET
             if (mAlwaysExact) {
