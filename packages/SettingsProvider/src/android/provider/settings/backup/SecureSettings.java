@@ -349,5 +349,7 @@ public class SecureSettings {
         Settings.Secure.LIGHT_ANIMATION_FAVORITE_CALLS_ENABLED,
         Settings.Secure.IME_SWITCHER_BUTTON_IN_NAVBAR_ENABLED,
         Settings.Secure.RAISE_TRIGGER_DEFAULT_ASSISTANT,
+        Settings.Secure.TORCH_DOUBLE_TAP_POWER_GESTURE_ENABLED,
+        Settings.Secure.TORCH_LONG_PRESS_POWER
     };
 }
