@@ -59,6 +59,7 @@ import com.android.internal.logging.UiEvent;
 import com.android.internal.logging.UiEventLogger;
 import com.android.internal.logging.UiEventLoggerImpl;
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
+import com.android.internal.util.voltage.VoltageUtils;
 import com.android.server.statusbar.StatusBarManagerInternal;
 import com.android.server.wm.WindowManagerInternal;
 
@@ -194,6 +195,11 @@ public class GestureLauncherService extends SystemService {
     private boolean mWalletDoubleTapPowerEnabled;
 
     /**
+     * Whether torch double tap power button gesture is currently enabled;
+     */
+    private boolean mTorchDoubleTapPowerEnabled;
+
+    /**
      * Whether emergency gesture is currently enabled
      */
     private boolean mEmergencyGestureEnabled;
@@ -309,6 +315,9 @@ public class GestureLauncherService extends SystemService {
                         Settings.Secure.CAMERA_DOUBLE_TAP_POWER_GESTURE_DISABLED),
                 false, mSettingObserver, mUserId);
         mContext.getContentResolver().registerContentObserver(
+                Settings.Secure.getUriFor(Settings.Secure.TORCH_DOUBLE_TAP_POWER_GESTURE_ENABLED),
+                false, mSettingObserver, mUserId);
+        mContext.getContentResolver().registerContentObserver(
                 Settings.Secure.getUriFor(Settings.Secure.CAMERA_LIFT_TRIGGER_ENABLED),
                 false, mSettingObserver, mUserId);
         mContext.getContentResolver().registerContentObserver(
@@ -340,6 +349,14 @@ public class GestureLauncherService extends SystemService {
         boolean enabled = isCameraDoubleTapPowerSettingEnabled(mContext, mUserId);
         synchronized (this) {
             mCameraDoubleTapPowerEnabled = enabled;
+        }
+    }
+
+    private void updateTorchDoubleTapPowerEnabled() {
+        final boolean enabled = Settings.Secure.getIntForUser(mContext.getContentResolver(),
+            Settings.Secure.TORCH_DOUBLE_TAP_POWER_GESTURE_ENABLED, 0, mUserId) == 1;
+        synchronized (this) {
+            mTorchDoubleTapPowerEnabled = enabled;
         }
     }
 
@@ -666,6 +683,7 @@ public class GestureLauncherService extends SystemService {
         boolean launchWallet = false;
         boolean launchEmergencyGesture = false;
         boolean intercept = false;
+        boolean toggleFlashlight = false;
         long powerTapInterval;
         synchronized (this) {
             powerTapInterval = event.getEventTime() - mLastPowerDown;
@@ -719,19 +737,21 @@ public class GestureLauncherService extends SystemService {
                     }
                 }
             }
-            if (mCameraDoubleTapPowerEnabled
-                    && powerTapInterval < POWER_DOUBLE_TAP_MAX_TIME_MS
+            if (powerTapInterval < POWER_DOUBLE_TAP_MAX_TIME_MS
                     && mPowerButtonConsecutiveTaps == DOUBLE_POWER_TAP_COUNT_THRESHOLD) {
-                launchCamera = true;
-                intercept = interactive;
-            } else if (launchWalletOptionOnPowerDoubleTap()
-                    && mWalletDoubleTapPowerEnabled
-                    && powerTapInterval < POWER_DOUBLE_TAP_MAX_TIME_MS
-                    && mPowerButtonConsecutiveTaps == DOUBLE_POWER_TAP_COUNT_THRESHOLD) {
-                launchWallet = true;
-                intercept = interactive;
+                if (mCameraDoubleTapPowerEnabled) {
+                    launchCamera = true;
+                    intercept = interactive;
+                } else if (mTorchDoubleTapPowerEnabled) {
+                    toggleFlashlight = true;
+                    intercept = interactive;
+                } else if (launchWalletOptionOnPowerDoubleTap() && mWalletDoubleTapPowerEnabled) {
+                    launchWallet = true;
+                    intercept = interactive;
+                }
             }
         }
+
         if (mPowerButtonConsecutiveTaps > 1 || mPowerButtonSlowConsecutiveTaps > 1) {
             Slog.i(TAG, Long.valueOf(mPowerButtonConsecutiveTaps)
                     + " consecutive power button taps detected, "
@@ -753,6 +773,8 @@ public class GestureLauncherService extends SystemService {
                     + powerTapInterval + "ms");
             launchWallet = launchWalletViaSysuiCallbacks() ?
                     handleWalletGesture() : sendGestureTargetActivityPendingIntent();
+        } else if (toggleFlashlight) {
+            VoltageUtils.toggleCameraFlash();
         } else if (launchEmergencyGesture) {
             Slog.i(TAG, "Emergency gesture detected, launching.");
             launchEmergencyGesture = handleEmergencyGesture();
@@ -768,7 +790,7 @@ public class GestureLauncherService extends SystemService {
                 mPowerButtonSlowConsecutiveTaps);
         mMetricsLogger.histogram("power_double_tap_interval", (int) powerTapInterval);
 
-        outLaunched.value = launchCamera || launchEmergencyGesture || launchWallet;
+        outLaunched.value = launchCamera || toggleFlashlight || launchEmergencyGesture || launchWallet;
         // Intercept power key event if the press is part of a gesture (camera, eGesture) and the
         // user has completed setup.
         return intercept && isUserSetupComplete();
@@ -943,6 +965,7 @@ public class GestureLauncherService extends SystemService {
                 registerContentObservers();
                 updateCameraRegistered();
                 updateCameraDoubleTapPowerEnabled();
+                updateTorchDoubleTapPowerEnabled();
                 if (launchWalletOptionOnPowerDoubleTap()) {
                     updateWalletDoubleTapPowerEnabled();
                 }
@@ -957,6 +980,7 @@ public class GestureLauncherService extends SystemService {
             if (userId == mUserId) {
                 updateCameraRegistered();
                 updateCameraDoubleTapPowerEnabled();
+                updateTorchDoubleTapPowerEnabled();
                 if (launchWalletOptionOnPowerDoubleTap()) {
                     updateWalletDoubleTapPowerEnabled();
                 }
