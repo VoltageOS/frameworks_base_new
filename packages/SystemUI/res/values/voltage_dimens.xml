@@ -78,4 +78,7 @@
     <!-- The height of the WiFi toggle layout in Internet panel -->
     <dimen name="internet_dialog_wifi_toggle_height">56dp</dimen>
 
+    <!-- Udfps fingerprint animation -->
+    <dimen name="udfps_animation_size">200dp</dimen>
+    <dimen name="udfps_animation_offset">0dp</dimen>
 </resources>
