@@ -862,6 +862,10 @@
     <!-- Added in 26Q2 -->
     <protected-broadcast android:name="android.telephony.action.STK_SETUP_EVENT_LIST" />
 
+    <!-- GameSpace -->
+    <protected-broadcast android:name="io.chaldeaprjkt.gamespace.action.GAME_START" />
+    <protected-broadcast android:name="io.chaldeaprjkt.gamespace.action.GAME_STOP" />
+
     <!-- ====================================================================== -->
     <!--                          RUNTIME PERMISSIONS                           -->
     <!-- ====================================================================== -->
