@@ -876,6 +876,10 @@
     <protected-broadcast android:name="android.app.action.DYNAMIC_BUNDLE_MODIFIED" />
     <protected-broadcast android:name="android.app.action.BRIDGED_NOTIFICATION_PREFERENCES" />
 
+    <!-- GameSpace -->
+    <protected-broadcast android:name="io.chaldeaprjkt.gamespace.action.GAME_START" />
+    <protected-broadcast android:name="io.chaldeaprjkt.gamespace.action.GAME_STOP" />
+
     <!-- ====================================================================== -->
     <!--                          RUNTIME PERMISSIONS                           -->
     <!-- ====================================================================== -->
