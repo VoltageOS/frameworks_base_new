@@ -101,7 +101,7 @@ constructor(
         private const val VELOCITY_SCALE = 100f
         private const val MAX_VELOCITY = 3000f
         private const val MIN_VELOCITY = -MAX_VELOCITY
-        private const val INTERACTION_BLUR_FRACTION = 0.8f
+        private const val INTERACTION_BLUR_FRACTION = 0.9f
         private const val ANIMATION_BLUR_FRACTION = 1f - INTERACTION_BLUR_FRACTION
         private const val TRANSITION_THRESHOLD = 0.98f
         private const val PUSHBACK_SCALE_FOR_LAUNCHER = 0.05f
