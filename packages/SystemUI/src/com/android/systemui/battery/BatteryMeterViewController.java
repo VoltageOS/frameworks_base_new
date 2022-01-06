@@ -15,7 +15,12 @@
  */
 package com.android.systemui.battery;
 
+import static android.provider.Settings.Global.BATTERY_ESTIMATES_LAST_UPDATE_TIME;
 import static android.provider.Settings.System.SHOW_BATTERY_PERCENT;
+import static android.provider.Settings.System.SHOW_BATTERY_PERCENT_CHARGING;
+import static android.provider.Settings.System.QS_SHOW_BATTERY_ESTIMATE;
+import static android.provider.Settings.System.STATUS_BAR_BATTERY_STYLE;
+import static android.provider.Settings.System.SHOW_BATTERY_PERCENT_INSIDE;
 
 import android.content.ContentResolver;
 import android.content.Context;
@@ -122,7 +127,9 @@ public class BatteryMeterViewController extends ViewController<BatteryMeterView>
                 public void onUserChanged(int newUser, @NonNull Context userContext) {
                     mContentResolver.unregisterContentObserver(mSettingObserver);
                     registerShowBatteryPercentObserver(newUser);
-                    mView.updateShowPercent();
+                    registerGlobalBatteryUpdateObserver();
+                    registerUserSettingsObservers();
+                    mView.updateBatteryStyle();
                 }
             };
 
@@ -165,9 +172,10 @@ public class BatteryMeterViewController extends ViewController<BatteryMeterView>
 
         registerShowBatteryPercentObserver(mUserTracker.getUserId());
         registerGlobalBatteryUpdateObserver();
+        registerUserSettingsObservers();
         mUserTracker.addCallback(mUserChangedCallback, new HandlerExecutor(mMainHandler));
 
-        mView.updateShowPercent();
+        mView.updateBatteryStyle();
     }
 
     @Override
@@ -213,11 +221,31 @@ public class BatteryMeterViewController extends ViewController<BatteryMeterView>
                 false,
                 mSettingObserver,
                 user);
+        mContentResolver.registerContentObserver(
+                Settings.System.getUriFor(SHOW_BATTERY_PERCENT_CHARGING),
+                false,
+                mSettingObserver,
+                user);
     }
 
     private void registerGlobalBatteryUpdateObserver() {
         mContentResolver.registerContentObserver(
                 Settings.Global.getUriFor(Settings.Global.BATTERY_ESTIMATES_LAST_UPDATE_TIME),
+                false,
+                mSettingObserver);
+    }
+
+    private void registerUserSettingsObservers() {
+        mContentResolver.registerContentObserver(
+                Settings.System.getUriFor(QS_SHOW_BATTERY_ESTIMATE),
+                false,
+                mSettingObserver);
+        mContentResolver.registerContentObserver(
+                Settings.System.getUriFor(STATUS_BAR_BATTERY_STYLE),
+                false,
+                mSettingObserver);
+        mContentResolver.registerContentObserver(
+                Settings.System.getUriFor(SHOW_BATTERY_PERCENT_INSIDE),
                 false,
                 mSettingObserver);
     }
@@ -230,11 +258,22 @@ public class BatteryMeterViewController extends ViewController<BatteryMeterView>
         @Override
         public void onChange(boolean selfChange, Uri uri) {
             super.onChange(selfChange, uri);
-            mView.updateShowPercent();
-            if (TextUtils.equals(uri.getLastPathSegment(),
-                    Settings.Global.BATTERY_ESTIMATES_LAST_UPDATE_TIME)) {
-                // update the text for sure if the estimate in the cache was updated
-                mView.updatePercentText();
+            switch (uri.getLastPathSegment()) {
+                case BATTERY_ESTIMATES_LAST_UPDATE_TIME:
+                    // update the text for sure if the estimate in the cache was updated
+                    mView.updatePercentText();
+                    break;
+                case SHOW_BATTERY_PERCENT:
+                case SHOW_BATTERY_PERCENT_CHARGING:
+                case SHOW_BATTERY_PERCENT_INSIDE:
+                    mView.updateShowPercent();
+                    break;
+                case QS_SHOW_BATTERY_ESTIMATE:
+                    mView.updatePercentView();
+                    break;
+                case STATUS_BAR_BATTERY_STYLE:
+                    mView.updateBatteryStyle();
+                    break;
             }
         }
     }
