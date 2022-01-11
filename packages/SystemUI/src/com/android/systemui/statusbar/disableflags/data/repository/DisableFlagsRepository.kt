@@ -22,6 +22,7 @@ import com.android.systemui.statusbar.CommandQueue
 import com.android.systemui.statusbar.disableflags.DisableFlagsLogger
 import com.android.systemui.statusbar.disableflags.shared.model.DisableFlagsModel
 import com.android.systemui.statusbar.policy.RemoteInputQuickSettingsDisabler
+import com.android.systemui.statusbar.policy.SecureLockscreenQSDisabler
 import com.android.systemui.utils.coroutines.flow.conflatedCallbackFlow
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -50,6 +51,7 @@ constructor(
     @DisplayAware private val thisDisplayId: Int,
     @DisplayAware scope: CoroutineScope,
     remoteInputQuickSettingsDisabler: RemoteInputQuickSettingsDisabler,
+    secureLockscreenQSDisabler: SecureLockscreenQSDisabler,
     @DisableFlagsRepositoryLog private val logBuffer: LogBuffer,
     private val disableFlagsLogger: DisableFlagsLogger,
 ) : DisableFlagsRepository {
@@ -74,7 +76,8 @@ constructor(
                                     // flow in a [DisableFlagsInteractor] or
                                     // [QuickSettingsInteractor]-type class. However, that's out of
                                     // scope for the CentralSurfaces removal project.
-                                    remoteInputQuickSettingsDisabler.adjustDisableFlags(state2),
+                                    secureLockscreenQSDisabler.adjustDisableFlags(
+                                        remoteInputQuickSettingsDisabler.adjustDisableFlags(state2)),
                                     animate,
                                 )
                             )
