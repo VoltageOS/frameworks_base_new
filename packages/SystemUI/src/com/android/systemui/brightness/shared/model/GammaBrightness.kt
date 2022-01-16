@@ -22,11 +22,15 @@ import com.android.systemui.log.table.TableLogBuffer
 import com.android.systemui.util.kotlin.pairwiseBy
 import kotlinx.coroutines.flow.Flow
 
+// Define constants
+const val GAMMA_SPACE_MIN = 0
+const val GAMMA_SPACE_MAX = 255
+
 @JvmInline
 value class GammaBrightness(
     @IntRange(
-        from = BrightnessUtils.GAMMA_SPACE_MIN.toLong(),
-        to = BrightnessUtils.GAMMA_SPACE_MAX.toLong()
+        from = GAMMA_SPACE_MIN.toLong(),
+        to = GAMMA_SPACE_MAX.toLong()
     )
     val value: Int
 )
