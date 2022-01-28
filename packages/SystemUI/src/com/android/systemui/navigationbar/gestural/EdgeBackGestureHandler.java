@@ -1492,6 +1492,9 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
             case 13: // Switch recent app
                 VoltageUtils.switchToLastApp(mContext);
                 break;
+            case 14: // Powermenu
+                VoltageUtils.showPowerMenu();
+                break;
         }
     }
 
