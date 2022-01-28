@@ -1606,6 +1606,9 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
             case 13: // Switch recent app
                 VoltageUtils.switchToLastApp(mContext);
                 break;
+            case 14: // Powermenu
+                VoltageUtils.showPowerMenu();
+                break;
         }
     }
 
