@@ -127,6 +127,10 @@ import com.android.systemui.animation.DialogTransitionAnimator;
 import com.android.systemui.animation.Expandable;
 import com.android.systemui.broadcast.BroadcastDispatcher;
 import com.android.systemui.colorextraction.SysuiColorExtractor;
+import com.android.systemui.controls.dagger.ControlsComponent;
+import com.android.systemui.controls.management.ControlsListingController;
+import com.android.systemui.controls.ui.ControlsActivity;
+import com.android.systemui.controls.ui.ControlsUiController;
 import com.android.systemui.dagger.qualifiers.Background;
 import com.android.systemui.dagger.qualifiers.Main;
 import com.android.systemui.display.data.repository.DisplayWindowPropertiesRepository;
@@ -204,6 +208,7 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
     static final String GLOBAL_ACTION_KEY_SYSTEM_UPDATE = "system_update";
     static final String GLOBAL_ACTION_KEY_STANDBY = "standby";
     private static final String GLOBAL_ACTION_KEY_ADVANCED_RESTART = "advanced";
+    static final String GLOBAL_ACTION_KEY_DEVICECONTROLS = "devicecontrols";
 
     // See NotificationManagerService#scheduleDurationReachedLocked
     private static final long TOAST_FADE_TIME = 333;
@@ -286,6 +291,7 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
     private final Lazy<DisplayWindowPropertiesRepository> mDisplayWindowPropertiesRepositoryLazy;
     private final PowerManager mPowerManager;
     private final Handler mHandler;
+    private final ControlsComponent mControlsComponent;
 
     private final UserTracker.Callback mOnUserSwitched = new UserTracker.Callback() {
         @Override
@@ -415,7 +421,8 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
             UserLogoutInteractor logoutInteractor,
             GlobalActionsInteractor interactor,
             Lazy<DisplayWindowPropertiesRepository> displayWindowPropertiesRepository,
-            PowerManager powerManager) {
+            PowerManager powerManager,
+            ControlsComponent controlsComponent) {
         mContext = context;
         mWindowManagerFuncs = windowManagerFuncs;
         mAudioManager = audioManager;
@@ -454,6 +461,7 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
         mInteractor = interactor;
         mDisplayWindowPropertiesRepositoryLazy = displayWindowPropertiesRepository;
         mPowerManager = powerManager;
+        mControlsComponent = controlsComponent;
 
         mHandler = new Handler(mMainHandler.getLooper()) {
             public void handleMessage(Message msg) {
@@ -797,6 +805,11 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
                             Settings.System.POWERMENU_EMERGENCY, 0) == 1) {
                         addIfShouldShowAction(tempActions, new EmergencyDialerAction());
                     }
+                }
+            } else if (GLOBAL_ACTION_KEY_DEVICECONTROLS.equals(actionKey)) {
+                if (Settings.System.getInt(mContext.getContentResolver(),
+                        Settings.System.POWERMENU_DEVICECONTROLS, 0) == 1) {
+                    addIfShouldShowAction(tempActions, new DeviceControlsAction());
                 }
             } else if (GLOBAL_ACTION_KEY_SYSTEM_UPDATE.equals(actionKey)) {
                 addIfShouldShowAction(tempActions, new SystemUpdateAction());
@@ -2451,6 +2464,31 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
             int index = (Integer) v.getTag();
             mAudioManager.setRingerMode(indexToRingerMode(index));
             mHandler.sendEmptyMessageDelayed(MESSAGE_DISMISS, DIALOG_DISMISS_DELAY);
+        }
+    }
+
+    private final class DeviceControlsAction extends SinglePressAction {
+        private DeviceControlsAction() {
+            super(com.android.systemui.res.R.drawable.controls_icon,
+                    com.android.systemui.res.R.string.quick_controls_title);
+        }
+
+        @Override
+        public boolean showDuringKeyguard() {
+            return true;
+        }
+
+        @Override
+        public boolean showBeforeProvisioning() {
+            return false;
+        }
+
+        @Override
+        public void onPress() {
+            Intent intent = new Intent(mContext, ControlsActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .putExtra(ControlsUiController.EXTRA_ANIMATE, true);
+            mContext.startActivity(intent);
         }
     }
 
