@@ -67,6 +67,7 @@ import com.android.systemui.colorextraction.SysuiColorExtractor;
 import com.android.systemui.globalactions.domain.interactor.GlobalActionsInteractor;
 import com.android.systemui.kosmos.KosmosJavaAdapter;
 import com.android.systemui.plugins.ActivityStarter;
+import com.android.systemui.controls.dagger.ControlsComponent;
 import com.android.systemui.plugins.GlobalActions;
 import com.android.systemui.settings.UserContextProvider;
 import com.android.systemui.settings.UserTracker;
@@ -139,6 +140,7 @@ public class GlobalActionsDialogLiteTest extends SysuiTestCase {
     @Mock private DialogTransitionAnimator mDialogTransitionAnimator;
     @Mock private SelectedUserInteractor mSelectedUserInteractor;
     @Mock private OnBackInvokedDispatcher mOnBackInvokedDispatcher;
+    @Mock private ControlsComponent mControlsComponent;
     @Captor private ArgumentCaptor<OnBackInvokedCallback> mOnBackInvokedCallback;
 
     private TestableLooper mTestableLooper;
@@ -195,7 +197,8 @@ public class GlobalActionsDialogLiteTest extends SysuiTestCase {
                 mKeyguardUpdateMonitor,
                 mDialogTransitionAnimator,
                 mSelectedUserInteractor,
-                mInteractor);
+                mInteractor,
+                mControlsComponent);
         mGlobalActionsDialogLite.setZeroDialogPressDelayForTesting();
 
         ColorExtractor.GradientColors backdropColors = new ColorExtractor.GradientColors();
