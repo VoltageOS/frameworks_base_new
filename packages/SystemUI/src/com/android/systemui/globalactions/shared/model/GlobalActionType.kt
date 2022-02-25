@@ -32,6 +32,7 @@ enum class GlobalActionType(val configKey: String) {
     LOGOUT("logout"),
     EMERGENCY("emergency"),
     SCREENSHOT("screenshot"),
+    DEVICECONTROLS("devicecontrols"),
     SYSTEM_UPDATE("system_update"),
     STANDBY("standby");
 

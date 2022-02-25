@@ -80,6 +80,7 @@ import com.android.systemui.SysuiTestCase;
 import com.android.systemui.broadcast.BroadcastDispatcher;
 import com.android.systemui.broadcast.BroadcastSender;
 import com.android.systemui.colorextraction.SysuiColorExtractor;
+import com.android.systemui.controls.dagger.ControlsComponent;
 import com.android.systemui.deviceentry.data.repository.FakeDeviceEntryRepository;
 import com.android.systemui.deviceentry.shared.model.DeviceUnlockStatus;
 import com.android.systemui.display.data.repository.FakeDisplayWindowPropertiesRepository;
@@ -151,6 +152,7 @@ public class GlobalActionsDialogLiteTest extends SysuiTestCase {
     @Mock private UserContextProvider mUserContextProvider;
     @Mock private VibratorHelper mVibratorHelper;
     @Mock private UserLogoutInteractor mLogoutInteractor;
+    @Mock private ControlsComponent mControlsComponent;
     @Mock private PowerManager mPowerManager;
     @Mock private EmergencyAffordanceManager mEmergencyAffordanceManager;
     @Mock private ScreenshotHelper mScreenshotHelper;
@@ -1800,6 +1802,7 @@ public class GlobalActionsDialogLiteTest extends SysuiTestCase {
                 mShadeController,
                 mLogoutInteractor,
                 mInteractor,
+                mControlsComponent,
                 () -> new FakeDisplayWindowPropertiesRepository(mContext),
                 mPowerManager,
                 mBroadcastSender,
