@@ -182,12 +182,13 @@ public class LegacyScreenshotController implements InteractiveScreenshotHandler 
     }
 
     private String getForegroundAppLabel() {
-        try {
-            final ActivityInfo ai = mPm.getActivityInfo(mTaskComponentName, 0);
-            return ai.applicationInfo.loadLabel(mPm).toString();
-        } catch (PackageManager.NameNotFoundException e) {
-             return null;
+        if (mTaskComponentName != null) {
+            try {
+                final ActivityInfo ai = mPm.getActivityInfo(mTaskComponentName, 0);
+                return ai.applicationInfo.loadLabel(mPm).toString();
+            } catch (PackageManager.NameNotFoundException e) {}
         }
+        return null;
     }
 
     @AssistedInject
