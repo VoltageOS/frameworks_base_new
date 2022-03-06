@@ -1501,6 +1501,7 @@ public class ClipboardService extends SystemService {
     @GuardedBy("mLock")
     private boolean showAccessNotificationLocked(String callingPackage, int uid,
             @UserIdInt int userId, Clipboard clipboard, int accessDeviceId) {
+        String nfcService = "com.android.nfc";
         if (clipboard.primaryClip == null) {
             return false;
         }
@@ -1511,6 +1512,9 @@ public class ClipboardService extends SystemService {
         if (Settings.Secure.getInt(getContext().getContentResolver(),
                 Settings.Secure.CLIPBOARD_SHOW_ACCESS_NOTIFICATIONS,
                 (mShowAccessNotifications ? 1 : 0)) == 0) {
+            return false;
+        }
+        if (callingPackage.equals(nfcService)) {
             return false;
         }
         // Don't notify if the app accessing the clipboard is the same as the current owner.
