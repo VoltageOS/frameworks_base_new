@@ -14,4 +14,7 @@
     <!-- Status bar -->
     <string name="status_bar_icons_title">Status bar icons</string>
 
+    <!-- Name of the roaming status bar icon. -->
+    <string name="status_bar_roaming">Roaming indicator</string>
+
 </resources>
