@@ -18,12 +18,14 @@ package com.android.systemui.statusbar.pipeline.mobile.domain.interactor
 
 import com.android.systemui.kairos.BuildScope
 import com.android.systemui.kairos.util.nameTag
+import com.android.systemui.kairos.toColdConflatedFlow
 import com.android.systemui.log.table.TableLogBuffer
 import com.android.systemui.statusbar.pipeline.mobile.data.model.NetworkNameModel
 import com.android.systemui.statusbar.pipeline.mobile.domain.model.NetworkTypeIconModel
 import com.android.systemui.statusbar.pipeline.mobile.domain.model.SignalIconModel
 import com.android.systemui.statusbar.pipeline.shared.data.model.DataActivityModel
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.Flow
 
 fun BuildScope.MobileIconInteractorKairosAdapter(
     kairosImpl: MobileIconInteractorKairos
@@ -129,6 +131,13 @@ fun BuildScope.MobileIconInteractorKairosAdapter(
                             "MobileIconInteractorKairosAdapter(subId=$subscriptionId).isForceHidden"
                         }
                 ),
+            isRoamingForceHidden =
+                isRoamingForceHidden.toColdConflatedFlow(
+                    kairosNetwork,
+                    nameTag {
+                        "MobileIconInteractorKairosAdapter(subId=$subscriptionId).isRoamingForceHidden"
+                    },
+                ),
             isAllowedDuringAirplaneMode =
                 isAllowedDuringAirplaneMode.toStateFlow(
                     nameTag {
@@ -143,7 +152,6 @@ fun BuildScope.MobileIconInteractorKairosAdapter(
                 ),
         )
     }
-
 private class MobileIconInteractorKairosAdapter(
     override val subscriptionId: Int,
     override val tableLogBuffer: TableLogBuffer,
@@ -163,6 +171,7 @@ private class MobileIconInteractorKairosAdapter(
     override val isSingleCarrier: StateFlow<Boolean>,
     override val isRoaming: StateFlow<Boolean>,
     override val isForceHidden: StateFlow<Boolean>,
+    override val isRoamingForceHidden: Flow<Boolean>,
     override val isAllowedDuringAirplaneMode: StateFlow<Boolean>,
     override val carrierNetworkChangeActive: StateFlow<Boolean>,
 ) : MobileIconInteractor
