@@ -612,14 +612,6 @@ abstract class LogModule {
             return factory.create("NavBarButtonClick", 50)
         }
 
-        /** Provides a [LogBuffer] for NavBar Orientation Tracking. */
-        @Provides
-        @SysUISingleton
-        @NavbarOrientationTrackingLog
-        fun provideNavbarOrientationTrackingLogBuffer(factory: LogBufferFactory): LogBuffer {
-            return factory.create("NavbarOrientationTrackingLog", 50)
-        }
-
         /** Provides a [LogBuffer] for device entry related logs. */
         @Provides
         @SysUISingleton
