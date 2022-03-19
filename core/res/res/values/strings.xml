@@ -6953,6 +6953,11 @@ ul.</string>
     <!-- Fingerprint failed rate too high notification msg -->
     <string name="fingerprint_frr_notification_msg">Tap to review tips to improve your unlocking experience</string>
 
+    <!-- Text shown for notifications from other users. -->
+    <string name="notification_channel_other_users">Other users</string>
+    <string name="notification_channel_other_users_description">Censored notifications from the lock screens of other users</string>
+    <string name="other_users_notification_title">Notification from <xliff:g id="app_name" example="Messages">%1$s</xliff:g> for <xliff:g id="username" example="Alice">%2$s</xliff:g></string>
+    <string name="other_users_notification_switch_user_action">Switch to <xliff:g id="username" example="Bob">%1$s</xliff:g></string>
     <!-- Label describing no blinking for Settings.Secure.ACCESSIBILITY_TEXT_CURSOR_BLINK_INTERVAL_MS. -->
     <string name="no_blink_accessibility_text_cursor_blink_label">Don\'t blink</string>
 
