@@ -131,7 +131,6 @@ import com.android.systemui.navigationbar.views.buttons.ButtonDispatcher;
 import com.android.systemui.navigationbar.views.buttons.DeadZone;
 import com.android.systemui.navigationbar.views.buttons.KeyButtonView;
 import com.android.systemui.navigationbar.views.buttons.NavBarButtonClickLogger;
-import com.android.systemui.navigationbar.views.buttons.NavbarOrientationTrackingLogger;
 import com.android.systemui.plugins.statusbar.StatusBarStateController;
 import com.android.systemui.recents.LauncherProxyService;
 import com.android.systemui.recents.Recents;
@@ -286,7 +285,6 @@ public class NavigationBar extends ViewController<NavigationBarView> implements 
     private final Rect mSamplingBounds = new Rect();
     private final Binder mInsetsSourceOwner = new Binder();
     private final NavBarButtonClickLogger mNavBarButtonClickLogger;
-    private final NavbarOrientationTrackingLogger mNavbarOrientationTrackingLogger;
 
     @com.android.internal.annotations.VisibleForTesting
     public enum NavBarActionEvent implements UiEventLogger.UiEventEnum {
@@ -559,8 +557,7 @@ public class NavigationBar extends ViewController<NavigationBarView> implements 
             WakefulnessLifecycle wakefulnessLifecycle,
             TaskStackChangeListeners taskStackChangeListeners,
             DisplayTracker displayTracker,
-            NavBarButtonClickLogger navBarButtonClickLogger,
-            NavbarOrientationTrackingLogger navbarOrientationTrackingLogger) {
+            NavBarButtonClickLogger navBarButtonClickLogger) {
         super(navigationBarView);
         mFrame = navigationBarFrame;
         mContext = context;
@@ -603,7 +600,6 @@ public class NavigationBar extends ViewController<NavigationBarView> implements 
         mDisplayTracker = displayTracker;
         mEdgeBackGestureHandler = navBarHelper.getEdgeBackGestureHandler();
         mNavBarButtonClickLogger = navBarButtonClickLogger;
-        mNavbarOrientationTrackingLogger = navbarOrientationTrackingLogger;
 
         mNavColorSampleMargin = getResources()
                 .getDimensionPixelSize(R.dimen.navigation_handle_sample_horizontal_margin);
