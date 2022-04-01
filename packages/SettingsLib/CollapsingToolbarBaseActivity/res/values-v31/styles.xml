@@ -21,7 +21,7 @@
     </style>
 
     <style name="CollapsingToolbarTitle.Expanded" parent="CollapsingToolbarTitle.Collapsed">
-        <item name="android:textSize">36dp</item>
+        <item name="android:textSize">50dp</item>
     </style>
 
     <style name="Base.CollapsingToolbarLayoutStyle.SettingsLib" parent="@style/Widget.Material3.CollapsingToolbar">
