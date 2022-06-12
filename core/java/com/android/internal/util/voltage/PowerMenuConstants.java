@@ -31,6 +31,7 @@ public class PowerMenuConstants {
     public static final String GLOBAL_ACTION_KEY_VOICEASSIST = "voiceassist";
     public static final String GLOBAL_ACTION_KEY_ASSIST = "assist";
     public static final String GLOBAL_ACTION_KEY_LOGOUT = "logout";
+    public static final String GLOBAL_ACTION_KEY_LOCK = "lock";
     public static final String GLOBAL_ACTION_KEY_EMERGENCY = "emergency";
     public static final String GLOBAL_ACTION_KEY_DEVICECONTROLS = "devicecontrols";
     public static final String GLOBAL_ACTION_KEY_SYSTEM_UPDATE = "system_update";
@@ -59,6 +60,7 @@ public class PowerMenuConstants {
         GLOBAL_ACTION_KEY_ASSIST,
         GLOBAL_ACTION_KEY_DEVICECONTROLS,
         GLOBAL_ACTION_KEY_LOGOUT,
+        GLOBAL_ACTION_KEY_LOCK,
         GLOBAL_ACTION_KEY_SYSTEM_UPDATE,
         GLOBAL_ACTION_KEY_STANDBY,
     };
