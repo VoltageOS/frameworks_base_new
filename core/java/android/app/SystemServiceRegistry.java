@@ -343,6 +343,8 @@ import com.voltage.display.IRefreshRateManagerService;
 import com.voltage.display.RefreshRateManager;
 import com.voltage.view.DisplayResolutionManager;
 import com.voltage.view.IDisplayResolutionManagerService;
+import com.android.internal.custom.app.LineageContextConstants;
+import com.android.internal.custom.app.LineageGlobalActions;
 
 import java.util.Map;
 import java.util.Objects;
@@ -1256,6 +1258,15 @@ public final class SystemServiceRegistry {
                         final IAuthenticationPolicyService service =
                                 IAuthenticationPolicyService.Stub.asInterface(binder);
                         return new AuthenticationPolicyManager(ctx.getOuterContext(), service);
+                    }
+                });
+
+        registerService(LineageContextConstants.LINEAGE_GLOBAL_ACTIONS_SERVICE, LineageGlobalActions.class,
+                new CachedServiceFetcher<LineageGlobalActions>() {
+                    @Override
+                    public LineageGlobalActions createService(ContextImpl ctx)
+                            throws ServiceNotFoundException {
+                        return LineageGlobalActions.getInstance(ctx);
                     }
                 });
 
