@@ -634,7 +634,6 @@ public abstract class BrightnessMappingStrategy {
             }
 
             mMaxGamma = maxGamma;
-            mAutoBrightnessAdjustment = 0;
             mUserLux = INVALID_LUX;
             mUserBrightness = PowerManager.BRIGHTNESS_INVALID_FLOAT;
             if (mLoggingEnabled) {
