@@ -154,7 +154,8 @@ public class DividerRoundedCorner extends View {
 
             if (mRadiusResourceId == 0) {
                 final RoundedCorner roundedCorner = getDisplay().getRoundedCorner(cornerPosition);
-                mRadius = roundedCorner == null ? 0 : roundedCorner.getRadius();
+                mRadius = roundedCorner == null ? 0 :
+                    getResources().getDimensionPixelSize(R.dimen.split_divider_corner_size);
             } else {
                 mRadius = mContext.getResources().getDimensionPixelSize(mRadiusResourceId);
             }
