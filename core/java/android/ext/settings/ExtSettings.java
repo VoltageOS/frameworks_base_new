@@ -43,6 +43,10 @@ public class ExtSettings {
     public static final IntSetting WIFI_AUTO_OFF = new IntSetting(
             Setting.Scope.GLOBAL, Settings.Global.WIFI_AUTO_OFF, 0 /* off by default */);
 
+    // The amount of time in milliseconds before a disconnected Bluetooth adapter is turned off
+    public static final IntSetting BLUETOOTH_AUTO_OFF = new IntSetting(
+            Setting.Scope.GLOBAL, Settings.Global.BLUETOOTH_AUTO_OFF, 0 /* off by default */);
+
     private ExtSettings() {}
 
     public static Function<Context, Boolean> defaultBool(@BoolRes int res) {
