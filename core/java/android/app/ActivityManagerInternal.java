@@ -35,6 +35,7 @@ import android.content.ServiceConnection;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ActivityPresentationInfo;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.GosPackageState;
 import android.content.pm.IPackageDataObserver;
 import android.content.pm.UserInfo;
 import android.net.Uri;
@@ -1369,4 +1370,6 @@ public abstract class ActivityManagerInternal {
      * @hide
      */
     public abstract void addCreatorToken(Intent intent, String creatorPackage);
+
+    public abstract void onGosPackageStateChanged(int uid, GosPackageState state);
 }
