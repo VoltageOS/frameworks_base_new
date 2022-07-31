@@ -14016,6 +14016,10 @@ public final class Settings {
         @Protected(readWrite = KnownSystemPackage.SETTINGS)
         public static final String WIFI_AUTO_OFF = "wifi_off_timeout";
 
+        /** @hide */
+        @Protected(readWrite = KnownSystemPackage.SETTINGS)
+        public static final String BLUETOOTH_AUTO_OFF = "bluetooth_off_timeout";
+
         // ExtSettings END
 
         // NOTE: If you add new settings here, be sure to add them to
