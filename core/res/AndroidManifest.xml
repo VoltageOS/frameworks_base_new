@@ -10668,6 +10668,8 @@
     <!-- Attribution for Device Policy Manager service. -->
     <attribution android:tag="DevicePolicyManagerService"
         android:label="@string/device_policy_manager_service"/>
+    <attribution android:tag="BluetoothAutoOff"
+        android:label="@string/bluetooth_auto_off_attribution_label"/>
 
     <application android:process="system"
                  android:persistent="true"
