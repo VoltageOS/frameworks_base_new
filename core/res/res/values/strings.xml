@@ -6905,4 +6905,7 @@ ul.</string>
     <string name="missing_sensors_permission_message">Tap to ask for permission.</string>
     <java-symbol type="string" name="missing_sensors_permission_message" />
 
+    <!-- Button that opens the screen with details of an application error -->
+    <string name="aerr_show_details">Show details</string>
+    <java-symbol type="string" name="aerr_show_details" />
 </resources>
