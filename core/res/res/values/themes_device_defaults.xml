@@ -224,6 +224,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_dark</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_dark</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_dark</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_dark</item>
         <item name="colorBackground">@color/system_surface_container_dark</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_dark</item>
@@ -2247,6 +2248,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorBackground">@color/system_surface_container_light</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_light</item>
@@ -2381,6 +2383,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorBackground">@color/system_surface_container_light</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_light</item>
@@ -3073,6 +3076,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorBackground">@color/system_surface_container_light</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_light</item>
@@ -3191,6 +3195,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorBackground">@color/system_surface_container_light</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_light</item>
@@ -3324,6 +3329,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorBackground">@color/system_surface_container_light</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_light</item>
@@ -3458,6 +3464,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorBackground">@color/system_surface_container_light</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_light</item>
@@ -3594,6 +3601,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorBackground">@color/system_surface_container_light</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_light</item>
@@ -3729,6 +3737,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorBackground">@color/system_surface_container_light</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_light</item>
@@ -3881,6 +3890,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorBackground">@color/system_surface_container_light</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_light</item>
@@ -4007,6 +4017,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorBackground">@color/system_surface_container_light</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_light</item>
@@ -4143,6 +4154,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorBackground">@color/system_surface_container_light</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_light</item>
@@ -4280,6 +4292,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorBackground">@color/system_surface_container_light</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_light</item>
@@ -4418,6 +4431,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="textColorPrimary">@color/system_on_surface_light</item>
         <item name="textColorSecondary">@color/system_on_surface_variant_light</item>
@@ -4536,6 +4550,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="textColorPrimary">@color/system_on_surface_light</item>
         <item name="textColorSecondary">@color/system_on_surface_variant_light</item>
@@ -4653,6 +4668,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorBackground">@color/system_surface_container_light</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_light</item>
@@ -4791,6 +4807,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorBackground">@color/system_surface_container_light</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_light</item>
@@ -4927,6 +4944,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorBackground">@color/system_surface_container_light</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_light</item>
@@ -5062,6 +5080,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorBackground">@color/system_surface_container_light</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_light</item>
@@ -5196,6 +5215,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorBackground">@color/system_surface_container_light</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_light</item>
@@ -5331,6 +5351,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorBackground">@color/system_surface_container_light</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_light</item>
@@ -5463,6 +5484,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorBackground">@color/system_surface_container_light</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_light</item>
@@ -5612,6 +5634,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorEdgeEffect">@color/edge_effect_device_default_light</item>
 
@@ -5735,6 +5758,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorControlNormal">?attr/textColorPrimary</item>
         <item name="alertDialogTheme">@style/Theme.DeviceDefault.Light.Dialog.Alert</item>
@@ -5855,6 +5879,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="alertDialogTheme">@style/Theme.DeviceDefault.Light.Dialog.Alert</item>
 
@@ -6101,6 +6126,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorBackground">@color/system_surface_container_light</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_light</item>
@@ -6244,6 +6270,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorBackground">@color/system_surface_container_light</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_light</item>
@@ -6380,6 +6407,7 @@ easier.
         <item name="colorSurfaceHighlight">@color/system_surface_bright_light</item>
         <item name="colorSurfaceVariant">@color/system_surface_container_high_light</item>
         <item name="colorSurfaceHeader">@color/system_surface_container_highest_light</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
         <item name="colorError">@color/error_color_device_default_light</item>
         <item name="colorBackground">@color/system_surface_container_light</item>
         <item name="colorBackgroundFloating">@color/background_floating_device_default_light</item>
@@ -6664,6 +6692,7 @@ easier.
         <item name="colorAccentPrimary">@color/accent_primary_device_default</item>
         <item name="colorAccentSecondary">@color/system_secondary_dark</item>
         <item name="colorAccentTertiary">@color/system_tertiary_dark</item>
+        <item name="colorAccentCustom">@color/accent_device_default_custom</item>
 
         <item name="materialColorBackground">@color/system_background_light</item>
         <item name="materialColorControlActivated">@color/system_control_activated_light</item>
