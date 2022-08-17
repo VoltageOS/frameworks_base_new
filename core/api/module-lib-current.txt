@@ -505,6 +505,11 @@ package android.os {
     method @FlaggedApi("android.os.update_engine_api") public void triggerPostinstall(@NonNull String);
   }
 
+  public final class UserHandle implements android.os.Parcelable {
+    method public static int getUid(int, int);
+    method public static int getUserId(int);
+  }
+
   public class UserManager {
     field @FlaggedApi("android.multiuser.user_restriction_config_wifi_shared_private") public static final String DISALLOW_CONFIG_WIFI_PRIVATE = "no_config_wifi_private";
     field @FlaggedApi("android.multiuser.user_restriction_config_wifi_shared_private") public static final String DISALLOW_CONFIG_WIFI_SHARED = "no_config_wifi_shared";
