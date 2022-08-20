@@ -206,6 +206,7 @@ constructor(
                     (inflater.inflate(R.layout.udfps_touch_overlay, null, false)
                             as UdfpsTouchOverlay)
                         .apply {
+                            setUdfpsDisplayModeProvider(udfpsDisplayModeProvider)
                             // This view overlaps the sensor area
                             // prevent it from being selectable during a11y
                             if (requestReason.isImportantForAccessibility()) {
@@ -234,6 +235,7 @@ constructor(
                                         udfpsOverlayInteractor = udfpsTouchForwarder,
                                     )
                             }
+                            sensorRect = sensorBounds
                         }
 
                 getTouchOverlay()?.apply {
@@ -296,6 +298,7 @@ constructor(
     fun updateOverlayParams(updatedOverlayParams: UdfpsOverlayParams) {
         overlayParams = updatedOverlayParams
         sensorBounds = updatedOverlayParams.sensorBounds
+        overlayTouchView?.sensorRect = updatedOverlayParams.sensorBounds
         getTouchOverlay()?.let {
             if (addViewRunnable == null) {
                 // Only updateViewLayout if there's no pending view to add to WM.
@@ -312,6 +315,11 @@ constructor(
         val wasShowing = isShowing
         Log.d(TAG, "hideUdfpsControllerOverlay wasShowing=$wasShowing")
         udfpsOverlayInteractor.stopHandlingTouches()
+        overlayTouchView?.apply {
+            if (isDisplayConfigured) {
+                unconfigureDisplay()
+            }
+        }
         udfpsDisplayModeProvider.disable(null)
         getTouchOverlay()?.apply {
             if (this.parent != null) {
