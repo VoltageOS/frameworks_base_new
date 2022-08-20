@@ -257,6 +257,7 @@ import com.android.server.utils.WatchedArrayMap;
 import com.android.server.utils.WatchedSparseBooleanArray;
 import com.android.server.utils.WatchedSparseIntArray;
 import com.android.server.utils.Watcher;
+import com.android.server.voltage.ParallelSpaceManagerService;
 
 import dalvik.system.VMRuntime;
 
@@ -3354,6 +3355,22 @@ public class PackageManagerService implements PackageSender, TestUtilityService 
             final IPackageDeleteObserver2 observer, final int userId, final int deleteFlags) {
         mDeletePackageHelper.deletePackageVersionedInternal(
                 versionedPackage, observer, userId, deleteFlags, /* allowSilentUninstall= */ false);
+
+        // Delete for parallel users if the package is deleted in their owner.
+        if (!ParallelSpaceManagerService.isCurrentParallelOwner(userId))
+            return;
+        final long token = Binder.clearCallingIdentity();
+        try {
+            for (int parallelUserId : ParallelSpaceManagerService.getCurrentParallelUserIds()) {
+                mDeletePackageHelper.deletePackageVersionedInternal(versionedPackage,
+                    new PackageInstallerService.PackageDeleteObserverAdapter(
+                            mContext, null, versionedPackage.getPackageName(),
+                            false, parallelUserId)
+                    .getBinder(), parallelUserId, 0, true);
+            }
+        } finally {
+            Binder.restoreCallingIdentity(token);
+        }
     }
 
     boolean isCallerVerifier(@NonNull Computer snapshot, int callingUid) {

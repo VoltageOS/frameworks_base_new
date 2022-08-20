@@ -356,6 +356,7 @@ import com.android.server.policy.WindowManagerPolicy.ScreenOffListener;
 import com.android.server.power.ShutdownThread;
 import com.android.server.utils.PriorityDump;
 import com.android.server.wallpaper.WallpaperCropper.WallpaperCropUtils;
+import com.android.server.voltage.ParallelSpaceManagerService;
 
 import dalvik.annotation.optimization.NeverCompile;
 
@@ -3752,7 +3753,8 @@ public class WindowManagerService extends IWindowManager.Stub
 
     /* Called by WindowState */
     boolean isUserVisible(@UserIdInt int userId) {
-        return mUmInternal.isUserVisible(userId);
+        return mUmInternal.isUserVisible(userId)
+                || ParallelSpaceManagerService.isCurrentParallelUser(userId);
     }
 
     @UserIdInt int getUserAssignedToDisplay(int displayId) {

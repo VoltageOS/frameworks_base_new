@@ -129,6 +129,7 @@ import com.android.server.pm.pkg.AndroidPackage;
 import com.android.server.pm.pkg.ArchiveState;
 import com.android.server.pm.pkg.PackageStateInternal;
 import com.android.server.wm.ActivityTaskManagerInternal;
+import com.android.server.voltage.ParallelSpaceManagerService;
 
 import java.io.DataInputStream;
 import java.io.FileDescriptor;
@@ -2206,7 +2207,8 @@ public class LauncherAppsService extends SystemService {
                 return false;
             }
             return mUserManagerInternal.isProfileAccessible(
-                    cookie.user.getIdentifier(), user.getIdentifier(), debugMsg, false);
+                    cookie.user.getIdentifier(), user.getIdentifier(), debugMsg, false) ||
+                    ParallelSpaceManagerService.isCurrentParallelUser(user.getIdentifier());
         }
 
         /**
