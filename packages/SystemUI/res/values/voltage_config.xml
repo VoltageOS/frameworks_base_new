@@ -82,4 +82,7 @@
           <item>2047,46</item>
           <item>4095,0</item>
     </string-array>
+
+    <!-- Udfps vendor code -->
+    <integer name="config_udfpsVendorCode">0</integer>
 </resources>
