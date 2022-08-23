@@ -2278,7 +2278,7 @@ public class PackageManagerService implements PackageSender, TestUtilityService 
             }
 
             File cacheDir = PackageManagerServiceUtils.preparePackageParserCache(
-                    mIsEngBuild, mIsUserDebugBuild, mIncrementalVersion);
+                    mIsEngBuild, mIsUserDebugBuild, mIncrementalVersion, mIsUpgrade);
             if (cacheDir == null) {
                 // several places don't expect mCacheDir to be null, despite it being nullable
                 // upstream

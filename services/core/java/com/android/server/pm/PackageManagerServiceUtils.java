@@ -1343,7 +1343,7 @@ public class PackageManagerServiceUtils {
     }
 
     public static @Nullable File preparePackageParserCache(boolean forEngBuild,
-            boolean isUserDebugBuild, String incrementalVersion) {
+            boolean isUserDebugBuild, String incrementalVersion, boolean isUpgrade) {
         // The base directory for the package parser cache lives under /data/system/.
         final File cacheBaseDir = Environment.getPackageCacheDirectory();
         if (true) {
@@ -1380,7 +1380,7 @@ public class PackageManagerServiceUtils {
 
         // Reconcile cache directories, keeping only what we'd actually use.
         for (File cacheDir : FileUtils.listFilesOrEmpty(cacheBaseDir)) {
-            if (Objects.equals(cacheName, cacheDir.getName())) {
+            if (!isUpgrade && Objects.equals(cacheName, cacheDir.getName())) {
                 Slog.d(TAG, "Keeping known cache " + cacheDir.getName());
             } else {
                 Slog.d(TAG, "Destroying unknown cache " + cacheDir.getName());
