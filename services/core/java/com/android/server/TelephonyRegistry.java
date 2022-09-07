@@ -3754,10 +3754,6 @@ public class TelephonyRegistry extends ITelephonyRegistry.Stub {
 
         synchronized (mRecords) {
             int phoneId = getPhoneIdFromSubId(subId);
-            if (!validatePhoneId(phoneId)) {
-                loge("Invalid phone ID " + phoneId + " for " + subId);
-                return;
-            }
             mCarrierRoamingNtnMode[phoneId] = active;
             for (Record r : mRecords) {
                 if (r.matchTelephonyCallbackEvent(
@@ -3891,6 +3887,11 @@ public class TelephonyRegistry extends ITelephonyRegistry.Stub {
 
         synchronized (mRecords) {
             int phoneId = getPhoneIdFromSubId(subId);
+            if (!validatePhoneId(phoneId)) {
+                loge("notifyCarrierRoamingNtnSignalStrengthChanged: Invalid phoneId " + phoneId
+                        + " for subId " + subId);
+                return;
+            }
             mCarrierRoamingNtnSignalStrength[phoneId] = ntnSignalStrength;
             for (Record r : mRecords) {
                 if (r.matchTelephonyCallbackEvent(
