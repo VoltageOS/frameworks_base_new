@@ -22,7 +22,6 @@ import android.content.res.Resources;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextUtils;
-import android.text.method.LinkMovementMethod;
 import android.text.style.AbsoluteSizeSpan;
 import android.util.AttributeSet;
 import android.view.View;
@@ -39,11 +38,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Progress bar preference with a usage summary and a total summary.
- *
- * <p>This preference shows number in usage summary with enlarged font size.
+ * Progres bar preference with a usage summary and a total summary.
+ * This preference shows number in usage summary with enlarged font size.
  */
-public class UsageProgressBarPreference extends Preference {
+public class StorageUsageProgressBarPreference extends Preference {
 
     private final Pattern mNumberPattern = Pattern.compile("[\\d]*[\\٫.,]?[\\d]+");
     private static final int ANIM_DURATION = 1200;
@@ -51,18 +49,17 @@ public class UsageProgressBarPreference extends Preference {
     private CharSequence mUsageSummary;
     private CharSequence mTotalSummary;
     private CharSequence mBottomSummary;
-    private CharSequence mBottomSummaryContentDescription;
     private ImageView mCustomImageView;
     private int mPercent = -1;
 
     /**
      * Perform inflation from XML and apply a class-specific base style.
      *
-     * @param context The {@link Context} this is associated with, through which it can access the
-     *     current theme, resources, {@link SharedPreferences}, etc.
-     * @param attrs The attributes of the XML tag that is inflating the preference
+     * @param context The {@link Context} this is associated with, through which it can
+     *                access the current theme, resources, {@link SharedPreferences}, etc.
+     * @param attrs   The attributes of the XML tag that is inflating the preference
      */
-    public UsageProgressBarPreference(Context context, AttributeSet attrs) {
+    public StorageUsageProgressBarPreference(Context context, AttributeSet attrs) {
         super(context, attrs);
         setLayoutResource(R.layout.preference_usage_progress_bar);
     }
@@ -72,7 +69,7 @@ public class UsageProgressBarPreference extends Preference {
      *
      * @param context The Context this is associated with.
      */
-    public UsageProgressBarPreference(Context context) {
+    public StorageUsageProgressBarPreference(Context context) {
         this(context, null);
     }
 
@@ -103,17 +100,9 @@ public class UsageProgressBarPreference extends Preference {
         notifyChanged();
     }
 
-    /** Set content description for the bottom summary. */
-    public void setBottomSummaryContentDescription(CharSequence contentDescription) {
-        if (!TextUtils.equals(mBottomSummaryContentDescription, contentDescription)) {
-            mBottomSummaryContentDescription = contentDescription;
-            notifyChanged();
-        }
-    }
-
     /** Set percentage of the progress bar. */
     public void setPercent(long usage, long total) {
-        if (usage > total) {
+        if (usage >  total) {
             return;
         }
         if (total == 0L) {
@@ -143,13 +132,14 @@ public class UsageProgressBarPreference extends Preference {
     /**
      * Binds the created View to the data for this preference.
      *
-     * <p>This is a good place to grab references to custom Views in the layout and set properties
-     * on them.
+     * <p>This is a good place to grab references to custom Views in the layout and set
+     * properties on them.
      *
      * <p>Make sure to call through to the superclass's implementation.
      *
      * @param holder The ViewHolder that provides references to the views to fill in. These views
-     *     will be recycled, so you should not hold a reference to them after this method returns.
+     *               will be recycled, so you should not hold a reference to them after this method
+     *               returns.
      */
     @Override
     public void onBindViewHolder(PreferenceViewHolder holder) {
@@ -172,11 +162,7 @@ public class UsageProgressBarPreference extends Preference {
             bottomSummary.setVisibility(View.GONE);
         } else {
             bottomSummary.setVisibility(View.VISIBLE);
-            bottomSummary.setMovementMethod(LinkMovementMethod.getInstance());
             bottomSummary.setText(mBottomSummary);
-            if (!TextUtils.isEmpty(mBottomSummaryContentDescription)) {
-                bottomSummary.setContentDescription(mBottomSummaryContentDescription);
-            }
         }
 
         final ProgressBar progressBar = (ProgressBar) holder.findViewById(android.R.id.progress);
@@ -193,14 +179,14 @@ public class UsageProgressBarPreference extends Preference {
         }
 
         if (mPercent >= 51) {
-            progressBar.setProgressTintList(context.getColorStateList(R.color.battery_high));
-            progressBar.setProgressBackgroundTintList(context.getColorStateList(R.color.battery_high));
+            progressBar.setProgressTintList(context.getColorStateList(R.color.battery_low));
+            progressBar.setProgressBackgroundTintList(context.getColorStateList(R.color.battery_low));
         } else if (mPercent >= 20) {
             progressBar.setProgressTintList(context.getColorStateList(R.color.battery_medium));
             progressBar.setProgressBackgroundTintList(context.getColorStateList(R.color.battery_medium));
         } else if (mPercent <= 19) {
-            progressBar.setProgressTintList(context.getColorStateList(R.color.battery_low));
-            progressBar.setProgressBackgroundTintList(context.getColorStateList(R.color.battery_low));
+            progressBar.setProgressTintList(context.getColorStateList(R.color.battery_high));
+            progressBar.setProgressBackgroundTintList(context.getColorStateList(R.color.battery_high));
         }
     }
 
@@ -211,12 +197,9 @@ public class UsageProgressBarPreference extends Preference {
 
         final Matcher matcher = mNumberPattern.matcher(summary);
         if (matcher.find()) {
-            final SpannableString spannableSummary = new SpannableString(summary);
-            spannableSummary.setSpan(
-                    new AbsoluteSizeSpan(64, true /* dip */),
-                    matcher.start(),
-                    matcher.end(),
-                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            final SpannableString spannableSummary =  new SpannableString(summary);
+            spannableSummary.setSpan(new AbsoluteSizeSpan(64, true /* dip */), matcher.start(),
+                    matcher.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             return spannableSummary;
         }
         return summary;
