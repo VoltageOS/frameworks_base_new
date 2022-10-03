@@ -120,7 +120,6 @@ public class ChangeReporter {
      * @param state    of the reported change - enabled/disabled/only logged
      */
     public void reportChange(int uid, long changeId, int state) {
-        reportChange(uid, changeId, state, false, true);
     }
 
     /**
