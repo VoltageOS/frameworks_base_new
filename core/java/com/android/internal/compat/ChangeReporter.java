@@ -120,7 +120,6 @@ public class ChangeReporter {
      * @param doStatsLog whether to log to stats log.
      */
     public void reportChange(int uid, long changeId, int state, boolean doStatsLog) {
-        reportChange(uid, changeId, state, false, doStatsLog);
     }
 
     /**
