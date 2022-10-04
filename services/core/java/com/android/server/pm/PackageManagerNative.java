@@ -187,4 +187,13 @@ final class PackageManagerNative extends IPackageManagerNative.Stub {
         return mPm.mInstallerService.getStagingManager().getStagedApexInfos().toArray(
                 new StagedApexInfo[0]);
     }
+
+    public void onDeniedSpecialRuntimePermissionOp(String permissionName, int uid, String packageName) {
+        if (Binder.getCallingUid() != android.os.Process.SYSTEM_UID) {
+            throw new SecurityException();
+        }
+
+        com.android.server.ext.MissingSpecialRuntimePermissionNotification
+                .maybeShow(mPm.getContext(), permissionName, uid, packageName);
+    }
 }
