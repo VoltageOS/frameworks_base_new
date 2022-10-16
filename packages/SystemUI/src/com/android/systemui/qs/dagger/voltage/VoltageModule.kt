@@ -25,6 +25,7 @@ import dagger.multibindings.StringKey
 
 import com.android.systemui.qs.tiles.CellularTile
 import com.android.systemui.qs.tiles.WifiTile
+import com.android.systemui.qs.tiles.WeatherTile
 
 @Module
 interface VoltageModule {
@@ -40,5 +41,11 @@ interface VoltageModule {
     @IntoMap
     @StringKey(WifiTile.TILE_SPEC)
     fun bindWifiTile(wifiTile: WifiTile): QSTileImpl<*>
+
+    /** Inject WeatherTile into tileMap in QSModule */
+    @Binds
+    @IntoMap
+    @StringKey(WeatherTile.TILE_SPEC)
+    fun bindWeatherTile(weatherTile: WeatherTile): QSTileImpl<*>
 
 }
