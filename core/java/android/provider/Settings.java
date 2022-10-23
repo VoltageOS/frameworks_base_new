@@ -14019,6 +14019,13 @@ public final class Settings {
         public static final String OTP_NOTIFICATION_REDACTION_LOCK_TIME =
                 "otp_redaction_lock_time";
 
+	/**
+         * Whether to show an overlay in the bottom corner of the screen on copying stuff
+         * into the clipboard.
+         * @hide
+         */
+        public static final String SHOW_CLIPBOARD_OVERLAY = "show_clipboard_overlay";
+
         /**
          * String to contain power menu actions
          * @hide
