@@ -630,7 +630,7 @@ public class ViewConfiguration {
      *                {@link Context#createWindowContext(int, Bundle)}.
      */
     // TODO(b/182007470): Use @ConfigurationContext instead
-    public static ViewConfiguration get(@NonNull @UiContext Context context) {
+    public static synchronized ViewConfiguration get(@NonNull @UiContext Context context) {
         StrictMode.assertConfigurationContext(context, "ViewConfiguration");
 
         final long key = createKey(context);
