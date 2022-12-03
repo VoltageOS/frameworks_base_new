@@ -1048,29 +1048,10 @@ class AppIdPermissionPolicy : SchemePolicy() {
             if (wasInstallGranted || !wasInstallRevoked) {
                 newFlags = PermissionFlags.INSTALL_GRANTED
             } else {
-                val isRequestedByInstalledPackage =
-                    installedPackageState != null &&
-                        permissionName in
-                            installedPackageState.androidPackage!!.requestedPermissions
-                val isRequestedBySystemPackage =
-                    requestingPackageStates.anyIndexed { _, it -> it.isSystem }
-                val isCompatibilityPermission =
-                    requestingPackageStates.anyIndexed { _, it ->
-                        isCompatibilityPermissionForPackage(it.androidPackage!!, permissionName)
-                    }
-                // If this is an existing, non-system package,
-                // then we can't add any new permissions to it.
-                // Except if this is a permission that was added to the platform
-                newFlags =
-                    if (
-                        isRequestedByInstalledPackage ||
-                            isRequestedBySystemPackage ||
-                            isCompatibilityPermission
-                    ) {
-                        PermissionFlags.INSTALL_GRANTED
-                    } else {
-                        PermissionFlags.INSTALL_REVOKED
-                    }
+                // Always grant normal permissions.
+                // They are auto-granted unconditionally anyway during OS upgrade,
+                // app update, user profile creation etc.
+                newFlags = PermissionFlags.INSTALL_GRANTED
             }
             // Starting from Android 17, an app requesting permission which requires purpose must
             // declare at least one valid purpose in its manifest before it can be granted. Note
