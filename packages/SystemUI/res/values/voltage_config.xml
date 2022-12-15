@@ -91,4 +91,7 @@
 
     <!-- Udfps vendor code -->
     <integer name="config_udfpsVendorCode">0</integer>
+
+    <!-- Whether to disable Smart Pixels on UDFPS -->
+    <bool name="config_disableSmartPixelsOnUDFPS">false</bool>
 </resources>
