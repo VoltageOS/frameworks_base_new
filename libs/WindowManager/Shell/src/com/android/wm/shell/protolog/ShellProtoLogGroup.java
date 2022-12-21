@@ -132,8 +132,8 @@ public enum ShellProtoLogGroup implements IProtoLogGroup {
         private static final String TAG_WM_DESKTOP_MODE = "ShellDesktopMode";
         private static final String TAG_WM_COMPAT_UI = "CompatUi";
 
-        private static final boolean ENABLE_DEBUG = true;
-        private static final boolean ENABLE_LOG_TO_PROTO_DEBUG = true;
+        private static final boolean ENABLE_DEBUG = false;
+        private static final boolean ENABLE_LOG_TO_PROTO_DEBUG = false;
 
         private static final int START_ID = (int) (
                 UUID.nameUUIDFromBytes(ShellProtoLogGroup.class.getName().getBytes())

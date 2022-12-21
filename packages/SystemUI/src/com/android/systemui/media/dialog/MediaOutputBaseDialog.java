@@ -73,7 +73,7 @@ public abstract class MediaOutputBaseDialog extends SystemUIDialog
     private static final String EMPTY_TITLE = " ";
     private static final String PREF_NAME = "MediaOutputDialog";
     private static final String PREF_IS_LE_BROADCAST_FIRST_LAUNCH = "PrefIsLeBroadcastFirstLaunch";
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
     private static final int HANDLE_BROADCAST_FAILED_DELAY = 3000;
 
     protected final Handler mMainThreadHandler = new Handler(Looper.getMainLooper());
