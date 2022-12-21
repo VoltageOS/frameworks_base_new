@@ -363,8 +363,6 @@ import com.android.window.flags.Flags;
 
 import dalvik.annotation.optimization.NeverCompile;
 
-import com.google.android.collect.Sets;
-
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.File;
@@ -3617,19 +3615,6 @@ final class ActivityRecord extends WindowToken {
                 // combined with open transition for the new activity.
                 if (DEBUG_VISIBILITY || DEBUG_TRANSITION) {
                     Slog.v(TAG_TRANSITION, "Prepare close transition: finishing " + this);
-                }
-
-                // When finishing the activity preemptively take the snapshot before the app window
-                // is marked as hidden and any configuration changes take place
-                // Note that RecentsAnimation will handle task snapshot while switching apps with
-                // the best capture timing (e.g. IME window capture),
-                // No need additional task capture while task is controlled by RecentsAnimation.
-                if (!mTransitionController.isShellTransitionsEnabled()
-                        && !task.isAnimatingByRecents()) {
-                    final ArraySet<Task> tasks = Sets.newArraySet(task);
-                    mAtmService.mWindowManager.mTaskSnapshotController.snapshotTasks(tasks);
-                    mAtmService.mWindowManager.mTaskSnapshotController
-                            .addSkipClosingAppSnapshotTasks(tasks);
                 }
 
                 // Tell window manager to prepare for this one to be removed.
