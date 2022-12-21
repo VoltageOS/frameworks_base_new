@@ -30,7 +30,7 @@ import javax.inject.Inject
 import kotlin.collections.LinkedHashMap
 
 private const val TAG = "MediaDataFilter"
-private const val DEBUG = true
+private const val DEBUG = false
 
 /**
  * Filters data updates from [MediaDataCombineLatest] based on the current user ID, and handles user
