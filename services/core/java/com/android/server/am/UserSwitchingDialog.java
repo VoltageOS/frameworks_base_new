@@ -70,7 +70,7 @@ class UserSwitchingDialog extends Dialog {
 
     // User switching doesn't happen that frequently, so it doesn't hurt to have it always on
     @SuppressWarnings("DebugTrue")
-    protected static final boolean DEBUG = true;
+    protected static final boolean DEBUG = false;
 
     private static final long DIALOG_SHOW_HIDE_ANIMATION_DURATION_MS = 100;
     private volatile boolean mDisableAnimations;
