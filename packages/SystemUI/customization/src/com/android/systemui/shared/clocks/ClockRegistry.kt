@@ -46,6 +46,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
+private const val DEBUG = false
 private val KEY_TIMESTAMP = "appliedTimestamp"
 private val KNOWN_PLUGINS =
     mapOf<String, List<ClockMetadata>>(
