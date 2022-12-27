@@ -27,6 +27,7 @@ import androidx.annotation.DrawableRes;
 import com.android.internal.statusbar.StatusBarIcon;
 import com.android.systemui.res.R;
 import com.android.systemui.statusbar.phone.PhoneStatusBarPolicy.BluetoothIconState;
+import com.android.systemui.statusbar.phone.PhoneStatusBarPolicy.NetworkTrafficState;
 import com.android.systemui.statusbar.phone.StatusBarSignalPolicy.CallIndicatorIconState;
 
 import java.util.List;
@@ -82,6 +83,9 @@ public interface StatusBarIconController {
 
     /** */
     void setBluetoothIcon(String slot, BluetoothIconState state);
+
+    /** */
+    void setNetworkTraffic(String slot, NetworkTrafficState state);
 
     /**
      * Notify this class that there is a new set of mobile icons to display, keyed off of this list
