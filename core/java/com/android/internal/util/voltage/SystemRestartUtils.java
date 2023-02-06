@@ -100,7 +100,7 @@ public class SystemRestartUtils {
                 if (mBarService != null) {
                     try {
                         Thread.sleep(RESTART_TIMEOUT);
-                        mBarService.reboot(false);
+                        mBarService.reboot(false, null);
                     } catch (RemoteException | InterruptedException e) {
                         e.printStackTrace();
                     }
