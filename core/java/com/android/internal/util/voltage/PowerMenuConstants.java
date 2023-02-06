@@ -36,6 +36,7 @@ public class PowerMenuConstants {
     public static final String GLOBAL_ACTION_KEY_DEVICECONTROLS = "devicecontrols";
     public static final String GLOBAL_ACTION_KEY_SYSTEM_UPDATE = "system_update";
     public static final String GLOBAL_ACTION_KEY_STANDBY = "standby";
+    public static final String GLOBAL_ACTION_KEY_RESTART_SYSTEMUI = "restart_systemui";
 
     /**
      * Advanced restart menu actions
@@ -63,6 +64,7 @@ public class PowerMenuConstants {
         GLOBAL_ACTION_KEY_LOCK,
         GLOBAL_ACTION_KEY_SYSTEM_UPDATE,
         GLOBAL_ACTION_KEY_STANDBY,
+        GLOBAL_ACTION_KEY_RESTART_SYSTEMUI,
     };
 
     public static String[] getAllActions() {
