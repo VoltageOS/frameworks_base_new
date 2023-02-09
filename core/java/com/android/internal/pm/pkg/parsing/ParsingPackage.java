@@ -589,4 +589,6 @@ public interface ParsingPackage {
     }
 
     void setPackageExt(@Nullable PackageExtIface ext);
+
+    boolean isDeclaredHavingCode();
 }

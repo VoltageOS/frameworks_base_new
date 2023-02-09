@@ -7003,7 +7003,9 @@ public final class Settings {
         /** @see android.provider.Settings#getPublicSettingsForClass */
         // ExtSettings BEGIN
 
-
+        /** @hide */
+        @Protected(readWrite = KnownSystemPackage.SETTINGS)
+        public static final String AUTO_GRANT_OTHER_SENSORS_PERMISSION = "auto_grant_OTHER_SENSORS_perm";
 
         // ExtSettings END
 
