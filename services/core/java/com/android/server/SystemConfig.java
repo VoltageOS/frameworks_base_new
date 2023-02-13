@@ -2146,6 +2146,8 @@ public class SystemConfig {
             }
         }
 
+        addFeature("grapheneos.package_update_preserves_package_enabled_setting", 0);
+
         try {
             int version = Integer.parseInt(Build.VERSION.INCREMENTAL);
             if (version > 0) {
