@@ -7074,6 +7074,10 @@ public final class Settings {
         @Protected(readWrite = KnownSystemPackage.SETTINGS)
         public static final String AUTO_GRANT_OTHER_SENSORS_PERMISSION = "auto_grant_OTHER_SENSORS_perm";
 
+        /** @hide */
+        @Protected(read = KnownSystemPackage.SYSTEM_UI, readWrite = KnownSystemPackage.SETTINGS)
+        public static final String SCREENSHOT_TIMESTAMP_EXIF = "screenshot_timestamp_exif";
+
         // ExtSettings END
 
         // NOTE: If you add new settings here, be sure to add them to
