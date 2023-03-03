@@ -17,6 +17,7 @@
 package com.android.server.location.gnss;
 
 import android.content.Context;
+import android.ext.settings.GnssSettings;
 import android.os.PersistableBundle;
 import android.os.SystemProperties;
 import android.telephony.CarrierConfigManager;
@@ -24,6 +25,7 @@ import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.Slog;
 
 import com.android.internal.util.FrameworkStatsLog;
 
@@ -296,6 +298,8 @@ public class GnssConfiguration {
         loadPropertiesFromGpsDebugConfig(mProperties, DEBUG_PROPERTIES_SYSTEM_FILE);
         mEsExtensionSec = getRangeCheckedConfigEsExtensionSec();
 
+        applyConfigOverrides(mContext, mProperties);
+
         logConfigurations();
 
         final HalInterfaceVersion gnssConfigurationIfaceVersion = getHalInterfaceVersion();
@@ -512,4 +516,27 @@ public class GnssConfiguration {
     private static native boolean native_set_satellite_blocklist(int[] constellations, int[] svIds);
 
     private static native boolean native_set_es_extension_sec(int emergencyExtensionSeconds);
+
+    private static void applyConfigOverrides(Context ctx, Properties props) {
+        final int suplMode = GnssSettings.SUPL_SETTING.get(ctx);
+
+        switch (suplMode) {
+            case GnssSettings.SUPL_SERVER_STANDARD:
+                Slog.d(TAG, "SUPL: using the standard server");
+                break;
+            case GnssSettings.SUPL_DISABLED:
+                Slog.d(TAG, "SUPL is disabled");
+                // SUPL mode is a bitmask, see
+                // hardware/interfaces/gnss/aidl/android/hardware/gnss/IGnssConfiguration.aidl
+                props.setProperty(CONFIG_SUPL_MODE, "0");
+                props.remove(CONFIG_SUPL_HOST);
+                props.remove(CONFIG_SUPL_PORT);
+                break;
+            case GnssSettings.SUPL_SERVER_GRAPHENEOS_PROXY:
+                Slog.d(TAG, "SUPL: using the GrapheneOS proxy");
+                props.setProperty(CONFIG_SUPL_HOST, "supl.grapheneos.org");
+                props.setProperty(CONFIG_SUPL_PORT, "7275");
+                break;
+        }
+    }
 }
