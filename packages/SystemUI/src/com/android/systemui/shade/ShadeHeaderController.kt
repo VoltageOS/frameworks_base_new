@@ -342,6 +342,7 @@ constructor(
             v.pivotY = v.height.toFloat() / 2
         }
         clock.setOnClickListener { launchClockActivity() }
+        clock.setQsHeader()
 
         dumpManager.registerDumpable(this)
         configurationController.addCallback(configurationControllerListener)
