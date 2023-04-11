@@ -13925,6 +13925,19 @@ public final class Settings {
          */
         @Readable
         public static final String QSTILE_REQUIRES_UNLOCKING = "qstile_requires_unlocking";
+         
+	/**
+	 * Whether to show ambient instead of waking for the dt2w gesture
+         * @hide
+         */
+        public static final String DOZE_DOUBLE_TAP_GESTURE_AMBIENT = "doze_double_tap_gesture_ambient";
+
+        /**
+         * Whether to show ambient instead of waking for the pickup gesture
+         * Do note quick pickup (device sensor) is already configured to do that
+         * @hide
+         */
+        public static final String DOZE_PICK_UP_GESTURE_AMBIENT = "doze_pick_up_gesture_ambient";
 
         /**
          * Whether key swap is enabled on supported hardware
