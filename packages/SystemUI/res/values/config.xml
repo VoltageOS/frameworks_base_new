@@ -56,7 +56,7 @@
          enabled for OLED devices to reduce/prevent burn in on the navigation bar (because of the
          black background and static button placements) and disabled for all other devices to
          prevent wasting cpu cycles on the dimming animation -->
-    <bool name="config_navigation_bar_enable_auto_dim_no_visible_wallpaper">true</bool>
+    <bool name="config_navigation_bar_enable_auto_dim_no_visible_wallpaper">false</bool>
 
     <!-- The number of rows in the paginated grid QuickSettings -->
     <integer name="quick_settings_paginated_grid_num_rows">4</integer>
