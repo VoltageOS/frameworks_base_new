@@ -205,8 +205,8 @@ import java.util.function.Predicate;
 public class JobSchedulerService extends com.android.server.SystemService
         implements StateChangedListener, JobCompletedListener {
     public static final String TAG = "JobScheduler";
-    public static final boolean DEBUG = Log.isLoggable(TAG, Log.DEBUG);
-    public static final boolean DEBUG_STANDBY = DEBUG || false;
+    public static final boolean DEBUG = false;
+    public static final boolean DEBUG_STANDBY = false;
 
     public static final String TRACE_TRACK_NAME = "JobScheduler";
 
@@ -214,7 +214,7 @@ public class JobSchedulerService extends com.android.server.SystemService
     private static final int DEFAULT_MAX_JOBS_PER_APP = 150;
     private final int mMaxJobsPerApp;
     /** The number of the most recently completed jobs to keep track of for debugging purposes. */
-    private static final int NUM_COMPLETED_JOB_HISTORY = 20;
+    private static final int NUM_COMPLETED_JOB_HISTORY = 5;
 
     @GuardedBy("mLock")
     private final ArrayMap<String, SparseIntArray> mProxiedJobsCounts =
