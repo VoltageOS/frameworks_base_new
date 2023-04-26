@@ -62723,6 +62723,13 @@ package android.widget {
     method public android.view.View makeView();
   }
 
+  public class WallpaperView extends android.widget.ImageView {
+    ctor public WallpaperView(@Nullable android.content.Context, @Nullable android.util.AttributeSet, int);
+    ctor public WallpaperView(@Nullable android.content.Context, @Nullable android.util.AttributeSet);
+    ctor public WallpaperView(@Nullable android.content.Context);
+    method public void onSizeChanged(int, int, int, int);
+  }
+
   public interface WrapperListAdapter extends android.widget.ListAdapter {
     method public android.widget.ListAdapter getWrappedAdapter();
   }
