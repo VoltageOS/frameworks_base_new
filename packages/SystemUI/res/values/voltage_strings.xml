@@ -191,4 +191,12 @@
         <item quantity="other">%d devices connected</item>
     </plurals>
 
+    <!-- Weather -->
+     <string name="weather_condition_clouds">Cloudy</string>
+     <string name="weather_condition_rain">Rainy</string>
+     <string name="weather_condition_clear">Sunny</string>
+     <string name="weather_condition_storm">Stormy</string>
+     <string name="weather_condition_snow">Snowy</string>
+     <string name="weather_condition_wind">Windy</string>
+     <string name="weather_condition_mist">Misty</string>
 </resources>
