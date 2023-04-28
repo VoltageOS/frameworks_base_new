@@ -26,4 +26,7 @@
     <dimen name="ongoing_action_chip_compact_size">28dp</dimen>
     <dimen name="ongoing_action_icon_compact_size">16dp</dimen>
 
+    <!-- Weather -->  
+    <dimen name="weather_image_max_size">24dp</dimen>
+    <dimen name="weather_humidity_margin_start">16dp</dimen>
 </resources>
