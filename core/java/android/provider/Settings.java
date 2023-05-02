@@ -14064,6 +14064,10 @@ public final class Settings {
         @Protected(restrictReads = false, readWrite = KnownSystemPackage.SETTINGS)
         public static final String GNSS_SUPL = "force_disable_supl"; // historical name
 
+        /** @hide */
+        @Protected(restrictReads = false, readWrite = KnownSystemPackage.SETTINGS)
+        public static final String GNSS_PSDS_STANDARD = "psds_server"; // historical name
+
         // ExtSettings END
 
         // NOTE: If you add new settings here, be sure to add them to

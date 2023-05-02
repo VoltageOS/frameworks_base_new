@@ -7762,4 +7762,7 @@
         It can only contain non-AOSP permissions outside of the android.*
         and com.android.* namespace. -->
     <string-array name="config_watchFacePermissions" translatable="false"/>
+
+    <string name="config_gnssPsdsType"></string>
+    <java-symbol type="string" name="config_gnssPsdsType" />
 </resources>
