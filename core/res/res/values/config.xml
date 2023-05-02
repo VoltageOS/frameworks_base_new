@@ -7481,4 +7481,7 @@
     <java-symbol type="bool" name="config_usbPortSecuritySupported" />
     <bool name="config_usb_port_security_applies_to_pogo_pins">false</bool>
     <java-symbol type="bool" name="config_usb_port_security_applies_to_pogo_pins" />
+
+    <string name="config_gnssPsdsType"></string>
+    <java-symbol type="string" name="config_gnssPsdsType" />
 </resources>
