@@ -1017,6 +1017,7 @@ public final class ActivityThread extends ClientTransactionHandler
         @UnsupportedAppUsage
         AppBindData() {
         }
+        Bundle extraArgs;
         @UnsupportedAppUsage
         LoadedApk info;
         @UnsupportedAppUsage
@@ -1423,6 +1424,7 @@ public final class ActivityThread extends ClientTransactionHandler
         @Override
         @RavenwoodThrow(comment = "See ActivityThread_ravenwood for initialization on Ravenwood")
         public final void bindApplication(
+                Bundle extraArgs,
                 String processName,
                 ApplicationInfo appInfo,
                 String sdkSandboxClientAppVolumeUuid,
@@ -1509,6 +1511,7 @@ public final class ActivityThread extends ClientTransactionHandler
             }
 
             AppBindData data = new AppBindData();
+            data.extraArgs = extraArgs;
             data.processName = processName;
             data.appInfo = appInfo;
             data.sdkSandboxClientAppVolumeUuid = sdkSandboxClientAppVolumeUuid;
@@ -8174,6 +8177,7 @@ public final class ActivityThread extends ClientTransactionHandler
         final IActivityManager mgr = ActivityManager.getService();
         final ContextImpl appContext = ContextImpl.createAppContext(this, data.info);
         mConfigurationController.updateLocaleListFromAppContext(appContext);
+        final Bundle extraAppBindArgs = ActivityThreadHooks.onBind(appContext, data);
 
         // Initialize the default http proxy in this process.
         Trace.traceBegin(Trace.TRACE_TAG_ACTIVITY_MANAGER, "Setup proxies");
@@ -8240,6 +8244,10 @@ public final class ActivityThread extends ClientTransactionHandler
             // Small heap, clamp to the current growth limit and let the heap release
             // pages after the growth limit to the non growth limit capacity. b/18387825
             dalvik.system.VMRuntime.getRuntime().clampGrowthLimit();
+        }
+
+        if (extraAppBindArgs != null) {
+            ActivityThreadHooks.onBind2(appContext, extraAppBindArgs);
         }
 
         // Allow disk access during application and provider setup. This could
