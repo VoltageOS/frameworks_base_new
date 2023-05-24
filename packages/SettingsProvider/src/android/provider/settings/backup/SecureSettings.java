@@ -290,6 +290,7 @@ public class SecureSettings {
         Settings.Secure.TORCH_LONG_PRESS_POWER,
         Settings.Secure.VPN_ENFORCE_DNS,
         Settings.Secure.DOZE_DOUBLE_TAP_GESTURE_AMBIENT,
-        Settings.Secure.DOZE_PICK_UP_GESTURE_AMBIENT
+        Settings.Secure.DOZE_PICK_UP_GESTURE_AMBIENT,
+        Settings.Secure.DOZE_SINGLE_TAP_GESTURE_AMBIENT,
     };
 }
