@@ -20,6 +20,7 @@ import static android.Manifest.permission.POST_NOTIFICATIONS;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static android.service.notification.Flags.notificationClassification;
 
+import android.Manifest;
 import android.annotation.CallbackExecutor;
 import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
@@ -35,6 +36,7 @@ import android.annotation.UserHandleAware;
 import android.annotation.WorkerThread;
 import android.app.Notification.Builder;
 import android.app.compat.CompatChanges;
+import android.app.compat.gms.GmsCompat;
 import android.compat.annotation.ChangeId;
 import android.compat.annotation.EnabledSince;
 import android.compat.annotation.UnsupportedAppUsage;
@@ -68,6 +70,8 @@ import android.service.notification.ZenPolicy;
 import android.util.Log;
 import android.util.LruCache;
 import android.util.proto.ProtoOutputStream;
+
+import com.android.internal.gmscompat.GmsCompatApp;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -772,6 +776,17 @@ public class NotificationManager {
     public void notifyAsUser(@Nullable String tag, int id, Notification notification,
             UserHandle user)
     {
+        if (GmsCompat.isEnabled()) {
+            if (!GmsCompat.hasPermission(Manifest.permission.POST_NOTIFICATIONS)) {
+                String pkg = GmsCompat.appContext().getPackageName();
+                try {
+                    GmsCompatApp.iGms2Gca().showMissingPostNotifsPermissionNotification(pkg);
+                } catch (RemoteException e) {
+                    GmsCompatApp.callFailed(e);
+                }
+            }
+        }
+
         INotificationManager service = service();
         String pkg = mContext.getPackageName();
         if (discardNotify(tag, id, notification)) {
@@ -1804,6 +1819,10 @@ public class NotificationManager {
      * {@link android.provider.Settings#ACTION_NOTIFICATION_LISTENER_SETTINGS}.
      */
     public boolean isNotificationListenerAccessGranted(ComponentName listener) {
+        if (GmsCompat.isAndroidAuto()) {
+            return true;
+        }
+
         INotificationManager service = service();
         try {
             return service.isNotificationListenerAccessGranted(listener);
