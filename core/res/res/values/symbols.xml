@@ -6008,4 +6008,5 @@
   <java-symbol type="string" name="fingerprint_frr_notification_title" />
   <java-symbol type="string" name="fingerprint_frr_notification_msg" />
 
+<java-symbol type="drawable" name="ic_error" />
 </resources>
