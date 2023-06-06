@@ -6352,4 +6352,6 @@
 
   <!-- Action for opening trusted location settings page -->
   <java-symbol type="string" name="trusted_location_settings_action" />
+
+  <java-symbol type="drawable" name="ic_error" />
 </resources>
