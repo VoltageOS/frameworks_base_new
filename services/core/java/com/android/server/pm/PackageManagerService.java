@@ -3980,7 +3980,8 @@ public class PackageManagerService implements PackageSender, TestUtilityService 
                 final AndroidPackage pkg = pkgSettings.get(packageName).getPkg();
                 if (pkg == null || !AndroidPackageUtils.hasComponentClassName(pkg, className)) {
                     if (pkg != null
-                            && pkg.getTargetSdkVersion() >= Build.VERSION_CODES.JELLY_BEAN) {
+                            && pkg.getTargetSdkVersion() >= Build.VERSION_CODES.JELLY_BEAN
+                            && (setting.getEnabledFlags() & PackageManager.SKIP_IF_MISSING) == 0) {
                         throw new IllegalArgumentException("Component class " + className
                                 + " does not exist in " + packageName);
                     } else {
@@ -8299,6 +8300,11 @@ public class PackageManagerService implements PackageSender, TestUtilityService 
 
     int getUidForVerifier(VerifierInfo verifierInfo) {
         return mInstallPackageHelper.getUidForVerifier(verifierInfo);
+    }
+
+    @NonNull
+    public Context getContext() {
+        return mContext;
     }
 
     int deletePackageX(String packageName, long versionCode, int userId, int deleteFlags,

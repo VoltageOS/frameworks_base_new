@@ -39,17 +39,6 @@ public class ExtSettings {
     public static final BoolSetting SCREENSHOT_TIMESTAMP_EXIF = new BoolSetting(
             Setting.Scope.PER_USER, Settings.Secure.SCREENSHOT_TIMESTAMP_EXIF, false);
 
-    // AppCompatConfig specifies which hardening features are compatible/incompatible with a
-    // specific app.
-    // This setting controls whether incompatible hardening features would be disabled by default
-    // for that app. In both cases, user will still be able to enable/disable them manually.
-    //
-    // Note that hardening features that are marked as compatible are enabled unconditionally by
-    // default, regardless of this setting.
-    public static final BoolSetting ALLOW_DISABLING_HARDENING_VIA_APP_COMPAT_CONFIG = new BoolSetting(
-            Setting.Scope.GLOBAL, Settings.Global.ALLOW_DISABLING_HARDENING_VIA_APP_COMPAT_CONFIG,
-            defaultBool(R.bool.setting_default_allow_disabling_hardening_via_app_compat_config));
-
     private ExtSettings() {}
 
     public static Function<Context, Boolean> defaultBool(@BoolRes int res) {
