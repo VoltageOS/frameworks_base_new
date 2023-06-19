@@ -10,6 +10,7 @@ import android.content.pm.GosPackageStateFlag;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManagerInternal;
 import android.ext.PackageId;
+import android.location.HookedLocationManager;
 import android.os.Bundle;
 import android.os.UserHandle;
 import android.util.ArraySet;
@@ -109,6 +110,9 @@ public class PackageManagerHooks {
         int[] flagsArr = new int[AppBindArgs.FLAGS_ARRAY_LEN];
         flagsArr[AppBindArgs.FLAGS_IDX_SPECIAL_RUNTIME_PERMISSIONS] =
                 SpecialRuntimePermUtils.getFlags(pkg, pkgState, userId);
+
+        flagsArr[AppBindArgs.FLAGS_IDX_HOOKED_LOCATION_MANAGER] =
+                HookedLocationManager.getFlags(gosPs, isUserApp);
 
         var b = new Bundle();
         b.putParcelable(AppBindArgs.KEY_GOS_PACKAGE_STATE, gosPs);
