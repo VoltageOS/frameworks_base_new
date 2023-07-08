@@ -47,11 +47,7 @@ constructor(
         when {
             qsExpandedFraction > fadeInStartFraction -> BatteryMeterView.MODE_ESTIMATE
             qsExpandedFraction < fadeOutCompleteFraction ->
-                if (hasCenterCutout(cutout)) {
-                    BatteryMeterView.MODE_ON
-                } else {
-                    BatteryMeterView.MODE_ESTIMATE
-                }
+                BatteryMeterView.MODE_ESTIMATE
             else -> null
         }
 
