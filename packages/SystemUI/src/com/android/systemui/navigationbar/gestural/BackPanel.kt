@@ -35,6 +35,8 @@ class BackPanel(context: Context, private val latencyTracker: LatencyTracker) : 
     private var arrowBackgroundRect = RectF()
     private var arrowBackgroundPaint = Paint()
 
+    private var drawDoubleArrow = false
+
     // True if the panel is currently on the left of the screen
     var isLeftPanel = false
 
@@ -295,6 +297,12 @@ class BackPanel(context: Context, private val latencyTracker: LatencyTracker) : 
         arrowPath.lineTo(0f, 0f)
         arrowPath.lineTo(dx, dy)
         arrowPath.moveTo(dx, -dy)
+
+        if (drawDoubleArrow) {
+            arrowPath.addPath(arrowPath,
+                    arrowPaint.strokeWidth * 2.0f * (if (isLeftPanel) 1 else -1), 0.0f)
+        }
+
         return arrowPath
     }
 
@@ -451,6 +459,10 @@ class BackPanel(context: Context, private val latencyTracker: LatencyTracker) : 
     }
 
     override fun hasOverlappingRendering() = false
+
+    fun setDrawDoubleArrow(enable: Boolean) {
+        drawDoubleArrow = enable
+    }
 
     override fun onDraw(canvas: Canvas) {
         val edgeCorner = backgroundEdgeCornerRadius.pos
