@@ -155,6 +155,9 @@ constructor(
 
     internal val failsafeRunnable = Runnable { onFailsafe() }
 
+    private var isExtendedSwipe = false
+    private var longSwipeThreshold = 0f
+
     private var backArrowVisibility = false
 
     private var edgeHapticEnabled = false
@@ -265,6 +268,10 @@ constructor(
 
     override fun onViewDetached() {
         configurationController.removeCallback(configurationListener)
+    }
+
+    override fun setLongSwipeEnabled(enabled: Boolean) {
+        isExtendedSwipe = enabled;
     }
 
     override fun onMotionEvent(event: MotionEvent) {
@@ -443,6 +450,8 @@ constructor(
         // How far in the x direction we are from the original touch ignoring motion that
         // occurs between the screen edge and the touch start.
         val xTranslation = max(0f, if (mView.isLeftPanel) x - startX else startX - x)
+        val touchTranslation = MathUtils.abs(x - startX);
+        val almostLongSwipe = isExtendedSwipe && (touchTranslation  > longSwipeThreshold)
 
         // Compared to last time, how far we moved in the x direction. If <0, we are moving closer
         // to the edge. If >0, we are moving further from the edge
@@ -471,6 +480,7 @@ constructor(
         }
 
         updateArrowStateOnMove(yTranslation, xTranslation)
+        mView.setDrawDoubleArrow(almostLongSwipe)
 
         val gestureProgress =
             when (currentState) {
@@ -712,6 +722,7 @@ constructor(
     override fun setDisplaySize(displaySize: Point) {
         this.displaySize.set(displaySize.x, displaySize.y)
         fullyStretchedThreshold = min(displaySize.x.toFloat(), params.swipeProgressThreshold)
+        longSwipeThreshold = displaySize.x * 0.45f;
     }
 
     /** Updates resting arrow and background size not accounting for stretch */
