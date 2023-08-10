@@ -169,6 +169,7 @@ import com.android.server.display.DisplayManagerService;
 import com.android.server.display.color.ColorDisplayService;
 import com.android.server.dreams.DreamManagerService;
 import com.android.server.emergency.EmergencyAffordanceService;
+import com.android.server.voltage.CustomDeviceConfigService;
 import com.android.server.flags.FeatureFlagsService;
 import com.android.server.gpu.GpuService;
 import com.android.server.grammaticalinflection.GrammaticalInflectionService;
@@ -2706,7 +2707,12 @@ public final class SystemServer implements Dumpable {
                 mSystemServiceManager.startService(BackgroundInstallControlService.class);
                 t.traceEnd();
             }
-        }
+
+
+            // CustomDeviceConfigService
+            t.traceBegin("StartCustomDeviceConfigService");
+            mSystemServiceManager.startService(CustomDeviceConfigService.class);
+            t.traceEnd();
 
         t.traceBegin("StartMediaProjectionManager");
         mSystemServiceManager.startService(MediaProjectionManagerService.class);
