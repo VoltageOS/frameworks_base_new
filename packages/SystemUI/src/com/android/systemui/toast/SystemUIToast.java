@@ -176,6 +176,7 @@ public class SystemUIToast implements ToastPlugin.Toast {
         final TextView textView = toastView.findViewById(com.android.systemui.res.R.id.text);
         final ImageView iconView = toastView.findViewById(com.android.systemui.res.R.id.icon);
         textView.setText(mText);
+        textView.setSelected(true);
 
         ApplicationInfo appInfo = null;
         try {
