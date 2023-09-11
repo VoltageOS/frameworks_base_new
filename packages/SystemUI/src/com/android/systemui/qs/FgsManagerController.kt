@@ -142,6 +142,7 @@ interface FgsManagerController {
 class FgsManagerControllerImpl
 @Inject
 constructor(
+    private val context: Context,
     @ShadeDisplayAware private val resources: Resources,
     @Main private val mainExecutor: Executor,
     @Background private val backgroundExecutor: Executor,
@@ -233,6 +234,9 @@ constructor(
         resources.getStringArray(com.android.internal.R.array.vendor_stoppable_fgs_system_apps)
     }
 
+    @GuardedBy("lock")
+    private val excludedApps: Array<String> = context.resources.getStringArray(R.array.excluded_apps)
+
     override fun init() {
         synchronized(lock) {
             if (initialized) {
@@ -320,7 +324,6 @@ constructor(
                 executor = mainExecutor,
                 flags = Context.RECEIVER_NOT_EXPORTED,
             )
-
             initialized = true
         }
     }
@@ -656,7 +659,7 @@ constructor(
         ) {
             synchronized(lock) {
                 val userPackageKey = UserPackage(userId, packageName)
-                if (isForeground) {
+                if (isForeground && !excludedApps.contains(packageName)) {
                     runningTaskIdentifiers
                         .getOrPut(userPackageKey) { StartTimeAndIdentifiers(systemClock) }
                         .addFgsToken(token)
@@ -688,7 +691,7 @@ constructor(
                         UserHandle.getUserId(summary.callingUid),
                         summary.callingPackageName,
                     )
-                if (isRunning) {
+                if (isRunning && !excludedApps.contains(summary.callingPackageName)) {
                     runningTaskIdentifiers
                         .getOrPut(userPackageKey) { StartTimeAndIdentifiers(systemClock) }
                         .addJobSummary(summary)
