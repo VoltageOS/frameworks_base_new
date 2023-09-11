@@ -223,6 +223,10 @@ class FgsManagerControllerImpl @Inject constructor(
 
     private val userVisibleJobObserver = UserVisibleJobObserver()
 
+    @GuardedBy("lock")
+    private val excludedApps: Array<String> = context.resources.getStringArray(R.array.excluded_apps)
+
+
     override fun init() {
         synchronized(lock) {
             if (initialized) {
@@ -297,7 +301,6 @@ class FgsManagerControllerImpl @Inject constructor(
                 executor = mainExecutor,
                 flags = Context.RECEIVER_NOT_EXPORTED
             )
-
             initialized = true
         }
     }
@@ -633,7 +636,7 @@ class FgsManagerControllerImpl @Inject constructor(
         ) {
             synchronized(lock) {
                 val userPackageKey = UserPackage(userId, packageName)
-                if (isForeground) {
+                if (isForeground && !excludedApps.contains(packageName)) {
                     runningTaskIdentifiers
                             .getOrPut(userPackageKey) { StartTimeAndIdentifiers(systemClock) }
                             .addFgsToken(token)
@@ -661,7 +664,7 @@ class FgsManagerControllerImpl @Inject constructor(
             synchronized(lock) {
                 val userPackageKey = UserPackage(
                         UserHandle.getUserId(summary.callingUid), summary.callingPackageName)
-                if (isRunning) {
+                if (isRunning && !excludedApps.contains(summary.callingPackageName)) {
                     runningTaskIdentifiers
                             .getOrPut(userPackageKey) { StartTimeAndIdentifiers(systemClock) }
                             .addJobSummary(summary)
