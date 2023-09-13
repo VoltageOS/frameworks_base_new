@@ -2487,6 +2487,8 @@ UnflaggedApi: android.permission.PermissionManager#updatePermissionState(String,
     New API must be flagged with @FlaggedApi: method android.permission.PermissionManager.updatePermissionState(String,int)
 UnflaggedApi: android.provider.Settings#ACTION_APP_PERMISSIONS_SETTINGS:
     New API must be flagged with @FlaggedApi: field android.provider.Settings.ACTION_APP_PERMISSIONS_SETTINGS
+UnflaggedApi: android.provider.Settings.Secure#VOLUME_HUSH_CYCLE:
+    New API must be flagged with @FlaggedApi: field android.provider.Settings.Secure.VOLUME_HUSH_CYCLE
 UnflaggedApi: android.provider.Settings.System#putString(android.content.ContentResolver, String, String, boolean, boolean):
     New API must be flagged with @FlaggedApi: method android.provider.Settings.System.putString(android.content.ContentResolver,String,String,boolean,boolean)
 UnflaggedApi: android.provider.Settings.System#resetToDefaults(android.content.ContentResolver, String):

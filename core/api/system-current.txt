@@ -12388,6 +12388,7 @@ package android.provider {
     field public static final int USER_SETUP_PERSONALIZATION_PAUSED = 2; // 0x2
     field public static final int USER_SETUP_PERSONALIZATION_STARTED = 1; // 0x1
     field public static final String USER_SETUP_PERSONALIZATION_STATE = "user_setup_personalization_state";
+    field public static final int VOLUME_HUSH_CYCLE = 3; // 0x3
     field public static final String VOLUME_HUSH_GESTURE = "volume_hush_gesture";
     field public static final int VOLUME_HUSH_MUTE = 2; // 0x2
     field public static final int VOLUME_HUSH_OFF = 0; // 0x0
