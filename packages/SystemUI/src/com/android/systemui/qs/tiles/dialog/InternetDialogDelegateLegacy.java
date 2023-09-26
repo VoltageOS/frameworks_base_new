@@ -448,7 +448,7 @@ public class InternetDialogDelegateLegacy implements
         internetContent.mCurrentSatelliteState =
                 mInternetDetailsContentController.getCurrentSatelliteState();
         internetContent.mDefaultSubSignalStrengthIcon =
-                mInternetDetailsContentController.getSignalStrengthDrawable(mDefaultDataSubId);
+                mInternetDetailsContentController.getSignalStrengthDrawable(mDefaultDataSubId).mutate();
 
         return internetContent;
     }
