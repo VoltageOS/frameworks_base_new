@@ -57,4 +57,8 @@
      <!-- Define device configs on boot -->
      <java-symbol type="array" name="global_device_configs_override" />
      <java-symbol type="array" name="device_configs_override" />
+
+     <!-- Status bar DT2S gesture -->
+     <java-symbol type="bool" name="config_dt2sGestureAvailable" />
+     <java-symbol type="bool" name="config_dt2sGestureEnabledByDefault" />
 </resources>
