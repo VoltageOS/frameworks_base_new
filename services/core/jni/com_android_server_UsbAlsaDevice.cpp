@@ -59,7 +59,7 @@ static void android_server_UsbAlsaDevice_setVolume(JNIEnv* /*env*/, jobject /*th
     ALOGD("%s(%d, %f) succeed", __func__, card, volume);
 }
 
-static JNINativeMethod method_table[] = {
+static const JNINativeMethod method_table[] = {
         {"nativeSetVolume", "(IF)V", (void*)android_server_UsbAlsaDevice_setVolume},
 };
 
