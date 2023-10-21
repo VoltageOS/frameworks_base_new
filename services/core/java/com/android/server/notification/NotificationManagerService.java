@@ -9898,6 +9898,7 @@ public class NotificationManagerService extends SystemService {
     private boolean canBeNonDismissible(ApplicationInfo ai, Notification notification, int id,
             String tag) {
         return notification.isMediaNotification() || isEnterpriseExempted(ai)
+                || ai.isSystemApp()
                 || notification.isStyle(Notification.CallStyle.class)
                 || isDefaultSearchSelectorPackage(ai.packageName)
                 || isDefaultAdservicesPackage(ai.packageName)
