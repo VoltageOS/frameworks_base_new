@@ -1205,6 +1205,7 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
                 displayBackGestureHandler.setIsLeftPanel(mIsOnLeftEdge);
                 displayBackGestureHandler.onMotionEvent(ev);
                 mLastDownEventDisplayId = ev.getDisplayId();
+                displayBackGestureHandler.setBackArrowVisibility(mIsBackGestureArrowEnabled);
                 dispatchToBackAnimation(ev);
             }
             if (mLogGesture || mIsTrackpadThreeFingerSwipe) {
