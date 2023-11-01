@@ -1279,6 +1279,7 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
             if (mAllowGesture) {
                 if (DesktopExperienceFlags.ENABLE_MULTIDISPLAY_TRACKPAD_BACK_GESTURE.isTrue()) {
                     displayBackGestureHandler.setIsLeftPanel(mIsOnLeftEdge);
+                    displayBackGestureHandler.setBackArrowVisibility(mIsBackGestureArrowEnabled);
                     displayBackGestureHandler.onMotionEvent(ev);
                     mLastDownEventDisplayId = ev.getDisplayId();
                 } else {

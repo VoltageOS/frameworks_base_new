@@ -102,6 +102,9 @@ public class GestureNavigationSettingsObserver extends ContentObserver {
             r.registerContentObserver(
                     Settings.Secure.getUriFor(Settings.Secure.USER_SETUP_COMPLETE),
                     false, this);
+            r.registerContentObserver(
+                    Settings.Secure.getUriFor(Settings.Secure.BACK_GESTURE_ARROW),
+                    false, this);
             DeviceConfig.addOnPropertiesChangedListener(
                     DeviceConfig.NAMESPACE_SYSTEMUI,
                     runnable -> mMainHandler.post(runnable),

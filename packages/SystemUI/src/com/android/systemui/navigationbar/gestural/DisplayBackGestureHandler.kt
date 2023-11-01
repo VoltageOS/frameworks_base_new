@@ -58,6 +58,8 @@ interface DisplayBackGestureHandler {
 
     fun dispose()
 
+    fun setBackArrowVisibility(enabled: Boolean)
+
     fun dump(prefix: String, writer: PrintWriter)
 }
 
@@ -133,6 +135,8 @@ constructor(
     override fun onMotionEvent(ev: MotionEvent) = edgeBackPlugin.onMotionEvent(ev)
 
     override fun setIsLeftPanel(isLeft: Boolean) = edgeBackPlugin.setIsLeftPanel(isLeft)
+
+    override fun setBackArrowVisibility(enabled: Boolean) = edgeBackPlugin.setBackArrowVisibility(enabled)
 
     override fun setBatchingEnabled(enabled: Boolean) =
         inputEventReceiver.setBatchingEnabled(enabled)
