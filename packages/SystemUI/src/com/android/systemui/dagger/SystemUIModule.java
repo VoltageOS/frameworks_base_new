@@ -101,6 +101,7 @@ import com.android.systemui.process.condition.SystemProcessCondition;
 import com.android.systemui.qs.FgsManagerController;
 import com.android.systemui.qs.FgsManagerControllerImpl;
 import com.android.systemui.qs.QSFragmentStartableModule;
+import com.android.systemui.qs.dagger.voltage.VoltageModule;
 import com.android.systemui.qs.footer.dagger.FooterActionsModule;
 import com.android.systemui.qs.tiles.impl.qr.ui.model.QRCodeScannerModule;
 import com.android.systemui.recents.Recents;
@@ -232,6 +233,7 @@ import javax.inject.Named;
         DisplayModule.class,
         DreamModule.class,
         EventLogModule.class,
+        VoltageModule.class,
         FalsingModule.class,
         FlagsModule.class,
         FlagDependenciesModule.class,
