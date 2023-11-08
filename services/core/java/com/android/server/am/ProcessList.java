@@ -3307,7 +3307,7 @@ public final class ProcessList extends ProcessListInternal
                 removeProcessLocked(proc.first, callerWillRestart, allowRestart || proc.second,
                         reasonCode, subReason, reason, !doFreeze /* async */);
             }
-            killAppZygotesLocked(packageName, appId, userId, false /* force */);
+            killAppZygotesLocked(packageName, appId, userId, true /* force */);
 
             if (doFreeze) unfreezePackageCgroup(packageUID);
 
