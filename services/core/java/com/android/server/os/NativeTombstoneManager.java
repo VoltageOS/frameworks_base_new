@@ -45,8 +45,11 @@ import android.util.proto.ProtoInputStream;
 import android.util.proto.ProtoParseException;
 
 import com.android.internal.annotations.GuardedBy;
+import com.android.internal.os.BackgroundThread;
 import com.android.server.BootReceiver;
 import com.android.server.ServiceThread;
+import com.android.server.ext.DropBoxMonitor;
+import com.android.server.ext.TombstoneHandler;
 import com.android.server.os.TombstoneProtos.Cause;
 import com.android.server.os.TombstoneProtos.Tombstone;
 
@@ -113,13 +116,15 @@ public final class NativeTombstoneManager {
             final File[] tombstoneFiles = TOMBSTONE_DIR.listFiles();
             for (int i = 0; tombstoneFiles != null && i < tombstoneFiles.length; i++) {
                 if (tombstoneFiles[i].isFile()) {
-                    handleTombstone(tombstoneFiles[i]);
+                    handleTombstone(tombstoneFiles[i], false);
                 }
             }
+
+            BackgroundThread.getHandler().post(() -> DropBoxMonitor.init(mContext));
         });
     }
 
-    private void handleTombstone(File path) {
+    private void handleTombstone(File path, boolean isFromWatcher) {
         final String filename = path.getName();
 
         // Clean up temporary files if they made it this far (e.g. if system server crashes).
@@ -143,6 +148,10 @@ public final class NativeTombstoneManager {
         // BootReceiver.filterAndAddTombstoneToDropBox through pbtombstone
         if (Flags.protoTombstone() && !isProtoFile) {
             return;
+        }
+
+        if (isFromWatcher && isProtoFile) {
+            BackgroundThread.getHandler().post(() -> TombstoneHandler.handleNewFile(mContext, path));
         }
 
         File protoPath = isProtoFile ? path : new File(path.getAbsolutePath() + ".pb");
@@ -613,7 +622,7 @@ public final class NativeTombstoneManager {
                 if (path.endsWith(".tmp")) {
                     return;
                 }
-                handleTombstone(new File(TOMBSTONE_DIR, path));
+                handleTombstone(new File(TOMBSTONE_DIR, path), true);
             });
         }
     }
