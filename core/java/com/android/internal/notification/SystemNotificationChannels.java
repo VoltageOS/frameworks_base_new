@@ -283,12 +283,16 @@ public class SystemNotificationChannels {
 
     public static final String MISSING_PERMISSION = "MISSING_PERMISSION";
     public static final String EXPLOIT_PROTECTION = "EXPLOIT_PROTECTION";
+    public static final String SYSTEM_JOURNAL = "SYSTEM_JOURNAL";
 
     private static void extraChannels(Context ctx, List<NotificationChannel> dest) {
         channel(ctx, MISSING_PERMISSION,
                     R.string.notification_channel_missing_permission,
                     NotificationManager.IMPORTANCE_HIGH, true, dest);
         channel(ctx, EXPLOIT_PROTECTION, R.string.notif_channel_exploit_protection,
+            NotificationManager.IMPORTANCE_HIGH, true, dest);
+
+        channel(ctx, SYSTEM_JOURNAL, R.string.notif_ch_system_journal,
             NotificationManager.IMPORTANCE_HIGH, true, dest);
     }
 
