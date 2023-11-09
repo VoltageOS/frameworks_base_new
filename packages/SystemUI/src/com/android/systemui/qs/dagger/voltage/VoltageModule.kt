@@ -26,6 +26,7 @@ import com.android.systemui.qs.tiles.CellularTileLegacy
 import com.android.systemui.qs.tiles.WifiTileLegacy
 import com.android.systemui.qs.tiles.NfcTile
 import com.android.systemui.qs.tiles.HeadsUpTile
+import com.android.systemui.qs.tiles.SyncTile
 import com.android.systemui.qs.tiles.base.shared.model.QSTileConfig;
 import com.android.systemui.qs.tiles.base.shared.model.QSTilePolicy;
 import com.android.systemui.qs.tiles.base.shared.model.QSTileUIConfig;
@@ -63,6 +64,12 @@ interface VoltageModule {
     @IntoMap
     @StringKey(HeadsUpTile.TILE_SPEC)
     fun bindHeadsUpTile(headsUpTile: HeadsUpTile): QSTileImpl<*>
+
+    /** Inject SyncTile into tileMap in QSModule */
+    @Binds
+    @IntoMap
+    @StringKey(SyncTile.TILE_SPEC)
+    fun bindSyncTile(syncTile: SyncTile): QSTileImpl<*>
 
     companion object {
         @Provides
@@ -140,5 +147,18 @@ interface VoltageModule {
                 category = TileCategory.DISPLAY
             )
         }
+
+        @Provides
+        @IntoMap
+        @StringKey(SyncTile.TILE_SPEC)
+        fun provideSyncConfig(uiEventLogger: QsEventLogger): QSTileConfig {
+            return QSTileConfig(
+                tileSpec = TileSpec.create(SyncTile.TILE_SPEC),
+                uiConfig = QSTileUIConfig.Resource(
+                    iconRes = R.drawable.ic_qs_sync,
+                    labelRes = R.string.quick_settings_sync_label
+                ),
+                instanceId = uiEventLogger.getNewInstanceId(),
+                category = TileCategory.CONNECTIVITY
     }
 }
