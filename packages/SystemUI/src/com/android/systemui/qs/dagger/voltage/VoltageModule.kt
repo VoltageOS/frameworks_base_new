@@ -17,15 +17,15 @@
 package com.android.systemui.qs.dagger.voltage
 
 import com.android.systemui.qs.tileimpl.QSTileImpl
+import com.android.systemui.qs.tiles.CellularTile
+import com.android.systemui.qs.tiles.WifiTile
+import com.android.systemui.qs.tiles.WeatherTile
+import com.android.systemui.qs.tiles.HeadsUpTile
 
 import dagger.Binds
 import dagger.Module
 import dagger.multibindings.IntoMap
 import dagger.multibindings.StringKey
-
-import com.android.systemui.qs.tiles.CellularTile
-import com.android.systemui.qs.tiles.WifiTile
-import com.android.systemui.qs.tiles.WeatherTile
 
 @Module
 interface VoltageModule {
@@ -47,5 +47,11 @@ interface VoltageModule {
     @IntoMap
     @StringKey(WeatherTile.TILE_SPEC)
     fun bindWeatherTile(weatherTile: WeatherTile): QSTileImpl<*>
+
+    /** Inject HeadsUpTile into tileMap in QSModule */
+    @Binds
+    @IntoMap
+    @StringKey(HeadsUpTile.TILE_SPEC)
+    fun bindHeadsUpTile(headsUpTile: HeadsUpTile): QSTileImpl<*>
 
 }
