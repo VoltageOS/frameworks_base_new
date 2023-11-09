@@ -110,4 +110,10 @@
     <string name="omnijaws_service_error">Error loading weather data</string>
     <string name="omnijaws_service_unknown">No weather data</string>
     <string name="omnijaws_label_default">Weather</string>
+
+    <!-- Heads up QS tile -->
+    <string name="quick_settings_heads_up_label">Heads up</string>
+    <string name="accessibility_quick_settings_heads_up_off">Heads up off.</string>
+    <string name="accessibility_quick_settings_heads_up_on">Heads up on.</string>
+
 </resources>
