@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2019 The OmniROM Project
- *           (C) 2017-2023 crDroidAndroid Project
+ *           (C) 2017-2024 crDroidAndroid Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,10 @@ import android.os.Looper;
 import android.provider.Settings;
 import android.provider.Settings.Secure;
 import android.service.quicksettings.Tile;
-import android.view.View;
 
 import androidx.annotation.Nullable;
 
-import com.android.systemui.res.R;
+import com.android.systemui.animation.Expandable;
 import com.android.systemui.dagger.qualifiers.Background;
 import com.android.systemui.dagger.qualifiers.Main;
 import com.android.systemui.plugins.ActivityStarter;
@@ -39,6 +38,7 @@ import com.android.systemui.qs.QSHost;
 import com.android.systemui.qs.QsEventLogger;
 import com.android.systemui.qs.logging.QSLogger;
 import com.android.systemui.qs.tileimpl.QSTileImpl;
+import com.android.systemui.res.R;
 import com.android.systemui.util.settings.SecureSettings;
 
 import com.android.internal.logging.MetricsLogger;
@@ -92,7 +92,7 @@ public class FPSInfoTile extends QSTileImpl<BooleanState> {
     }
 
     @Override
-    protected void handleClick(@Nullable View view) {
+    protected void handleClick(@Nullable Expandable expandable) {
         mSetting.setValue(mState.value ? 0 : 1);
         refreshState();
         toggleState();
