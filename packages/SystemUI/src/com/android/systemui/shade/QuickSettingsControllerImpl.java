@@ -1095,6 +1095,7 @@ public class QuickSettingsControllerImpl implements QuickSettingsController, Dum
         mShadeHeaderController.setShadeExpandedFraction(shadeExpandedFraction);
         mShadeHeaderController.setQsExpandedFraction(qsExpansionFraction);
         mShadeHeaderController.setQsVisible(mVisible);
+        mPanelViewControllerLazy.get().updateIslandVisibility();
 
         // Update the light bar
         mLightBarController.setQsExpanded(mFullyExpanded);
