@@ -65,4 +65,6 @@
     <dimen name="qs_brightness_slider_height">56dp</dimen>
     <dimen name="qqs_min_height">307.5dp</dimen>
 
+    <!-- FPS Info tile -->
+    <dimen name="fps_info_text_padding">4dp</dimen>
 </resources>
