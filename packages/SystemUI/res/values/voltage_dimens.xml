@@ -75,4 +75,9 @@
     <!-- Weather -->  
     <dimen name="weather_image_max_size">24dp</dimen>
     <dimen name="weather_humidity_margin_start">16dp</dimen>
+
+    <!-- Island notification -->
+    <dimen name="island_icon_size">48dp</dimen>
+    <dimen name="island_side_margin">12dp</dimen>
+
 </resources>
