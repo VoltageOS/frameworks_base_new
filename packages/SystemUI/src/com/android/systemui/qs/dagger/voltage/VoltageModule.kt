@@ -28,6 +28,7 @@ import com.android.systemui.qs.tiles.NfcTile
 import com.android.systemui.qs.tiles.HeadsUpTile
 import com.android.systemui.qs.tiles.SyncTile
 import com.android.systemui.qs.tiles.CPUInfoTile
+import com.android.systemui.qs.tiles.FPSInfoTile
 import com.android.systemui.qs.tiles.AmbientDisplayTile
 import com.android.systemui.qs.tiles.AODTile
 import com.android.systemui.qs.tiles.CaffeineTile
@@ -111,6 +112,12 @@ interface VoltageModule {
     @IntoMap
     @StringKey(CPUInfoTile.TILE_SPEC)
     fun CPUInfoTile(cpuInfoTile: CPUInfoTile): QSTileImpl<*>
+
+    /** Inject FPSInfoTile into tileMap in QSModule */
+    @Binds
+    @IntoMap
+    @StringKey(FPSInfoTile.TILE_SPEC)
+    fun FPSInfoTile(fpsInfoTile: FPSInfoTile): QSTileImpl<*>
 
     companion object {
         @Provides
@@ -291,6 +298,21 @@ interface VoltageModule {
                 ),
                 instanceId = uiEventLogger.getNewInstanceId(),
                 category = TileCategory.UTILITIES
+            )
+        }
+
+       @Provides
+        @IntoMap
+        @StringKey(FPSInfoTile.TILE_SPEC)
+        fun provideFPSInfoConfig(uiEventLogger: QsEventLogger): QSTileConfig {
+            return QSTileConfig(
+                tileSpec = TileSpec.create(FPSInfoTile.TILE_SPEC),
+                uiConfig = QSTileUIConfig.Resource(
+                    iconRes = R.drawable.ic_qs_fps_info,
+                    labelRes = R.string.quick_settings_fpsinfo_label
+                ),
+                instanceId = uiEventLogger.getNewInstanceId(),
+                category = TileCategory.DISPLAY
             )
         }
     }
