@@ -87,4 +87,7 @@
     <string name="screenrecord_hevc_switch_label">HEVC encoding</string>
     <string name="screenrecord_hevc_switch_summary">Use the more efficient HEVC encoder</string>
 
+   <!-- Text while recognizing face -->
+    <string name="face_unlock_recognizing">Recognizing face...</string>
+
 </resources>
