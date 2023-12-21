@@ -290,6 +290,7 @@ public class SecureSettings {
         Settings.Secure.ADVANCED_PROTECTION_MODE,
         Settings.Secure.ACCESSIBILITY_KEY_GESTURE_TARGETS,
         Settings.Secure.TORCH_DOUBLE_TAP_POWER_GESTURE_ENABLED,
-        Settings.Secure.TORCH_LONG_PRESS_POWER
+        Settings.Secure.TORCH_LONG_PRESS_POWER,
+        Settings.Secure.VPN_ENFORCE_DNS
     };
 }
