@@ -329,6 +329,7 @@ public class SecureSettings {
         Settings.Secure.IDENTITY_CHECK_NOTIFICATION_VIEW_DETAILS_CLICKED,
         Settings.Secure.NOTIFICATION_BUNDLES_ALWAYS_EXPAND,
         Settings.Secure.TORCH_DOUBLE_TAP_POWER_GESTURE_ENABLED,
-        Settings.Secure.TORCH_LONG_PRESS_POWER
+        Settings.Secure.TORCH_LONG_PRESS_POWER,
+        Settings.Secure.VPN_ENFORCE_DNS
     };
 }
