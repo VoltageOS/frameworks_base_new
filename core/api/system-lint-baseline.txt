@@ -2179,8 +2179,8 @@ UnflaggedApi: android.content.pm.SpecialRuntimePermAppUtils#isInternetCompatEnab
     New API must be flagged with @FlaggedApi: method android.content.pm.SpecialRuntimePermAppUtils.isInternetCompatEnabled()
 UnflaggedApi: android.ext.AppInfoExt:
     New API must be flagged with @FlaggedApi: class android.ext.AppInfoExt
-UnflaggedApi: android.ext.AppInfoExt#AppInfoExt(int, int, long):
-    New API must be flagged with @FlaggedApi: constructor android.ext.AppInfoExt(int,int,long)
+UnflaggedApi: android.ext.AppInfoExt#AppInfoExt(int, int):
+    New API must be flagged with @FlaggedApi: constructor android.ext.AppInfoExt(int,int)
 UnflaggedApi: android.ext.AppInfoExt#CREATOR:
     New API must be flagged with @FlaggedApi: field android.ext.AppInfoExt.CREATOR
 UnflaggedApi: android.ext.AppInfoExt#FLAG_HAS_GMSCORE_CLIENT_LIBRARY:
@@ -2191,10 +2191,6 @@ UnflaggedApi: android.ext.AppInfoExt#getInitialPackageId():
     New API must be flagged with @FlaggedApi: method android.ext.AppInfoExt.getInitialPackageId()
 UnflaggedApi: android.ext.AppInfoExt#getPackageId():
     New API must be flagged with @FlaggedApi: method android.ext.AppInfoExt.getPackageId()
-UnflaggedApi: android.ext.AppInfoExt#hasCompatChange(int):
-    New API must be flagged with @FlaggedApi: method android.ext.AppInfoExt.hasCompatChange(int)
-UnflaggedApi: android.ext.AppInfoExt#hasCompatConfig():
-    New API must be flagged with @FlaggedApi: method android.ext.AppInfoExt.hasCompatConfig()
 UnflaggedApi: android.ext.AppInfoExt#hasFlag(int):
     New API must be flagged with @FlaggedApi: method android.ext.AppInfoExt.hasFlag(int)
 UnflaggedApi: android.ext.AppInfoExt#writeToParcel(android.os.Parcel, int):

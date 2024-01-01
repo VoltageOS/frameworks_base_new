@@ -3856,7 +3856,4 @@ public class PackageImpl implements ParsedPackage, AndroidPackageInternal,
     public PackageExtIface ext() {
         return ext;
     }
-
-    public long cachedCompatConfigVersionCode;
-    public Object cachedCompatConfig;
 }

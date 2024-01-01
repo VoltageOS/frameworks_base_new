@@ -6,8 +6,6 @@ import android.os.Parcel;
 
 import com.android.internal.pm.parsing.pkg.PackageExtIface;
 import com.android.internal.pm.parsing.pkg.PackageImpl;
-import com.android.server.ext.AppCompatConf;
-import com.android.server.os.nano.AppCompatProtos;
 import com.android.server.pm.pkg.AndroidPackage;
 
 public class PackageExt implements PackageExtIface {
@@ -41,16 +39,12 @@ public class PackageExt implements PackageExtIface {
     }
 
     public AppInfoExt toAppInfoExt(PackageImpl pkg) {
-        AppCompatProtos.CompatConfig compatConfig = AppCompatConf.get(pkg);
 
-        if (this == DEFAULT && compatConfig == null) {
+	if (this == DEFAULT) {
             return AppInfoExt.DEFAULT;
         }
 
-        long compatChanges = compatConfig != null ?
-                compatConfig.compatChanges | AppInfoExt.HAS_COMPAT_CHANGES : 0L;
-
-        return new AppInfoExt(packageId, flags, compatChanges);
+        return new AppInfoExt(packageId, flags);
     }
 
     public void writeToParcel(Parcel dest) {
