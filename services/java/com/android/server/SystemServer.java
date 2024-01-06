@@ -334,6 +334,8 @@ import java.util.concurrent.Future;
 // LineageHardware
 import com.android.server.custom.LineageHardwareService;
 
+import com.android.server.VoltageSystemExService;
+
 /**
  * Entry point to {@code system_server}.
  */
@@ -1740,6 +1742,10 @@ public final class SystemServer implements Dumpable {
 
             t.traceBegin("WindowManagerServiceOnInitReady");
             wm.onInitReady();
+            t.traceEnd();
+
+            t.traceBegin("StartVoltageSystemExService");
+            mSystemServiceManager.startService(VoltageSystemExService.class);
             t.traceEnd();
 
             // Start receiving calls from SensorManager services. Start in a separate thread
