@@ -49,4 +49,8 @@
     <!-- Default values for status bar DT2S gesture -->
      <bool name="config_dt2sGestureAvailable">true</bool>
      <bool name="config_dt2sGestureEnabledByDefault">true</bool>
+
+    <!-- Overlays that to be enabled in FHD+ resolution -->
+    <string-array name="config_fhdResolutionOverlays" translatable="false">
+    </string-array>
 </resources>

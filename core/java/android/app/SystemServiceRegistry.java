@@ -313,6 +313,8 @@ import com.android.modules.utils.ravenwood.RavenwoodHelper;
 
 import com.voltage.display.IRefreshRateManagerService;
 import com.voltage.display.RefreshRateManager;
+import com.voltage.view.DisplayResolutionManager;
+import com.voltage.view.IDisplayResolutionManagerService;
 
 import java.util.Map;
 import java.util.Objects;
@@ -1971,6 +1973,15 @@ public final class SystemServiceRegistry {
                         }
                     });
         }
+
+        registerService(Context.DISPLAY_RESOLUTION_MANAGER_SERVICE, DisplayResolutionManager.class,
+                new CachedServiceFetcher<DisplayResolutionManager>() {
+            @Override
+            public DisplayResolutionManager createService(ContextImpl ctx) {
+                IBinder binder = ServiceManager.getService(Context.DISPLAY_RESOLUTION_MANAGER_SERVICE);
+                IDisplayResolutionManagerService service = IDisplayResolutionManagerService.Stub.asInterface(binder);
+                return new DisplayResolutionManager(ctx.getOuterContext(), service);
+            }});
 
         registerService(Context.REFRESH_RATE_MANAGER_SERVICE, RefreshRateManager.class,
                 new CachedServiceFetcher<RefreshRateManager>() {

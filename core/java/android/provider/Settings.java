@@ -19306,6 +19306,13 @@ public final class Settings {
         public static final String ONE_HANDED_KEYGUARD_SIDE = "one_handed_keyguard_side";
 
         /**
+         * Display width set by custom display resolution controller
+         *
+         * @hide
+         */
+        public static final String DISPLAY_WIDTH_CUSTOM = "display_width_custom";
+
+        /**
          * Whether refresh rate should be switched to 60Hz on power save mode.
          * @hide
          */
