@@ -23,6 +23,7 @@ import android.Manifest;
 import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.app.IActivityManager;
+import android.app.role.RoleManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.Resources;
@@ -71,6 +72,8 @@ import com.android.internal.statusbar.IStatusBarService;
 
 import java.util.List;
 import java.util.Locale;
+
+import com.android.internal.util.CollectionUtils;
 
 public class VoltageUtils {
 
@@ -460,6 +463,20 @@ public class VoltageUtils {
             super();
             mContext = context;
         }
+
+    public static String getDefaultLauncher(Context context) {
+        final RoleManager roleManager = context.getSystemService(RoleManager.class);
+        final String packageName = CollectionUtils.firstOrNull(
+                roleManager.getRoleHolders(RoleManager.ROLE_HOME));
+        return packageName != null ? packageName : "";
+    }
+
+    public static void forceStopDefaultLauncher(Context context) {
+        final ActivityManager activityManager = context.getSystemService(ActivityManager.class);
+        try {
+            activityManager.forceStopPackageAsUser(getDefaultLauncher(context), UserHandle.USER_CURRENT);
+        } catch (Exception ignored) {}
+    }
 
         @Override
         protected Void doInBackground(Void... params) {
