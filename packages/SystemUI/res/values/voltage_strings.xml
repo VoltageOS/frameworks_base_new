@@ -18,4 +18,7 @@
     <!-- Name of the roaming status bar icon. -->
     <string name="status_bar_roaming">Roaming indicator</string>
 
+    <!-- Refresh rate QS tile -->
+    <string name="refresh_rate_tile_label">Refresh rate</string>
+    <string name="refresh_rate_unknown">Unknown</string>
 </resources>
