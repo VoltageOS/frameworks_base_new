@@ -208,15 +208,22 @@ public class KeyguardServiceDelegate {
     }
 
     public KeyguardServiceDelegate(@NonNull Context context, @NonNull StateCallback callback) {
+        mContext = context;
         mCallback = callback;
         mLockPatternUtils = new LockPatternUtils(context);
         mActivityManagerInternal = LocalServices.getService(ActivityManagerInternal.class);
         initializeKeyguardState();
     }
 
+    private final Context mContext;
+
     public void onShowingStateChanged(boolean showing) {
         mKeyguardReportedState.showing = showing;
         mCallback.onShowingChanged();
+
+        final int userId = mKeyguardState.userId;
+
+        AutoReboot.onKeyguardShowingStateChanged(mContext, showing, userId);
     }
 
     /**
