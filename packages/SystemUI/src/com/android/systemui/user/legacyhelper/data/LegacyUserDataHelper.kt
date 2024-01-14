@@ -46,6 +46,7 @@ object LegacyUserDataHelper {
         canSwitchUsers: Boolean,
     ): UserRecord {
         val isGuest = userInfo.isGuest
+        val isParallel = userInfo.isParallel
         return UserRecord(
             info = userInfo,
             picture =
@@ -56,8 +57,9 @@ object LegacyUserDataHelper {
                     picture = picture,
                 ),
             isGuest = isGuest,
+            isParallel = isParallel,
             isCurrent = isCurrent,
-            isSwitchToEnabled = canSwitchUsers || (isCurrent && !isGuest),
+            isSwitchToEnabled = canSwitchUsers || (isCurrent && !isGuest) || isParallel,
         )
     }
 

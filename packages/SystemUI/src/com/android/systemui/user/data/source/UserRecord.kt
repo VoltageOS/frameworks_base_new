@@ -49,7 +49,10 @@ data class UserRecord(
     @JvmField val enforcedAdmin: RestrictedLockUtils.EnforcedAdmin? = null,
 
     /** Whether this record is to go to the Settings page to manage users. */
-    @JvmField val isManageUsers: Boolean = false
+    @JvmField val isManageUsers: Boolean = false,
+
+    /** Whether this record is to go to the Settings page to manage users. */
+    @JvmField val isParallel: Boolean = false
 ) {
     /** Returns a new instance of [UserRecord] with its [isCurrent] set to the given value. */
     fun copyWithIsCurrent(isCurrent: Boolean): UserRecord {
@@ -61,7 +64,7 @@ data class UserRecord(
      * this instance if a guest or does not represent a user (represents an option item).
      */
     fun resolveId(): Int {
-        return if (isGuest || info == null) {
+        return if (isGuest || isParallel || info == null) {
             UserHandle.USER_NULL
         } else {
             info.id

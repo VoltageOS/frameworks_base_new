@@ -91,7 +91,8 @@ public class UserDetailView extends PseudoGridView {
         @Override
         protected List<UserRecord> getUsers() {
             return super.getUsers().stream().filter(
-                    userRecord -> !userRecord.isManageUsers).collect(Collectors.toList());
+                        userRecord -> !userRecord.isManageUsers && !userRecord.isParallel
+                    ).collect(Collectors.toList());
         }
 
         @Inject
