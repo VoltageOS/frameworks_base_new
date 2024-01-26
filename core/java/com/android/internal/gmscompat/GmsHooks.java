@@ -689,7 +689,11 @@ public final class GmsHooks {
 
                 int serviceId = data.readInt();
 
-                ArraySet<String> permsToSpoof = config().gmsServiceBrokerPermissionBypasses.get(serviceId);
+		    ArraySet<String> permsToSpoof = null;
+		    if (config() != null && config().gmsServiceBrokerPermissionBypasses != null) {
+    		    permsToSpoof = config().gmsServiceBrokerPermissionBypasses.get(serviceId);
+		    }
+
                 if (permsToSpoof != null) {
                     Log.d(TAG, "start spoofing self permission checks for getService() call for API "
                             + serviceId + ", perms: " + Arrays.toString(permsToSpoof.toArray()));

@@ -69,29 +69,42 @@ public final class PlayStoreHooks {
     public static void adjustSessionParams(PackageInstaller.SessionParams params) {
         String pkg = Objects.requireNonNull(params.appPackageName);
 
-        switch (pkg) {
-            case GmsInfo.PACKAGE_GMS_CORE:
-            case GmsInfo.PACKAGE_PLAY_STORE:
-                String updateRequestReason = "Play Store created PackageInstaller SessionParams for " + pkg;
-                GmsCompatConfig config;
-                try {
-                    config = GmsCompatApp.iGms2Gca().requestConfigUpdate(updateRequestReason);
-                } catch (RemoteException e) {
-                    throw GmsCompatApp.callFailed(e);
-                }
-                if (GmsHooks.config().version != config.version) {
+switch (pkg) {
+    case GmsInfo.PACKAGE_GMS_CORE:
+    case GmsInfo.PACKAGE_PLAY_STORE:
+        String updateRequestReason = "Play Store created PackageInstaller SessionParams for " + pkg;
+        GmsCompatConfig config;
+        try {
+            IGms2Gca iGms2Gca = GmsCompatApp.iGms2Gca();
+            if (iGms2Gca != null) {
+                config = iGms2Gca.requestConfigUpdate(updateRequestReason);
+                if (config != null && GmsHooks.config().version != config.version) {
                     GmsHooks.setConfig(config);
                 }
-                break;
+            }
+        } catch (RemoteException e) {
+            throw GmsCompatApp.callFailed(e);
         }
+        break;
+}
 
-        switch (pkg) {
-            case GmsInfo.PACKAGE_GMS_CORE:
-                params.maxAllowedVersion = GmsHooks.config().maxGmsCoreVersion;
-                break;
-            case GmsInfo.PACKAGE_PLAY_STORE:
-                params.maxAllowedVersion = GmsHooks.config().maxPlayStoreVersion;
-                break;
+switch (pkg) {
+    case GmsInfo.PACKAGE_GMS_CORE:
+        GmsCompatConfig gmsCoreConfig = GmsHooks.config();
+        if (gmsCoreConfig != null) {
+            params.maxAllowedVersion = gmsCoreConfig.maxGmsCoreVersion;
+        } else {
+            params.maxAllowedVersion = 99999999999L; // Set a default value
+        }
+        break;
+    case GmsInfo.PACKAGE_PLAY_STORE:
+        GmsCompatConfig playStoreConfig = GmsHooks.config();
+        if (playStoreConfig != null) {
+            params.maxAllowedVersion = playStoreConfig.maxPlayStoreVersion;
+        } else {
+            params.maxAllowedVersion = 99999999999L; // Set a default value
+        }
+        break;
         }
     }
 
