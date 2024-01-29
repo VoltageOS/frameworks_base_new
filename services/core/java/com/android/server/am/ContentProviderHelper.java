@@ -1446,7 +1446,7 @@ public class ContentProviderHelper {
                                     }
                                 }
                             }
-                        } catch (RemoteException ignored) {
+                        } catch (RemoteException|SecurityException ignored) {
                         }
                     });
                 }
