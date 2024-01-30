@@ -338,18 +338,14 @@ public class UdfpsController implements DozeReceiver, Dumpable {
                         for (Callback cb : mCallbacks) {
                             cb.onFingerDown();
                         }
-                        if (mUdfpsAnimation != null) {
-                            mUdfpsAnimation.show();
-                        }
+                        showUdfpsAnimation();
                     });
                 } else {
                     mFgExecutor.execute(() -> {
                         for (Callback cb : mCallbacks) {
                             cb.onFingerUp();
                         }
-                        if (mUdfpsAnimation != null) {
-                            mUdfpsAnimation.hide();
-                        }
+                        hideUdfpsAnimation();
                     });
                 }
             }
@@ -569,11 +565,13 @@ public class UdfpsController implements DozeReceiver, Dumpable {
     private boolean onTouch(long requestId, @NonNull MotionEvent event) {
         if (mOverlay == null) {
             Log.w(TAG, "ignoring onTouch with null overlay");
+            hideUdfpsAnimation();
             return false;
         }
         if (!mOverlay.matchesRequestId(requestId)) {
             Log.w(TAG, "ignoring stale touch event: " + requestId + " current: "
                     + mOverlay.getRequestId());
+            hideUdfpsAnimation();
             return false;
         }
         if (event.getAction() == MotionEvent.ACTION_DOWN
@@ -596,6 +594,7 @@ public class UdfpsController implements DozeReceiver, Dumpable {
                 mOverlayParams);
         if (result instanceof TouchProcessorResult.Failure) {
             Log.w(TAG, ((TouchProcessorResult.Failure) result).getReason());
+            hideUdfpsAnimation();
             return false;
         }
 
@@ -1121,9 +1120,7 @@ public class UdfpsController implements DozeReceiver, Dumpable {
             for (Callback cb : mCallbacks) {
                 cb.onFingerDown();
             }
-            if (mUdfpsAnimation != null) {
-                mUdfpsAnimation.show();
-            }
+            showUdfpsAnimation();
         }
     }
 
@@ -1164,9 +1161,7 @@ public class UdfpsController implements DozeReceiver, Dumpable {
                 for (Callback cb : mCallbacks) {
                     cb.onFingerUp();
                 }
-                if (mUdfpsAnimation != null) {
-                    mUdfpsAnimation.hide();
-                }
+                hideUdfpsAnimation();
             }
         }
         mOnFingerDown = false;
@@ -1176,6 +1171,18 @@ public class UdfpsController implements DozeReceiver, Dumpable {
 
     public boolean isAnimationEnabled() {
         return mUdfpsAnimation != null && mUdfpsAnimation.isAnimationEnabled();
+    }
+
+    private void showUdfpsAnimation() {
+        if (mUdfpsAnimation != null) {
+            mUdfpsAnimation.show();
+        }
+    }
+
+    private void hideUdfpsAnimation() {
+        if (mUdfpsAnimation != null) {
+            mUdfpsAnimation.hide();
+        }
     }
 
     /**
