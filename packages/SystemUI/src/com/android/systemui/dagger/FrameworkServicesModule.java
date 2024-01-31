@@ -100,6 +100,7 @@ import android.telecom.TelecomManager;
 import android.telephony.CarrierConfigManager;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
+import android.telephony.ims.ImsManager;
 import android.telephony.satellite.SatelliteManager;
 import android.view.Choreographer;
 import android.view.CrossWindowBlurListeners;
@@ -814,6 +815,12 @@ public class FrameworkServicesModule {
     static IDeviceIdleController provideDeviceIdleController() {
         return IDeviceIdleController.Stub.asInterface(
                 ServiceManager.getService(Context.DEVICE_IDLE_CONTROLLER));
+    }
+
+    @Provides
+    @Singleton
+    static ImsManager provideImsManager(Context context) {
+        return context.getSystemService(ImsManager.class);
     }
 
     @Provides
