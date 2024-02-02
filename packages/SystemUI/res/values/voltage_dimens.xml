@@ -83,7 +83,7 @@
     <dimen name="face_unlock_icon_margin_top">6dp</dimen>
 
     <!-- Island notification -->
-    <dimen name="island_icon_size">36dp</dimen>
+    <dimen name="island_icon_size">48dp</dimen>
     <dimen name="island_side_margin">12dp</dimen>
 
 </resources>
