@@ -303,7 +303,7 @@ class BackPanel(context: Context, private val latencyTracker: LatencyTracker) : 
 
         if (drawDoubleArrow) {
             arrowPath.addPath(arrowPath,
-                    arrowPaint.strokeWidth * 2.0f * (if (isLeftPanel) 1 else -1), 0.0f)
+                    arrowPaint.strokeWidth * 2.0f * -1, 0.0f)
         }
 
         return arrowPath
