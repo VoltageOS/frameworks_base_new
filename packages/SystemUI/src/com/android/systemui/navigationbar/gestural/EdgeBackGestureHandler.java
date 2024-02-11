@@ -284,7 +284,6 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
     private boolean mIsOnLeftEdge;
     private boolean mDeferSetIsOnLeftEdge;
 
-    private int mTimeout = 2000; //ms
     private int mLeftLongSwipeAction;
     private int mRightLongSwipeAction;
     private boolean mIsExtendedSwipe;
@@ -292,6 +291,8 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
     private int mRightVerticalSwipeAction;
     private Handler mHandler;
     private boolean mImeVisible;
+    private float mStartX;
+    private float mStartY;
 
     private boolean mIsAttached;
     private boolean mIsGestureHandlingEnabled;
@@ -600,7 +601,6 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
             mButtonForcedVisibleCallback.accept(mIsButtonForcedVisible);
         }
 
-        mTimeout = mGestureNavigationSettingsObserver.getLongSwipeTimeOut();
         mLeftLongSwipeAction = mGestureNavigationSettingsObserver.getLeftLongSwipeAction();
         mRightLongSwipeAction = mGestureNavigationSettingsObserver.getRightLongSwipeAction();
         mIsExtendedSwipe = mGestureNavigationSettingsObserver.getIsExtendedSwipe();
@@ -1240,6 +1240,8 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
                             mIsTrackpadThreeFingerSwipe), mDisabledForQuickstep,
                     mGestureBlockingActivityRunning.get(), mIsInPip, mDisplaySize,
                     mEdgeWidthLeft, mLeftInset, mEdgeWidthRight, mRightInset, mExcludeRegion));
+            mStartX = ev.getX();
+            mStartY = ev.getY();
         } else if (mAllowGesture || mLogGesture) {
             if (!mThresholdCrossed) {
                 // mThresholdCrossed is true only after the first move event
@@ -1296,12 +1298,6 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
                         return;
                     } else if (dx > dy && dx > mTouchSlop) {
                         if (mAllowGesture) {
-                            if (!mIsExtendedSwipe && ((mLeftLongSwipeAction != 0 && mIsOnLeftEdge)
-                                || (mRightLongSwipeAction != 0 && !mIsOnLeftEdge))) {
-                                mLongSwipeAction.setIsVertical(false);
-                                mHandler.postDelayed(mLongSwipeAction, (mTimeout - elapsedTime));
-                                // mThresholdCrossed is now set to true so on next move event the handler won't get triggered again
-                            }
                             if (mBackAnimation != null) {
                                 mBackAnimation.onThresholdCrossed();
                             } else {
@@ -1318,20 +1314,24 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
             boolean isUp = action == MotionEvent.ACTION_UP;
             boolean isCancel = action == MotionEvent.ACTION_CANCEL;
             boolean isMove = action == MotionEvent.ACTION_MOVE;
-            if (isMove && mIsExtendedSwipe) {
+            float longSwipeThreshold = mDisplaySize.x * 0.45f;
+            float touchTranslation = Math.abs(ev.getX() - mStartX);
+            boolean almostLongSwipe = mIsExtendedSwipe && (touchTranslation > longSwipeThreshold);
+            if (isMove && almostLongSwipe) {
                 float deltaX = Math.abs(ev.getX() - mDownPoint.x);
                 float deltaY = Math.abs(ev.getY() - mDownPoint.y);
                 // give priority to horizontal (X) swipe
                 if (deltaX  > (int)((mDisplaySize.x / 4) * 2.5f)) {
                     mLongSwipeAction.setIsVertical(false);
-                    mLongSwipeAction.run();
                 }
                 if (deltaY  > (mDisplaySize.y / 4)) {
                     mLongSwipeAction.setIsVertical(true);
-                    mLongSwipeAction.run();
                 }
             }
-            if (isUp || isCancel) {
+            if (isUp && almostLongSwipe) {
+                mLongSwipeAction.run();
+                mHandler.removeCallbacksAndMessages(null);
+            } else if (isUp || isCancel) {
                 mHandler.removeCallbacksAndMessages(null);
             }
 
