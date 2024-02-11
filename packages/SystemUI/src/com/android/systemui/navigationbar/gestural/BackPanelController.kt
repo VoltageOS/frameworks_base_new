@@ -161,6 +161,7 @@ constructor(
 
     private var isExtendedSwipe = false
     private var longSwipeThreshold = 0f
+    private var wasAlmostLongSwipe = false
 
     private var backArrowVisibility = false
     private var edgeHapticEnabled = true
@@ -274,7 +275,7 @@ constructor(
     }
 
     override fun setLongSwipeEnabled(enabled: Boolean) {
-        isExtendedSwipe = enabled;
+        isExtendedSwipe = enabled
     }
 
     override fun onMotionEvent(event: MotionEvent) {
@@ -454,7 +455,7 @@ constructor(
         // occurs between the screen edge and the touch start.
         val xTranslation = max(0f, if (mView.isLeftPanel) x - startX else startX - x)
         val touchTranslation = MathUtils.abs(x - startX);
-        val almostLongSwipe = isExtendedSwipe && (touchTranslation  > longSwipeThreshold)
+        val almostLongSwipe = isExtendedSwipe && (touchTranslation > longSwipeThreshold)
 
         // Compared to last time, how far we moved in the x direction. If <0, we are moving closer
         // to the edge. If >0, we are moving further from the edge
@@ -484,7 +485,15 @@ constructor(
 
         updateArrowStateOnMove(yTranslation, xTranslation)
         mView.setDrawDoubleArrow(almostLongSwipe)
-
+        if (wasAlmostLongSwipe != almostLongSwipe) {
+            wasAlmostLongSwipe = almostLongSwipe
+            if (almostLongSwipe) { 
+                performActivatedHapticFeedback()
+            } else { 
+                performDeactivatedHapticFeedback()
+            }
+        }
+    
         val gestureProgress =
             when (currentState) {
                 GestureState.ACTIVE -> fullScreenProgress(xTranslation)
