@@ -283,7 +283,6 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
     private boolean mIsOnLeftEdge;
     private boolean mDeferSetIsOnLeftEdge;
 
-    private int mTimeout = 2000; //ms
     private int mLeftLongSwipeAction;
     private int mRightLongSwipeAction;
     private boolean mIsExtendedSwipe;
@@ -291,6 +290,8 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
     private int mRightVerticalSwipeAction;
     private Handler mHandler;
     private boolean mImeVisible;
+    private float mStartX;
+    private float mStartY;
 
     private boolean mIsAttached;
     private boolean mIsGestureHandlingEnabled;
@@ -612,7 +613,6 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
             mButtonForcedVisibleCallback.accept(mIsButtonForcedVisible);
         }
 
-        mTimeout = mGestureNavigationSettingsObserver.getLongSwipeTimeOut();
         mLeftLongSwipeAction = mGestureNavigationSettingsObserver.getLeftLongSwipeAction();
         mRightLongSwipeAction = mGestureNavigationSettingsObserver.getRightLongSwipeAction();
         mIsExtendedSwipe = mGestureNavigationSettingsObserver.getIsExtendedSwipe();
@@ -1281,6 +1281,8 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
                     mGestureBlockingActivityRunning.get(), mIsInPip, mDisplaySize,
                     mEdgeWidthLeft, mLeftInset, mEdgeWidthRight, mRightInset,
                     displayBackGestureHandler.getExcludeRegion()));
+            mStartX = ev.getX();
+            mStartY = ev.getY();
         } else if (mAllowGesture || mLogGesture) {
             boolean mLastFrameThresholdCrossed = mThresholdCrossed;
             if (!mThresholdCrossed) {
@@ -1358,20 +1360,24 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
             boolean isUp = action == MotionEvent.ACTION_UP;
             boolean isCancel = action == MotionEvent.ACTION_CANCEL;
             boolean isMove = action == MotionEvent.ACTION_MOVE;
-            if (isMove && mIsExtendedSwipe) {
+            float longSwipeThreshold = mDisplaySize.x * 0.45f;
+            float touchTranslation = Math.abs(ev.getX() - mStartX);
+            boolean almostLongSwipe = mIsExtendedSwipe && (touchTranslation > longSwipeThreshold);
+            if (isMove && almostLongSwipe) {
                 float deltaX = Math.abs(ev.getX() - mDownPoint.x);
                 float deltaY = Math.abs(ev.getY() - mDownPoint.y);
                 // give priority to horizontal (X) swipe
                 if (deltaX  > (int)((mDisplaySize.x / 4) * 2.5f)) {
                     mLongSwipeAction.setIsVertical(false);
-                    mLongSwipeAction.run();
                 }
                 if (deltaY  > (mDisplaySize.y / 4)) {
                     mLongSwipeAction.setIsVertical(true);
-                    mLongSwipeAction.run();
                 }
             }
-            if (isUp || isCancel) {
+            if (isUp && almostLongSwipe) {
+                mLongSwipeAction.run();
+                mHandler.removeCallbacksAndMessages(null);
+            } else if (isUp || isCancel) {
                 mHandler.removeCallbacksAndMessages(null);
             }
 
