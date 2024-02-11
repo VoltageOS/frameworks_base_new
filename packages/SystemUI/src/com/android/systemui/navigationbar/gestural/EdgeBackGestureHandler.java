@@ -1436,6 +1436,9 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
             case 15: // Partial Screenshot
                 VoltageUtils.takeScreenshot(false);
                 break;
+            case 16: // Recents
+                VoltageUtils.sendKeycode(KeyEvent.KEYCODE_APP_SWITCH);
+                break;
         }
     }
 
