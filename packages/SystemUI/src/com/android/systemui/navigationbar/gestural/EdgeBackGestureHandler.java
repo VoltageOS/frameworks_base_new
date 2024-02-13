@@ -1515,6 +1515,9 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
             case 17: // Go forward
                 VoltageUtils.sendKeycode(mContext, KeyEvent.KEYCODE_FORWARD);
                 break;
+            case 18: // Menu
+                VoltageUtils.sendKeycode(mContext, KeyEvent.KEYCODE_MENU);
+                break;
         }
     }
 
