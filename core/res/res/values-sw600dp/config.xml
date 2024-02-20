@@ -51,5 +51,8 @@
 
     <!-- If true, show multiuser switcher by default unless the user specifically disables it. -->
     <bool name="config_showUserSwitcherByDefault">true</bool>
+
+    <!-- Lockscreen rotation default -->
+    <bool name="config_lockScreenRotationEnabledByDefault">true</bool>
 </resources>
 
