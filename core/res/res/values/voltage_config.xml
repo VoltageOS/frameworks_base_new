@@ -24,4 +24,6 @@
     <!-- Whether device supports an alt. ambient display -->
     <bool name="config_alt_ambient_display">false</bool>
 
+    <!-- Lockscreen rotation default -->
+    <bool name="config_lockScreenRotationEnabledByDefault">false</bool>
 </resources>

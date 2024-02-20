@@ -293,7 +293,9 @@ public class NotificationShadeWindowControllerImpl implements NotificationShadeW
                 Settings.System.ACCELEROMETER_ROTATION, 0) != 0;
         boolean enableLockScreenRotation =
                 Settings.System.getInt(mContext.getContentResolver(),
-                Settings.System.LOCKSCREEN_ROTATION, 0) != 0;
+                Settings.System.LOCKSCREEN_ROTATION,
+                mContext.getResources().getBoolean(com.android.internal.R.bool.
+                        config_lockScreenRotationEnabledByDefault) ? 1 : 0) != 0;
         return mKeyguardStateController.isKeyguardScreenRotationAllowed()
                 && (enableLockScreenRotation && enableAccelerometerRotation);
     }
