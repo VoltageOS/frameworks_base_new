@@ -10,7 +10,7 @@
     <java-symbol type="string" name="notif_action_more_info" />
 
     <string name="notif_ch_system_journal">System journal</string>
-     <java-symbol type="string" name="notif_ch_system_journal" />
+    <java-symbol type="string" name="notif_ch_system_journal" />
  
      <string name="process_crash_notif_title">%1$s has crashed</string>
      <java-symbol type="string" name="process_crash_notif_title" />
@@ -23,4 +23,8 @@
  
      <string name="notif_hmalloc_crash_title">hardened_malloc detected an error in %1$s</string>
      <java-symbol type="string" name="notif_hmalloc_crash_title" />
+
+    <string name="usb_port_security_error_title">USB-C port security feature has malfunctioned</string>
+    <java-symbol type="string" name="usb_port_security_error_title" />
+
 </resources>

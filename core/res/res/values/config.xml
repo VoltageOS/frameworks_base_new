@@ -7280,4 +7280,9 @@
          features. Examples include the search functionality or the app
          predictor. -->
     <string name="config_systemVendorIntelligence" translatable="false"></string>
+
+    <bool name="config_usbPortSecuritySupported">false</bool>
+    <java-symbol type="bool" name="config_usbPortSecuritySupported" />
+    <bool name="config_usb_port_security_applies_to_pogo_pins">false</bool>
+    <java-symbol type="bool" name="config_usb_port_security_applies_to_pogo_pins" />
 </resources>
