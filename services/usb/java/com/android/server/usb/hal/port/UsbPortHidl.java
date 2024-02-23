@@ -274,6 +274,11 @@ public final class UsbPortHidl implements UsbPortHal {
     @Override
     public void enableUsbDataWhileDocked(String portName, long transactionId,
             IUsbOperationInternal callback) {
+        if (com.android.server.policy.keyguard.UsbPortSecurityHooks.isSupported()) {
+            // modern devices don't use a HIDL USB HAL
+            throw new UnsupportedOperationException();
+        }
+
         /* Not supported in HIDL hals*/
         try {
             callback.onOperationComplete(USB_OPERATION_ERROR_NOT_SUPPORTED);
@@ -317,6 +322,11 @@ public final class UsbPortHidl implements UsbPortHal {
     @Override
     public boolean enableUsbData(String portName, boolean enable, long transactionId,
             IUsbOperationInternal callback) {
+        if (com.android.server.policy.keyguard.UsbPortSecurityHooks.isSupported()) {
+            // modern devices don't use a HIDL USB HAL
+            throw new UnsupportedOperationException();
+        }
+
         int halVersion;
 
         try {

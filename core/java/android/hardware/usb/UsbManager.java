@@ -2370,6 +2370,15 @@ public class UsbManager {
         return;
     }
 
+    /** @hide */
+    public void updatePortSecuritySetting(int newValue) {
+        try {
+            mService.updatePortSecuritySetting(newValue);
+        } catch (RemoteException e) {
+            e.rethrowFromSystemServer();
+        }
+    }
+
     @GuardedBy("mBc12TypeListenersLock")
     @RequiresPermission(Manifest.permission.MANAGE_USB)
     private boolean registerBc12TypeEventsIfNeededLocked() {

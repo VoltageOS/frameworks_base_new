@@ -1000,6 +1000,7 @@ public final class SystemServer implements Dumpable {
 
             // Initialize the system context.
             createSystemContext();
+            com.android.server.policy.keyguard.UsbPortSecurityHooks.setInitialMode(mSystemContext);
 
             // Call per-process mainline module initialization.
             ActivityThread.initializeMainlineModules();

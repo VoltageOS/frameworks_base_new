@@ -26,6 +26,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.res.Resources;
+import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -224,6 +225,13 @@ public class KeyguardServiceDelegate {
         final int userId = mKeyguardState.userId;
 
         AutoReboot.onKeyguardShowingStateChanged(mContext, showing, userId);
+
+        final long token = Binder.clearCallingIdentity();
+        try {
+            UsbPortSecurityHooks.onKeyguardShowingStateChanged(mContext, showing, userId);
+        } finally {
+            Binder.restoreCallingIdentity(token);
+        }
     }
 
     /**
