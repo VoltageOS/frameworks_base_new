@@ -1087,6 +1087,15 @@ public class UsbService extends IUsbManager.Stub {
 
     @android.annotation.EnforcePermission(android.Manifest.permission.MANAGE_USB)
     @Override
+    public void setSecurityStateForAllPorts(@android.hardware.usb.ext.PortSecurityState int state,
+                                     android.os.ResultReceiver callback) {
+        setSecurityStateForAllPorts_enforcePermission();
+        Objects.requireNonNull(callback, "callback");
+        UsbPortSecurity.setSecurityStateForAllPorts(mContext, mPortManager, state, callback);
+    }
+
+    @android.annotation.EnforcePermission(android.Manifest.permission.MANAGE_USB)
+    @Override
     public void setUsbDeviceConnectionHandler(ComponentName usbDeviceConnectionHandler) {
         setUsbDeviceConnectionHandler_enforcePermission();
         synchronized (mLock) {
