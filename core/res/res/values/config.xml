@@ -7472,4 +7472,8 @@
     <!-- Biometrics fingerprint frr notification target activity component name, it shall be customized by OEMs -->
     <string translatable="false" name="config_fingerprintFrrTargetComponent"></string>
 
+    <bool name="config_usbPortSecuritySupported">false</bool>
+    <java-symbol type="bool" name="config_usbPortSecuritySupported" />
+    <bool name="config_usb_port_security_applies_to_pogo_pins">false</bool>
+    <java-symbol type="bool" name="config_usb_port_security_applies_to_pogo_pins" />
 </resources>
