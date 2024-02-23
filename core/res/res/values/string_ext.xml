@@ -24,4 +24,7 @@
     <string name="notif_hmalloc_crash_title">hardened_malloc detected an error in %1$s</string>
     <java-symbol type="string" name="notif_hmalloc_crash_title" />
 
+    <string name="usb_port_security_error_title">USB-C port security feature has malfunctioned</string>
+    <java-symbol type="string" name="usb_port_security_error_title" />
+
 </resources>

@@ -2100,6 +2100,15 @@ public class UsbManager {
         return;
     }
 
+    /** @hide */
+    public void updatePortSecuritySetting(int newValue) {
+        try {
+            mService.updatePortSecuritySetting(newValue);
+        } catch (RemoteException e) {
+            e.rethrowFromSystemServer();
+        }
+    }
+
     /**
      * Sets the component that will handle USB device connection.
      * <p>

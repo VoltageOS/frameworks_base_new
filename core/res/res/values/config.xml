@@ -7745,6 +7745,10 @@
     <!-- Action for opening trusted location settings page [CHAR LIMIT=NONE] [DO NOT TRANSLATE] -->
     <string name="trusted_location_settings_action" translatable="false"></string>
 
+    <bool name="config_usbPortSecuritySupported">false</bool>
+    <java-symbol type="bool" name="config_usbPortSecuritySupported" />
+    <bool name="config_usb_port_security_applies_to_pogo_pins">false</bool>
+    <java-symbol type="bool" name="config_usb_port_security_applies_to_pogo_pins" />
     <!-- The delay in milliseconds to suppress the toast after the user presses the
          power button. -->
     <integer name="config_turnOffTvToastSuppressionDelayMs">0</integer>

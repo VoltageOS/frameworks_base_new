@@ -358,6 +358,9 @@ public class UsbService extends IUsbManager.Stub {
         if (mDeviceManager != null) {
             mDeviceManager.bootCompleted();
         }
+
+        com.android.server.policy.keyguard.UsbPortSecurityHooks.init(mContext);
+
         if (android.hardware.usb.flags.Flags.enableUsbDataSignalStaking()) {
             new PackageUninstallMonitor()
                     .register(mContext, UserHandle.ALL, BackgroundThread.getHandler());
@@ -1109,6 +1112,11 @@ public class UsbService extends IUsbManager.Stub {
                                  IUsbOperationInternal callback) {
         return enableUsbDataInternal(portId, enable, operationId, callback,
             Binder.getCallingUid(), false);
+    }
+
+    @Override
+    public void updatePortSecuritySetting(int newValue) {
+        com.android.server.policy.keyguard.UsbPortSecurityHooks.updateSetting(newValue);
     }
 
     /**
