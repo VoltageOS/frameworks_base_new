@@ -6712,6 +6712,13 @@ public final class Settings {
          */
         public static final String DOUBLE_TAP_SLEEP_GESTURE = "double_tap_sleep_gesture";
 
+        /**
+         * Whether the device should react to lid events
+         * 0 = 0ff, 1 = on
+         * @hide
+         */
+        public static final String LID_CONTROL_SLEEP = "lid_control_sleep";
+
 	/**
          * Whether or not volume button music controls should be enabled to seek media tracks
          * @hide
