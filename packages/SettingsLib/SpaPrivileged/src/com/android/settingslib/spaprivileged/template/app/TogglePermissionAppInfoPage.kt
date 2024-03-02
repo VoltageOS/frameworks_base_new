@@ -160,6 +160,7 @@ internal fun <T : AppRecord> TogglePermissionAppListModel<T>.TogglePermissionApp
             restrictionsProviderFactory = restrictionsProviderFactory,
         )
         InfoPageAdditionalContent(record, isAllowed)
+        extContent(record, this)
     }
 }
 
