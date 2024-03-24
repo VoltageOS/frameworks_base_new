@@ -1,0 +1,146 @@
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/OnGoingActionProgressController.java
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/OnGoingActionProgressController.java
+@@ -94,7 +94,6 @@
+   private static final int STALE_PROGRESS_CHECK_INTERVAL_MS = 5000;
+   private static final long STUCK_THRESHOLD_MS = 10 * 60 * 1000;
+   private static final int PROGRESS_TIMEOUT_MS = 30000;
+-  private static final boolean DEBUG = Log.isLoggable("OngoingChip", Log.DEBUG);
+ 
+   private static final Uri URI_CHIP_ENABLED =
+       Settings.System.getUriFor(ONGOING_ACTION_CHIP_ENABLED);
+@@ -731,17 +730,6 @@
+       isVisible = false;
+     }
+ 
+-    if (DEBUG) {
+-      Log.d(
+-          "OngoingChip",
+-          "notify visible=" + isVisible
+-              + " state=" + mCurrentDisplayState
+-              + " forceHidden=" + mIsForceHidden
+-              + " headsUp=" + mHeadsUpPinned
+-              + " systemChip=" + mIsSystemChipVisible
+-              + " progress=" + mCurrentProgress + "/" + mCurrentProgressMax);
+-    }
+-
+     if (isVisible) {
+       float opacity = mProgressBarOpacity / 255f;
+       boolean isCompact = mIsCompactModeEnabled && !mIsExpanded;
+@@ -789,16 +777,6 @@
+     boolean isMediaNow = mShowMediaProgress && mMediaSessionHelper.isMediaPlaying();
+     long now = SystemClock.elapsedRealtime();
+ 
+-    if (DEBUG) {
+-      Log.d(
+-          "OngoingChip",
+-          "updateViews download=" + isDownloadNow
+-              + " media=" + isMediaNow
+-              + " enabled=" + mIsEnabled
+-              + " tracking=" + mIsTrackingProgress
+-              + " stuck=" + mIsStuck);
+-    }
+-
+     boolean isTransientNow = isDownloadNow || isMediaNow;
+     if (isTransientNow) {
+       mLastTransientTime = now;
+@@ -1224,8 +1202,18 @@
+ 
+   private void extractProgress(Notification notification) {
+     Bundle extras = notification.extras;
+-    int newProgress = extras.getInt(Notification.EXTRA_PROGRESS, 0);
+-    int newMax = extras.getInt(Notification.EXTRA_PROGRESS_MAX, 100);
++    int newProgress;
++    int newMax;
++    if (extras.containsKey(Notification.EXTRA_PROGRESS)
++        && extras.getInt(Notification.EXTRA_PROGRESS_MAX, 0) > 0) {
++      newProgress = extras.getInt(Notification.EXTRA_PROGRESS, 0);
++      newMax = extras.getInt(Notification.EXTRA_PROGRESS_MAX, 100);
++    } else {
++      int[] styleProgress = extractProgressStyle(notification);
++      if (styleProgress == null) return;
++      newProgress = styleProgress[0];
++      newMax = styleProgress[1];
++    }
+     if (newProgress != mCurrentProgress || newMax != mCurrentProgressMax) {
+       mLastProgressChangeTime = SystemClock.elapsedRealtime();
+       if (mIsStuck) {
+@@ -1252,12 +1240,6 @@
+   }
+ 
+   private void clearProgressTracking(boolean showSuccess) {
+-    if (DEBUG) {
+-      Log.d(
+-          "OngoingChip",
+-          "clearTracking key=" + mTrackedNotificationKey + " showSuccess=" + showSuccess,
+-          new Throwable());
+-    }
+     mIsTrackingProgress = false;
+     mTrackedNotificationKey = null;
+     mTrackedPackageName = null;
+@@ -1315,16 +1297,48 @@
+     }
+   }
+ 
+-  private static boolean hasProgress(@NonNull final Notification notification) {
++  private boolean hasProgress(@NonNull final Notification notification) {
+     Bundle extras = notification.extras;
+     if (extras == null) return false;
+ 
+     boolean indeterminate = extras.getBoolean(Notification.EXTRA_PROGRESS_INDETERMINATE, false);
+     boolean maxProgressValid = extras.getInt(Notification.EXTRA_PROGRESS_MAX, 0) > 0;
+-    return extras.containsKey(Notification.EXTRA_PROGRESS)
++    if (extras.containsKey(Notification.EXTRA_PROGRESS)
+         && extras.containsKey(Notification.EXTRA_PROGRESS_MAX)
+         && !indeterminate
+-        && maxProgressValid;
++        && maxProgressValid) {
++      return true;
++    }
++
++    int[] styleProgress = extractProgressStyle(notification);
++    return styleProgress != null;
++  }
++
++  private int[] extractProgressStyle(@NonNull final Notification notification) {
++    Bundle extras = notification.extras;
++    if (extras == null) return null;
++
++    String template = extras.getString(Notification.EXTRA_TEMPLATE);
++    if (template == null || !template.contains("ProgressStyle")) return null;
++
++    try {
++      Notification.Builder builder = Notification.Builder.recoverBuilder(mContext, notification);
++      Notification.Style style = builder.getStyle();
++      if (!(style instanceof Notification.ProgressStyle)) return null;
++
++      Notification.ProgressStyle progressStyle = (Notification.ProgressStyle) style;
++      if (progressStyle.isProgressIndeterminate()) return null;
++
++      int max = 0;
++      for (Notification.ProgressStyle.Segment segment : progressStyle.getProgressSegments()) {
++        max += segment.getLength();
++      }
++      if (max <= 0) return null;
++
++      return new int[] {progressStyle.getProgress(), max};
++    } catch (Throwable t) {
++      return null;
++    }
+   }
+ 
+   private void cancelTrackedTask() {
+@@ -1626,14 +1640,6 @@
+           boolean hasValidProgress = hasProgress(notification);
+           String currentKey = mTrackedNotificationKey;
+ 
+-          if (DEBUG && hasValidProgress) {
+-            Log.d(
+-                "OngoingChip",
+-                "posted key=" + sbn.getKey()
+-                    + " enabled=" + mIsEnabled
+-                    + " tracking=" + mIsTrackingProgress);
+-          }
+-
+           if (!hasValidProgress) {
+             if (currentKey != null && currentKey.equals(sbn.getKey())) {
+               final String key = sbn.getKey();
