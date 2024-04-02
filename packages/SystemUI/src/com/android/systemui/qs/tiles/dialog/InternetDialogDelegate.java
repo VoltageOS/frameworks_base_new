@@ -379,7 +379,7 @@ public class InternetDialogDelegate implements
         mMobileNetworkLayout.setOnClickListener(null);
         mMobileNetworkLayout.setOnLongClickListener(null);
         mFivegToggle.setOnCheckedChangeListener(null);
-        mHotspotLayout.setOnClickListener(null);
+        mHotspotLayout.setOnLongClickListener(null);
         mHotspotToggle.setOnClickListener(null);
         mMobileDataToggle.setOnClickListener(null);
         mConnectedWifListLayout.setOnClickListener(null);
@@ -503,7 +503,10 @@ public class InternetDialogDelegate implements
         mFivegToggle.setOnClickListener(v -> {
             mInternetDialogController.setFivegEnabled(mFivegToggle.isChecked());
         });
-        mHotspotLayout.setOnClickListener(mInternetDialogController::launchHotspotSetting);
+        mHotspotLayout.setOnLongClickListener(v -> {
+            mInternetDialogController.launchHotspotSetting(v);
+            return true;
+        });
         mHotspotToggle.setOnClickListener(v -> {
             mInternetDialogController.setHotspotEnabled(mHotspotToggle.isChecked());
         });
