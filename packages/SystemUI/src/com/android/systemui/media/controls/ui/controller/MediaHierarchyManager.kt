@@ -715,6 +715,12 @@ constructor(
         if (!SceneContainerFlag.isEnabled) {
             inSplitShade =
                 splitShadeStateController.shouldUseSplitNotificationShade(context.resources)
+            allowMediaPlayerOnLockScreen =
+                secureSettings.getBoolForUser(
+                    Settings.Secure.MEDIA_CONTROLS_LOCK_SCREEN,
+                    true,
+                    UserHandle.USER_CURRENT
+            )
         }
     }
 
