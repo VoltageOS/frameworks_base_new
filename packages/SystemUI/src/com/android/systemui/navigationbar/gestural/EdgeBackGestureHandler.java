@@ -1615,16 +1615,13 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
             case 14: // Powermenu
                 VoltageUtils.showPowerMenu();
                 break;
-            case 15: // Partial Screenshot
-                VoltageUtils.takeScreenshot(false);
-                break;
-            case 16: // Recents
+            case 15: // Recents
                 VoltageUtils.sendKeycode(mContext, KeyEvent.KEYCODE_APP_SWITCH);
                 break;
-            case 17: // Go forward
+            case 16: // Go forward
                 VoltageUtils.sendKeycode(mContext, KeyEvent.KEYCODE_FORWARD);
                 break;
-            case 18: // Menu
+            case 17: // Menu
                 VoltageUtils.sendKeycode(mContext, KeyEvent.KEYCODE_MENU);
                 break;
         }
