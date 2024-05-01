@@ -4414,9 +4414,11 @@ public class AppOpsService extends IAppOpsService.Stub {
             Op op = getOpLocked(code, proxiedUid, proxiedPackageName, attributionTag,
                     pvr.isAttributionTagValid, pvr.bypass, /* edit */ true);
             if (op == null) {
-                Slog.e(TAG, "Operation not found: uid=" + proxiedUid + " pkg=" + proxiedPackageName
-                        + "("
-                        + attributionTag + ") op=" + AppOpsManager.opToName(code));
+                if (DEBUG) {
+                    Slog.e(TAG, "Operation not found: uid=" + proxiedUid + " pkg=" + proxiedPackageName
+                            + "("
+                            + attributionTag + ") op=" + AppOpsManager.opToName(code));
+                }
                 return;
             }
             final AttributedOp attributedOp =
@@ -4424,18 +4426,22 @@ public class AppOpsService extends IAppOpsService.Stub {
                             getPersistentDeviceIdForOp(virtualDeviceId, code),
                             new ArrayMap<>()).get(attributionTag);
             if (attributedOp == null) {
+                if (DEBUG) {
                 Slog.e(TAG, "Attribution not found: uid=" + proxiedUid
                         + " pkg=" + proxiedPackageName + "("
                         + attributionTag + ") op=" + AppOpsManager.opToName(code));
+                }
                 return;
             }
 
             if (attributedOp.isRunning() || attributedOp.isPaused()) {
                 attributedOp.finished(clientId);
             } else {
+                if (DEBUG) {
                 Slog.e(TAG, "Operation not started: uid=" + proxiedUid
                         + " pkg=" + proxiedPackageName + "("
                         + attributionTag + ") op=" + AppOpsManager.opToName(code));
+                }
             }
         }
     }
@@ -4913,6 +4919,7 @@ public class AppOpsService extends IAppOpsService.Stub {
     private @NonNull PackageVerificationResult verifyAndGetBypass(int uid, String packageName,
             @Nullable String attributionTag, int proxyUid, @Nullable String proxyPackageName,
             boolean suppressErrorLogs) {
+        final boolean suppressLogs = true;
         if (uid == Process.ROOT_UID) {
             // For backwards compatibility, don't check package name for root UID, unless someone
             // is claiming to be a proxy for root, which should never happen in normal usage.
@@ -4970,7 +4977,7 @@ public class AppOpsService extends IAppOpsService.Stub {
         }
         if (nonAppUid != Process.INVALID_UID) {
             if (nonAppUid != UserHandle.getAppId(uid)) {
-                if (!suppressErrorLogs) {
+                if (!suppressLogs) {
                     Slog.e(TAG, "Bad call made by uid " + callingUid + ". "
                                 + "Package \"" + packageName + "\" does not belong to uid " + uid
                                 + ".");
@@ -5018,7 +5025,9 @@ public class AppOpsService extends IAppOpsService.Stub {
                     msg = "package " + packageName + " not found, can't check for "
                             + "attributionTag " + attributionTag;
                 }
+                    if (DEBUG) {
                 Slog.e(TAG, msg);
+                    }
             }
         } finally {
             Binder.restoreCallingIdentity(ident);
