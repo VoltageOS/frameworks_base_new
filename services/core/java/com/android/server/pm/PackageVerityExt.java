@@ -126,17 +126,6 @@ public class PackageVerityExt {
             }
         }
 
-        boolean checkFsVerity = true;
-        if (Build.IS_DEBUGGABLE) {
-            if (SystemProperties.getBoolean("persist.disable_boot_time_fsverity_check", false)) {
-                checkFsVerity = false;
-            }
-        }
-
-        if (checkFsVerity) {
-            checkFsVerity(systemPkgUpdate);
-        }
-
         final SigningDetails updatePkgSigningDetails = parseSigningDetails(systemPkgUpdate,
                 // verify APK against its signature
                 false);
@@ -154,17 +143,6 @@ public class PackageVerityExt {
             String msg = "System package update " + systemPkgUpdate.getManifestPackageName()
                     + " signature doesn't match the signature of system image package";
             throw new PackageManagerException(INSTALL_FAILED_BAD_SIGNATURE, msg);
-        }
-    }
-
-    public static void checkFsVerity(AndroidPackage pkg) throws PackageManagerException {
-        // base APK is considered to be a split too
-        for (AndroidPackageSplit split : pkg.getSplits()) {
-            String apkPath = split.getPath();
-            if (!VerityUtils.hasFsverity(apkPath)) {
-                throw new PackageManagerException(INSTALL_FAILED_BAD_SIGNATURE,
-                        "APK doesn't have fs-verity: " + apkPath);
-            }
         }
     }
 
