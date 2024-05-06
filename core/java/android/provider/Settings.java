@@ -14681,6 +14681,17 @@ public final class Settings {
         public static final String ADAPTIVE_CHARGING_ENABLED = "adaptive_charging_enabled";
 
         /**
+         * Used to enable / disable network access for new installed apps
+         *
+         * Values are:
+         * 0: disabled
+         * 1: enabled
+         * @hide
+         */
+        public static final String DEFAULT_RESTRICT_NETWORK_DATA =
+                "default_restrict_network_data";
+
+        /**
          * Whether battery saver is currently set to different schedule mode.
          *
          * @hide
