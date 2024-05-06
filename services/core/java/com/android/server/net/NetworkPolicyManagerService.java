@@ -1531,8 +1531,14 @@ public class NetworkPolicyManagerService extends INetworkPolicyManager.Stub {
                 // Clear the cache for the app
                 synchronized (mUidRulesFirstLock) {
                     mInternetPermissionMap.delete(uid);
-                    if (!hasInternetPermissionUL(uid) && !isSystemApp(uid)) {
-                        Slog.i(TAG, "ACTION_PACKAGE_ADDED for uid=" + uid + ", no INTERNET");
+                    int userId = UserHandle.getUserId(uid);
+                    UserInfo parentUser = mUserManager.getProfileParent(userId);
+                    if ((!hasInternetPermissionUL(uid) && !isSystemApp(uid)) ||
+                            Settings.Secure.getIntForUser(mContext.getContentResolver(),
+                                    Settings.Secure.DEFAULT_RESTRICT_NETWORK_DATA, 0,
+                                    parentUser == null ? UserHandle.getUserId(uid) : parentUser.id)
+                                    == 1) {
+                        Slog.i(TAG, "ACTION_PACKAGE_ADDED for uid=" + uid + ", no internet");
                         addUidPolicy(uid, POLICY_REJECT_ALL);
                     }
                     updateRestrictionRulesForUidUL(uid);
