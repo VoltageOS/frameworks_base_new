@@ -80,6 +80,7 @@ import android.view.IWindowManager;
 import android.view.MotionEvent;
 import android.view.ThreadedRenderer;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.view.WindowManagerGlobal;
@@ -234,6 +235,7 @@ import com.android.systemui.statusbar.window.StatusBarWindowControllerStore;
 import com.android.systemui.statusbar.window.StatusBarWindowStateController;
 import com.android.systemui.surfaceeffects.ripple.RippleShader.RippleShape;
 import com.android.systemui.util.DumpUtilsKt;
+import com.android.systemui.util.MediaArtUtils;
 import com.android.systemui.util.WallpaperController;
 import com.android.systemui.util.concurrency.DelayableExecutor;
 import com.android.systemui.util.concurrency.MessageRouter;
@@ -435,6 +437,8 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
     private final NotificationsController mNotificationsController;
     private final StatusBarSignalPolicy mStatusBarSignalPolicy;
     private final StatusBarHideIconsForBouncerManager mStatusBarHideIconsForBouncerManager;
+
+    private final MediaArtUtils mMediaArtUtils;
 
     /** Controller for the Shade. */
     private final ShadeSurface mShadeSurface;
@@ -877,6 +881,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
         if (PredictiveBackSysUiFlag.isEnabled()) {
             mContext.getApplicationInfo().setEnableOnBackInvokedCallback(true);
         }
+        mMediaArtUtils = MediaArtUtils.getInstance(mContext);
     }
 
     private void initBubbles(Bubbles bubbles) {
@@ -1121,6 +1126,14 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
                 (requestTopUi, componentTag) -> mMainExecutor.execute(() ->
                         mNotificationShadeWindowController.setRequestTopUi(
                                 requestTopUi, componentTag))));
+		getNotifContainerParentView().addView(mMediaArtUtils.getMediaArtScrim(), 0);
+    }
+    
+    
+    private ViewGroup getNotifContainerParentView() {
+        ViewGroup rootView = (ViewGroup) getNotificationShadeWindowView().findViewById(R.id.scrim_behind).getParent();
+        ViewGroup targetView = rootView.findViewById(R.id.notification_container_parent);
+        return targetView;
     }
 
     @VisibleForTesting
@@ -1367,7 +1380,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
             });
         }
 
-        mVisualizerView = (VisualizerView) getNotificationShadeWindowView().findViewById(R.id.visualizerview);
+        mVisualizerView = (VisualizerView) getNotifContainerParentView().findViewById(R.id.visualizerview);
 
         mReportRejectedTouch = getNotificationShadeWindowView()
                 .findViewById(R.id.report_rejected_touch);
@@ -2639,6 +2652,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
             }
 
             DejankUtils.stopDetectingBlockingIpcs(tag);
+            mMediaArtUtils.updateMediaArtVisibility();
         }
 
         @Override
