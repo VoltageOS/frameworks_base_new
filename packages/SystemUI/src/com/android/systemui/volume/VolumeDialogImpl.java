@@ -82,6 +82,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
 import android.os.Trace;
+import android.os.UserHandle;
 import android.os.VibrationEffect;
 import android.provider.Settings;
 import android.provider.Settings.Global;
@@ -426,9 +427,10 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
             ContentObserver volumePanelOnLeftObserver = new ContentObserver(null) {
                 @Override
                 public void onChange(boolean selfChange) {
-                    final boolean volumePanelOnLeft = Settings.Secure.getInt(
+                    final boolean volumePanelOnLeft = Settings.Secure.getIntForUser(
                             mContext.getContentResolver(),
-                            Settings.Secure.VOLUME_PANEL_ON_LEFT, 0) != 0;
+                            Settings.Secure.VOLUME_PANEL_ON_LEFT, 0,
+                            UserHandle.USER_CURRENT) != 0;
                     if (mVolumePanelOnLeft != volumePanelOnLeft) {
                         mVolumePanelOnLeft = volumePanelOnLeft;
                         mHandler.post(mControllerCallbackH::onConfigurationChanged);
