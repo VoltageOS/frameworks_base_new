@@ -102,6 +102,7 @@ public class DozeScreenBrightness extends BroadcastReceiver implements DozeMachi
     private boolean mPaused = false;
     private boolean mScreenOff = false;
     private int mLastSensorValue = -1;
+    private int mDefaultPulseBrightness;
     private DozeMachine.State mState = DozeMachine.State.UNINITIALIZED;
 
     /**
@@ -144,9 +145,14 @@ public class DozeScreenBrightness extends BroadcastReceiver implements DozeMachi
         mScreenBrightnessMinimumDimAmountFloat = context.getResources().getFloat(
                 R.dimen.config_screenBrightnessMinimumDimAmountFloat);
 
+        int defaultPulseBrightness = context.getResources().getInteger(
+                com.android.internal.R.integer.config_screenBrightnessPulse);
+
         mDefaultDozeBrightness = alwaysOnDisplayPolicy.defaultDozeBrightness;
         mDefaultDozeBrightnessFloat =
                 mDisplayManager.getDefaultDozeBrightness(mContext.getDisplayId());
+        mDefaultPulseBrightness = defaultPulseBrightness != -1 
+                ? defaultPulseBrightness : mDefaultDozeBrightness;
         mScreenBrightnessDim = alwaysOnDisplayPolicy.dimBrightness;
         mScreenBrightnessDimFloat = alwaysOnDisplayPolicy.dimBrightnessFloat;
         mSensorToBrightness = alwaysOnDisplayPolicy.screenBrightnessArray;
@@ -165,8 +171,12 @@ public class DozeScreenBrightness extends BroadcastReceiver implements DozeMachi
                 resetBrightnessToDefault();
                 break;
             case DOZE_AOD:
-            case DOZE_REQUEST_PULSE:
             case DOZE_AOD_DOCKED:
+                setBrightnessToValue(getDozeBrightnessValue());
+                setLightSensorEnabled(true);
+                break;
+            case DOZE_REQUEST_PULSE:
+                setBrightnessToValue(getPulseBrightnessValue());
                 setLightSensorEnabled(true);
                 break;
             case DOZE:
@@ -294,13 +304,63 @@ public class DozeScreenBrightness extends BroadcastReceiver implements DozeMachi
         if (shouldUseFloatBrightness()) {
             mDozeService.setDozeScreenBrightnessFloat(
                     clampToDimBrightnessForScreenOffFloat(
-                            clampToUserSettingOrAutoBrightnessFloat(mDefaultDozeBrightnessFloat)));
+                            clampToUserSettingOrAutoBrightnessFloat(
+                                    getDozeBrightnessValueFloat())));
         } else {
             mDozeService.setDozeScreenBrightness(
                     clampToDimBrightnessForScreenOff(
-                            clampToUserSettingOrAutoBrightness(mDefaultDozeBrightness)));
+                            clampToUserSettingOrAutoBrightness(getDozeBrightnessValue())));
         }
         mDozeHost.setAodDimmingScrim(0f);
+    }
+
+    private void setBrightnessToValue(int value) {
+        boolean forceCustomBrightness = Settings.System.getIntForUser(
+                mContext.getContentResolver(),
+                Settings.System.DOZE_BRIGHTNESS_FORCE, 0, 
+                UserHandle.USER_CURRENT) == 1;
+
+        if (shouldUseFloatBrightness()) {
+            float brightnessFloat = value / 255f;
+            mDozeService.setDozeScreenBrightnessFloat(
+                    forceCustomBrightness ? brightnessFloat 
+                            : clampToUserSettingFloat(brightnessFloat));
+        } else {
+            mDozeService.setDozeScreenBrightness(
+                    forceCustomBrightness ? value : clampToUserSetting(value));
+        }
+    }
+
+    private int getDozeBrightnessValue() {
+        return Settings.System.getIntForUser(mContext.getContentResolver(),
+                Settings.System.DOZE_BRIGHTNESS, mDefaultDozeBrightness,
+                UserHandle.USER_CURRENT);
+    }
+
+    private float getDozeBrightnessValueFloat() {
+        int brightnessInt = Settings.System.getIntForUser(mContext.getContentResolver(),
+                Settings.System.DOZE_BRIGHTNESS, -1,
+                UserHandle.USER_CURRENT);
+
+        if (brightnessInt == -1) {
+            return mDefaultDozeBrightnessFloat;
+        }
+
+        return brightnessInt / 255f;
+    }
+
+    private int getPulseBrightnessValue() {
+        return Settings.System.getIntForUser(mContext.getContentResolver(),
+                Settings.System.PULSE_BRIGHTNESS, mDefaultPulseBrightness,
+                UserHandle.USER_CURRENT);
+    }
+
+    private float getPulseBrightnessValueFloat() {
+        int brightnessInt = Settings.System.getIntForUser(mContext.getContentResolver(),
+                Settings.System.PULSE_BRIGHTNESS, -1,
+                UserHandle.USER_CURRENT);
+
+        return brightnessInt == -1 ? (mDefaultPulseBrightness / 255f) : (brightnessInt / 255f);
     }
 
     private int clampToUserSetting(int brightness) {
