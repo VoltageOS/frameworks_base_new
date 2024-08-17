@@ -218,4 +218,8 @@
     <!-- Blur radius used by SystemUI -->
     <java-symbol type="dimen" name="min_window_blur_radius" />
     <java-symbol type="dimen" name="max_window_blur_radius" />
+
+    <!-- CPU temperature -->
+    <java-symbol type="string" name="config_cpu_temp_path" />
+
 </resources>

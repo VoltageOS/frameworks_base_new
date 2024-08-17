@@ -205,4 +205,7 @@
     <!-- Whether the device supports Smart Pixels -->
     <bool name="config_supportSmartPixels">false</bool>
 
+    <!-- CPU temperature -->
+    <string name="config_cpu_temp_path">/sys/class/thermal/thermal_zone0/temp</string>
+
 </resources>
