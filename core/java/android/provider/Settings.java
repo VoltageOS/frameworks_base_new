@@ -7640,6 +7640,16 @@ public final class Settings {
          */
         public static final String STATUS_BAR_CLOCK_DATE_FORMAT = "status_bar_clock_date_format";
 
+	/**
+         * What to show at the bottom of the Ambient display
+         * 0: Nothing.
+         * 1: Battery Percentage.
+         * 2: Battery Temperature.
+         * 3: Battery Percentage & Temperature Together.
+         * @hide
+         */
+        public static final String AMBIENT_SHOW_SETTINGS = "ambient_show_settings";
+
         /**
          * Keys we no longer back up under the current schema, but want to continue to
          * process when restoring historical backup datasets.
