@@ -83,4 +83,7 @@
 
     <!-- Overlays that to be enabled in FHD+ resolution -->
     <java-symbol type="array" name="config_fhdResolutionOverlays" />
+
+    <!-- KeyboxImitationHooks -->
+    <java-symbol type="array" name="config_certifiedKeybox" />
 </resources>
