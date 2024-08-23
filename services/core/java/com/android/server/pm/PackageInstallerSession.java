@@ -3882,11 +3882,11 @@ public class PackageInstallerSession extends IPackageInstallerSession.Stub {
                                 + " is blocked to prevent breaking gmscompat";
                         throw new PackageManagerException(errorCode, msg);
                     }
-                    case PackageId.ANDROID_AUTO_NAME:
+                   /**  case PackageId.ANDROID_AUTO_NAME:
                     case PackageId.PIXEL_HEALTH_NAME:
                         throw new PackageManagerException(errorCode,
                                 "Only the first-party package source and shell are allowed " +
-                                        "to install " + PackageId.PIXEL_HEALTH_NAME);
+                                        "to install " + PackageId.PIXEL_HEALTH_NAME); **/
                 }
             }
         }
