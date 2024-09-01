@@ -1863,12 +1863,18 @@ public class KeyguardViewMediator implements CoreStartable,
         // Only dispatch keyguard going away if:
         // 1. UDFPS is not configured (original logic)
         // 2. Not currently in a locking operation
-        if (!mUpdateMonitor.isUdfpsEnrolled() && !isLockingOperation) {
+        if (!isUdfpsConfigured() || (!mUpdateMonitor.isUdfpsEnrolled() && !isLockingOperation)) {
             mKeyguardStateController.notifyKeyguardGoingAway(false);
             mUpdateMonitor.dispatchKeyguardGoingAway(false);
         }
 
         notifyStartedGoingToSleep();
+    }
+
+    private boolean isUdfpsConfigured() {
+        int[] udfpsProps = mContext.getResources().getIntArray(
+            com.android.internal.R.array.config_udfps_sensor_props);
+        return !ArrayUtils.isEmpty(udfpsProps);
     }
 
     /**
