@@ -5827,7 +5827,7 @@ class DisplayContent extends RootDisplayArea implements WindowManagerPolicy.Disp
      * also check {@link #isSystemDecorationsSupported()} to avoid breaking any security policy.
      */
     boolean isPublicSecondaryDisplayWithDesktopModeForceEnabled() {
-        if (!mWmService.mForceDesktopModeOnExternalDisplays || isDefaultDisplay || isPrivate()) {
+        if (!mWmService.mForceDesktopModeOnExternalDisplays || isDefaultDisplay || isPrivate() && !isFreeformDisplay) {
             return false;
         }
         // Desktop mode is not supported on virtual devices.
