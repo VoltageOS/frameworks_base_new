@@ -29,4 +29,7 @@
     <!-- Weather -->  
     <dimen name="weather_image_max_size">24dp</dimen>
     <dimen name="weather_humidity_margin_start">16dp</dimen>
+
+    <!-- AoD battery bar -->
+    <dimen name="battery_bar_view_height">6dp</dimen>
 </resources>
