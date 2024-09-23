@@ -254,6 +254,7 @@ public class KeyguardIndicationController {
     private boolean mAlternateFastchargeInfoUpdate;
 
     private BatteryBarView mBatteryBar;
+    private View mTransparentView;
 
     private KeyguardUpdateMonitorCallback mUpdateMonitorCallback;
 
@@ -492,6 +493,7 @@ public class KeyguardIndicationController {
                 mKeyguardLogger,
                 mFeatureFlags
         );
+        mTransparentView = indicationArea.findViewById(R.id.transparent_keyguard_view);
         mBatteryBar = indicationArea.findViewById(R.id.battery_bar_view);
         updateDeviceEntryIndication(false /* animate */);
         updateOrganizedOwnedDevice();
@@ -1161,6 +1163,9 @@ public class KeyguardIndicationController {
             if (mBatteryBar != null) {
                 mBatteryBar.setVisibility(View.GONE);
             }
+            if (mTransparentView != null) {
+               mTransparentView.setVisibility(View.GONE);
+            }
 
             boolean useMisalignmentColor = false;
             mLockScreenIndicationView.setVisibility(View.GONE);
@@ -1187,7 +1192,14 @@ public class KeyguardIndicationController {
                     mBatteryBar.setVisibility(View.VISIBLE);
                     mBatteryBar.setBatteryPercent(mBatteryLevel);
                     mBatteryBar.setBarColor(Color.WHITE);
-                }
+                    if (mTransparentView != null) {
+                        if (ambientShowSettingsIcon()) {
+                            mTransparentView.setVisibility(View.VISIBLE);
+                        } else {
+                            mTransparentView.setVisibility(View.GONE);
+                        }
+                    }
+                 }
             } else {
                 String batteryLevel = NumberFormat.getPercentInstance().format(mBatteryLevel / 100f);
                 String batteryTemp = com.android.internal.util.voltage.VoltageUtils.batteryTemperature(mContext, false);
@@ -1243,6 +1255,13 @@ public class KeyguardIndicationController {
                     mBatteryBar.setVisibility(View.VISIBLE);
                     mBatteryBar.setBatteryPercent(mBatteryLevel);
                     mBatteryBar.setBarColor(Color.WHITE);
+                    if (mTransparentView != null) {
+                        if (ambientShowSettingsIcon()) {
+                            mTransparentView.setVisibility(View.VISIBLE);
+                        } else {
+                            mTransparentView.setVisibility(View.GONE);
+                        }
+                    }
                 }
              }
 
