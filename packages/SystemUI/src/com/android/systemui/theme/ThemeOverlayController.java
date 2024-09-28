@@ -44,9 +44,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.om.FabricatedOverlay;
-import android.content.om.IOverlayManager;
 import android.content.om.OverlayIdentifier;
-import android.content.om.OverlayInfo;
 import android.content.pm.UserInfo;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -56,8 +54,6 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.SystemProperties;
 import android.os.Handler;
-import android.os.RemoteException;
-import android.os.ServiceManager;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.provider.Settings;
@@ -192,8 +188,6 @@ public class ThemeOverlayController implements CoreStartable, Dumpable {
     private final UserScopedService<UiModeManager> mUiModeManagerProvider;
     private ColorScheme mDarkColorScheme;
     private ColorScheme mLightColorScheme;
-
-    private IOverlayManager mOverlayManager;
 
     // Defers changing themes until Setup Wizard is done.
     private boolean mDeferredThemeEvaluation;
@@ -506,9 +500,6 @@ public class ThemeOverlayController implements CoreStartable, Dumpable {
         mActivityManager = activityManager;
         mSystemPropertiesHelper = systemPropertiesHelper;
         dumpManager.registerDumpable(TAG, this);
-
-        mOverlayManager = IOverlayManager.Stub.asInterface(
-                ServiceManager.getService(Context.OVERLAY_SERVICE));
 
         Flow<Boolean> isFinishedInAsleepStateFlow = mKeyguardTransitionInteractor
                 .isFinishedInStateWhereWithScene(KeyguardState.Companion::deviceIsAsleepInState);
@@ -842,25 +833,14 @@ public class ThemeOverlayController implements CoreStartable, Dumpable {
             }
         }
 
-        boolean nightMode = isNightMode();
-        boolean skipNeutral = false;
-        boolean enableNeutral = false;
-        if (mOverlayManager != null) {
-            OverlayInfo info = null;
-            try {
-                info = mOverlayManager.getOverlayInfo(OVERLAY_BERRY_BLACK_THEME, mUserTracker.getUserId());
-            } catch (RemoteException e) {
-                Log.e(TAG, "Failed getting overlay " + OVERLAY_BERRY_BLACK_THEME + " info");
-                e.printStackTrace();
-            }
-            skipNeutral = nightMode && info != null && info.isEnabled();
-            enableNeutral = !nightMode && info != null && info.isEnabled();
-        }
+        boolean isBlackMode = (Settings.Secure.getIntForUser(
+                mContext.getContentResolver(), Settings.Secure.BERRY_BLACK_THEME,
+                0, currentUser) == 1) && isNightMode();
 
         // Compatibility with legacy themes, where full packages were defined, instead of just
         // colors.
         if (!categoryToPackage.containsKey(OVERLAY_CATEGORY_SYSTEM_PALETTE)
-                && mNeutralOverlay != null && (!skipNeutral || enableNeutral)) {
+                && mNeutralOverlay != null && !isBlackMode) {
             categoryToPackage.put(OVERLAY_CATEGORY_SYSTEM_PALETTE,
                     mNeutralOverlay.getIdentifier());
         }
@@ -896,18 +876,17 @@ public class ThemeOverlayController implements CoreStartable, Dumpable {
 
         if (mNeedsOverlayCreation) {
             mNeedsOverlayCreation = false;
-            fOverlays = new FabricatedOverlay[skipNeutral ? 2 : 3];
+            fOverlays = new FabricatedOverlay[isBlackMode ? 2 : 3];
             int c = 0;
             fOverlays[c++] = mAccentOverlay;
-            if (!skipNeutral || enableNeutral) {
+            if (!isBlackMode) {
                 fOverlays[c++] = mNeutralOverlay;
             }
             fOverlays[c++] = mDynamicOverlay;
         }
 
         mThemeManager.applyCurrentUserOverlays(categoryToPackage, fOverlays, currentUser,
-                managedProfiles, onCompleteCallback);
-
+                managedProfiles, onCompleteCallback, isBlackMode);
     }
 
     @ThemeStyle.Type
