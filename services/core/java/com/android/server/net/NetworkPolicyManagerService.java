@@ -5751,9 +5751,11 @@ public class NetworkPolicyManagerService extends INetworkPolicyManager.Stub {
             Trace.traceBegin(Trace.TRACE_TAG_NETWORK,
                     "updateRulesForDataUsageRestrictionsUL: " + uid);
         }
+        long token = Binder.clearCallingIdentity();
         try {
             updateRulesForDataUsageRestrictionsULInner(uid);
         } finally {
+            Binder.restoreCallingIdentity(token);
             Trace.traceEnd(Trace.TRACE_TAG_NETWORK);
         }
     }
