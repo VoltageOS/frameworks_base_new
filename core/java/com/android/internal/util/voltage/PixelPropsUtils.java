@@ -63,14 +63,13 @@ public final class PixelPropsUtils {
 
     private static final String TAG = PixelPropsUtils.class.getSimpleName();
     private static final String DEVICE = "ro.voltage.device";
+    private static final String PROP_HOOKS = "persist.sys.pihooks_";
     private static final boolean DEBUG = SystemProperties.getBoolean("persist.sys.pihooks.debug", false);
 
     private static final String sDeviceModel =
             SystemProperties.get("ro.product.model", Build.MODEL);
     private static final String sDeviceFingerprint =
             SystemProperties.get("ro.product.fingerprint", Build.FINGERPRINT);
-    private static final String[] sCertifiedProps =
-            Resources.getSystem().getStringArray(R.array.config_certifiedBuildProperties);
 
     private static final Boolean sEnablePixelProps =
             Resources.getSystem().getBoolean(R.bool.config_enablePixelProps);
@@ -146,6 +145,18 @@ public final class PixelPropsUtils {
 
     private static final ComponentName GMS_ADD_ACCOUNT_ACTIVITY = ComponentName.unflattenFromString(
             "com.google.android.gms/.auth.uiflows.minutemaid.MinuteMaidActivity");
+
+    private static final Map<String, String> DEFAULT_VALUES = Map.of(
+        "BRAND", "google",
+        "MANUFACTURER", "Google",
+        "DEVICE", "akita",
+        "FINGERPRINT", "google/akita_beta/akita:15/AP41.240925.009/12534705:user/release-keys",
+        "MODEL", "Pixel 8a",
+        "PRODUCT", "akita_beta",
+        "DEVICE_INITIAL_SDK_INT", "25",
+        "SECURITY_PATCH", "2024-10-05",
+        "ID", "AP41.240925.009"
+    );
 
     private static volatile boolean sIsGms, sIsExcluded;
     private static volatile String sProcessName;
@@ -233,21 +244,18 @@ public final class PixelPropsUtils {
     }
 
     private static void spoofBuildGms() {
-        if (!SystemProperties.getBoolean(SPOOF_PI, true))
-            return;
 
-        // Alter build parameters to avoid hardware attestation enforcement
-        setPropValue("BRAND", "YU nitrogen");
-        setPropValue("MANUFACTURER", "YU");
-        setPropValue("DEVICE", "YUREKA");
-        setPropValue("ID", "LMY49J");
-        setPropValue("FINGERPRINT", "YU/YUREKA/YUREKA:5.1.1/LMY49J/YOG4PAS8A4:user/release-keys");
-        setPropValue("MODEL", "YU5510");
-        setPropValue("PRODUCT", "YUREKA");
-        setVersionFieldString("SECURITY_PATCH", "2015-11-01");
+        for (Map.Entry<String, String> entry : DEFAULT_VALUES.entrySet()) {
+            String propKey = PROP_HOOKS + entry.getKey();
+            String value = SystemProperties.get(propKey);
+            setPropValue(entry.getKey(), value != null ? value : entry.getValue());
+        }
     }
 
     public static void setProps(Context context) {
+        if (!SystemProperties.getBoolean(SPOOF_PI, true))
+            return;
+
         final String packageName = context.getPackageName();
         final String processName = Application.getProcessName();
         Map<String, Object> propsToChange = new HashMap<>();
@@ -332,36 +340,44 @@ public final class PixelPropsUtils {
 
     private static void setPropValue(String key, Object value) {
         try {
-            dlog("Defining prop " + key + " to " + value.toString());
-            Field field = Build.class.getDeclaredField(key);
-            field.setAccessible(true);
-            field.set(null, value);
-            field.setAccessible(false);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
+            Field field = getBuildClassField(key);
+            if (field != null) {
+                field.setAccessible(true);
+                if (field.getType() == int.class) {
+                    if (value instanceof String) {
+                        field.set(null, Integer.parseInt((String) value));
+                    } else if (value instanceof Integer) {
+                        field.set(null, (Integer) value);
+                    }
+                } else if (field.getType() == long.class) {
+                    if (value instanceof String) {
+                        field.set(null, Long.parseLong((String) value));
+                    } else if (value instanceof Long) {
+                        field.set(null, (Long) value);
+                    }
+                } else {
+                    field.set(null, value.toString());
+                }
+                field.setAccessible(false);
+                dlog("Set prop " + key + " to " + value);
+            } else {
+                Log.e(TAG, "Field " + key + " not found in Build or Build.VERSION classes");
+            }
+        } catch (NoSuchFieldException | IllegalAccessException | IllegalArgumentException e) {
             Log.e(TAG, "Failed to set prop " + key, e);
         }
     }
 
-    private static void setVersionField(String key, Object value) {
+    private static Field getBuildClassField(String key) throws NoSuchFieldException {
         try {
-            dlog("Defining version field " + key + " to " + value.toString());
+            Field field = Build.class.getDeclaredField(key);
+            dlog("Field " + key + " found in Build.class");
+            return field;
+        } catch (NoSuchFieldException e) {
             Field field = Build.VERSION.class.getDeclaredField(key);
-            field.setAccessible(true);
-            field.set(null, value);
-            field.setAccessible(false);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            Log.e(TAG, "Failed to set version field " + key, e);
-        }
-    }
+            dlog("Field " + key + " found in Build.VERSION.class");
+            return field;
 
-    private static void setVersionFieldString(String key, String value) {
-        try {
-            Field field = Build.VERSION.class.getDeclaredField(key);
-            field.setAccessible(true);
-            field.set(null, value);
-            field.setAccessible(false);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            Log.e(TAG, "Failed to spoof Build." + key, e);
         }
     }
 
@@ -383,7 +399,7 @@ public final class PixelPropsUtils {
         final int gmsUid;
         try {
             gmsUid = context.getPackageManager().getApplicationInfo("com.google.android.gms", 0).uid;
-            dlog("shouldBypassTaskPermission: gmsUid:" + gmsUid + " callingUid:" + callingUid);
+            //dlog("shouldBypassTaskPermission: gmsUid:" + gmsUid + " callingUid:" + callingUid);
         } catch (Exception e) {
             Log.e(TAG, "shouldBypassTaskPermission: unable to get gms uid", e);
             return false;
