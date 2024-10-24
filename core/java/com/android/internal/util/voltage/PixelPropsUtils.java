@@ -24,14 +24,12 @@ import android.app.Application;
 import android.app.TaskStackListener;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Process;
 import android.os.SystemProperties;
-import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -71,6 +69,9 @@ public final class PixelPropsUtils {
             SystemProperties.get("ro.product.model", Build.MODEL);
     private static final String sDeviceFingerprint =
             SystemProperties.get("ro.product.fingerprint", Build.FINGERPRINT);
+    private static final String[] sCertifiedProps =
+            Resources.getSystem().getStringArray(R.array.config_certifiedBuildProperties);
+
     private static final Boolean sEnablePixelProps =
             Resources.getSystem().getBoolean(R.bool.config_enablePixelProps);
 
@@ -175,7 +176,7 @@ public final class PixelPropsUtils {
         propsToChangePixelTablet.put("FINGERPRINT", "google/tangorpro/tangorpro:15/AP4A.241205.013/12621605:user/release-keys");
     }
 
-    public static String getBuildID(String fingerprint) {
+    private static String getBuildID(String fingerprint) {
         Pattern pattern = Pattern.compile("([A-Za-z0-9]+\\.\\d+\\.\\d+\\.\\w+)");
         Matcher matcher = pattern.matcher(fingerprint);
 
@@ -185,7 +186,7 @@ public final class PixelPropsUtils {
         return "";
     }
 
-    public static String getDeviceName(String fingerprint) {
+    private static String getDeviceName(String fingerprint) {
         String[] parts = fingerprint.split("/");
         if (parts.length >= 2) {
             return parts[1];
@@ -231,57 +232,19 @@ public final class PixelPropsUtils {
         }
     }
 
-    public static void spoofBuildGms(Context context) {
+    private static void spoofBuildGms() {
         if (!SystemProperties.getBoolean(SPOOF_PI, true))
             return;
 
-        String packageName = "com.goolag.pif";
-
-        if (!VoltageUtils.isPackageInstalled(context, packageName)) {
-            Log.e(TAG, "'" + packageName + "' is not installed.");
-            return;
-        }
-
-        PackageManager pm = context.getPackageManager();
-
-        try {
-            Resources resources = pm.getResourcesForApplication(packageName);
-
-            int resourceId = resources.getIdentifier("device_arrays", "array", packageName);
-            if (resourceId != 0) {
-                String[] deviceArrays = resources.getStringArray(resourceId);
-
-                if (deviceArrays.length > 0) {
-                    int randomIndex = new Random().nextInt(deviceArrays.length);
-                    int selectedArrayResId = resources.getIdentifier(deviceArrays[randomIndex], "array", packageName);
-                    String selectedArrayName = resources.getResourceEntryName(selectedArrayResId);
-                    String[] selectedDeviceProps = resources.getStringArray(selectedArrayResId);
-
-                    setPropValue("MANUFACTURER", selectedDeviceProps[0]);
-                    setPropValue("MODEL", selectedDeviceProps[1]);
-                    setPropValue("FINGERPRINT", selectedDeviceProps[2]);
-                    setPropValue("BRAND", selectedDeviceProps[3]);
-                    setPropValue("PRODUCT", selectedDeviceProps[4]);
-                    setPropValue("DEVICE", selectedDeviceProps[5].isEmpty() ? getDeviceName(selectedDeviceProps[2]) : selectedDeviceProps[5]);
-                    setVersionFieldString("RELEASE", selectedDeviceProps[6]);
-                    setPropValue("ID", selectedDeviceProps[7].isEmpty() ? getBuildID(selectedDeviceProps[2]) : selectedDeviceProps[7]);
-                    setVersionFieldString("INCREMENTAL", selectedDeviceProps[8]);
-                    setPropValue("TYPE", selectedDeviceProps[9].isEmpty() ? "user" : selectedDeviceProps[9]);
-                    setPropValue("TAGS", selectedDeviceProps[10].isEmpty() ? "release-keys" : selectedDeviceProps[10]);
-                    setVersionFieldString("SECURITY_PATCH", selectedDeviceProps[11]);
-                    setVersionFieldInt("DEVICE_INITIAL_SDK_INT", Integer.parseInt(selectedDeviceProps[12]));
-
-                    Settings.System.putString(context.getContentResolver(), Settings.System.PPU_SPOOF_BUILD_GMS_ARRAY, selectedArrayName);
-                } else {
-                    Log.e(TAG, "No device arrays found.");
-                }
-            } else {
-                Log.e(TAG, "Resource 'device_arrays' not found.");
-            }
-
-        } catch (PackageManager.NameNotFoundException e) {
-            Log.e(TAG, "Error getting resources for '" + packageName + "': " + e.getMessage());
-        }
+        // Alter build parameters to avoid hardware attestation enforcement
+        setPropValue("BRAND", "YU nitrogen");
+        setPropValue("MANUFACTURER", "YU");
+        setPropValue("DEVICE", "YUREKA");
+        setPropValue("ID", "LMY49J");
+        setPropValue("FINGERPRINT", "YU/YUREKA/YUREKA:5.1.1/LMY49J/YOG4PAS8A4:user/release-keys");
+        setPropValue("MODEL", "YU5510");
+        setPropValue("PRODUCT", "YUREKA");
+        setVersionFieldString("SECURITY_PATCH", "2015-11-01");
     }
 
     public static void setProps(Context context) {
@@ -305,7 +268,7 @@ public final class PixelPropsUtils {
                 if (!SystemProperties.getBoolean(SPOOF_PI, true)) {
                     return;
                 } else {
-                    spoofBuildGms(context);
+                    spoofBuildGms();
                 }
             }
         } else if (Arrays.asList(packagesToChangeRecentPixel).contains(packageName) && !sIsGms) {
@@ -393,18 +356,6 @@ public final class PixelPropsUtils {
 
     private static void setVersionFieldString(String key, String value) {
         try {
-            Field field = Build.VERSION.class.getDeclaredField(key);
-            field.setAccessible(true);
-            field.set(null, value);
-            field.setAccessible(false);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            Log.e(TAG, "Failed to spoof Build." + key, e);
-        }
-    }
-
-    private static void setVersionFieldInt(String key, int value) {
-        try {
-            dlog("Defining version field " + key + " to " + value);
             Field field = Build.VERSION.class.getDeclaredField(key);
             field.setAccessible(true);
             field.set(null, value);
