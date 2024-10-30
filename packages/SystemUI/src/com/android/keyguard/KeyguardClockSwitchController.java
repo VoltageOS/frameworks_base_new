@@ -434,6 +434,9 @@ public class KeyguardClockSwitchController extends ViewController<KeyguardClockS
         mDateWeatherView = (ViewGroup) mSmartspaceController.buildAndConnectDateView(mView);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 MATCH_PARENT, WRAP_CONTENT);
+        if (mDateWeatherView == null || mStatusArea == null) {
+            return;
+        }
         mStatusArea.addView(mDateWeatherView, 0, lp);
         int startPadding = getContext().getResources().getDimensionPixelSize(
                 R.dimen.below_clock_padding_start);
@@ -450,6 +453,9 @@ public class KeyguardClockSwitchController extends ViewController<KeyguardClockS
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 WRAP_CONTENT, WRAP_CONTENT);
         mWeatherView = mSmartspaceController.buildAndConnectWeatherView(mView);
+        if (mWeatherView == null) {
+            return;
+        }
         // Place weather right after the date, before the extras
         final int index = mDateWeatherView.getChildCount() == 0 ? 0 : 1;
         mDateWeatherView.addView(mWeatherView, index, lp);
@@ -468,6 +474,9 @@ public class KeyguardClockSwitchController extends ViewController<KeyguardClockS
         mSmartspaceView = mSmartspaceController.buildAndConnectView(mView);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 MATCH_PARENT, WRAP_CONTENT);
+        if (mStatusArea == null || mSmartspaceView == null) {
+            return;
+        }
         mStatusArea.addView(mSmartspaceView, 0, lp);
         int startPadding = getContext().getResources().getDimensionPixelSize(
                 R.dimen.below_clock_padding_start);
