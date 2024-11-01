@@ -227,4 +227,7 @@
          plugged in. -->
     <string name="config_usbFunctionActivity" translatable="false"
             >com.android.systemui/com.android.systemui.usb.UsbFunctionActivity</string>
+
+    <!-- Album art max bitmap size -->
+    <integer name="config_maxBitmapSizePx">480</integer>
 </resources>

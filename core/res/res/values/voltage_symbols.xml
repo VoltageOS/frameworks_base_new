@@ -230,4 +230,6 @@
     <!-- USB -->
     <java-symbol type="string" name="config_usbFunctionActivity" />
 
+    <!-- Album art max bitmap size -->
+    <java-symbol type="integer" name="config_maxBitmapSizePx" />
 </resources>
