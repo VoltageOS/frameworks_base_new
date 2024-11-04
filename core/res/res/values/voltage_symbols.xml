@@ -226,4 +226,8 @@
 
     <!-- GameSpace -->
     <java-symbol type="string" name="gamespace_new_game_added" />
+
+    <!-- USB -->
+    <java-symbol type="string" name="config_usbFunctionActivity" />
+
 </resources>
