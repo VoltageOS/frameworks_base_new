@@ -14214,6 +14214,9 @@ public final class Settings {
         /** @hide */
         public static final String WIDEVINE_PROVISIONING_SERVER = "widevine_provisioner_server";
 
+        /** @hide */
+        public static final String NETWORK_LOCATION = "network_location";
+
         // ExtSettings END
 
         // NOTE: If you add new settings here, be sure to add them to
