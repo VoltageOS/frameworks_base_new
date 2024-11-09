@@ -898,21 +898,21 @@ public class UdfpsController implements DozeReceiver, Dumpable {
             );
         }
 
-        updateUdfpsAnimation();
-        mConfigurationController.addCallback(mConfigurationListener);
+        if (com.android.internal.util.voltage.VoltageUtils.isPackageInstalled(mContext,
+                "com.power.hub.udfps.animations")) {
+            updateUdfpsAnimation();
+            mConfigurationController.addCallback(mConfigurationListener);
+        }
     }
 
     private void updateUdfpsAnimation() {
-        if (com.android.internal.util.voltage.VoltageUtils.isPackageInstalled(mContext,
-                "com.power.hub.udfps.animations")) {
-            if (mUdfpsAnimation != null) {
-                mUdfpsAnimation.removeAnimation();
-                mUdfpsAnimation = null;
-            }
-            mUdfpsAnimation = new UdfpsAnimation(mContext, mWindowManager, mSensorProps, mAuthController);
-            if (mUdfpsAnimation != null) {
-                mUdfpsAnimation.updatePosition();
-            }
+        if (mUdfpsAnimation != null) {
+            mUdfpsAnimation.removeAnimation();
+            mUdfpsAnimation = null;
+        }
+        mUdfpsAnimation = new UdfpsAnimation(mContext, mWindowManager, mSensorProps, mAuthController);
+        if (mUdfpsAnimation != null) {
+            mUdfpsAnimation.updatePosition();
         }
     }
 
