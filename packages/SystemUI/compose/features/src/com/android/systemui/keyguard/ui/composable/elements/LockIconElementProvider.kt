@@ -62,6 +62,7 @@ import com.android.systemui.shade.ShadeDisplayAware
 import com.android.systemui.shared.customization.data.SensorLocation
 import com.android.systemui.statusbar.VibratorHelper
 import com.android.systemui.window.domain.interactor.WindowRootViewBlurInteractor
+import com.android.systemui.tuner.TunerService
 import com.google.android.msdl.domain.MSDLPlayer
 import dagger.Lazy
 import javax.inject.Inject
@@ -86,6 +87,7 @@ constructor(
     private val vibratorHelper: Lazy<VibratorHelper>,
     private val msdlPlayer: Lazy<MSDLPlayer>,
     @LongPressTouchLog private val logBuffer: LogBuffer,
+    private val tunerService: TunerService,
 ) : LockscreenElementProvider {
     override val elements: List<LockscreenElement> by lazy { listOf(LockIconElement()) }
 
@@ -110,7 +112,9 @@ constructor(
                 DeviceEntryIconView(
                         context,
                         null,
-                        logger = TouchHandlingViewLogger(logBuffer, tag = TAG),
+                        0,
+                        TouchHandlingViewLogger(logBuffer, tag = TAG),
+                        tunerService
                     )
                     .apply {
                         id = R.id.device_entry_icon_view
