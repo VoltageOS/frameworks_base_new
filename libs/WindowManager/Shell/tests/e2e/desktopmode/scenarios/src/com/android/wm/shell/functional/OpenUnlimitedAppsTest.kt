@@ -14,21 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.settingslib.service
+package com.android.wm.shell.functional
 
-const val PREFERENCE_SERVICE_ACTION = "com.android.settingslib.PREFERENCE_SERVICE"
+import android.platform.test.annotations.Postsubmit
+import com.android.wm.shell.scenarios.OpenUnlimitedApps
+import org.junit.runner.RunWith
+import org.junit.runners.BlockJUnit4ClassRunner
 
-/** API id for retrieving preference graph. */
-internal const val API_GET_PREFERENCE_GRAPH = 1
-
-/** API id for preference value setter. */
-internal const val API_PREFERENCE_SETTER = 2
-
-/** API id for preference getter. */
-internal const val API_PREFERENCE_GETTER = 3
-
-/**
- * The max API id reserved for internal preference service usages. Custom API id should start with
- * **1000** to avoid conflict.
- */
-internal const val API_MAX_RESERVED = 999
+/* Functional test for [OpenUnlimitedApps]. */
+@RunWith(BlockJUnit4ClassRunner::class)
+@Postsubmit
+class OpenUnlimitedAppsTest : OpenUnlimitedApps()
