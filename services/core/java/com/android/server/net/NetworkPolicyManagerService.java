@@ -3059,7 +3059,7 @@ public class NetworkPolicyManagerService extends INetworkPolicyManager.Stub {
                     } else {
                         Slog.w(TAG, "unable to apply policy to UID " + uid + "; ignoring");
                     }
-                } else if (TAG_APP_POLICY.equals(tag)) {
+                } else if (!forRestore && TAG_APP_POLICY.equals(tag)) {
                     final int appId = readIntAttribute(in, ATTR_APP_ID);
                     final int policy = readIntAttribute(in, ATTR_POLICY);
 
