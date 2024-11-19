@@ -237,6 +237,7 @@ import com.android.systemui.surfaceeffects.ripple.RippleShader.RippleShape;
 import com.android.systemui.util.DumpUtilsKt;
 import com.android.systemui.util.MediaArtUtils;
 import com.android.systemui.util.WallpaperController;
+import com.android.systemui.util.WallpaperDepthUtils;
 import com.android.systemui.util.concurrency.DelayableExecutor;
 import com.android.systemui.util.concurrency.MessageRouter;
 import com.android.systemui.util.kotlin.JavaAdapter;
@@ -439,6 +440,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
     private final StatusBarHideIconsForBouncerManager mStatusBarHideIconsForBouncerManager;
 
     private final MediaArtUtils mMediaArtUtils;
+    private final WallpaperDepthUtils mWallpaperDepthUtils;
 
     /** Controller for the Shade. */
     private final ShadeSurface mShadeSurface;
@@ -882,6 +884,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
             mContext.getApplicationInfo().setEnableOnBackInvokedCallback(true);
         }
         mMediaArtUtils = MediaArtUtils.getInstance(mContext);
+        mWallpaperDepthUtils = WallpaperDepthUtils.getInstance(mContext);
     }
 
     private void initBubbles(Bubbles bubbles) {
@@ -1126,7 +1129,15 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
                 (requestTopUi, componentTag) -> mMainExecutor.execute(() ->
                         mNotificationShadeWindowController.setRequestTopUi(
                                 requestTopUi, componentTag))));
-		getNotifContainerParentView().addView(mMediaArtUtils.getMediaArtScrim(), 0);
+        ViewGroup parentView = getNotifContainerParentView();
+		parentView.addView(mMediaArtUtils.getMediaArtScrim(), 0);
+        View placeholder = parentView.findViewById(R.id.depth_wallpaper_placeholder);
+        View depthWallpaperView = mWallpaperDepthUtils.getDepthWallpaperView();
+        if (placeholder != null) {
+            int index = parentView.indexOfChild(placeholder);
+            parentView.removeView(placeholder);
+            parentView.addView(depthWallpaperView, index);
+        }
     }
     
     
@@ -2653,6 +2664,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
 
             DejankUtils.stopDetectingBlockingIpcs(tag);
             mMediaArtUtils.updateMediaArtVisibility();
+            mWallpaperDepthUtils.updateDepthWallpaperVisibility();
         }
 
         @Override
