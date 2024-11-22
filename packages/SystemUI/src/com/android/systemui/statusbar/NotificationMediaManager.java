@@ -35,7 +35,6 @@ import android.util.Log;
 import androidx.annotation.VisibleForTesting;
 
 import com.android.systemui.Dumpable;
-import com.android.systemui.colorextraction.SysuiColorExtractor;
 import com.android.systemui.dagger.qualifiers.Background;
 import com.android.systemui.dagger.qualifiers.Main;
 import com.android.systemui.dump.DumpManager;
@@ -95,8 +94,6 @@ public class NotificationMediaManager implements Dumpable {
     private String mMediaNotificationKey;
     private MediaMetadata mMediaMetadata;
 
-    private final SysuiColorExtractor mColorExtractor;
-
     @VisibleForTesting
     final MediaController.Callback mMediaListener = new MediaController.Callback() {
         @Override
@@ -144,8 +141,7 @@ public class NotificationMediaManager implements Dumpable {
             MediaDataManager mediaDataManager,
             DumpManager dumpManager,
             @Background Executor backgroundExecutor,
-            @Main Handler handler,
-            SysuiColorExtractor colorExtractor
+            @Main Handler handler
     ) {
         mContext = context;
         mMediaListeners = new ArrayList<>();
@@ -155,7 +151,6 @@ public class NotificationMediaManager implements Dumpable {
         mNotifCollection = notifCollection;
         mBackgroundExecutor = backgroundExecutor;
         mHandler = handler;
-        mColorExtractor = colorExtractor;
 
         setupNotifPipeline();
 
@@ -299,13 +294,10 @@ public class NotificationMediaManager implements Dumpable {
         int playbackState = getMediaControllerPlaybackState(mMediaController);
         mHandler.post(() -> {
         callback.onPrimaryMetadataOrStateChanged(mMediaMetadata, playbackState);
-        callback.setMediaNotificationColor(mColorExtractor.getMediaBackgroundColor());
         });
     }
 
     public void removeCallback(MediaListener callback) {
-        mColorExtractor.setMediaBackgroundColor(0);
-        callback.setMediaNotificationColor(0);
         mMediaListeners.remove(callback);
     }
 
@@ -449,7 +441,6 @@ public class NotificationMediaManager implements Dumpable {
         @PlaybackState.State int state = getMediaControllerPlaybackState(mMediaController);
         for (int i = 0; i < callbacks.size(); i++) {
             callbacks.get(i).onPrimaryMetadataOrStateChanged(mMediaMetadata, state);
-            callbacks.get(i).setMediaNotificationColor(mColorExtractor.getMediaBackgroundColor());
             }
     }
 
@@ -517,7 +508,5 @@ public class NotificationMediaManager implements Dumpable {
          */
         default void onPrimaryMetadataOrStateChanged(MediaMetadata metadata,
                 @PlaybackState.State int state) {}
-
-        default void setMediaNotificationColor(int color) {};
     }
 }
