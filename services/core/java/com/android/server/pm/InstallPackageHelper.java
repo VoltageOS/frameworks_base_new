@@ -1758,27 +1758,6 @@ final class InstallPackageHelper {
             parsedPackage.setBaseApkPath(request.getApexInfo().modulePath);
         }
 
-        final AndroidPackage systemPackage = PackageVerityExt.getSystemPackage(parsedPackage);
-
-        if (systemPackage != null) {
-            // this is an update to a system package
-
-            if (parsedPackage.getLongVersionCode() == systemPackage.getLongVersionCode()) {
-                String message = "Not allowed to update system package to the same versionCode";
-                boolean abortInstall = false;
-
-                if (Build.IS_DEBUGGABLE) {
-                    if (SystemProperties.getBoolean("persist.disable_same_versionCode_sys_pkg_update_check", false)) {
-                        Slog.d(TAG, message + ": " + parsedPackage.getManifestPackageName());
-                        abortInstall = false;
-                    }
-                }
-                if (abortInstall) {
-                    throw new PrepareFailure(PackageManager.INSTALL_FAILED_INTERNAL_ERROR, message);
-                }
-            }
-        }
-
         PackageFreezer freezer = null;
         if (!Flags.improveInstallFreeze()) {
             freezer = freezePackageForInstall(pkgName, UserHandle.USER_ALL, installFlags,
@@ -4098,13 +4077,6 @@ final class InstallPackageHelper {
             @Nullable UserHandle user) throws PackageManagerException {
         final boolean scanSystemPartition =
                 (parseFlags & ParsingPackageUtils.PARSE_IS_SYSTEM_DIR) != 0;
-        if ((scanFlags & SCAN_BOOTING) != 0) {
-            if (scanSystemPartition) {
-                PackageVerityExt.addSystemPackage(parsedPackage);
-            } else {
-                PackageVerityExt.checkSystemPackageUpdate(parsedPackage);
-            }
-        }
         final ScanRequest initialScanRequest = prepareInitialScanRequest(parsedPackage, parseFlags,
                 scanFlags, user, null);
         final PackageSetting installedPkgSetting = initialScanRequest.mPkgSetting;
