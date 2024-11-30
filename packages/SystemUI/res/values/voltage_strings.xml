@@ -224,4 +224,10 @@
 
     <!-- Ringer QS tile -->
     <string name="qs_tile_ringer_mode_label">Ringer mode</string>
+
+    <!-- Volume Tile -->
+    <string name="quick_settings_volume_tile_label">Volume</string>
+    <string name="quick_settings_volume_tile_muted">Muted</string>
+    <string name="quick_settings_volume_tile_low">Low</string>
+    <string name="quick_settings_volume_tile_high">High</string>
 </resources>

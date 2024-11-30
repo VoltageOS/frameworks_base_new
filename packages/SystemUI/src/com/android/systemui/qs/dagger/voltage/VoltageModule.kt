@@ -38,6 +38,7 @@ import com.android.systemui.qs.tiles.VolumeTile
 import com.android.systemui.qs.tiles.VpnTile
 import com.android.systemui.qs.tiles.SmartPixelsTile
 import com.android.systemui.qs.tiles.RingerModeTile
+import com.android.systemui.qs.tiles.VolumeControlTile
 
 import dagger.Binds
 import dagger.Module
@@ -160,6 +161,12 @@ interface VoltageModule {
     @IntoMap
     @StringKey(VpnTile.TILE_SPEC)
     fun bindVpnTile(vpnTile: VpnTile): QSTileImpl<*>
+
+    /** Inject VolumeControlTile into tileMap in QSModule */
+    @Binds
+    @IntoMap
+    @StringKey(VolumeControlTile.TILE_SPEC)
+    fun bindVolumeControlTile(volumeControlTile: VolumeControlTile): QSTileImpl<*>
 
     /** Inject SmartPixelsTile into tileMap in QSModule */
     @Binds

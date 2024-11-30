@@ -42,6 +42,7 @@ import com.android.systemui.qs.external.CustomTile;
 import com.android.systemui.qs.logging.QSLogger;
 import com.android.systemui.qs.tiles.FlashlightStrengthTile;
 import com.android.systemui.qs.tiles.RingerModeTile;
+import com.android.systemui.qs.tiles.VolumeControlTile;
 import com.android.systemui.qs.tileimpl.QSTileViewImpl;
 import com.android.systemui.qs.tileimpl.RingerQSTileViewImpl;
 import com.android.systemui.qs.tileimpl.SliderQSTileViewImpl;
@@ -396,6 +397,7 @@ public abstract class QSPanelControllerBase<T extends QSPanel> extends ViewContr
             QSLongPressEffect longPressEffect) {
         switch (tile.getTileSpec()) {
             case FlashlightStrengthTile.TILE_SPEC:
+            case VolumeControlTile.TILE_SPEC:
                 SlideableQSTile slideableQSTile = (SlideableQSTile) tile;
                 return new SliderQSTileViewImpl(
                         getContext(),
