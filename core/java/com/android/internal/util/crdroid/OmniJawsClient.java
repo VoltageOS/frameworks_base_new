@@ -54,8 +54,7 @@ public class OmniJawsClient {
             = Uri.parse("content://org.omnirom.omnijaws.provider/control");
 
     private static final String ICON_PACKAGE_DEFAULT = "org.omnirom.omnijaws";
-    private static final String ICON_PREFIX_DEFAULT = "google";
-    private static final String ICON_PREFIX_OUTLINE = "outline";
+    private static final String ICON_PREFIX_DEFAULT = "google_new_light";
     private static final String EXTRA_ERROR = "error";
     public static final int EXTRA_ERROR_NETWORK = 0;
     public static final int EXTRA_ERROR_LOCATION = 1;
@@ -386,7 +385,7 @@ public class OmniJawsClient {
 
     private void updateSettings() {
         final String iconPack = mCachedInfo != null ? mCachedInfo.iconPack : null;
-        if (TextUtils.isEmpty(iconPack)) {
+        if (iconPack == null || TextUtils.isEmpty(iconPack)) {
             loadDefaultIconsPackage();
         } else if (mSettingIconPackage == null || !iconPack.equals(mSettingIconPackage)) {
             mSettingIconPackage = iconPack;
@@ -445,12 +444,5 @@ public class OmniJawsClient {
         if (!mWeatherReceiverRegistered) return;
         mContext.unregisterReceiver(mReceiver);
         mWeatherReceiverRegistered = false;
-    }
-
-    public boolean isOutlineIconPackage() {
-        if (mIconPrefix == null) {
-            return false;
-        }
-        return mIconPrefix.equals(ICON_PREFIX_OUTLINE);
     }
 }
