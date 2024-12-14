@@ -80,6 +80,9 @@ constructor(
 
     private val snapEffect = LongPressHapticBuilder.createSnapEffect()
 
+    private var hasPrimitives = vibratorHelper?.areAllPrimitivesSupported(
+        VibrationEffect.Composition.PRIMITIVE_LOW_TICK, VibrationEffect.Composition.PRIMITIVE_SPIN) ?: false
+
     val hasInitialized: Boolean
         get() = longPressHint != null
 
@@ -89,6 +92,7 @@ constructor(
     }
 
     fun playReverseHaptics(pausedProgress: Float) {
+        if (!hasPrimitives) return
         val effect =
             LongPressHapticBuilder.createReversedEffect(
                 pausedProgress,
@@ -100,9 +104,13 @@ constructor(
     }
 
     private fun vibrate(effect: VibrationEffect?) {
-        if (vibratorHelper != null && effect != null) {
+        if (vibratorHelper == null || effect == null) return
+        if (!hasPrimitives) {
+            val effect = VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK)
             vibratorHelper.vibrate(effect)
+            return
         }
+        vibratorHelper.vibrate(effect)
     }
 
     fun handleActionDown() {
@@ -143,7 +151,7 @@ constructor(
     fun handleAnimationStart() {
         logEvent(qsTile?.tileSpec, state, "animation started")
         if (state == State.TIMEOUT_WAIT) {
-            vibrate(longPressHint)
+            if (hasPrimitives) vibrate(longPressHint)
             setState(State.RUNNING_FORWARD)
         }
     }
