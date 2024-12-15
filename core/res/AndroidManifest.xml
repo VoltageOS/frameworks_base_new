@@ -9423,6 +9423,13 @@
         android:protectionLevel="signature|role"
         android:featureFlag="com.android.window.flags.enable_window_repositioning_api" />
 
+    <!--
+    START added non-runtime downstream permissions
+    -->
+    <!--
+    END added non-runtime downstream permissions
+    -->
+
     <!-- @SystemApi
         @FlaggedApi(android.content.pm.Flags.FLAG_VERIFICATION_SERVICE)
         Allows app to be the developer verification agent to verify packages.
