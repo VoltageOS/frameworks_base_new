@@ -9061,6 +9061,13 @@
         android:protectionLevel="signature|role|privileged"
         android:featureFlag="android.permission.flags.text_classifier_choice_api_enabled"/>
 
+    <!--
+    START added non-runtime downstream permissions
+    -->
+    <!--
+    END added non-runtime downstream permissions
+    -->
+
     <!-- Attribution for Geofencing service. -->
     <attribution android:tag="GeofencingService" android:label="@string/geofencing_service"/>
     <!-- Attribution for Country Detector. -->
