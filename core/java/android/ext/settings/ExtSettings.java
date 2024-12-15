@@ -30,8 +30,8 @@ public class ExtSettings {
 
     public static final IntSetting AUTO_REBOOT_TIMEOUT = new IntSetting(
             Setting.Scope.GLOBAL, Settings.Global.AUTO_REBOOT_TIMEOUT,
-            // default value: 18 hours
-            (int) TimeUnit.HOURS.toMillis(18));
+            // default value: 0
+            (int) TimeUnit.HOURS.toMillis(0));
 
     // AppCompatConfig specifies which hardening features are compatible/incompatible with a
     // specific app.
