@@ -10303,6 +10303,13 @@
         android:protectionLevel="signature|role"
         android:featureFlag="com.android.window.flags.enable_window_repositioning_api" />
 
+    <!--
+    START added non-runtime downstream permissions
+    -->
+    <!--
+    END added non-runtime downstream permissions
+    -->
+
     <!-- Allows an application to use
      {@link android.app.ActivityManager.AppTask#WINDOWING_LAYER_PINNED} for its Tasks,
      typically requested via {@link android.app.ActivityManager.AppTask#requestWindowingLayer}.
