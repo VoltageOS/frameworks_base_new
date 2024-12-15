@@ -45,6 +45,7 @@ import com.android.systemui.statusbar.notification.row.ExpandableNotificationRow
 import com.android.systemui.statusbar.notification.row.shared.AsyncGroupHeaderViewInflation;
 import com.android.systemui.statusbar.notification.stack.NotificationRoundnessManager;
 import com.android.systemui.statusbar.notification.stack.NotificationStackScrollLayoutController;
+import com.android.systemui.statusbar.phone.PhoneStatusBarViewController;
 import com.android.systemui.statusbar.phone.fragment.dagger.StatusBarFragmentScope;
 import com.android.systemui.statusbar.policy.Clock;
 import com.android.systemui.statusbar.policy.HeadsUpManager;
@@ -130,7 +131,8 @@ public class HeadsUpAppearanceController extends ViewController<HeadsUpStatusBar
             FeatureFlagsClassic featureFlags,
             HeadsUpNotificationIconInteractor headsUpNotificationIconInteractor,
             @Named(OPERATOR_NAME_FRAME_VIEW) Optional<View> operatorNameViewOptional,
-            @RootView PhoneStatusBarView statusBarView) {
+            @RootView PhoneStatusBarView statusBarView,
+            PhoneStatusBarViewController statusBarViewController) {
         super(headsUpStatusBarView);
         mNotificationRoundnessManager = notificationRoundnessManager;
         mHeadsUpManager = headsUpManager;
@@ -152,7 +154,7 @@ public class HeadsUpAppearanceController extends ViewController<HeadsUpStatusBar
         mClockView = clockView;
         mOperatorNameViewOptional = operatorNameViewOptional;
         mDarkIconDispatcher = darkIconDispatcher;
-        mClockController = statusBarView.getClockController();
+        mClockController = statusBarViewController.getClockController();
 
         mView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
             @Override
