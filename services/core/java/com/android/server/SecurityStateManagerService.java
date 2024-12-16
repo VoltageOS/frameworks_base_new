@@ -57,6 +57,12 @@ public class SecurityStateManagerService extends ISecurityStateManager.Stub {
 
     @Override
     public Bundle getGlobalSecurityState() {
+        Bundle globalSecurityStateOrig = getGlobalSecurityStateUpstream();
+        SecurityStateManagerServiceExt.appendSecurityStateExt(mContext, globalSecurityStateOrig);
+        return globalSecurityStateOrig;
+    }
+
+    private Bundle getGlobalSecurityStateUpstream() {
         final long token = Binder.clearCallingIdentity();
         try {
             return getGlobalSecurityStateInternal();
