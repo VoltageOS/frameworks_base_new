@@ -77,7 +77,6 @@ public final class PixelPropsUtils {
     private static final Map<String, Object> propsToChangeGeneric;
     private static final Map<String, Object> propsToChangeRecentPixel;
     private static final Map<String, Object> propsToChangePixelTablet;
-    private static final Map<String, Object> propsToChangePixel5a;
     private static final Map<String, ArrayList<String>> propsToKeep;
 
     // Packages to Spoof as the most recent Pixel device
@@ -101,7 +100,6 @@ public final class PixelPropsUtils {
             "com.google.android.apps.wallpaper",
             "com.google.android.apps.wallpaper.pixel",
             "com.google.android.apps.weather",
-            "com.google.android.as",
             "com.google.android.gms",
             "com.google.android.googlequicksearchbox",
             "com.google.android.soundpicker",
@@ -119,33 +117,6 @@ public final class PixelPropsUtils {
             "com.google.android.MTCL83",
             "com.google.android.UltraCVM",
             "com.google.android.apps.cameralite"
-    };
-
-    // Packages to Keep with original device
-    private static final String[] packagesToKeep = {
-            "com.google.android.apps.dreamlinerupdater",
-            "com.google.android.apps.dreamliner",
-            "com.google.android.apps.miphone.aiai.AiaiApplication",
-            "com.google.android.apps.motionsense.bridge",
-            "com.google.android.apps.photos",
-            "com.google.android.apps.pixelmigrate",
-            "com.google.android.apps.recorder",
-            "com.google.android.apps.restore",
-            "com.google.android.apps.tachyon",
-            "com.google.android.apps.tips",
-            "com.google.android.apps.tycho",
-            "com.google.android.apps.wearables.maestro.companion",
-            "com.google.android.apps.youtube.kids",
-            "com.google.android.apps.youtube.music",
-            "com.google.android.backuptransport",
-            "com.google.android.backupuses",
-            "com.google.android.dialer",
-            "com.google.android.euicc",
-            "com.google.android.inputmethod.latin",
-            "com.google.android.setupwizard",
-            "com.google.android.youtube",
-            "com.google.intelligence.sense",
-            "com.google.oslo"
     };
 
     // Codenames for currently supported Pixels by Google
@@ -202,15 +173,6 @@ public final class PixelPropsUtils {
         propsToChangePixelTablet.put("MODEL", "Pixel Tablet");
         propsToChangePixelTablet.put("ID", "AP4A.241205.013");
         propsToChangePixelTablet.put("FINGERPRINT", "google/tangorpro/tangorpro:15/AP4A.241205.013/12621605:user/release-keys");
-        propsToChangePixel5a = new HashMap<>();
-        propsToChangePixel5a.put("BRAND", "google");
-        propsToChangePixel5a.put("MANUFACTURER", "Google");
-        propsToChangePixel5a.put("DEVICE", "barbet");
-        propsToChangePixel5a.put("PRODUCT", "barbet");
-        propsToChangePixel5a.put("HARDWARE", "barbet");
-        propsToChangePixel5a.put("MODEL", "Pixel 5a");
-        propsToChangePixel5a.put("ID", "AP2A.240805.005.S4");
-        propsToChangePixel5a.put("FINGERPRINT", "google/barbet/barbet:14/AP2A.240805.005.S4/12281092:user/release-keys");
     }
 
     public static String getBuildID(String fingerprint) {
@@ -330,7 +292,7 @@ public final class PixelPropsUtils {
         final boolean sIsTablet = isDeviceTablet(appContext);
         sProcessName = processName;
         sIsGms = packageName.equals(PACKAGE_GMS) && processName.equals(PROCESS_GMS_UNSTABLE);
-        sIsExcluded = Arrays.asList(packagesToKeep).contains(packageName) || isGoogleCameraPackage(packageName);
+        sIsExcluded = isGoogleCameraPackage(packageName);
         propsToChangeGeneric.forEach((k, v) -> setPropValue(k, v));
         if (packageName == null || processName == null || packageName.isEmpty()) {
             return;
@@ -346,32 +308,17 @@ public final class PixelPropsUtils {
                     spoofBuildGms(context);
                 }
             }
-        } else if ((packageName.toLowerCase().contains(PACKAGE_GOOGLE) && !sIsGms)
-                || Arrays.asList(packagesToChangeRecentPixel).contains(packageName)) {
+        } else if (Arrays.asList(packagesToChangeRecentPixel).contains(packageName) && !sIsGms) {
 
             boolean isPixelDevice = Arrays.asList(pixelCodenames).contains(SystemProperties.get(DEVICE));
-            if (SystemProperties.getBoolean(SPOOF_PIXEL_PROPS, true)) {
-                if (!isPixelDevice) {
-                    propsToChange.putAll(propsToChangeRecentPixel);
-                } else if (isPixelDevice) {
-                    return;
-                }
-            } else if (!sEnablePixelProps || !SystemProperties.getBoolean(SPOOF_PIXEL_PROPS, true)) {
+            if (isPixelDevice || !sEnablePixelProps || !SystemProperties.getBoolean(SPOOF_PIXEL_PROPS, true)) {
                 return;
-            } else if (Arrays.asList(packagesToChangeRecentPixel).contains(packageName)) {
-                if (packageName.toLowerCase().contains("com.google.android.gms")) {
-                    setPropValue("TIME", System.currentTimeMillis());
-                    if (!isPixelDevice) {
-                        if (processName.toLowerCase().contains("learning")
-                                || processName.toLowerCase().contains("gservice")
-                                || processName.toLowerCase().contains("persistent")) {
-                            propsToChange.putAll(propsToChangePixel5a);
-                        }
-                    }
+            } else if (SystemProperties.getBoolean(SPOOF_PIXEL_PROPS, true)) {
+                if (sIsTablet) {
+                    propsToChange.putAll(propsToChangePixelTablet);
+                } else {
+                    propsToChange.putAll(propsToChangeRecentPixel);
                 }
-                propsToChange.putAll(propsToChangeRecentPixel);
-            } else if (sIsTablet) {
-                propsToChange.putAll(propsToChangePixelTablet);
             }
         }
         dlog("Defining props for: " + packageName);
