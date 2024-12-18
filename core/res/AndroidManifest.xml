@@ -9426,6 +9426,12 @@
     <!--
     START added non-runtime downstream permissions
     -->
+    <!-- Allows reading additional security state information, such as OEM unlock state,
+         along with added security state downstream.
+         @hide <p>Not for use by third-party applications. -->
+    <permission android:name="android.permission.READ_ADDITIONAL_SECURITY_STATE"
+        android:protectionLevel="internal|knownSigner"
+        android:knownCerts="@array/read_additional_security_state_known_signers" />
     <!--
     END added non-runtime downstream permissions
     -->
