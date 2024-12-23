@@ -2928,9 +2928,6 @@ public class KeyguardViewMediator implements CoreStartable, Dumpable,
             if (mShowKeyguardWakeLock != null)
                 mShowKeyguardWakeLock.release();
 
-            System.gc();
-            System.runFinalization();
-            System.gc();
         }
         mKeyguardDisplayManager.show();
 

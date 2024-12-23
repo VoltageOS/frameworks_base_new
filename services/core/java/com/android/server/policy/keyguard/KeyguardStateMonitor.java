@@ -111,11 +111,6 @@ public class KeyguardStateMonitor extends IKeyguardStateCallback.Stub {
             Binder.restoreCallingIdentity(token);
         }
 
-        if (showing) {
-            System.gc();
-            System.runFinalization();
-            System.gc();
-        }
     }
 
     @Override // Binder interface
