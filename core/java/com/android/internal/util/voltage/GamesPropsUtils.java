@@ -85,8 +85,8 @@ public final class GamesPropsUtils {
             "com.pearlabyss.blackdesertm.gl"
     };
 
-    private static final Map<String, Object> propsToChangeROG8P = createMap("ASUS_AI2401_A", "asus");
-    private static final String[] packagesToChangeROG8P = { // spoof as ROG Phone 8 Pro
+    private static final Map<String, Object> propsToChangeS24U = createMap("SM-S928B", "samsung");
+    private static final String[] packagesToChangeS24U = { // spoof as Samsung S24 Ultra
             "com.pubg.imobile",
             "com.pubg.krmobile",
             "com.rekoo.pubgm",
@@ -134,8 +134,8 @@ public final class GamesPropsUtils {
                 propsToChange = propsToChangeF5;
             } else if (Arrays.asList(packagesToChangeROG6).contains(packageName)) {
                 propsToChange = propsToChangeROG6;
-            } else if (Arrays.asList(packagesToChangeROG8P).contains(packageName)) {
-                propsToChange = propsToChangeROG8P;
+            } else if (Arrays.asList(packagesToChangeS24U).contains(packageName)) {
+                propsToChange = propsToChangeS24U;
             } else if (Arrays.asList(packagesToChangeLenovoY700).contains(packageName)) {
                 propsToChange = propsToChangeLenovoY700;
             }
