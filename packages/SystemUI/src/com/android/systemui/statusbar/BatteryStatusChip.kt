@@ -41,7 +41,13 @@ class BatteryStatusChip @JvmOverloads constructor(context: Context, attrs: Attri
         roundedContainer = requireViewById(R.id.rounded_container)
         batteryMeterView = requireViewById(R.id.battery_meter_view)
         batteryMeterView.setStaticColor(true)
-        if (newStatusBarIcons()) {
+        val style = batteryMeterView.getBatteryStyle()
+        if (style == BatteryMeterView.BATTERY_STYLE_LANDSCAPE ||
+            style == BatteryMeterView.BATTERY_STYLE_RLANDSCAPE) {
+            val primaryColor = context.resources.getColor(android.R.color.black, context.theme)
+            val bgColor = context.resources.getColor(android.R.color.white, context.theme)
+            batteryMeterView.updateColors(primaryColor, bgColor, primaryColor)
+        } else if (newStatusBarIcons()) {
             batteryMeterView.setUnifiedBatteryColors(BatteryColors.LightThemeColors)
         } else {
             val primaryColor = context.resources.getColor(android.R.color.black, context.theme)
