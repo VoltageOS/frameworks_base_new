@@ -799,6 +799,10 @@ public class BatteryMeterView extends LinearLayout implements DarkReceiver {
         updatePercentText();
     }
 
+    public int getBatteryStyle() {
+        return mBatteryStyle;
+    }
+
     @Override
     public void onDarkChanged(ArrayList<Rect> areas, float darkIntensity, int tint) {
         if (mIsStaticColor) return;
