@@ -87,6 +87,7 @@ public final class GamesPropsUtils {
 
     private static final Map<String, Object> propsToChangeS24U = createMap("SM-S928B", "samsung");
     private static final String[] packagesToChangeS24U = { // spoof as Samsung S24 Ultra
+            "com.blizzard.diablo.immortal",
             "com.pubg.imobile",
             "com.pubg.krmobile",
             "com.rekoo.pubgm",
