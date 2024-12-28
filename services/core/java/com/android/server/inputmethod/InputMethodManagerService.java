@@ -74,6 +74,7 @@ import android.app.ActivityManagerInternal;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.ContentProvider;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -205,6 +206,7 @@ import java.lang.annotation.Target;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -474,6 +476,11 @@ public final class InputMethodManagerService implements IInputMethodManagerImpl.
     private LineageHardwareManager mLineageHardware;
 
     class SettingsObserver extends ContentObserver {
+        int mUserId;
+        boolean mRegistered = false;
+        @NonNull
+        String mLastEnabled = "";
+
         /**
          * <em>This constructor must be called within the lock.</em>
          */
@@ -481,8 +488,20 @@ public final class InputMethodManagerService implements IInputMethodManagerImpl.
             super(handler);
         }
 
-        void registerContentObserverForAllUsers() {
+        @GuardedBy("ImfLock.class")
+        public void registerContentObserverLocked(@UserIdInt int userId) {
+            if (mRegistered && mUserId == userId) {
+                return;
+            }
             ContentResolver resolver = mContext.getContentResolver();
+            if (mRegistered) {
+                mContext.getContentResolver().unregisterContentObserver(this);
+                mRegistered = false;
+            }
+            if (mUserId != userId) {
+                mLastEnabled = "";
+                mUserId = userId;
+            }
             if (mLineageHardware.isSupported(
                     LineageHardwareManager.FEATURE_HIGH_TOUCH_POLLING_RATE)) {
                 resolver.registerContentObserver(Settings.System.getUriFor(
@@ -500,15 +519,11 @@ public final class InputMethodManagerService implements IInputMethodManagerImpl.
                         Settings.Secure.FEATURE_TOUCH_HOVERING),
                         false, this, UserHandle.ALL);
             }
+            mRegistered = true;
         }
 
         @Override
-        public void onChange(boolean selfChange, @NonNull Collection<Uri> uris, int flags,
-                @UserIdInt int userId) {
-            uris.forEach(uri -> onChangeInternal(uri, userId));
-        }
-
-        private void onChangeInternal(@NonNull Uri uri, @UserIdInt int userId) {
+        public void onChange(boolean selfChange, Uri uri) {
             final Uri highTouchPollingRateUri = Settings.System.getUriFor(
                     Settings.System.HIGH_TOUCH_POLLING_RATE_ENABLE);
             final Uri touchSensitivityUri = Settings.System.getUriFor(
@@ -516,9 +531,6 @@ public final class InputMethodManagerService implements IInputMethodManagerImpl.
             final Uri touchHoveringUri = Settings.Secure.getUriFor(
                     Settings.Secure.FEATURE_TOUCH_HOVERING);
             synchronized (ImfLock.class) {
-                if (!mConcurrentMultiUserModeEnabled && mCurrentImeUserId != userId) {
-                    return;
-                }
                 if (touchSensitivityUri.equals(uri)) {
                     updateTouchSensitivity();
                 } else if (highTouchPollingRateUri.equals(uri)) {
@@ -527,6 +539,12 @@ public final class InputMethodManagerService implements IInputMethodManagerImpl.
                     updateTouchHovering();
                 }
             }
+        }
+
+        @Override
+        public String toString() {
+            return "SettingsObserver{mUserId=" + mUserId + " mRegistered=" + mRegistered
+                    + " mLastEnabled=" + mLastEnabled + "}";
         }
     }
 
@@ -1545,7 +1563,6 @@ public final class InputMethodManagerService implements IInputMethodManagerImpl.
                 }
 
                 mMyPackageMonitor.register(mContext, UserHandle.ALL, mIoHandler);
-                mSettingsObserver.registerContentObserverForAllUsers();
                 SecureSettingsChangeCallback.register(mHandler, mContext.getContentResolver(),
                         new String[] {
                                 Settings.Secure.ACCESSIBILITY_SOFT_KEYBOARD_MODE,
