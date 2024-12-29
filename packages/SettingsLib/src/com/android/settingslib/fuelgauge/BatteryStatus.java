@@ -397,7 +397,7 @@ public class BatteryStatus {
      */
     public static int calculateChargingSpeed(
             Context context, int maxChargingMicroCurrent, int maxChargingMicroVolt) {
-        final int maxChargingMicroWatt =
+        final float maxChargingMicroWatt =
                 calculateMaxChargingMicroWatt(maxChargingMicroCurrent, maxChargingMicroVolt);
 
         if (maxChargingMicroWatt <= 0) {
@@ -413,7 +413,7 @@ public class BatteryStatus {
         }
     }
 
-    private static int calculateMaxChargingMicroWatt(Intent batteryChangedIntent) {
+    private static float calculateMaxChargingMicroWatt(Intent batteryChangedIntent) {
         final int maxChargingMicroAmp =
                 batteryChangedIntent.getIntExtra(EXTRA_MAX_CHARGING_CURRENT, -1);
         int maxChargingMicroVolt = batteryChangedIntent.getIntExtra(EXTRA_MAX_CHARGING_VOLTAGE, -1);
@@ -421,7 +421,7 @@ public class BatteryStatus {
         return calculateMaxChargingMicroWatt(maxChargingMicroAmp, maxChargingMicroVolt);
     }
 
-    private static int calculateMaxChargingMicroWatt(int maxChargingMicroAmp,
+    private static float calculateMaxChargingMicroWatt(int maxChargingMicroAmp,
             int maxChargingMicroVolt) {
         if (maxChargingMicroVolt <= 0) {
             maxChargingMicroVolt = DEFAULT_CHARGING_VOLTAGE_MICRO_VOLT;
@@ -429,7 +429,7 @@ public class BatteryStatus {
 
         if (maxChargingMicroAmp > 0) {
             // Calculating µW = mA * mV
-            return (int) Math.round(maxChargingMicroAmp * 0.001 * maxChargingMicroVolt * 0.001);
+            return (float)(maxChargingMicroAmp * 0.001 * maxChargingMicroVolt * 0.001);
         } else {
             return -1;
         }
