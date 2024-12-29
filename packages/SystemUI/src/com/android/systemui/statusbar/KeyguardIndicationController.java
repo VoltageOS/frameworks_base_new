@@ -241,6 +241,7 @@ public class KeyguardIndicationController {
     private boolean mFaceDetectionRunning;
 
     private int mCurrentDivider;
+    private int mVoltageDivider;
 
     private boolean mHasDashCharger;
     private boolean mHasWarpCharger;
@@ -436,6 +437,7 @@ public class KeyguardIndicationController {
         mStatusBarStateListener.onDozingChanged(mStatusBarStateController.isDozing());
 
         mCurrentDivider = mContext.getResources().getInteger(R.integer.config_currentInfoDivider);
+        mVoltageDivider = mContext.getResources().getInteger(R.integer.config_voltageInfoDivider);
 
         mAlternateFastchargeInfoUpdate =
                     mContext.getResources().getBoolean(R.bool.config_alternateFastchargeInfoUpdate);
@@ -1401,13 +1403,16 @@ public class KeyguardIndicationController {
             } else if (mChargingCurrent > 0) {
                 batteryInfo = String.format("%.0f" , (mChargingCurrent / mCurrentDivider)) + "mA";
             }
-            if (mChargingWattage > 0) {
-                batteryInfo = (batteryInfo == "" ? "" : batteryInfo + " · ") +
-                        String.format("%.1f" , (mChargingWattage / mCurrentDivider / 1000)) + "W";
+            if (mChargingWattage >= mVoltageDivider) {
+                batteryInfo = (batteryInfo.isEmpty() ? "" : batteryInfo + " · ") +
+                        String.format("%.2f", (mChargingWattage / mVoltageDivider)) + "W";
+            } else if (mChargingWattage > 0) {
+                batteryInfo = (batteryInfo.isEmpty() ? "" : batteryInfo + " · ") +
+                        String.format("%.0f", (mChargingWattage * 1000 / mVoltageDivider)) + "mW";
             }
             if (mChargingVoltage > 0) {
                 batteryInfo = (batteryInfo == "" ? "" : batteryInfo + " · ") +
-                        String.format("%.1f", (mChargingVoltage / 1000 / 1000)) + "V";
+                        String.format("%.1f", (mChargingVoltage / mVoltageDivider / 1000)) + "V";
             }
             if (mTemperature > 0) {
                 batteryInfo = (batteryInfo == "" ? "" : batteryInfo + " · ") +
