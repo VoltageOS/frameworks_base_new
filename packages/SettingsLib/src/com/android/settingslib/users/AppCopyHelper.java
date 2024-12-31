@@ -164,6 +164,7 @@ public class AppCopyHelper {
                 info.packageName = app.packageName;
                 info.appName = app.loadLabel(mPackageManager);
                 info.icon = app.loadIcon(mPackageManager);
+                info.ext = AppCopyHelperExt.getSelectableAppInfoExt(mContext, app);
                 mVisibleApps.add(info);
             }
         }
@@ -222,6 +223,7 @@ public class AppCopyHelper {
                     info.packageName = app.activityInfo.packageName;
                     info.appName = app.activityInfo.applicationInfo.loadLabel(mPackageManager);
                     info.icon = app.activityInfo.loadIcon(mPackageManager);
+                    info.ext = AppCopyHelperExt.getSelectableAppInfoExt(mContext, app.activityInfo.applicationInfo);
 
                     visibleApps.add(info);
                 }
@@ -229,11 +231,14 @@ public class AppCopyHelper {
         }
     }
 
+    public record SelectableAppInfoExt(boolean neededForPrivateProfile, boolean systemApp) {}
+
     /** Container for a package, its name, and icon. */
     public static class SelectableAppInfo {
         public String packageName;
         public CharSequence appName;
         public Drawable icon;
+        public SelectableAppInfoExt ext;
 
         @Override
         public String toString() {
