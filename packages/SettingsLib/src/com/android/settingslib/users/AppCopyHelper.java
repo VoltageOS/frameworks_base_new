@@ -50,6 +50,7 @@ public class AppCopyHelper {
     private static final boolean DEBUG = false;
     private static final String TAG = "AppCopyHelper";
 
+    private final Context mContext;
     private final PackageManager mPackageManager;
     private final IPackageManager mIPm;
     private final UserHandle mUser;
@@ -66,6 +67,7 @@ public class AppCopyHelper {
 
     @VisibleForTesting
     AppCopyHelper(Injector injector) {
+        mContext = injector.getContext();
         mPackageManager = injector.getPackageManager();
         mIPm = injector.getIPackageManager();
         mUser = injector.getUser();
@@ -259,6 +261,10 @@ public class AppCopyHelper {
         Injector(Context context, UserHandle user) {
             mContext = context;
             mUser = user;
+        }
+
+        Context getContext() {
+            return mContext;
         }
 
         UserHandle getUser() {
