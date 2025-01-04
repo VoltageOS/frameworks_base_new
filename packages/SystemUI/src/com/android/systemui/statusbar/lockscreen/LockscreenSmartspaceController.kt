@@ -351,7 +351,7 @@ constructor(
         execution.assertIsMainThread()
 
         if (!isEnabled) {
-            throw RuntimeException("Cannot build view when not enabled")
+            return null
         }
 
         val view =
@@ -371,7 +371,7 @@ constructor(
         execution.assertIsMainThread()
 
         if (!isEnabled) {
-            throw RuntimeException("Cannot build view when not enabled")
+            return null
         }
 
         val view =
