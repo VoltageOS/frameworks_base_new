@@ -776,9 +776,9 @@ constructor(
         lastIconTint = icon.getColor(state)
 
         // Long-press effects
-        longPressEffect?.qsTile?.state?.handlesLongClick = state.handlesLongClick
+        longPressEffect?.qsTile?.state?.handlesLongClick = hasLongClickEffect
         if (
-            state.handlesLongClick &&
+            hasLongClickEffect &&
                 longPressEffect?.initializeEffect(longPressEffectDuration) == true
         ) {
             showRippleEffect = false
