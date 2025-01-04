@@ -48,4 +48,6 @@
     <!-- Width of the landscape battery icon in the status bar. -->
     <dimen name="status_bar_battery_icon_width_landscape">28dp</dimen>
 
+    <!-- Face unlock icon -->
+    <dimen name="face_unlock_icon_margin_top">6dp</dimen>
 </resources>
