@@ -22,9 +22,6 @@
     <!-- Whether device supports an alt. ambient display -->
     <java-symbol type="bool" name="config_alt_ambient_display"/>
 
-    <!-- Whether Pixel props is enabled -->
-    <java-symbol type="bool" name="config_enablePixelProps" />
-
     <!-- Define device configs on boot -->
     <java-symbol type="array" name="global_device_configs_override" />
     <java-symbol type="array" name="device_configs_override" />
@@ -50,9 +47,6 @@
     <!-- Device keyhandlers -->
     <java-symbol type="array" name="config_deviceKeyHandlerLibs" />
     <java-symbol type="array" name="config_deviceKeyHandlerClasses" />
-
-    <!-- Prop/KeyboxImitationHooks -->
-    <java-symbol type="array" name="config_certifiedKeybox" />
 
     <!-- Advanced reboot -->
     <java-symbol type="string" name="reboot_to_recovery_title" />
@@ -208,5 +202,8 @@
 
     <!-- Whether to use Richtap vibration -->
     <java-symbol type="bool" name="config_usesRichtapVibration" />
+
+    <!-- Whether Pixel props is enabled -->
+    <java-symbol type="bool" name="config_enablePixelProps" />
 
 </resources>

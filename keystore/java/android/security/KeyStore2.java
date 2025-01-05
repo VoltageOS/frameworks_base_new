@@ -32,8 +32,6 @@ import android.system.keystore2.KeyEntryResponse;
 import android.system.keystore2.ResponseCode;
 import android.util.Log;
 
-import com.android.internal.util.voltage.KeyboxImitationHooks;
-
 import java.util.Calendar;
 
 /**
@@ -285,8 +283,7 @@ public class KeyStore2 {
             throws KeyStoreException {
         StrictMode.noteDiskRead();
 
-        return KeyboxImitationHooks.onGetKeyEntry(
-                handleRemoteExceptionWithRetry((service) -> service.getKeyEntry(descriptor)));
+        return handleRemoteExceptionWithRetry((service) -> service.getKeyEntry(descriptor));
     }
 
     /**
