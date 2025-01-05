@@ -6835,21 +6835,6 @@ public final class Settings {
                 "lockscreen_scramble_pin_layout";
 
         /**
-         * @hide
-         */
-        public static final String LOCKSCREEN_WEATHER_ENABLED = "lockscreen_weather_enabled";
-
-        /**
-         * @hide
-         */
-        public static final String LOCKSCREEN_WEATHER_LOCATION = "lockscreen_weather_location";
-
-        /**
-         * @hide
-         */
-        public static final String LOCKSCREEN_WEATHER_TEXT = "lockscreen_weather_text";
-
-	/**
          * Use doubletap as doze pulse triggers
          * @hide
          */

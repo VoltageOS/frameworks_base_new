@@ -310,16 +310,20 @@ constructor(
 
     val isDateWeatherDecoupled: Boolean = datePlugin != null && weatherPlugin != null
 
-    val isWeatherEnabled: Boolean
-        get() {
-            val showWeather =
-                secureSettings.getIntForUser(
-                    LOCK_SCREEN_WEATHER_ENABLED,
-                    0,
-                    userTracker.userId,
-                ) == 1
-            return showWeather
-        }
+    fun isDateWeatherDecoupled(): Boolean {
+        execution.assertIsMainThread()
+
+        return datePlugin != null && weatherPlugin != null
+    }
+
+    fun isWeatherEnabled(): Boolean {
+       execution.assertIsMainThread()
+       val showWeather = secureSettings.getIntForUser(
+           LOCK_SCREEN_WEATHER_ENABLED,
+           1,
+           userTracker.userId) == 1
+       return showWeather
+    }
 
     private fun updateBypassEnabled() {
         val bypassEnabled = bypassController.bypassEnabled
