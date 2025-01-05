@@ -79,8 +79,7 @@ constructor(
         dateView =
             smartspaceController.buildAndConnectDateView(constraintLayout, false) as? ViewGroup
         var weatherViewLargeClock: View? = null
-        val weatherView: View? =
-            smartspaceController.buildAndConnectWeatherView(constraintLayout, false)
+        var weatherView: View? = null
         if (com.android.systemui.shared.Flags.clockReactiveSmartspaceLayout()) {
             weatherViewLargeClock =
                 smartspaceController.buildAndConnectWeatherView(constraintLayout, true)
@@ -112,6 +111,8 @@ constructor(
         }
 
         if (keyguardSmartspaceViewModel.isDateWeatherDecoupled) {
+            weatherView =
+                smartspaceController.buildAndConnectWeatherView(constraintLayout, false)
             constraintLayout.addView(dateView)
             // Place weather right after the date, before the extras (alarm and dnd)
             val index = if (dateView?.childCount == 0) 0 else 1
