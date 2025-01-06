@@ -12025,7 +12025,7 @@ public class BatteryStatsImpl extends BatteryStats {
 
                 // Distribute the remaining Rx power appropriately between all apps that received
                 // packets.
-                if (totalRxPackets != 0 && leftOverRxTimeMs != 0) {
+		if (totalRxPackets > 0 && leftOverRxTimeMs > 0) { // Prevent divide by zero
                     for (int i = 0; i < rxPackets.size(); i++) {
                         final int uid = rxPackets.keyAt(i);
                         final long myRxTimeMs = (rxPackets.valueAt(i) * leftOverRxTimeMs)
