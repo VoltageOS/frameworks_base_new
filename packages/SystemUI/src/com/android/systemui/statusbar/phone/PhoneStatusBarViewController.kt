@@ -24,6 +24,8 @@ import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
+import android.widget.ImageView
+import android.widget.ProgressBar
 import androidx.annotation.VisibleForTesting
 import com.android.systemui.Gefingerpoken
 import com.android.systemui.display.dagger.SystemUIDisplaySubcomponent.DisplayAware
@@ -43,6 +45,8 @@ import com.android.systemui.statusbar.core.StatusBarEventForwardingModernization
 import com.android.systemui.statusbar.data.repository.StatusBarConfigurationController
 import com.android.systemui.statusbar.gesture.StatusBarLongPressGestureDetector
 import com.android.systemui.statusbar.layout.StatusBarContentInsetsProvider
+import com.android.systemui.statusbar.NotificationListener
+import com.android.systemui.statusbar.OnGoingActionProgressGroup
 import com.android.systemui.statusbar.policy.Clock
 import com.android.systemui.statusbar.policy.ConfigurationController
 import com.android.systemui.statusbar.window.StatusBarWindowControllerStore
@@ -86,7 +90,10 @@ private constructor(
     private val shadeExpansionTargetDisplayInteractor: ShadeExpansionTargetDisplayInteractor,
     private val lazyShadeDisplaysRepository: Lazy<ShadeDisplaysRepository>,
     private val statusBarWindowControllerStore: StatusBarWindowControllerStore,
+    private val notificationListener: NotificationListener,
 ) : ViewController<PhoneStatusBarView>(view) {
+
+    private var ongoingActionProgressController: OnGoingActionProgressController? = null
 
     private lateinit var clock: Clock
     private lateinit var startSideContainer: View
@@ -199,6 +206,14 @@ private constructor(
         }
         progressProvider?.setReadyToHandleTransition(true)
         configurationController.addCallback(configurationListener)
+
+        if (ongoingActionProgressController == null) {
+            ongoingActionProgressController = OnGoingActionProgressController(
+                mView.context,
+                getOngoingActionProgressGroup(),
+                notificationListener,
+            )
+        }
     }
 
     private fun addCursorSupportToIconContainers() {
@@ -311,6 +326,14 @@ private constructor(
                 !upOrCancel || shadeController.isExpandedVisible,
             )
         }
+    }
+
+    fun getOngoingActionProgressGroup(): OnGoingActionProgressGroup{
+        return OnGoingActionProgressGroup(
+            mView.findViewById(R.id.status_bar_ongoing_action_chip),
+            mView.findViewById(R.id.ongoing_action_app_icon) as ImageView,
+            mView.findViewById(R.id.app_action_progress) as ProgressBar,
+        )
     }
 
     private fun addDarkReceivers() {
@@ -463,6 +486,7 @@ private constructor(
         private val shadeExpansionTargetDisplayInteractor: ShadeExpansionTargetDisplayInteractor,
         private val lazyShadeDisplaysRepository: Lazy<ShadeDisplaysRepository>,
         private val statusBarWindowControllerStore: StatusBarWindowControllerStore,
+        private val notificationListener: NotificationListener,
     ) {
         fun create(view: PhoneStatusBarView): PhoneStatusBarViewController {
             return PhoneStatusBarViewController(
@@ -488,6 +512,7 @@ private constructor(
                 shadeExpansionTargetDisplayInteractor,
                 lazyShadeDisplaysRepository,
                 statusBarWindowControllerStore,
+                notificationListener,
             )
         }
     }
