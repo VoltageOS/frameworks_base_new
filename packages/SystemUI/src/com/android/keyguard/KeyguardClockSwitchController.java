@@ -717,7 +717,7 @@ public class KeyguardClockSwitchController extends ViewController<KeyguardClockS
 
     private void updateSmartspaceView() {
         mShowSmartspaceView = mSecureSettings.getIntForUser(
-            Settings.Secure.LOCKSCREEN_SMARTSPACE_ENABLED, 1,
+            Settings.Secure.LOCKSCREEN_SMARTSPACE_ENABLED, 0,
             UserHandle.USER_CURRENT) != 0;
     }
 

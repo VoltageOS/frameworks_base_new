@@ -315,7 +315,7 @@ constructor(
             val showWeather =
                 secureSettings.getIntForUser(
                     LOCKSCREEN_SMARTSPACE_ENABLED,
-                    1,
+                    0,
                     userTracker.userId,
                 ) == 1
             return showWeather
