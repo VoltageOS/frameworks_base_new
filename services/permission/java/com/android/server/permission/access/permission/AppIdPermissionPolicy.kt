@@ -30,6 +30,7 @@ import com.android.internal.os.RoSystemProperties
 import com.android.internal.pm.permission.CompatibilityPermissionInfo
 import com.android.modules.utils.BinaryXmlPullParser
 import com.android.modules.utils.BinaryXmlSerializer
+import com.android.server.ext.SystemErrorNotification
 import com.android.server.permission.access.AccessState
 import com.android.server.permission.access.GetStateScope
 import com.android.server.permission.access.MutableAccessState
@@ -1813,10 +1814,13 @@ class AppIdPermissionPolicy : SchemePolicy() {
 
     override fun MutateStateScope.onSystemReady() {
         if (!privilegedPermissionAllowlistViolations.isEmpty()) {
-            throw IllegalStateException(
-                "Signature|privileged permissions not in privileged" +
+            val msg = "Signature|privileged permissions not in privileged" +
                     " permission allowlist: $privilegedPermissionAllowlistViolations"
-            )
+            if (Build.isDebuggable()) {
+                SystemErrorNotification("Permission allowlist violation", msg).show(null)
+            } else {
+                throw IllegalStateException(msg)
+            }
         }
     }
 
