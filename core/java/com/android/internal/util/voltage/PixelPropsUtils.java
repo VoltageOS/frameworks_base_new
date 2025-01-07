@@ -266,11 +266,16 @@ public final class PixelPropsUtils {
                     spoofBuildGms();
                 }
             }
-        } else if (Arrays.asList(packagesToChangeRecentPixel).contains(packageName) && !sIsGms) {
+        } else if (Arrays.asList(packagesToChangeRecentPixel).contains(packageName)) {
 
             boolean isPixelDevice = SystemProperties.get("ro.product.model").matches("Pixel [6-9][a-zA-Z ]*");
             if (isPixelDevice || !sEnablePixelProps || !SystemProperties.getBoolean(SPOOF_PIXEL_PROPS, true)) {
                 return;
+            } else if (packageName.equals(PACKAGE_GMS) && !sIsGms) {
+                setPropValue("TIME", System.currentTimeMillis());
+                if (!isPixelDevice && (processName == null || !processName.toLowerCase().contains("unstable") || !processName.toLowerCase().contains("ui"))) {
+                    propsToChange.putAll(propsToChangeRecentPixel);
+                }
             } else if (SystemProperties.getBoolean(SPOOF_PIXEL_PROPS, true)) {
                 if (packageName.equals("com.android.vending")) {
                     if (!SystemProperties.getBoolean("persist.sys.vending.enable", false)) {
@@ -315,7 +320,7 @@ public final class PixelPropsUtils {
         }
         // Show correct model name on gms services
         if (packageName.toLowerCase().contains("com.google.android.gms")) {
-            if (processName.toLowerCase().contains("ui")) {
+            if (processName != null && processName.toLowerCase().contains("ui")) {
                 setPropValue("MODEL", sDeviceModel);
                 return;
             }
