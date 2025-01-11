@@ -14092,9 +14092,6 @@ public final class Settings {
         public static final String GNSS_SUPL = "force_disable_supl"; // historical name
 
         /** @hide */
-        public static final String GNSS_PSDS_STANDARD = "psds_server"; // historical name
-
-        /** @hide */
         public static final String WIFI_AUTO_OFF = "wifi_off_timeout";
 
         /** @hide */

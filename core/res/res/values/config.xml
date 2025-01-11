@@ -7142,8 +7142,6 @@
     <!-- Package for opening identity check settings page [CHAR LIMIT=NONE] [DO NOT TRANSLATE] -->
     <string name="identity_check_settings_package_name">com\u002eandroid\u002esettings</string>
 
-    <string name="config_gnssPsdsType"></string>
-
     <bool name="config_usbPortSecuritySupported">false</bool>
     <java-symbol type="bool" name="config_usbPortSecuritySupported" />
     <bool name="config_usb_port_security_applies_to_pogo_pins">false</bool>
