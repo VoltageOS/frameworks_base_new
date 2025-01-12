@@ -1448,7 +1448,7 @@ final class DefaultPermissionGrantPolicy {
                 // sms and phone apps after the user chooses this in the UI.
                 if (!(isFixedOrUserSet(flags) || (!sourceGranted && sourceFixedOrUserSet))
                         || ignoreSystemPackage
-                        || changingGrantForSystemFixed) {
+                        || systemFixed) {
                     // Never clobber policy fixed permissions.
                     // We must allow the grant of a system-fixed permission because
                     // system-fixed is sticky, but the permission itself may be revoked.
