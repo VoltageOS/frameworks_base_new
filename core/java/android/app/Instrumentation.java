@@ -75,6 +75,7 @@ import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.concurrent.TimeoutException;
 
+import com.android.internal.util.voltage.AttestationHooks;
 import com.android.internal.util.voltage.GamesPropsUtils;
 import com.android.internal.util.voltage.PixelPropsUtils;
 
@@ -1366,6 +1367,7 @@ public class Instrumentation {
                     .instantiateApplication(cl, className);
         }
         app.attach(context);
+        AttestationHooks.setProps(context);
         GamesPropsUtils.setProps(context);
         PixelPropsUtils.setProps(context);
         return app;
@@ -1385,6 +1387,7 @@ public class Instrumentation {
             ClassNotFoundException {
         Application app = (Application)clazz.newInstance();
         app.attach(context);
+        AttestationHooks.setProps(context);
         GamesPropsUtils.setProps(context);
         PixelPropsUtils.setProps(context);
         return app;

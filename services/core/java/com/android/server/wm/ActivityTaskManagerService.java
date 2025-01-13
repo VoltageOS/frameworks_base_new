@@ -1800,7 +1800,7 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
     @Override
     public void preloadRecentsActivity(Intent intent) {
         if (!PixelPropsUtils.shouldBypassTaskPermission(mContext)) {
-            enforceTaskPermission("preloadRecentsActivity()");
+        enforceTaskPermission("preloadRecentsActivity()");
         }
         final long origId = Binder.clearCallingIdentity();
         try {

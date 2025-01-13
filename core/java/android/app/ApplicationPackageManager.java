@@ -870,7 +870,9 @@ public class ApplicationPackageManager extends PackageManager {
             "android.software.game_service",
             "com.google.android.feature.EXCHANGE_6_2",
             "com.google.android.apps.dialer.call_recording_audio",
-            "com.google.android.apps.dialer.SUPPORTED"
+            "com.google.android.apps.dialer.SUPPORTED",
+            "com.google.android.feature.CONTEXTUAL_SEARCH",
+            "com.google.android.feature.D2D_CABLE_MIGRATION_FEATURE"
     };
 
     private static final String[] featuresTensor = {
@@ -932,6 +934,7 @@ public class ApplicationPackageManager extends PackageManager {
                 && !isTensorDevice) {
             return enableTensorFeaturesOnNonTensor;
         }
+        if (Arrays.asList(featuresNexus).contains(name)) return true;
         if (Arrays.asList(featuresPixel).contains(name)) return true;
         if (Arrays.asList(featuresPixelOthers).contains(name)) return true;
         return mHasSystemFeatureCache.query(new HasSystemFeatureQuery(name, version));

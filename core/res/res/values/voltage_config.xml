@@ -24,6 +24,9 @@
     <!-- Whether device supports an alt. ambient display -->
     <bool name="config_alt_ambient_display">false</bool>
 
+    <!-- Whether Pixel props is enabled -->
+    <bool name="config_enablePixelProps">true</bool>
+
     <!-- Define device configs on boot -->
     <string-array name="global_device_configs_override" translatable="false">
     </string-array>
@@ -217,8 +220,5 @@
 
     <!-- Whether to use Richtap vibration -->
     <bool name="config_usesRichtapVibration">false</bool>
-
-    <!-- Whether Pixel props is enabled -->
-    <bool name="config_enablePixelProps">true</bool>
 
 </resources>

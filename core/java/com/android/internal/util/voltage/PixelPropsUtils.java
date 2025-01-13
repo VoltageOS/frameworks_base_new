@@ -59,7 +59,6 @@ public final class PixelPropsUtils {
     private static final String PACKAGE_GOOGLE = "com.google";
     private static final String PACKAGE_SI = "com.google.android.settings.intelligence";
     private static final String SPOOF_PI = "persist.sys.pihooks.enable";
-    private static final String SPOOF_PIXEL_GPHOTOS = "persist.sys.gphooks.enable";
     private static final String SPOOF_PIXEL_PROPS = "persist.sys.pphooks.enable";
 
     private static final String TAG = PixelPropsUtils.class.getSimpleName();
@@ -77,14 +76,12 @@ public final class PixelPropsUtils {
     private static final Map<String, Object> propsToChangeGeneric;
     private static final Map<String, Object> propsToChangeRecentPixel;
     private static final Map<String, Object> propsToChangePixelTablet;
-    private static final Map<String, Object> propsToChangePixelXL;
     private static final Map<String, ArrayList<String>> propsToKeep;
 
     // Packages to Spoof as the most recent Pixel device
     private static final String[] packagesToChangeRecentPixel = {
             "com.amazon.avod.thirdpartyclient",
             "com.android.chrome",
-            "com.android.vending",
             "com.breel.wallpapers20",
             "com.disney.disneyplus",
             "com.google.android.aicore",
@@ -94,7 +91,6 @@ public final class PixelPropsUtils {
             "com.google.android.apps.customization.pixel",
             "com.google.android.apps.emojiwallpaper",
             "com.google.android.apps.nexuslauncher",
-            "com.google.android.apps.photos",
             "com.google.android.apps.pixel.agent",
             "com.google.android.apps.pixel.creativeassistant",
             "com.google.android.apps.pixel.support",
@@ -164,15 +160,6 @@ public final class PixelPropsUtils {
         propsToChangePixelTablet.put("MODEL", "Pixel Tablet");
         propsToChangePixelTablet.put("ID", "AP4A.250105.002");
         propsToChangePixelTablet.put("FINGERPRINT", "google/tangorpro/tangorpro:15/AP4A.250105.002/12701944:user/release-keys");
-        propsToChangePixelXL = new HashMap<>();
-        propsToChangePixelXL.put("BRAND", "google");
-        propsToChangePixelXL.put("MANUFACTURER", "Google");
-        propsToChangePixelXL.put("DEVICE", "marlin");
-        propsToChangePixelXL.put("PRODUCT", "marlin");
-        propsToChangePixelXL.put("HARDWARE", "marlin");
-        propsToChangePixelXL.put("MODEL", "Pixel XL");
-        propsToChangePixelXL.put("ID", "QP1A.191005.007.A3");
-        propsToChangePixelXL.put("FINGERPRINT", "google/marlin/marlin:10/QP1A.191005.007.A3/5972272:user/release-keys");
     }
 
     private static String getBuildID(String fingerprint) {
@@ -277,20 +264,6 @@ public final class PixelPropsUtils {
                     propsToChange.putAll(propsToChangeRecentPixel);
                 }
             } else if (SystemProperties.getBoolean(SPOOF_PIXEL_PROPS, true)) {
-                if (packageName.equals("com.android.vending")) {
-                    if (!SystemProperties.getBoolean("persist.sys.vending.enable", false)) {
-                        return;
-                    }
-                } else if (packageName.equals("com.google.android.apps.photos")) {
-                    boolean isGPhotosSpoofEnabled = SystemProperties.getBoolean(SPOOF_PIXEL_GPHOTOS, false);
-                    if (isGPhotosSpoofEnabled) {
-                        propsToChange.putAll(propsToChangePixelXL);
-                    }
-                } else if (packageName.equals("com.snapchat.android")) {
-                    if (SystemProperties.getBoolean("persist.sys.snap.enable", false)) {
-                        propsToChange.putAll(propsToChangePixelXL);
-                    }
-                }
                 if (sIsTablet) {
                     propsToChange.putAll(propsToChangePixelTablet);
                 } else {
