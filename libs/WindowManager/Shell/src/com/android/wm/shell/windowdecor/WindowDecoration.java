@@ -489,10 +489,9 @@ public abstract class WindowDecoration<T extends View & TaskFocusStateConsumer>
                     .setPosition(mTaskSurface, taskPosition.x, taskPosition.y);
         }
 
-        if (params.mShadowRadius != INVALID_SHADOW_RADIUS) {
+            float shadowRadius = 0;
             startT.setShadowRadius(mTaskSurface, params.mShadowRadius);
             finishT.setShadowRadius(mTaskSurface, params.mShadowRadius);
-        }
 
         if (params.mSetTaskVisibilityPositionAndCrop) {
             startT.show(mTaskSurface);
