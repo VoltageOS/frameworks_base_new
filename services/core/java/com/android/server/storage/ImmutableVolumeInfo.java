@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,56 +16,33 @@
 
 package com.android.server.storage;
 
-import android.annotation.NonNull;
-import android.annotation.Nullable;
 import android.content.Context;
 import android.os.storage.DiskInfo;
 import android.os.storage.StorageVolume;
 import android.os.storage.VolumeInfo;
 
 import com.android.internal.util.IndentingPrintWriter;
-import com.android.server.utils.Watchable;
-import com.android.server.utils.WatchableImpl;
 
 import java.io.File;
 
 /**
- * A wrapper for {@link VolumeInfo}  implementing the {@link Watchable} interface.
- *
- * The {@link VolumeInfo} class itself cannot safely implement Watchable, because it has several
- * UnsupportedAppUsage annotations and public fields, which allow it to be modified without
- * notifying watchers.
+ * An immutable version of {@link VolumeInfo} with only getters.
  *
  * @hide
  */
-public class WatchedVolumeInfo extends WatchableImpl {
+public final class ImmutableVolumeInfo {
     private final VolumeInfo mVolumeInfo;
 
-    private WatchedVolumeInfo(VolumeInfo volumeInfo) {
-        mVolumeInfo = volumeInfo;
+    private ImmutableVolumeInfo(VolumeInfo volumeInfo) {
+        mVolumeInfo = new VolumeInfo(volumeInfo);
     }
 
-    public WatchedVolumeInfo(WatchedVolumeInfo watchedVolumeInfo) {
-        mVolumeInfo = new VolumeInfo(watchedVolumeInfo.mVolumeInfo);
+    public static ImmutableVolumeInfo fromVolumeInfo(VolumeInfo info) {
+        return new ImmutableVolumeInfo(info);
     }
 
-    public static WatchedVolumeInfo fromVolumeInfo(VolumeInfo info) {
-        return new WatchedVolumeInfo(info);
-    }
-
-    /**
-     * Returns a copy of the embedded VolumeInfo object, to be used by components
-     * that just need it for retrieving some state from it.
-     *
-     * @return A copy of the embedded VolumeInfo object
-     */
-
-    public WatchedVolumeInfo clone() {
+    public ImmutableVolumeInfo clone() {
         return fromVolumeInfo(mVolumeInfo.clone());
-    }
-
-    public ImmutableVolumeInfo getImmutableVolumeInfo() {
-        return ImmutableVolumeInfo.fromVolumeInfo(mVolumeInfo);
     }
 
     public StorageVolume buildStorageVolume(Context context, int userId, boolean reportUnmounted) {
@@ -88,39 +65,19 @@ public class WatchedVolumeInfo extends WatchableImpl {
         return mVolumeInfo.fsLabel;
     }
 
-    public void setFsLabel(String fsLabel) {
-        mVolumeInfo.fsLabel = fsLabel;
-        dispatchChange(this);
-    }
-
     public String getFsPath() {
         return mVolumeInfo.path;
-    }
-
-    public void setFsPath(String path) {
-        mVolumeInfo.path = path;
-        dispatchChange(this);
     }
 
     public String getFsType() {
         return mVolumeInfo.fsType;
     }
 
-    public void setFsType(String fsType) {
-        mVolumeInfo.fsType = fsType;
-        dispatchChange(this);
-    }
-
-    public @Nullable String getFsUuid() {
+    public String getFsUuid() {
         return mVolumeInfo.fsUuid;
     }
 
-    public void setFsUuid(String fsUuid) {
-        mVolumeInfo.fsUuid = fsUuid;
-        dispatchChange(this);
-    }
-
-    public @NonNull String getId() {
+    public String getId() {
         return mVolumeInfo.id;
     }
 
@@ -128,27 +85,12 @@ public class WatchedVolumeInfo extends WatchableImpl {
         return mVolumeInfo.getInternalPath();
     }
 
-    public void setInternalPath(String internalPath) {
-        mVolumeInfo.internalPath = internalPath;
-        dispatchChange(this);
-    }
-
     public int getMountFlags() {
         return mVolumeInfo.mountFlags;
     }
 
-    public void setMountFlags(int mountFlags) {
-        mVolumeInfo.mountFlags = mountFlags;
-        dispatchChange(this);
-    }
-
     public int getMountUserId() {
         return mVolumeInfo.mountUserId;
-    }
-
-    public void setMountUserId(int mountUserId) {
-        mVolumeInfo.mountUserId = mountUserId;
-        dispatchChange(this);
     }
 
     public String getPartGuid() {
@@ -163,21 +105,12 @@ public class WatchedVolumeInfo extends WatchableImpl {
         return mVolumeInfo.state;
     }
 
-    public int getState(int state) {
-        return mVolumeInfo.state;
-    }
-
-    public void setState(int state) {
-        mVolumeInfo.state = state;
-        dispatchChange(this);
-    }
-
     public int getType() {
         return mVolumeInfo.type;
     }
 
     public VolumeInfo getVolumeInfo() {
-        return new VolumeInfo(mVolumeInfo);
+        return new VolumeInfo(mVolumeInfo); // Return a copy, not the original
     }
 
     public boolean isMountedReadable() {
