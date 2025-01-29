@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.systemui.statusbar.pipeline.shared.data.repository
+package com.android.systemui.util.mockito
 
-import com.android.systemui.kosmos.Kosmos
+import com.android.systemui.kosmos.Kosmos.Fixture
+import org.mockito.kotlin.mock
 
-var Kosmos.connectivityRepository: ConnectivityRepository by
-    Kosmos.Fixture { FakeConnectivityRepository() }
+inline fun <reified T> mockFixture(): Fixture<T> = Fixture { mock() }

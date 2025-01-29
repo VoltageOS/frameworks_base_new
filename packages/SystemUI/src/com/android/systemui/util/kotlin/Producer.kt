@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.systemui.statusbar.pipeline.shared.data.repository
+package com.android.systemui.util.kotlin
 
-import com.android.systemui.kosmos.Kosmos
-
-var Kosmos.connectivityRepository: ConnectivityRepository by
-    Kosmos.Fixture { FakeConnectivityRepository() }
+/** Like a [javax.inject.Provider], but [get] is a `suspend fun`. */
+fun interface Producer<out T> {
+    suspend fun get(): T
+}

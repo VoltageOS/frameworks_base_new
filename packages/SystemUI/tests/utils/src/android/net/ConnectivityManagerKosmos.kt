@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.systemui.statusbar.pipeline.shared.data.repository
+package android.net
 
 import com.android.systemui.kosmos.Kosmos
+import com.android.systemui.util.mockito.mockFixture
 
-var Kosmos.connectivityRepository: ConnectivityRepository by
-    Kosmos.Fixture { FakeConnectivityRepository() }
+var Kosmos.connectivityManager: ConnectivityManager by mockFixture()
