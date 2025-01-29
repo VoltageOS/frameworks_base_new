@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,8 +116,8 @@ import org.mockito.kotlin.argumentCaptor
 @Suppress("EXPERIMENTAL_IS_NOT_ENABLED")
 @SmallTest
 @RunWith(AndroidJUnit4::class)
-class MobileConnectionRepositoryTest : SysuiTestCase() {
-    private lateinit var underTest: MobileConnectionRepositoryImpl
+class MobileConnectionRepositoryKairosTest : SysuiTestCase() {
+    private lateinit var underTest: MobileConnectionRepositoryKairosImpl
 
     private val flags =
         FakeFeatureFlagsClassic().also { it.set(ROAMING_INDICATOR_VIA_DISPLAY_INFO, true) }
@@ -149,7 +149,7 @@ class MobileConnectionRepositoryTest : SysuiTestCase() {
         whenever(telephonyManager.subscriptionId).thenReturn(SUB_1_ID)
 
         underTest =
-            MobileConnectionRepositoryImpl(
+            MobileConnectionRepositoryKairosImpl(
                 SUB_1_ID,
                 context,
                 subscriptionModel,
@@ -623,7 +623,7 @@ class MobileConnectionRepositoryTest : SysuiTestCase() {
 
             // Re-create the repository, because the flag is read at init
             underTest =
-                MobileConnectionRepositoryImpl(
+                MobileConnectionRepositoryKairosImpl(
                     SUB_1_ID,
                     context,
                     subscriptionModel,
@@ -672,7 +672,7 @@ class MobileConnectionRepositoryTest : SysuiTestCase() {
 
             // Re-create the repository, because the flag is read at init
             underTest =
-                MobileConnectionRepositoryImpl(
+                MobileConnectionRepositoryKairosImpl(
                     SUB_1_ID,
                     context,
                     subscriptionModel,

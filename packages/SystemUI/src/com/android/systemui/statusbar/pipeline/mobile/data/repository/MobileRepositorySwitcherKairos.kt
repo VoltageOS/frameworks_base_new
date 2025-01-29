@@ -62,7 +62,7 @@ import kotlinx.coroutines.flow.stateIn
  */
 @Suppress("EXPERIMENTAL_IS_NOT_ENABLED")
 @SysUISingleton
-class MobileRepositorySwitcher
+class MobileRepositorySwitcherKairos
 @Inject
 constructor(
     @Background scope: CoroutineScope,
@@ -97,7 +97,7 @@ constructor(
 
     // Convenient definition flow for the currently active repo (based on demo mode or not)
     @VisibleForTesting
-    internal val activeRepo: StateFlow<MobileConnectionsRepository> =
+    val activeRepo: StateFlow<MobileConnectionsRepository> =
         isDemoMode
             .mapLatest { demoMode ->
                 if (demoMode) {
