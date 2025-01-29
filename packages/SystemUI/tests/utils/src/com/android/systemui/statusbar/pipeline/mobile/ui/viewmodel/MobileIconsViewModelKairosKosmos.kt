@@ -16,11 +16,23 @@
 
 package com.android.systemui.statusbar.pipeline.mobile.ui.viewmodel
 
+import com.android.systemui.flags.featureFlagsClassic
 import com.android.systemui.kairos.ActivatedKairosFixture
 import com.android.systemui.kairos.ExperimentalKairosApi
 import com.android.systemui.kosmos.Kosmos
+import com.android.systemui.statusbar.pipeline.airplane.domain.interactor.airplaneModeInteractor
+import com.android.systemui.statusbar.pipeline.mobile.domain.interactor.mobileIconsInteractorKairos
+import com.android.systemui.statusbar.pipeline.mobile.ui.mobileViewLogger
+import com.android.systemui.util.mockito.mock
 
 @ExperimentalKairosApi
-val Kosmos.stackedMobileIconViewModelKairos by ActivatedKairosFixture {
-    StackedMobileIconViewModelKairos(mobileIconsViewModelKairos)
+val Kosmos.mobileIconsViewModelKairos by ActivatedKairosFixture {
+    MobileIconsViewModelKairos(
+        logger = mobileViewLogger,
+        verboseLogger = mock(),
+        interactor = mobileIconsInteractorKairos,
+        airplaneModeInteractor = airplaneModeInteractor,
+        constants = mock(),
+        flags = featureFlagsClassic,
+    )
 }
