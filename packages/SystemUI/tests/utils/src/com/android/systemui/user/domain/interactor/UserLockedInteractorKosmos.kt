@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,10 @@
  * limitations under the License.
  */
 
-package android.os
+package com.android.systemui.user.domain.interactor
 
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.user.data.repository.FakeUserRepository.Companion.MAIN_USER_ID
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
+import com.android.systemui.user.data.repository.userRepository
 
-var Kosmos.userManager by
-    Kosmos.Fixture {
-        mock<UserManager> {
-            whenever(it.mainUser).thenReturn(UserHandle(MAIN_USER_ID))
-            whenever(it.getUserSerialNumber(eq(MAIN_USER_ID))).thenReturn(0)
-        }
-    }
+val Kosmos.userLockedInteractor by
+    Kosmos.Fixture { UserLockedInteractor(userRepository = userRepository) }
