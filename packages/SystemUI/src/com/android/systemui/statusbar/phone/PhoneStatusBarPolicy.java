@@ -619,23 +619,44 @@ public class PhoneStatusBarPolicy
     }
 
     private final void updateBluetooth() {
+        int iconId = R.drawable.stat_sys_data_bluetooth_connected;
         String contentDescription =
                 mResources.getString(R.string.accessibility_quick_settings_bluetooth_on);
         boolean bluetoothVisible = false;
-        int batteryLevel = -1;
         if (mBluetooth != null) {
             if (mBluetooth.isBluetoothConnected()
                     && (mBluetooth.isBluetoothAudioActive()
                     || !mBluetooth.isBluetoothAudioProfileOnly())) {
-                bluetoothVisible = mBluetooth.isBluetoothEnabled();
-                batteryLevel = mShowBluetoothBattery ? mBluetooth.getBatteryLevel() : -1;
+                int batteryLevel = mShowBluetoothBattery ? mBluetooth.getBatteryLevel() : -1;
+                if (batteryLevel == 100) {
+                    iconId = R.drawable.stat_sys_data_bluetooth_connected_battery_9;
+                } else if (batteryLevel >= 90) {
+                    iconId = R.drawable.stat_sys_data_bluetooth_connected_battery_8;
+                } else if (batteryLevel >= 80) {
+                    iconId = R.drawable.stat_sys_data_bluetooth_connected_battery_7;
+                } else if (batteryLevel >= 70) {
+                    iconId = R.drawable.stat_sys_data_bluetooth_connected_battery_6;
+                } else if (batteryLevel >= 60) {
+                    iconId = R.drawable.stat_sys_data_bluetooth_connected_battery_5;
+                } else if (batteryLevel >= 50) {
+                    iconId = R.drawable.stat_sys_data_bluetooth_connected_battery_4;
+                } else if (batteryLevel >= 40) {
+                    iconId = R.drawable.stat_sys_data_bluetooth_connected_battery_3;
+                } else if (batteryLevel >= 30) {
+                    iconId = R.drawable.stat_sys_data_bluetooth_connected_battery_2;
+                } else if (batteryLevel >= 20) {
+                    iconId = R.drawable.stat_sys_data_bluetooth_connected_battery_1;
+                } else if (batteryLevel >= 10) {
+                    iconId = R.drawable.stat_sys_data_bluetooth_connected_battery_0;
+                }
                 contentDescription = mResources.getString(
                         R.string.accessibility_bluetooth_connected);
+                bluetoothVisible = mBluetooth.isBluetoothEnabled();
             }
         }
 
-        mIconController.setBluetoothIcon(mSlotBluetooth,
-                new BluetoothIconState(bluetoothVisible, batteryLevel, contentDescription));
+        mIconController.setIcon(mSlotBluetooth, iconId, contentDescription);
+        mIconController.setIconVisibility(mSlotBluetooth, bluetoothVisible);
     }
 
     private final void updateNetworkTraffic() {
@@ -1031,24 +1052,6 @@ public class PhoneStatusBarPolicy
         }
 
         mIconController.setIconVisibility(mSlotConnectedDisplay, visible);
-
-        }
-
-    public static class BluetoothIconState {
-        public boolean visible;
-        public int batteryLevel;
-        public String contentDescription;
-
-        public BluetoothIconState(boolean visible, int batteryLevel, String contentDescription) {
-            this.visible = visible;
-            this.batteryLevel = batteryLevel;
-            this.contentDescription = contentDescription;
-        }
-
-        @Override
-        public String toString() {
-            return "BluetoothIconState(visible=" + visible + " batteryLevel=" + batteryLevel + ")";
-        }
     }
 
     public static class NetworkTrafficState {
