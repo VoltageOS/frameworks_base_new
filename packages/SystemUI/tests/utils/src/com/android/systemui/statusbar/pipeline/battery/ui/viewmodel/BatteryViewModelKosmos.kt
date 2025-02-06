@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package com.android.systemui.statusbar.policy
+package com.android.systemui.statusbar.pipeline.battery.ui.viewmodel
 
+import android.content.testableContext
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.kosmos.Kosmos.Fixture
+import com.android.systemui.statusbar.pipeline.battery.domain.interactor.batteryInteractor
 
-val Kosmos.batteryController: BatteryController by Fixture { FakeBatteryControllerImpl() }
-
-val BatteryController.fake
-    get() = this as FakeBatteryControllerImpl
+val Kosmos.batteryViewModel by
+    Kosmos.Fixture { BatteryViewModel(batteryInteractor, testableContext) }
