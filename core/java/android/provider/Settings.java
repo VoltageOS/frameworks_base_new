@@ -7242,6 +7242,12 @@ public final class Settings {
         public static final String QS_DUAL_TONE = "qs_dual_tone";
 
         /**
+         * Whether to show heads up only for dialer and sms apps
+         * @hide
+         */
+        public static final String LESS_BORING_HEADS_UP = "less_boring_heads_up";
+
+        /**
          * Whether to show power menu on LockScreen
          * @hide
          */
