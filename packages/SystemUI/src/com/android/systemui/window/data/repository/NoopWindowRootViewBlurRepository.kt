@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,13 @@
 
 package com.android.systemui.window.data.repository
 
-import com.android.systemui.kosmos.Kosmos
+import com.android.systemui.window.data.repository.WindowRootViewBlurRepository
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
-val Kosmos.fakeWindowRootViewBlurRepository: FakeWindowRootViewBlurRepository by
-    Kosmos.Fixture { FakeWindowRootViewBlurRepository() }
-
-val Kosmos.windowRootViewBlurRepository: WindowRootViewBlurRepository by
-    Kosmos.Fixture { fakeWindowRootViewBlurRepository }
-
-class FakeWindowRootViewBlurRepository : WindowRootViewBlurRepository {
+class NoopWindowRootViewBlurRepository @Inject constructor() : WindowRootViewBlurRepository {
     override val blurRadius: MutableStateFlow<Int> = MutableStateFlow(0)
-    override val isBlurOpaque: MutableStateFlow<Boolean> = MutableStateFlow(false)
-    override val isBlurSupported: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    override val isBlurOpaque: MutableStateFlow<Boolean> = MutableStateFlow(true)
+    override val isBlurSupported: StateFlow<Boolean> = MutableStateFlow(false)
 }
