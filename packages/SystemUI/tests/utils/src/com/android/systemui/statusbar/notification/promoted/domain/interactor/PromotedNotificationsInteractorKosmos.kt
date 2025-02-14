@@ -16,13 +16,18 @@
 
 package com.android.systemui.statusbar.notification.promoted.domain.interactor
 
-import com.android.systemui.dump.dumpManager
 import com.android.systemui.kosmos.Kosmos
+import com.android.systemui.kosmos.testDispatcher
+import com.android.systemui.statusbar.chips.call.domain.interactor.callChipInteractor
+import com.android.systemui.statusbar.chips.notification.domain.interactor.statusBarNotificationChipsInteractor
+import com.android.systemui.statusbar.notification.domain.interactor.activeNotificationsInteractor
 
-val Kosmos.aodPromotedNotificationInteractor by
+val Kosmos.promotedNotificationsInteractor by
     Kosmos.Fixture {
-        AODPromotedNotificationInteractor(
-            promotedNotificationsInteractor = promotedNotificationsInteractor,
-            dumpManager = dumpManager,
+        PromotedNotificationsInteractor(
+            activeNotificationsInteractor = activeNotificationsInteractor,
+            callChipInteractor = callChipInteractor,
+            notifChipsInteractor = statusBarNotificationChipsInteractor,
+            backgroundDispatcher = testDispatcher,
         )
     }
