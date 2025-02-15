@@ -51,6 +51,7 @@ private val KEY_TIMESTAMP = "appliedTimestamp"
 private val KNOWN_PLUGINS =
     mapOf<String, List<ClockMetadata>>(
         "com.android.systemui.clocks.bignum" to listOf(ClockMetadata("ANALOG_CLOCK_BIGNUM")),
+        "com.android.systemui.clocks.bignum2" to listOf(ClockMetadata("ANALOG_CLOCK_BIGNUM2")),
         "com.android.systemui.clocks.calligraphy" to
             listOf(ClockMetadata("DIGITAL_CLOCK_CALLIGRAPHY")),
         "com.android.systemui.clocks.flex" to listOf(ClockMetadata("DIGITAL_CLOCK_FLEX")),
