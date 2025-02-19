@@ -763,6 +763,9 @@ public class FingerprintProvider implements IBinder.DeathRecipient, ServiceProvi
 
     @Override
     public void onPointerDown(long requestId, int sensorId, PointerContext pc) {
+        if (mFingerprintSensors.get(sensorId).getSensorProperties().halHandlesDisplayTouches) {
+            return;
+        }
         mFingerprintSensors.get(sensorId).getScheduler().getCurrentClientIfMatches(
                 requestId, (client) -> {
                     if (!(client instanceof Udfps)) {
@@ -775,6 +778,9 @@ public class FingerprintProvider implements IBinder.DeathRecipient, ServiceProvi
 
     @Override
     public void onPointerUp(long requestId, int sensorId, PointerContext pc) {
+        if (mFingerprintSensors.get(sensorId).getSensorProperties().halHandlesDisplayTouches) {
+            return;
+        }
         mFingerprintSensors.get(sensorId).getScheduler().getCurrentClientIfMatches(
                 requestId, (client) -> {
                     if (!(client instanceof Udfps)) {
