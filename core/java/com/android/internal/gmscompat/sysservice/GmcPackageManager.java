@@ -155,9 +155,10 @@ public class GmcPackageManager extends ApplicationPackageManager {
                 } catch (NameNotFoundException e) {
                     // package state tracking happens in the same process that tries to enable
                     // the package, no need to sync this across all processes, at least for now
-                    removePseudoDisabledPackage(packageName);
-                    GmsCompat.appContext().getMainThreadHandler().post(() ->
-                            PlayStoreHooks.updatePackageState(packageName, Intent.ACTION_PACKAGE_REMOVED));
+                    GmsCompat.appContext().getMainThreadHandler().post(() -> {
+                        PlayStoreHooks.InternalBroadcastReceiver.removePseudoDisabledPackage(GmsCompat.appContext(), packageName);
+                        PlayStoreHooks.updatePackageState(packageName, Intent.ACTION_PACKAGE_CHANGED, Intent.ACTION_PACKAGE_REMOVED);
+                    });
                     return;
                 }
             }
@@ -516,7 +517,7 @@ public class GmcPackageManager extends ApplicationPackageManager {
         }
     }
 
-    private static boolean removePseudoDisabledPackage(String pkgName) {
+    public static boolean removePseudoDisabledPackage(String pkgName) {
         synchronized (pseudoDisabledPackages) {
             return pseudoDisabledPackages.remove(pkgName);
         }

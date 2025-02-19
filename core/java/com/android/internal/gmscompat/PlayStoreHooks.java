@@ -18,6 +18,7 @@ package com.android.internal.gmscompat;
 
 import android.annotation.Nullable;
 import android.app.Activity;
+import android.app.Application;
 import android.app.PendingIntent;
 import android.app.compat.gms.GmsCompat;
 import android.app.usage.StorageStats;
@@ -27,12 +28,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.IntentSender;
+import android.content.pm.ActivityInfo;
 import android.content.pm.GosPackageState;
 import android.content.pm.GosPackageStateFlag;
 import android.content.pm.IPackageDataObserver;
 import android.content.pm.IPackageDeleteObserver;
 import android.content.pm.PackageInstaller;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.ext.PackageId;
 import android.net.Uri;
 import android.os.Bundle;
@@ -41,18 +44,23 @@ import android.os.LocaleList;
 import android.os.RemoteException;
 import android.os.storage.StorageManager;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.util.ArraySet;
 import android.util.Log;
 
+import com.android.internal.gmscompat.sysservice.GmcPackageManager;
 import com.android.internal.gmscompat.util.GmcActivityUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
+
+import static java.util.Objects.requireNonNull;
 
 public final class PlayStoreHooks {
     private static final String TAG = "GmsCompat/PlayStore";
@@ -63,12 +71,14 @@ public final class PlayStoreHooks {
         obbDir = Environment.getExternalStorageDirectory().getPath() + "/Android/obb";
         playStoreObbDir = obbDir + '/' + GmsInfo.PACKAGE_PLAY_STORE;
         File.mkdirsFailedHook = PlayStoreHooks::mkdirsFailed;
-        packageManager = GmsCompat.appContext().getPackageManager();
+        Context ctx = GmsCompat.appContext();
+        packageManager = ctx.getPackageManager();
+        InternalBroadcastReceiver.register(ctx);
     }
 
     // PackageInstaller#createSession
     public static void adjustSessionParams(PackageInstaller.SessionParams params) {
-        String pkg = Objects.requireNonNull(params.appPackageName);
+        String pkg = requireNonNull(params.appPackageName);
 
         switch (pkg) {
             case GmsInfo.PACKAGE_GMS_CORE:
@@ -216,6 +226,93 @@ public final class PlayStoreHooks {
         }, 100L); // delay the callback for to workaround a race condition in Play Store
     }
 
+    public static class InternalBroadcastReceiver extends BroadcastReceiver {
+        private static final String TAG = "GmcInternalBroacastReceiver";
+
+        private static final String ACTION_PREFIX = "GmsCompat.InternalBroadcastReceiver";
+        private static final String ACTION_SEND_SELF_BROADCAST = ACTION_PREFIX + ".ACTION_SEND_SELF_BROADCAST";
+        private static final String ACTION_REMOVE_PSEUDO_DISABLED_PKG = ACTION_PREFIX + ".ACTION_REMOVE_PSEUDO_DISABLED_PKG";
+        private static final String EXTRA_INTENTS = "intents";
+
+        static void register(Context ctx) {
+            var f = new IntentFilter(ACTION_SEND_SELF_BROADCAST);
+            f.addAction(ACTION_REMOVE_PSEUDO_DISABLED_PKG);
+            ctx.registerReceiver(new InternalBroadcastReceiver(), f, Context.RECEIVER_NOT_EXPORTED);
+        }
+
+        public static void sendManualBroadcasts(Context ctx, Intent... intents) {
+            Log.d(TAG, "sendManualBroadcasts: " + Arrays.toString(intents));
+            var i = new Intent(ACTION_SEND_SELF_BROADCAST);
+            i.putExtra(EXTRA_INTENTS, intents);
+            sendBroadcast(ctx, i);
+        }
+
+        public static void removePseudoDisabledPackage(Context ctx, String pkgName) {
+            Log.d(TAG, "removePseudoDisabledPackage: " + pkgName);
+            var i = new Intent(ACTION_REMOVE_PSEUDO_DISABLED_PKG);
+            i.putExtra(Intent.EXTRA_PACKAGE_NAME, pkgName);
+            sendBroadcast(ctx, i);
+        }
+
+        private static void sendBroadcast(Context ctx, Intent i) {
+            i.setPackage(ctx.getPackageName());
+            ctx.sendBroadcast(i);
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "onReceive: " + intent + ", process: " + Application.getProcessName());
+            switch (intent.getAction()) {
+                case ACTION_SEND_SELF_BROADCAST: {
+                    Intent[] intents = intent.getParcelableArrayExtra(EXTRA_INTENTS, Intent.class);
+                    sendManualSelfBroadcasts(requireNonNull(intents));
+                    break;
+                }
+                case ACTION_REMOVE_PSEUDO_DISABLED_PKG: {
+                    String pkg = intent.getStringExtra(Intent.EXTRA_PACKAGE_NAME);
+                    GmcPackageManager.removePseudoDisabledPackage(pkg);
+                    break;
+                }
+            }
+        }
+    }
+
+    static void sendManualSelfBroadcasts(Intent[] broadcasts) {
+        Context context = GmsCompat.appContext();
+
+        // default ClassLoader fails to load the needed class
+        ClassLoader cl = context.getClassLoader();
+
+        String selfProcessName = Application.getProcessName();
+
+        for (Intent intent : broadcasts) {
+            intent.setPackage(context.getPackageName());
+            List<ResolveInfo> result = packageManager.queryBroadcastReceivers(intent, 0);
+            for (ResolveInfo resolveInfo : result) {
+                ActivityInfo receiver = resolveInfo.activityInfo;
+                if (receiver == null) {
+                    continue;
+                }
+                String processName = receiver.processName;
+                if (TextUtils.isEmpty(processName)) {
+                    processName = context.getPackageName();
+                }
+                if (!processName.equals(selfProcessName)) {
+                    continue;
+                }
+                String clsName = receiver.name;
+                Log.d(TAG, "sending manual self broadcast to " + clsName + ": " + intent);
+                try {
+                    Class cls = cl.loadClass(clsName);
+                    BroadcastReceiver br = (BroadcastReceiver) cls.newInstance();
+                    br.onReceive(context, intent);
+                } catch (ReflectiveOperationException e) {
+                    Log.e(TAG, clsName, e);
+                }
+            }
+        }
+    }
+
     // If state transition that is expected to never fail by Play Store does fail, it may get stuck
     // in the old state. This happens, for example, when package uninstall fails.
     // To work-around this, pretend that the package was removed and installed again
@@ -223,34 +320,13 @@ public final class PlayStoreHooks {
         updatePackageState(packageName, Intent.ACTION_PACKAGE_REMOVED, Intent.ACTION_PACKAGE_ADDED);
     }
 
-    public static void updatePackageState(String packageName, String... broadcasts) {
-        Context context = GmsCompat.appContext();
-
-        // default ClassLoader fails to load the needed class
-        ClassLoader cl = context.getClassLoader();
-
-        // Depending on Play Store version, target class can be in packagemonitor or in
-        // packagemanager package, support both
-        String[] classNames = {
-            "com.google.android.finsky.packagemonitor.impl.PackageMonitorReceiverImpl$RegisteredReceiver",
-            "com.google.android.finsky.packagemanager.impl.PackageMonitorReceiverImpl$RegisteredReceiver",
-        };
-
-        for (String className : classNames) {
-            try {
-                Class cls = Class.forName(className, true, cl);
-
-                for (String action : broadcasts) {
-                    // don't reuse BroadcastReceiver, it's expected that a new instance is made each time
-                    BroadcastReceiver br = (BroadcastReceiver) cls.newInstance();
-                    br.onReceive(context, new Intent(action, packageUri(packageName)));
-                }
-            } catch (ReflectiveOperationException e) {
-                Log.d(TAG, "", e);
-                continue;
-            }
-            break;
+    public static void updatePackageState(String packageName, String... actions) {
+        var intents = new Intent[actions.length];
+        Uri uri = packageUri(packageName);
+        for (int i = 0; i < intents.length; ++i) {
+            intents[i] = new Intent(actions[i], uri);
         }
+        InternalBroadcastReceiver.sendManualBroadcasts(GmsCompat.appContext(), intents);
     }
 
     // Called during self-update sequence because PackageManager requires
