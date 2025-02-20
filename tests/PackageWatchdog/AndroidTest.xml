@@ -14,26 +14,23 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<configuration description="Runs Crashrecovery Module Tests.">
-    <option name="test-suite-tag" value="apct" />
-    <option name="test-suite-tag" value="apct-instrumentation" />
-
+<configuration description="Runs PackageWatchdog Tests.">
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
-        <option name="install-arg" value="-t" />
-        <option name="test-file-name" value="CrashRecoveryModuleTests.apk" />
+        <option name="test-file-name" value="PackageWatchdogTest.apk" />
     </target_preparer>
 
-    <option name="test-tag" value="CrashRecoveryModuleTests" />
+    <option name="test-suite-tag" value="apct" />
+    <option name="test-tag" value="PackageWatchdogTest" />
 
-    <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
-        <option name="package" value="com.android.server.crashrecovery" />
-        <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
-        <option name="hidden-api-checks" value="false"/>
-    </test>
-
-    <!-- Only run this Tests if the Crashrecovery Mainline module is installed. -->
+    <!-- Only run this tests in MTS if the Crashrecovery Mainline module is installed. -->
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.MainlineTestModuleController">
         <option name="mainline-module-package-name" value="com.google.android.crashrecovery" />
     </object>
+
+    <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
+        <option name="package" value="com.android.server" />
+        <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
+        <option name="hidden-api-checks" value="false"/>
+    </test>
 </configuration>
