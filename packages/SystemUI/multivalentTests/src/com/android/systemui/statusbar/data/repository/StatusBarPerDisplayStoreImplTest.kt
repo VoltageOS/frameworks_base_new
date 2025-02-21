@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package com.android.systemui.statusbar.data.repository
 
-import android.view.Display.DEFAULT_DISPLAY
+import android.view.Display
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import com.android.systemui.SysuiTestCase
@@ -24,53 +24,65 @@ import com.android.systemui.display.data.repository.displayRepository
 import com.android.systemui.kosmos.testScope
 import com.android.systemui.kosmos.useUnconfinedTestDispatcher
 import com.android.systemui.testKosmos
+import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
 
-@SmallTest
 @RunWith(AndroidJUnit4::class)
-class MultiDisplayStatusBarContentInsetsProviderStoreTest : SysuiTestCase() {
+@SmallTest
+class StatusBarPerDisplayStoreImplTest : SysuiTestCase() {
 
     private val kosmos = testKosmos().useUnconfinedTestDispatcher()
     private val testScope = kosmos.testScope
     private val fakeDisplayRepository = kosmos.displayRepository
-    private val underTest = kosmos.multiDisplayStatusBarContentInsetsProviderStore
+
+    private val store = kosmos.fakeStatusBarPerDisplayStore
 
     @Before
     fun start() {
-        underTest.start()
+        store.start()
     }
 
-    @Before fun addDisplays() = runBlocking { fakeDisplayRepository.addDisplay(DEFAULT_DISPLAY) }
+    @Before
+    fun addDisplays() = runBlocking {
+        fakeDisplayRepository.addDisplay(DEFAULT_DISPLAY_ID)
+        fakeDisplayRepository.addDisplay(NON_DEFAULT_DISPLAY_ID)
+    }
 
     @Test
-    fun forDisplay_startsInstances() =
+    fun removeSystemDecoration_onDisplayRemovalActionInvoked() =
         testScope.runTest {
-            val instance = underTest.forDisplay(DEFAULT_DISPLAY)!!
+            val instance = store.forDisplay(NON_DEFAULT_DISPLAY_ID)
 
-            verify(instance).start()
+            fakeDisplayRepository.triggerRemoveSystemDecorationEvent(NON_DEFAULT_DISPLAY_ID)
+
+            assertThat(store.removalActions).containsExactly(instance)
         }
 
     @Test
-    fun beforeDisplayRemoved_doesNotStopInstances() =
+    fun removeSystemDecoration_twice_onDisplayRemovalActionInvokedOnce() =
         testScope.runTest {
-            val instance = underTest.forDisplay(DEFAULT_DISPLAY)!!
+            val instance = store.forDisplay(NON_DEFAULT_DISPLAY_ID)
 
-            verify(instance, never()).stop()
+            fakeDisplayRepository.triggerRemoveSystemDecorationEvent(NON_DEFAULT_DISPLAY_ID)
+            fakeDisplayRepository.triggerRemoveSystemDecorationEvent(NON_DEFAULT_DISPLAY_ID)
+
+            assertThat(store.removalActions).containsExactly(instance)
         }
 
     @Test
-    fun systemDecorationRemovedEvent_stopsInstance() =
+    fun forDisplay_withoutDisplayRemoval_onDisplayRemovalActionIsNotInvoked() =
         testScope.runTest {
-            val instance = underTest.forDisplay(DEFAULT_DISPLAY)!!
+            store.forDisplay(NON_DEFAULT_DISPLAY_ID)
 
-            fakeDisplayRepository.triggerRemoveSystemDecorationEvent(DEFAULT_DISPLAY)
-
-            verify(instance).stop()
+            assertThat(store.removalActions).isEmpty()
         }
+
+    companion object {
+        private const val DEFAULT_DISPLAY_ID = Display.DEFAULT_DISPLAY
+        private const val NON_DEFAULT_DISPLAY_ID = DEFAULT_DISPLAY_ID + 1
+    }
 }
