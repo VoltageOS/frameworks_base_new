@@ -213,30 +213,6 @@ class IslandView : ExtendedFloatingActionButton {
         }
     }
 
-    private fun createShowAnimator(): AnimatorSet {
-        return AnimatorSet().apply {
-            duration = IslandAnimator.ANIMATION_DURATION
-            interpolator = AccelerateDecelerateInterpolator()
-            playTogether(
-                ObjectAnimator.ofFloat(this@IslandView, View.SCALE_X, SCALE_START, SCALE_PEAK, SCALE_END),
-                ObjectAnimator.ofFloat(this@IslandView, View.SCALE_Y, SCALE_START, SCALE_PEAK, SCALE_END),
-                ObjectAnimator.ofFloat(this@IslandView, View.ALPHA, ALPHA_START, ALPHA_END)
-            )
-        }
-    }
-
-    private fun createDismissAnimator(): AnimatorSet {
-        return AnimatorSet().apply {
-            duration = IslandAnimator.ANIMATION_DURATION
-            interpolator = AccelerateDecelerateInterpolator()
-            playTogether(
-                ObjectAnimator.ofFloat(this@IslandView, View.SCALE_X, SCALE_END, SCALE_PEAK, SCALE_START),
-                ObjectAnimator.ofFloat(this@IslandView, View.SCALE_Y, SCALE_END, SCALE_PEAK, SCALE_START),
-                ObjectAnimator.ofFloat(this@IslandView, View.ALPHA, ALPHA_END, ALPHA_START)
-            )
-        }
-    }
-
     fun animateShowIsland(expandedFraction: Float) {
         if (expandedFraction > 0.0f) return
         
