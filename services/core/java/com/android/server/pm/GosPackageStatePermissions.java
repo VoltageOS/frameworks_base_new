@@ -104,13 +104,15 @@ class GosPackageStatePermissions {
                 .apply(ksp.contactsProvider, computer);
         builder()
                 .readFlags(STORAGE_SCOPES_ENABLED, CONTACT_SCOPES_ENABLED)
-                // work profile is handled by the launcher in profile's parent
+                // user profiles are handled by the launcher instance in profile parent user
                 .crossUserPermission(ALLOW_CROSS_USER_PROFILE_READS)
                 .apply(ksp.launcher, computer);
         builder()
                 .readWriteFlags(STORAGE_SCOPES_ENABLED, CONTACT_SCOPES_ENABLED)
                 .readWriteFields(FIELD_STORAGE_SCOPES, FIELD_CONTACT_SCOPES,
                         FIELD_PACKAGE_FLAGS)
+                // in some cases PermissionController handles user profile from profile parent user
+                .crossUserPermission(ALLOW_CROSS_USER_PROFILE_READS)
                 .apply(ksp.permissionController, computer);
         builder()
                 .readFlags(playIntegrityFlags)
