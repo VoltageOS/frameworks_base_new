@@ -8837,6 +8837,11 @@ public class PackageManagerService implements PackageSender, TestUtilityService 
         return sRestrictedPermissions;
     }
 
+    @NonNull
+    public Context getContext() {
+        return mContext;
+    }
+
     @Nullable
     String getDeveloperVerificationPolicyDelegatePackageName() {
         return mDeveloperVerificationPolicyDelegatePackage;
