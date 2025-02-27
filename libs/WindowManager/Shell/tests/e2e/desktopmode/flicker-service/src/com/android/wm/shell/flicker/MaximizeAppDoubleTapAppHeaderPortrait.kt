@@ -16,7 +16,7 @@
 
 package com.android.wm.shell.flicker
 
-import android.tools.Rotation.ROTATION_90
+import android.tools.Rotation.ROTATION_0
 import android.tools.flicker.FlickerConfig
 import android.tools.flicker.annotation.ExpectedScenarios
 import android.tools.flicker.annotation.FlickerConfigProvider
@@ -30,20 +30,19 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Maximize app window by pressing META + = on the keyboard.
+ * Maximize app window by double tapping on the app header in portrait mode.
  *
  * Assert that the app window keeps the same increases in size, filling the vertical and horizontal
  * stable display bounds.
  */
 @RunWith(FlickerServiceJUnit4ClassRunner::class)
-class MaximizeAppWithKeyboard : MaximizeAppWindow(
-    rotation = ROTATION_90,
-    trigger = MaximizeDesktopAppTrigger.KEYBOARD_SHORTCUT
+class MaximizeAppDoubleTapAppHeaderPortrait : MaximizeAppWindow(
+    rotation = ROTATION_0,
+    trigger = MaximizeDesktopAppTrigger.DOUBLE_TAP_APP_HEADER
 ) {
     @ExpectedScenarios(["MAXIMIZE_APP"])
     @Test
     override fun maximizeAppWindow() = super.maximizeAppWindow()
-
 
     companion object {
         @JvmStatic

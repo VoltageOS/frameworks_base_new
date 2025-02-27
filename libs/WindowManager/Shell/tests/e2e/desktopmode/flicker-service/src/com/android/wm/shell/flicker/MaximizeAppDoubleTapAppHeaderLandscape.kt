@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,20 +30,19 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Maximize app window by pressing META + = on the keyboard.
+ * Maximize app window by double tapping on the app header.
  *
  * Assert that the app window keeps the same increases in size, filling the vertical and horizontal
  * stable display bounds.
  */
 @RunWith(FlickerServiceJUnit4ClassRunner::class)
-class MaximizeAppWithKeyboard : MaximizeAppWindow(
+class MaximizeAppDoubleTapAppHeaderLandscape : MaximizeAppWindow(
     rotation = ROTATION_90,
-    trigger = MaximizeDesktopAppTrigger.KEYBOARD_SHORTCUT
+    trigger = MaximizeDesktopAppTrigger.DOUBLE_TAP_APP_HEADER
 ) {
     @ExpectedScenarios(["MAXIMIZE_APP"])
     @Test
     override fun maximizeAppWindow() = super.maximizeAppWindow()
-
 
     companion object {
         @JvmStatic
