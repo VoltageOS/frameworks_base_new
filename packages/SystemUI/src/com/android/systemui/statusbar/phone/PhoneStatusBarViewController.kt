@@ -49,6 +49,7 @@ import com.android.systemui.statusbar.NotificationListener
 import com.android.systemui.statusbar.OnGoingActionProgressGroup
 import com.android.systemui.statusbar.policy.Clock
 import com.android.systemui.statusbar.policy.ConfigurationController
+import com.android.systemui.statusbar.policy.KeyguardStateController
 import com.android.systemui.statusbar.window.StatusBarWindowControllerStore
 import com.android.systemui.statusbar.window.StatusBarWindowStateController
 import com.android.systemui.unfold.UNFOLD_STATUS_BAR
@@ -91,6 +92,7 @@ private constructor(
     private val lazyShadeDisplaysRepository: Lazy<ShadeDisplaysRepository>,
     private val statusBarWindowControllerStore: StatusBarWindowControllerStore,
     private val notificationListener: NotificationListener,
+    private val keyguardStateController: KeyguardStateController,
 ) : ViewController<PhoneStatusBarView>(view) {
 
     private var ongoingActionProgressController: OnGoingActionProgressController? = null
@@ -212,6 +214,7 @@ private constructor(
                 mView.context,
                 getOngoingActionProgressGroup(),
                 notificationListener,
+                keyguardStateController,
             )
         }
     }
@@ -487,6 +490,7 @@ private constructor(
         private val lazyShadeDisplaysRepository: Lazy<ShadeDisplaysRepository>,
         private val statusBarWindowControllerStore: StatusBarWindowControllerStore,
         private val notificationListener: NotificationListener,
+        private val keyguardStateController: KeyguardStateController,
     ) {
         fun create(view: PhoneStatusBarView): PhoneStatusBarViewController {
             return PhoneStatusBarViewController(
@@ -513,6 +517,7 @@ private constructor(
                 lazyShadeDisplaysRepository,
                 statusBarWindowControllerStore,
                 notificationListener,
+                keyguardStateController,
             )
         }
     }
