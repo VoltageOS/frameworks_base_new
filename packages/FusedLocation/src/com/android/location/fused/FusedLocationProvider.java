@@ -128,10 +128,12 @@ public class FusedLocationProvider extends LocationProviderBase {
     public void onFlush(OnFlushCompleteCallback callback) {
         synchronized (mLock) {
             AtomicInteger flushCount = new AtomicInteger(0);
-            if (mGpsPresent) {
+            boolean flushGps = mGpsListener.isActive();
+            if (flushGps) {
                 flushCount.incrementAndGet();
             }
-            if (mNlpPresent) {
+            boolean flushNetwork = mNetworkListener.isActive();
+            if (flushNetwork) {
                 flushCount.incrementAndGet();
             }
 
@@ -141,10 +143,10 @@ public class FusedLocationProvider extends LocationProviderBase {
                 }
             };
 
-            if (mGpsPresent) {
+            if (flushGps) {
                 mGpsListener.flush(wrapper);
             }
-            if (mNlpPresent) {
+            if (flushNetwork) {
                 mNetworkListener.flush(wrapper);
             }
         }
@@ -278,6 +280,10 @@ public class FusedLocationProvider extends LocationProviderBase {
             synchronized (mLock) {
                 mLocation = null;
             }
+        }
+
+        boolean isActive() {
+            return getInterval() != INTERVAL_DISABLED;
         }
 
         private void resetProviderRequest(long newInterval) {
