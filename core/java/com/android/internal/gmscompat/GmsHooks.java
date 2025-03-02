@@ -511,7 +511,20 @@ public final class GmsHooks {
 
     // Activity#onCreate(Bundle)
     public static void activityOnCreate(Activity activity) {
-
+        if (!GmsCompat.isGmsCore()) {
+            return;
+        }
+        if (activity.getClass().getName().equals("com.google.android.location.settings.LocationSettingsCheckerActivity")) {
+            try {
+                if (!GmsCompatApp.iGms2Gca().isHybridLocationServiceEnabled()) {
+                    return;
+                }
+            } catch (RemoteException e) {
+                throw GmsCompatApp.callFailed(e);
+            }
+            Log.d(TAG, "hybrid location service is enabled, finishing LocationSettingsCheckerActivity");
+            activity.finish();
+        }
     }
 
     // ContentResolver#insert(Uri, ContentValues, Bundle)
