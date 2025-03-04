@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Copyright (C) 2017 The Android Open Source Project
+<!-- Copyright (C) 2025 The Android Open Source Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -13,15 +13,15 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<configuration description="Runs Frameworks UI Services Tests.">
+<configuration description="Runs Frameworks UI Services Tests (notifications subset).">
     <target_preparer class="com.android.tradefed.targetprep.TestAppInstallSetup">
         <option name="cleanup-apks" value="true" />
-        <option name="test-file-name" value="FrameworksUiServicesTests.apk" />
+        <option name="test-file-name" value="FrameworksUiServicesNotificationTests.apk" />
     </target_preparer>
 
     <option name="test-suite-tag" value="apct" />
     <option name="test-suite-tag" value="framework-base-presubmit" />
-    <option name="test-tag" value="FrameworksUiServicesTests" />
+    <option name="test-tag" value="FrameworksUiServicesNotificationTests" />
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="com.android.frameworks.tests.uiservices" />
         <option name="runner" value="android.testing.TestableInstrumentation" />
