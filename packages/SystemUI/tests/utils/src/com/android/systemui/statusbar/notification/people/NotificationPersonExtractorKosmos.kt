@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.systemui.statusbar.notification
+package com.android.systemui.statusbar.notification.people
 
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.statusbar.phone.statusBarNotificationActivityStarter
 import org.mockito.kotlin.mock
 
-var Kosmos.notificationActivityStarter: NotificationActivityStarter by
-    Kosmos.Fixture { statusBarNotificationActivityStarter }
-
-var Kosmos.mockNotificationActivityStarter: NotificationActivityStarter by
-Kosmos.Fixture { mock<NotificationActivityStarter>() }
+val Kosmos.notificationPersonExtractor by Kosmos.Fixture { mock<NotificationPersonExtractor>() }
