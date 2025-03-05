@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-package com.android.systemui.communal.data.repository
+package com.android.systemui.communal.domain.suppression
 
-import dagger.Binds
-import dagger.Module
+import com.android.systemui.communal.data.model.SuppressionReason
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
-@Module
-interface CommunalRepositoryModule {
-    @Binds fun communalRepository(impl: CommunalSceneRepositoryImpl): CommunalSceneRepository
-
-    @Binds fun carProjectionRepository(impl: CarProjectionRepositoryImpl): CarProjectionRepository
-}
+fun Flow<Boolean>.mapToReasonIfNotAllowed(reason: SuppressionReason): Flow<SuppressionReason?> =
+    this.map { allowed -> if (allowed) null else reason }

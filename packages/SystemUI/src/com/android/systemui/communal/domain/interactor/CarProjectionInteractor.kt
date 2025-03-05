@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.systemui.communal.data.repository
+package com.android.systemui.communal.domain.interactor
 
-import dagger.Binds
-import dagger.Module
+import com.android.systemui.communal.data.repository.CarProjectionRepository
+import com.android.systemui.dagger.SysUISingleton
+import javax.inject.Inject
 
-@Module
-interface CommunalRepositoryModule {
-    @Binds fun communalRepository(impl: CommunalSceneRepositoryImpl): CommunalSceneRepository
-
-    @Binds fun carProjectionRepository(impl: CarProjectionRepositoryImpl): CarProjectionRepository
+@SysUISingleton
+class CarProjectionInteractor @Inject constructor(repository: CarProjectionRepository) {
+    /** Whether car projection is active. */
+    val projectionActive = repository.projectionActive
 }
