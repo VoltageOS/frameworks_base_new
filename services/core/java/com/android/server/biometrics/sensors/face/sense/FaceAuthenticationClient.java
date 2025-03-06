@@ -153,7 +153,6 @@ class FaceAuthenticationClient
         mCallback.onClientFinished(this, true /* success */);
     }
 
-    @Override
     public @LockoutTracker.LockoutMode int handleFailedAttempt(int userId) {
         @LockoutTracker.LockoutMode final int lockoutMode =
                 getLockoutTracker().getLockoutModeForUser(userId);
