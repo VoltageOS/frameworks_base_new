@@ -1,6 +1,5 @@
 package com.android.server.pm;
 
-import android.content.pm.GosPackageState;
 import android.content.pm.GosPackageStateFlag;
 
 import java.lang.reflect.Field;
@@ -15,7 +14,7 @@ class GosPackageStateUtils {
             BitSet knownFlags = knownFlagsCache;
             if (knownFlags == null) {
                 knownFlags = new BitSet();
-                for (Field f : GosPackageState.class.getDeclaredFields()) {
+                for (Field f : GosPackageStateFlag.class.getDeclaredFields()) {
                     try {
                         knownFlags.set(f.getInt(null));
                     } catch (ReflectiveOperationException e) {
