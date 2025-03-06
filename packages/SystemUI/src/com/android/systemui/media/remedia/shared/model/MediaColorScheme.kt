@@ -14,15 +14,8 @@
  * limitations under the License.
  */
 
-package com.android.systemui.media.remedia.ui.viewmodel
+package com.android.systemui.media.remedia.shared.model
 
-import com.android.systemui.common.shared.model.Icon
+import androidx.compose.ui.graphics.Color
 
-/** Models UI state for a secondary action button within media controls. */
-sealed interface MediaSecondaryActionViewModel {
-    data class Action(val icon: Icon, val onClick: (() -> Unit)?) : MediaSecondaryActionViewModel
-
-    data object ReserveSpace : MediaSecondaryActionViewModel
-
-    data object None : MediaSecondaryActionViewModel
-}
+data class MediaColorScheme(val primary: Color, val onPrimary: Color)

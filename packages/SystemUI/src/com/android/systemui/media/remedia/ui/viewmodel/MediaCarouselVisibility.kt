@@ -16,13 +16,16 @@
 
 package com.android.systemui.media.remedia.ui.viewmodel
 
-import com.android.systemui.common.shared.model.Icon
+/** Enumerates the known rules for media carousel visibility. */
+enum class MediaCarouselVisibility {
 
-/** Models UI state for a secondary action button within media controls. */
-sealed interface MediaSecondaryActionViewModel {
-    data class Action(val icon: Icon, val onClick: (() -> Unit)?) : MediaSecondaryActionViewModel
+    /** The carousel should be shown as long as it has at least one card. */
+    WhenNotEmpty,
 
-    data object ReserveSpace : MediaSecondaryActionViewModel
-
-    data object None : MediaSecondaryActionViewModel
+    /**
+     * The carousel should be shown as long as it has at least one card that represents an active
+     * media session. In other words: if all cards in the carousel represent _inactive_ sessions,
+     * the carousel should _not_ be visible.
+     */
+    WhenAnyCardIsActive,
 }

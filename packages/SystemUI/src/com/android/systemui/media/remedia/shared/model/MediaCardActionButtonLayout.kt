@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-package com.android.systemui.media.remedia.ui.viewmodel
+package com.android.systemui.media.remedia.shared.model
 
-import com.android.systemui.common.shared.model.Icon
-
-/** Models UI state for a secondary action button within media controls. */
-sealed interface MediaSecondaryActionViewModel {
-    data class Action(val icon: Icon, val onClick: (() -> Unit)?) : MediaSecondaryActionViewModel
-
-    data object ReserveSpace : MediaSecondaryActionViewModel
-
-    data object None : MediaSecondaryActionViewModel
+enum class MediaCardActionButtonLayout {
+    /** Shows the play/pause button and left/right buttons in privileged positions on the card */
+    WithPlayPause,
+    /** Shows all action buttons along the bottom row. */
+    SecondaryActionsOnly,
 }

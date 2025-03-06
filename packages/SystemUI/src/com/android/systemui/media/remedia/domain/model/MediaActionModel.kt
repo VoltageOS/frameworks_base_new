@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.systemui.media.remedia.ui.viewmodel
+package com.android.systemui.media.remedia.domain.model
 
 import com.android.systemui.common.shared.model.Icon
 
-/** Models UI state for a secondary action button within media controls. */
-sealed interface MediaSecondaryActionViewModel {
-    data class Action(val icon: Icon, val onClick: (() -> Unit)?) : MediaSecondaryActionViewModel
+sealed interface MediaActionModel {
+    data class Action(val icon: Icon, val onClick: (() -> Unit)?) : MediaActionModel
 
-    data object ReserveSpace : MediaSecondaryActionViewModel
+    data object ReserveSpace : MediaActionModel
 
-    data object None : MediaSecondaryActionViewModel
+    data object None : MediaActionModel
 }
