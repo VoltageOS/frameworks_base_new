@@ -398,29 +398,33 @@ public class GmcPackageManager extends ApplicationPackageManager {
             throw e;
         }
 
-        if (PackageId.ANDROID_AUTO_NAME.equals(packageName) || PackageId.GMS_CORE_NAME.equals(packageName)) {
-            // These packages need to be exempted from updates via Play Store to prevent breaking the
-            // compatibility layer.
-            //
-            // Play Store respects the value of InstallSourceInfo#getUpdateOwnerPackageName():
-            // packages that have non-Play Store update owners are not updated by Play Store
-            ContentResolver cr = GmsCompat.appContext().getContentResolver();
-            String updateOwnerPackage = PlayStoreHooks.isInstallAllowed(packageName, cr) ?
-                    // Play Store tries to use installer session preapporaval when update ownership is
-                    // set and Play Store is not the update owner. Installer session preapproval is
-                    // disabled on GrapheneOS, which leads to installation failure. As a workaround,
-                    // unconditionally return to Play Store that it's already the update owner. OS
-                    // will handle update ownership change confirmation itself.
-                    PackageId.PLAY_STORE_NAME :
-                    PackageUtils.getFirstPartyAppSourcePackageName(GmsCompat.appContext());
-            res = new InstallSourceInfo(
-                    res.getInitiatingPackageName(),
-                    res.getInitiatingPackageSigningInfo(),
-                    res.getOriginatingPackageName(),
-                    res.getInstallingPackageName(),
-                    updateOwnerPackage,
-                    res.getPackageSource()
-            );
+        switch (packageName) {
+            case PackageId.ANDROID_AUTO_NAME:
+            case PackageId.PIXEL_HEALTH_NAME:
+            case PackageId.GMS_CORE_NAME:
+                // These packages need to be exempted from updates via Play Store to prevent breaking the
+                // compatibility layer.
+                //
+                // Play Store respects the value of InstallSourceInfo#getUpdateOwnerPackageName():
+                // packages that have non-Play Store update owners are not updated by Play Store
+                ContentResolver cr = GmsCompat.appContext().getContentResolver();
+                String updateOwnerPackage = PlayStoreHooks.isInstallAllowed(packageName, cr) ?
+                        // Play Store tries to use installer session preapporaval when update ownership is
+                        // set and Play Store is not the update owner. Installer session preapproval is
+                        // disabled on GrapheneOS, which leads to installation failure. As a workaround,
+                        // unconditionally return to Play Store that it's already the update owner. OS
+                        // will handle update ownership change confirmation itself.
+                        PackageId.PLAY_STORE_NAME :
+                        PackageUtils.getFirstPartyAppSourcePackageName(GmsCompat.appContext());
+                res = new InstallSourceInfo(
+                        res.getInitiatingPackageName(),
+                        res.getInitiatingPackageSigningInfo(),
+                        res.getOriginatingPackageName(),
+                        res.getInstallingPackageName(),
+                        updateOwnerPackage,
+                        res.getPackageSource()
+                );
+                break;
         }
 
         return res;
