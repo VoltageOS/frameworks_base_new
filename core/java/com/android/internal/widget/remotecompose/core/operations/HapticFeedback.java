@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,45 +15,40 @@
  */
 package com.android.internal.widget.remotecompose.core.operations;
 
-import static com.android.internal.widget.remotecompose.core.documentation.DocumentedOperation.INT;
-
 import android.annotation.NonNull;
 
 import com.android.internal.widget.remotecompose.core.Operation;
 import com.android.internal.widget.remotecompose.core.Operations;
 import com.android.internal.widget.remotecompose.core.RemoteContext;
-import com.android.internal.widget.remotecompose.core.VariableSupport;
+import com.android.internal.widget.remotecompose.core.SerializableToString;
 import com.android.internal.widget.remotecompose.core.WireBuffer;
 import com.android.internal.widget.remotecompose.core.documentation.DocumentationBuilder;
 import com.android.internal.widget.remotecompose.core.documentation.DocumentedOperation;
+import com.android.internal.widget.remotecompose.core.operations.utilities.StringSerializer;
 import com.android.internal.widget.remotecompose.core.serialize.MapSerializer;
 import com.android.internal.widget.remotecompose.core.serialize.Serializable;
 
 import java.util.List;
 
-/** Operation to deal with Text data */
-public class TextMerge extends Operation implements VariableSupport, Serializable {
-    private static final int OP_CODE = Operations.TEXT_MERGE;
-    private static final String CLASS_NAME = "TextMerge";
-    public int mTextId;
-    public int mSrcId1;
-    public int mSrcId2;
+/** Generate HapticFeedback */
+public class HapticFeedback extends Operation implements SerializableToString, Serializable {
+    private static final int OP_CODE = Operations.HAPTIC_FEEDBACK;
+    private static final String CLASS_NAME = "HapticFeedback";
+    private int mHapticFeedbackType;
 
-    public TextMerge(int textId, int srcId1, int srcId2) {
-        this.mTextId = textId;
-        this.mSrcId1 = srcId1;
-        this.mSrcId2 = srcId2;
+    public HapticFeedback(int hapticFeedbackType) {
+        this.mHapticFeedbackType = hapticFeedbackType;
     }
 
     @Override
     public void write(@NonNull WireBuffer buffer) {
-        apply(buffer, mTextId, mSrcId1, mSrcId2);
+        apply(buffer, mHapticFeedbackType);
     }
 
     @NonNull
     @Override
     public String toString() {
-        return "TextMerge[" + mTextId + "] = [" + mSrcId1 + " ] + [ " + mSrcId2 + "]";
+        return CLASS_NAME + "(" + mHapticFeedbackType + ")";
     }
 
     /**
@@ -76,18 +71,14 @@ public class TextMerge extends Operation implements VariableSupport, Serializabl
     }
 
     /**
-     * Writes out the operation to the buffer
+     * add a text data operation
      *
-     * @param buffer buffer to write to
-     * @param textId id of the text
-     * @param srcId1 source text 1
-     * @param srcId2 source text 2
+     * @param buffer buffer to add to
+     * @param hapticFeedbackType the vibration effect
      */
-    public static void apply(@NonNull WireBuffer buffer, int textId, int srcId1, int srcId2) {
+    public static void apply(@NonNull WireBuffer buffer, int hapticFeedbackType) {
         buffer.start(OP_CODE);
-        buffer.writeInt(textId);
-        buffer.writeInt(srcId1);
-        buffer.writeInt(srcId2);
+        buffer.writeInt(hapticFeedbackType);
     }
 
     /**
@@ -97,11 +88,9 @@ public class TextMerge extends Operation implements VariableSupport, Serializabl
      * @param operations the list of operations that will be added to
      */
     public static void read(@NonNull WireBuffer buffer, @NonNull List<Operation> operations) {
-        int textId = buffer.readInt();
-        int srcId1 = buffer.readInt();
-        int srcId2 = buffer.readInt();
+        int hapticFeedbackType = buffer.readInt();
 
-        operations.add(new TextMerge(textId, srcId1, srcId2));
+        operations.add(new HapticFeedback(hapticFeedbackType));
     }
 
     /**
@@ -111,42 +100,33 @@ public class TextMerge extends Operation implements VariableSupport, Serializabl
      */
     public static void documentation(@NonNull DocumentationBuilder doc) {
         doc.operation("Data Operations", OP_CODE, CLASS_NAME)
-                .description("Merge two string into one")
-                .field(DocumentedOperation.INT, "textId", "id of the text")
-                .field(INT, "srcTextId1", "id of the path")
-                .field(INT, "srcTextId1", "x Shift of the text");
+                .description("Generate an haptic feedback")
+                .field(DocumentedOperation.INT, "HapticFeedbackType", "Type of haptic feedback");
     }
 
     @Override
     public void apply(@NonNull RemoteContext context) {
-        String str1 = context.getText(mSrcId1);
-        String str2 = context.getText(mSrcId2);
-        context.loadText(mTextId, str1 + str2);
-    }
-
-    @Override
-    public void updateVariables(@NonNull RemoteContext context) {
-        apply(context);
-    }
-
-    @Override
-    public void registerListening(@NonNull RemoteContext context) {
-        context.listensTo(mSrcId1, this);
-        context.listensTo(mSrcId2, this);
+        context.hapticEffect(mHapticFeedbackType);
     }
 
     @NonNull
     @Override
     public String deepToString(@NonNull String indent) {
-        return indent + this;
+        return indent + toString();
+    }
+
+    @Override
+    public void serializeToString(int indent, @NonNull StringSerializer serializer) {
+        serializer.append(indent, getSerializedName() + "<" + mHapticFeedbackType + ">");
+    }
+
+    @NonNull
+    private String getSerializedName() {
+        return "HAPTIC_FEEDBACK";
     }
 
     @Override
     public void serialize(MapSerializer serializer) {
-        serializer
-                .addType(CLASS_NAME)
-                .add("id", mTextId)
-                .add("leftId", mSrcId1)
-                .add("rightId", mSrcId2);
+        serializer.addType(CLASS_NAME).add("hapticFeedbackType", mHapticFeedbackType);
     }
 }

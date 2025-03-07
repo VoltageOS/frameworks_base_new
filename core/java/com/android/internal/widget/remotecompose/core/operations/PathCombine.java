@@ -21,6 +21,8 @@ import android.annotation.NonNull;
 
 import com.android.internal.widget.remotecompose.core.Operation;
 import com.android.internal.widget.remotecompose.core.Operations;
+import com.android.internal.widget.remotecompose.core.PaintContext;
+import com.android.internal.widget.remotecompose.core.PaintOperation;
 import com.android.internal.widget.remotecompose.core.RemoteContext;
 import com.android.internal.widget.remotecompose.core.VariableSupport;
 import com.android.internal.widget.remotecompose.core.WireBuffer;
@@ -31,29 +33,60 @@ import com.android.internal.widget.remotecompose.core.serialize.Serializable;
 
 import java.util.List;
 
-/** Operation to deal with Text data */
-public class TextMerge extends Operation implements VariableSupport, Serializable {
-    private static final int OP_CODE = Operations.TEXT_MERGE;
-    private static final String CLASS_NAME = "TextMerge";
-    public int mTextId;
-    public int mSrcId1;
-    public int mSrcId2;
+/** Operation to perform Constructive area geometry operations, combining two Paths */
+public class PathCombine extends PaintOperation implements VariableSupport, Serializable {
+    private static final int OP_CODE = Operations.PATH_COMBINE;
+    private static final String CLASS_NAME = "PathCombine";
+    public int mOutId;
+    public int mPathId1;
+    public int mPathId2;
+    private byte mOperation;
 
-    public TextMerge(int textId, int srcId1, int srcId2) {
-        this.mTextId = textId;
-        this.mSrcId1 = srcId1;
-        this.mSrcId2 = srcId2;
+    /** Subtract the second path from the first path. */
+    public static final byte OP_DIFFERENCE = 0;
+
+    /** Intersect the second path with the first path. */
+    public static final byte OP_INTERSECT = 1;
+
+    /** Subtract the first path from the second path. */
+    public static final byte OP_REVERSE_DIFFERENCE = 2;
+
+    /** Union (inclusive-or) the two paths. */
+    public static final byte OP_UNION = 3;
+
+    /** Exclusive-or the two paths. */
+    public static final byte OP_XOR = 4;
+
+    public PathCombine(int outId, int pathId1, int pathId2, byte operation) {
+        this.mOutId = outId;
+        this.mPathId1 = pathId1;
+        this.mPathId2 = pathId2;
+        this.mOperation = operation;
     }
 
     @Override
+    public void updateVariables(@NonNull RemoteContext context) {}
+
+    @Override
+    public void registerListening(@NonNull RemoteContext context) {}
+
+    @Override
     public void write(@NonNull WireBuffer buffer) {
-        apply(buffer, mTextId, mSrcId1, mSrcId2);
+        apply(buffer, mOutId, mPathId1, mPathId2, mOperation);
     }
 
     @NonNull
     @Override
     public String toString() {
-        return "TextMerge[" + mTextId + "] = [" + mSrcId1 + " ] + [ " + mSrcId2 + "]";
+        return CLASS_NAME
+                + "["
+                + mOutId
+                + "] = ["
+                + mPathId1
+                + " ] + [ "
+                + mPathId2
+                + "], "
+                + mOperation;
     }
 
     /**
@@ -79,15 +112,18 @@ public class TextMerge extends Operation implements VariableSupport, Serializabl
      * Writes out the operation to the buffer
      *
      * @param buffer buffer to write to
-     * @param textId id of the text
-     * @param srcId1 source text 1
-     * @param srcId2 source text 2
+     * @param outId id of the path
+     * @param pathId1 source path 1
+     * @param pathId2 source path 2
+     * @param op the operation to perform
      */
-    public static void apply(@NonNull WireBuffer buffer, int textId, int srcId1, int srcId2) {
+    public static void apply(
+            @NonNull WireBuffer buffer, int outId, int pathId1, int pathId2, byte op) {
         buffer.start(OP_CODE);
-        buffer.writeInt(textId);
-        buffer.writeInt(srcId1);
-        buffer.writeInt(srcId2);
+        buffer.writeInt(outId);
+        buffer.writeInt(pathId1);
+        buffer.writeInt(pathId2);
+        buffer.writeByte(op);
     }
 
     /**
@@ -97,11 +133,11 @@ public class TextMerge extends Operation implements VariableSupport, Serializabl
      * @param operations the list of operations that will be added to
      */
     public static void read(@NonNull WireBuffer buffer, @NonNull List<Operation> operations) {
-        int textId = buffer.readInt();
-        int srcId1 = buffer.readInt();
-        int srcId2 = buffer.readInt();
-
-        operations.add(new TextMerge(textId, srcId1, srcId2));
+        int outId1 = buffer.readInt();
+        int pathId1 = buffer.readInt();
+        int pathId2 = buffer.readInt();
+        byte op = (byte) buffer.readByte();
+        operations.add(new PathCombine(outId1, pathId1, pathId2, op));
     }
 
     /**
@@ -112,41 +148,29 @@ public class TextMerge extends Operation implements VariableSupport, Serializabl
     public static void documentation(@NonNull DocumentationBuilder doc) {
         doc.operation("Data Operations", OP_CODE, CLASS_NAME)
                 .description("Merge two string into one")
-                .field(DocumentedOperation.INT, "textId", "id of the text")
-                .field(INT, "srcTextId1", "id of the path")
-                .field(INT, "srcTextId1", "x Shift of the text");
-    }
-
-    @Override
-    public void apply(@NonNull RemoteContext context) {
-        String str1 = context.getText(mSrcId1);
-        String str2 = context.getText(mSrcId2);
-        context.loadText(mTextId, str1 + str2);
-    }
-
-    @Override
-    public void updateVariables(@NonNull RemoteContext context) {
-        apply(context);
-    }
-
-    @Override
-    public void registerListening(@NonNull RemoteContext context) {
-        context.listensTo(mSrcId1, this);
-        context.listensTo(mSrcId2, this);
+                .field(INT, "srcPathId1", "id of the path")
+                .field(INT, "srcPathId1", "x Shift of the path")
+                .field(DocumentedOperation.BYTE, "operation", "the operation");
     }
 
     @NonNull
     @Override
-    public String deepToString(@NonNull String indent) {
-        return indent + this;
+    public String deepToString(String indent) {
+        return indent + toString();
+    }
+
+    @Override
+    public void paint(PaintContext context) {
+        context.combinePath(mOutId, mPathId1, mPathId2, mOperation);
     }
 
     @Override
     public void serialize(MapSerializer serializer) {
         serializer
                 .addType(CLASS_NAME)
-                .add("id", mTextId)
-                .add("leftId", mSrcId1)
-                .add("rightId", mSrcId2);
+                .add("outId", mOutId)
+                .add("pathId1", mPathId1)
+                .add("pathId2", mPathId2)
+                .add("operation", mOperation);
     }
 }
