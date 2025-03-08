@@ -55,6 +55,7 @@ class ScreenshotSoundControllerImpl
 @Inject
 constructor(
     private val soundProvider: ScreenshotSoundProvider,
+    private val systemSettings: com.android.systemui.shared.settings.data.repository.SystemSettingsRepository,
     @Application private val coroutineScope: CoroutineScope,
     @Background private val bgDispatcher: CoroutineDispatcher
 ) : ScreenshotSoundController {
@@ -70,6 +71,10 @@ constructor(
         }
 
     override suspend fun playScreenshotSound() {
+        if (systemSettings.getInt(android.provider.Settings.System.SOUND_EFFECTS_ENABLED, 0) != 1) {
+            return;
+        }
+
         withContext(bgDispatcher) {
             try {
                 player.await()?.start()
