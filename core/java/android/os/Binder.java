@@ -1344,16 +1344,6 @@ public class Binder implements IBinder {
     @UnsupportedAppUsage
     private boolean execTransact(int code, long dataObj, long replyObj,
             int flags) {
-        final int binderCallingUid = Binder.getCallingUid();
-        if (GmsCompat.isEnabled()) {
-            if (binderCallingUid != mPreviousUid) {
-                // harmless race
-                mPreviousUid = binderCallingUid;
-                if (Process.isApplicationUid(binderCallingUid)) {
-                    GmsHooks.onBinderTransaction(Binder.getCallingPid(), binderCallingUid);
-                }
-            }
-        }
 
         Parcel data = Parcel.obtain(dataObj);
         Parcel reply = Parcel.obtain(replyObj);
@@ -1366,9 +1356,19 @@ public class Binder implements IBinder {
         // for Java now
         //
         // This attribution support is not generic and therefore not support in RPC mode
-        final int callingUid = data.isForRpc() ? -1 : binderCallingUid;
+        final int callingUid = data.isForRpc() ? -1 : Binder.getCallingUid();
         final long origWorkSource = callingUid == -1
                 ? -1 : ThreadLocalWorkSource.setUid(callingUid);
+
+        if (GmsCompat.isEnabled() && callingUid != -1) {
+            if (callingUid != mPreviousUid) {
+                // harmless race
+                mPreviousUid = callingUid;
+                if (Process.isApplicationUid(callingUid)) {
+                    GmsHooks.onBinderTransaction(Binder.getCallingPid(), callingUid);
+                }
+            }
+        }
 
         try {
             return execTransactInternal(code, data, reply, flags, callingUid);
