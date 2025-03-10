@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,20 @@
 
 package com.android.systemui.keyguard.domain.interactor
 
-import com.android.systemui.keyguard.data.repository.biometricSettingsRepository
+import com.android.systemui.keyguard.data.repository.keyguardServiceShowLockscreenRepository
 import com.android.systemui.kosmos.Kosmos
 import com.android.systemui.kosmos.testScope
+import com.android.systemui.settings.userTracker
+import com.android.systemui.user.domain.interactor.selectedUserInteractor
 
-val Kosmos.keyguardShowWhileAwakeInteractor by
+val Kosmos.keyguardServiceShowLockscreenInteractor by
     Kosmos.Fixture {
-        KeyguardShowWhileAwakeInteractor(
+        KeyguardServiceShowLockscreenInteractor(
             backgroundScope = testScope,
-            biometricSettingsRepository = biometricSettingsRepository,
+            selectedUserInteractor = selectedUserInteractor,
+            repository = keyguardServiceShowLockscreenRepository,
+            userTracker = userTracker,
+            wmLockscreenVisibilityInteractor = { windowManagerLockscreenVisibilityInteractor },
             keyguardEnabledInteractor = keyguardEnabledInteractor,
-            keyguardServiceShowLockscreenInteractor = keyguardServiceShowLockscreenInteractor,
         )
     }
