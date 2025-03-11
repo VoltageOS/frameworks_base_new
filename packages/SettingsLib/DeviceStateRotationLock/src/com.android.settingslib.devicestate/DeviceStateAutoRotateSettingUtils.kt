@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@file:JvmName("DeviceStateAutoRotateSettingUtils")
 
-package com.android.settingslib.devicestate;
+package com.android.settingslib.devicestate
 
-import android.database.ContentObserver;
+import android.content.Context
+import com.android.internal.R
 
-/** Minimal wrapper interface around {@link android.provider.Settings.Secure} for easier testing. */
-public interface SecureSettings {
-
-    void putStringForUser(String name, String value, int userHandle);
-
-    String getStringForUser(String name, int userHandle);
-
-    void registerContentObserver(String name, boolean notifyForDescendants,
-            ContentObserver settingsObserver, int userHandle);
+/** Returns true if device-state based rotation lock settings are enabled. */
+object DeviceStateAutoRotateSettingUtils {
+    @JvmStatic
+    fun isDeviceStateRotationLockEnabled(context: Context) =
+        context.resources
+            .getStringArray(R.array.config_perDeviceStateRotationLockDefaults)
+            .isNotEmpty()
 }
+
