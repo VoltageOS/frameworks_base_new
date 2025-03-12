@@ -1,4 +1,4 @@
-// Copyright (C) 2017 The Android Open Source Project
+// Copyright (C) 2025 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,23 +23,21 @@ package {
 }
 
 android_library {
-    name: "SystemUICustomizationLib",
+    name: "SystemUIClocks-CommonLib",
     use_resource_processor: true,
+    manifest: "AndroidManifest.xml",
     srcs: [
         "src/**/*.java",
         "src/**/*.kt",
-        "src/**/*.aidl",
     ],
     static_libs: [
         "PlatformAnimationLib",
         "PluginCoreLib",
         "SystemUIPluginLib",
-        "SystemUIUnfoldLib",
-        "kotlinx_coroutines",
-        "monet",
         "dagger2",
         "jsr330",
-        "SystemUIClocks-CommonLib",
+        "kotlinx_coroutines",
+        "monet",
     ],
     libs: [
         // Keep android-specific libraries as libs instead of static_libs, so that they don't break
