@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,14 @@ package com.android.server.security.advancedprotection.features;
 
 import android.annotation.NonNull;
 import android.content.Context;
+import android.net.wifi.WifiManager;
 import android.security.advancedprotection.AdvancedProtectionFeature;
 
 import java.util.List;
 
-/** @hide */
-public abstract class AdvancedProtectionProvider {
-    /** The list of features provided */
-    public abstract List<AdvancedProtectionFeature> getFeatures(@NonNull Context context);
+public class DisallowWepAdvancedProtectionProvider extends AdvancedProtectionProvider {
+    public List<AdvancedProtectionFeature> getFeatures(@NonNull Context context) {
+        WifiManager wifiManager = context.getSystemService(WifiManager.class);
+        return wifiManager.getAvailableAdvancedProtectionFeatures();
+    }
 }
