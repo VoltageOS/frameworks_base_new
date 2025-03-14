@@ -14,12 +14,18 @@
  * limitations under the License.
  */
 
-package com.android.systemui.statusbar.pipeline.mobile.ui.viewmodel
+package com.android.systemui.util.composable.kairos
 
-import com.android.systemui.kosmos.Kosmos
+import androidx.compose.runtime.mutableStateOf
+import com.android.systemui.KairosBuilder
+import com.android.systemui.kairos.ExperimentalKairosApi
+import com.android.systemui.kairos.State
 
-var Kosmos.stackedMobileIconViewModel: StackedMobileIconViewModel by
-    Kosmos.Fixture { stackedMobileIconViewModelImpl }
-
-val Kosmos.stackedMobileIconViewModelImpl by
-    Kosmos.Fixture { StackedMobileIconViewModelImpl(mobileIconsViewModel) }
+@ExperimentalKairosApi
+fun <T> KairosBuilder.hydratedComposeStateOf(
+    source: State<T>,
+    initialValue: T,
+): androidx.compose.runtime.State<T> =
+    mutableStateOf(initialValue).also { state ->
+        onActivated { source.observe { state.value = it } }
+    }
