@@ -37,11 +37,10 @@ import android.widget.TextView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.motion.widget.MotionLayout
 import androidx.core.view.doOnLayout
 import androidx.core.view.isVisible
@@ -403,7 +402,7 @@ constructor(
                         val showBatteryEstimate by showBatteryEstimate.collectAsStateWithLifecycle()
                         val isDarkTheme by isDark.collectAsStateWithLifecycle()
                         BatteryWithEstimate(
-                            modifier = Modifier.height(17.dp).wrapContentWidth(),
+                            modifier = Modifier.wrapContentSize(),
                             isDark = { isDarkTheme },
                             viewModelFactory = batteryViewModelFactory,
                             showEstimate = showBatteryEstimate,
