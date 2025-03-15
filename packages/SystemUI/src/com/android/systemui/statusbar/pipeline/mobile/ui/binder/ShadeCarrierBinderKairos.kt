@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,25 +17,25 @@
 package com.android.systemui.statusbar.pipeline.mobile.ui.binder
 
 import androidx.core.view.isVisible
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.repeatOnLifecycle
-import com.android.app.tracing.coroutines.launchTraced as launch
-import com.android.systemui.lifecycle.repeatWhenAttached
-import com.android.systemui.statusbar.pipeline.mobile.ui.viewmodel.ShadeCarrierGroupMobileIconViewModel
+import com.android.systemui.kairos.BuildSpec
+import com.android.systemui.kairos.ExperimentalKairosApi
+import com.android.systemui.kairos.KairosNetwork
+import com.android.systemui.lifecycle.repeatWhenWindowIsVisible
+import com.android.systemui.statusbar.pipeline.mobile.ui.viewmodel.ShadeCarrierGroupMobileIconViewModelKairos
 import com.android.systemui.util.AutoMarqueeTextView
 
-object ShadeCarrierBinder {
+object ShadeCarrierBinderKairos {
     /** Binds the view to the view-model, continuing to update the former based on the latter */
-    @JvmStatic
-    fun bind(
+    @ExperimentalKairosApi
+    suspend fun bind(
         carrierTextView: AutoMarqueeTextView,
-        viewModel: ShadeCarrierGroupMobileIconViewModel,
+        viewModel: BuildSpec<ShadeCarrierGroupMobileIconViewModelKairos>,
+        kairosNetwork: KairosNetwork,
     ) {
         carrierTextView.isVisible = true
-
-        carrierTextView.repeatWhenAttached {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch { viewModel.carrierName.collect { carrierTextView.text = it } }
+        carrierTextView.repeatWhenWindowIsVisible {
+            kairosNetwork.activateSpec {
+                viewModel.applySpec().carrierName.observe { carrierTextView.text = it }
             }
         }
     }
