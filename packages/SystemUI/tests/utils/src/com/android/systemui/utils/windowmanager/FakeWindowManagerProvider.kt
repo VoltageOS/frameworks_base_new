@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,15 @@
  * limitations under the License.
  */
 
-package com.android.systemui.statusbar.window
+package com.android.systemui.utils.windowmanager
 
 import android.content.Context
 import android.view.WindowManager
-import com.android.systemui.statusbar.data.repository.StatusBarConfigurationController
-import com.android.systemui.statusbar.layout.StatusBarContentInsetsProvider
 
-class FakeStatusBarWindowControllerFactory : StatusBarWindowController.Factory {
-    override fun create(
-        context: Context,
-        windowManager: WindowManager,
-        statusBarConfigurationController: StatusBarConfigurationController,
-        contentInsetsProvider: StatusBarContentInsetsProvider,
-    ) = FakeStatusBarWindowController()
+/** Fake implementation of [WindowManagerProvider], to be used in tests only. */
+class FakeWindowManagerProvider(private val windowManager: WindowManager) : WindowManagerProvider {
+
+    override fun getWindowManager(context: Context): WindowManager {
+        return windowManager
+    }
 }
