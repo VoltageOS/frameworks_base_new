@@ -14,19 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.systemui.statusbar.notification.promoted.domain.interactor
+package com.android.systemui.statusbar.policy.domain.interactor
 
-import com.android.systemui.dump.dumpManager
-import com.android.systemui.keyguard.domain.interactor.keyguardInteractor
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.statusbar.policy.domain.interactor.sensitiveNotificationProtectionInteractor
+import com.android.systemui.statusbar.policy.sensitiveNotificationProtectionController
 
-val Kosmos.aodPromotedNotificationInteractor by
+var Kosmos.sensitiveNotificationProtectionInteractor: SensitiveNotificationProtectionInteractor by
     Kosmos.Fixture {
-        AODPromotedNotificationInteractor(
-            promotedNotificationsInteractor = promotedNotificationsInteractor,
-            keyguardInteractor = keyguardInteractor,
-            sensitiveNotificationProtectionInteractor = sensitiveNotificationProtectionInteractor,
-            dumpManager = dumpManager,
-        )
+        SensitiveNotificationProtectionInteractor(sensitiveNotificationProtectionController)
     }
