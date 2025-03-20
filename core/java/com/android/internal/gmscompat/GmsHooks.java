@@ -58,6 +58,7 @@ import android.webkit.WebView;
 
 import com.android.internal.gmscompat.client.GmsCompatClientService;
 import com.android.internal.gmscompat.flags.GmsFlag;
+import com.android.internal.gmscompat.flags.GservicesFlags;
 import com.android.internal.gmscompat.gcarriersettings.GCarrierSettingsApp;
 import com.android.internal.gmscompat.gcarriersettings.TestCarrierConfigService;
 import com.android.internal.gmscompat.sysservice.GmcPackageManager;
@@ -119,6 +120,10 @@ public final class GmsHooks {
         }
 
         Thread.setUncaughtExceptionPreHandler(new UncaughtExceptionPreHandler());
+
+        if (inPersistentGmsCoreProcess) {
+            GservicesFlags.applyOverrides(config());
+        }
 
         GmcPackageManager.init(ctx);
     }
@@ -340,32 +345,7 @@ public final class GmsHooks {
         Log.d(TAG, "maybeModifyQueryResult for " + uriString);
 
         Consumer<ArrayMap<String, String>> mutator = null;
-
-        if (GmsFlag.GSERVICES_URI.equals(uriString)) {
-            if (queryArgs == null) {
-                return null;
-            }
-            String[] selectionArgs = queryArgs.getStringArray(ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS);
-            if (selectionArgs == null) {
-                return null;
-            }
-
-            ArrayMap<String, GmsFlag> flags = config().gservicesFlags;
-            if (flags == null) {
-                return null;
-            }
-
-            mutator = map -> {
-                for (GmsFlag f : flags.values()) {
-                    for (String sel : selectionArgs) {
-                        if (f.name.startsWith(sel)) {
-                            f.applyToGservicesMap(map);
-                            break;
-                        }
-                    }
-                }
-            };
-        } else if (uriString.startsWith(GmsFlag.PHENOTYPE_URI_PREFIX)) {
+        if (uriString.startsWith(GmsFlag.PHENOTYPE_URI_PREFIX)) {
             List<String> path = uri.getPathSegments();
             if (path.size() != 1) {
                 Log.e(TAG, "unknown phenotype uri " + uriString, new Throwable());
