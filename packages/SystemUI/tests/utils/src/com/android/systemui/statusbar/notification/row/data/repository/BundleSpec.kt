@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.android.systemui.statusbar.notification.row.domain
+package com.android.systemui.statusbar.notification.row.data.repository
 
-import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.statusbar.notification.row.data.repository.testBundleRepository
-import com.android.systemui.statusbar.notification.row.domain.interactor.BundleInteractor
+import com.android.internal.R
+import com.android.systemui.statusbar.notification.collection.BundleSpec
 
-val Kosmos.bundleInteractor by Kosmos.Fixture { BundleInteractor(testBundleRepository) }
+val TEST_BUNDLE_SPEC =
+    BundleSpec(key = "Test Bundle", titleTextResId = R.string.recs_notification_channel_label)
