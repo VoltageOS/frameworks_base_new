@@ -445,6 +445,7 @@ public class KeyguardSliceView extends LinearLayout {
 
         private void updatePadding() {
             boolean hasText = !TextUtils.isEmpty(getText());
+            // These calculations depend on layout orientation change in keyguard_slice_view.xml
             int padding = (int) getContext().getResources()
                     .getDimension(R.dimen.widget_horizontal_padding) / 2;
             // orientation is vertical, so add padding to top & bottom
