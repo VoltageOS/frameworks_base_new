@@ -16,7 +16,6 @@ import android.util.Log;
 import com.android.internal.gmscompat.GmsInfo;
 
 import java.util.Map;
-import java.util.function.Supplier;
 
 public class GmsFlag implements Parcelable {
     private static final String TAG = "GmsFlag";
@@ -39,8 +38,6 @@ public class GmsFlag implements Parcelable {
     public double floatArg;
     public String stringArg;
     public byte[] bytesArg;
-
-    public @Nullable Supplier valueSupplier;
 
     public byte permissionCheckMode;
     public static final int PERMISSION_CHECK_MODE_NONE_OF = 0;
@@ -110,20 +107,6 @@ public class GmsFlag implements Parcelable {
             return;
         }
 
-        if (valueSupplier != null) {
-            Object val = valueSupplier.get();
-
-            String s;
-            if (type == TYPE_BYTES) {
-                s = Base64.encodeToString((byte[]) val, PHENOTYPE_BASE64_FLAGS);
-            } else {
-                s = val.toString();
-            }
-
-            map.put(name, s);
-            return;
-        }
-
         String s;
         switch (type) {
             case TYPE_BOOL:
@@ -187,10 +170,6 @@ public class GmsFlag implements Parcelable {
             logTypeMismatch();
             return orig;
         }
-        if (valueSupplier != null) {
-            boolean v = ((Boolean) valueSupplier.get()).booleanValue();
-            return v ? 1 : 0;
-        }
         return boolArg ? 1 : 0;
     }
 
@@ -198,9 +177,6 @@ public class GmsFlag implements Parcelable {
         if (type != TYPE_INT) {
             logTypeMismatch();
             return orig;
-        }
-        if (valueSupplier != null) {
-            return ((Long) valueSupplier.get()).longValue();
         }
         return integerArg;
     }
@@ -210,19 +186,12 @@ public class GmsFlag implements Parcelable {
             logTypeMismatch();
             return orig;
         }
-        if (valueSupplier != null) {
-            return ((Double) valueSupplier.get()).doubleValue();
-        }
         return floatArg;
     }
 
     public void maybeOverrideString(Map map) {
         if (type != TYPE_STRING) {
             logTypeMismatch();
-            return;
-        }
-        if (valueSupplier != null) {
-            map.put(name, valueSupplier.get());
             return;
         }
 
@@ -255,9 +224,6 @@ public class GmsFlag implements Parcelable {
         if (type != TYPE_BYTES) {
             logTypeMismatch();
             return orig;
-        }
-        if (valueSupplier != null) {
-            return (byte[]) valueSupplier.get();
         }
         return bytesArg;
     }
