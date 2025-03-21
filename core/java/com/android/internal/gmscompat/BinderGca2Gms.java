@@ -2,20 +2,14 @@ package com.android.internal.gmscompat;
 
 import android.app.Activity;
 import android.app.compat.gms.GmsCompat;
-import android.content.ContentResolver;
-import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.ext.PackageId;
-import android.net.Uri;
-import android.util.ArrayMap;
 import android.util.ArraySet;
 import android.util.Log;
 
-import com.android.internal.gmscompat.flags.GmsFlag;
-import com.android.internal.gmscompat.flags.GservicesFlags;
+import com.android.internal.gmscompat.flags.GmsFlagOverrides;
 import com.android.internal.gmscompat.util.GmcActivityUtils;
 
 import java.util.concurrent.Callable;
@@ -47,19 +41,18 @@ class BinderGca2Gms extends IGca2Gms.Stub {
             // shouldn't happen in practice, phenotype db is opened on startup
             Log.e(TAG, "phenotypeDb is null");
         } else {
-            updatePhenotype(phenotypeDb, GmsHooks.config());
+            notifyForceDefaultFlagsChanged(phenotypeDb, GmsHooks.config());
         }
 
-        GservicesFlags.applyOverrides(GmsHooks.config());
+        GmsFlagOverrides.applyOverrides();
     }
 
-    private static void updatePhenotype(SQLiteOpenHelper phenotypeDb, GmsCompatConfig newConfig) {
+    private static void notifyForceDefaultFlagsChanged(SQLiteOpenHelper phenotypeDb, GmsCompatConfig newConfig) {
         SQLiteDatabase db = phenotypeDb.getReadableDatabase();
         String[] columns = { "androidPackageName" };
         String selection = "packageName = ?";
 
-        ArraySet<String> configPackageNames = new ArraySet<>(newConfig.flags.keySet());
-        configPackageNames.addAll(newConfig.forceDefaultFlagsMap.keySet());
+        ArraySet<String> configPackageNames = new ArraySet<>(newConfig.forceDefaultFlagsMap.keySet());
 
         for (String configPackageName : configPackageNames) {
             String[] selectionArgs = { configPackageName };

@@ -148,6 +148,30 @@ public class GmsFlag implements Parcelable {
         map.put(name, s);
     }
 
+    public String typeAsString() {
+        int type = this.type;
+        return switch (type) {
+            case TYPE_BOOL -> "boolean";
+            case TYPE_INT -> "long";
+            case TYPE_FLOAT -> "double";
+            case TYPE_STRING -> "string";
+            case TYPE_BYTES -> "bytes";
+            default -> throw new IllegalStateException(Integer.toString(type));
+        };
+    }
+
+    public String valueAsString() {
+        int type = this.type;
+        return switch (type) {
+            case TYPE_BOOL -> Boolean.toString(boolArg);
+            case TYPE_INT -> Long.toString(integerArg);
+            case TYPE_FLOAT -> Double.toString(floatArg);
+            case TYPE_STRING -> stringArg;
+            case TYPE_BYTES -> Base64.encodeToString(bytesArg, PHENOTYPE_BASE64_FLAGS);
+            default -> throw new IllegalStateException(Integer.toString(type));
+        };
+    }
+
     public boolean shouldOverride() {
         if (!permissionsMatch()) {
             return false;

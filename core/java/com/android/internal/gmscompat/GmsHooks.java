@@ -58,7 +58,7 @@ import android.webkit.WebView;
 
 import com.android.internal.gmscompat.client.GmsCompatClientService;
 import com.android.internal.gmscompat.flags.GmsFlag;
-import com.android.internal.gmscompat.flags.GservicesFlags;
+import com.android.internal.gmscompat.flags.GmsFlagOverrides;
 import com.android.internal.gmscompat.gcarriersettings.GCarrierSettingsApp;
 import com.android.internal.gmscompat.gcarriersettings.TestCarrierConfigService;
 import com.android.internal.gmscompat.sysservice.GmcPackageManager;
@@ -122,7 +122,7 @@ public final class GmsHooks {
         Thread.setUncaughtExceptionPreHandler(new UncaughtExceptionPreHandler());
 
         if (inPersistentGmsCoreProcess) {
-            GservicesFlags.applyOverrides(config());
+            GmsFlagOverrides.init(ctx);
         }
 
         GmcPackageManager.init(ctx);
