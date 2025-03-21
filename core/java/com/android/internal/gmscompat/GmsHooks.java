@@ -29,7 +29,6 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.app.compat.gms.GmsCompat;
 import android.content.ComponentName;
-import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -65,7 +64,6 @@ import com.android.internal.gmscompat.sysservice.GmcPackageManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -358,9 +356,7 @@ public final class GmsHooks {
 
             ArrayList<String> forceDefaultFlagsRegexes = config.forceDefaultFlagsMap.get(namespace);
 
-            ArrayMap<String, GmsFlag> nsFlags = config.flags.get(namespace);
-
-            if (forceDefaultFlagsRegexes == null && nsFlags == null) {
+            if (forceDefaultFlagsRegexes == null) {
                 return null;
             }
 
@@ -385,11 +381,6 @@ public final class GmsHooks {
                     }
                     map.clear();
                     map.putAll(filteredMap);
-                }
-                if (nsFlags != null) {
-                    for (GmsFlag f : nsFlags.values()) {
-                        f.applyToPhenotypeMap(map);
-                    }
                 }
             };
         }
@@ -448,19 +439,6 @@ public final class GmsHooks {
         }
 
         return result;
-    }
-
-    // SharedPreferencesImpl#getAll
-    public static void maybeModifySharedPreferencesValues(String name, HashMap<String, Object> map) {
-        // some PhenotypeFlags are stored in SharedPreferences instead of phenotype.db database
-        ArrayMap<String, GmsFlag> flags = GmsHooks.config().flags.get(name);
-        if (flags == null) {
-            return;
-        }
-
-        for (GmsFlag f : flags.values()) {
-            f.applyToPhenotypeMap(map);
-        }
     }
 
     // Instrumentation#execStartActivity(Context, IBinder, IBinder, Activity, Intent, int, Bundle)
