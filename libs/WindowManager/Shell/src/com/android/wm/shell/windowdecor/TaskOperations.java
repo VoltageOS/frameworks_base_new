@@ -91,7 +91,6 @@ class TaskOperations {
     }
 
     IBinder minimizeTask(WindowContainerToken taskToken, WindowContainerTransaction wct) {
-        wct.setAlwaysOnTop(taskToken, false);
         wct.reorder(taskToken, false);
         if (Transitions.ENABLE_SHELL_TRANSITIONS) {
             return mTransitionStarter.startMinimizedModeTransition(wct);
