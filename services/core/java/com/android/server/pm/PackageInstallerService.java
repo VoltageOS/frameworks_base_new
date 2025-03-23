@@ -825,7 +825,12 @@ public class PackageInstallerService extends IPackageInstaller.Stub implements
 
         boolean isApex = (params.installFlags & PackageManager.INSTALL_APEX) != 0;
         if (isApex) {
-            throw new SecurityException("Not allowed to perform APEX updates");
+            if (mContext.checkCallingOrSelfPermission(Manifest.permission.INSTALL_PACKAGE_UPDATES)
+                    == PackageManager.PERMISSION_DENIED
+                    && mContext.checkCallingOrSelfPermission(Manifest.permission.INSTALL_PACKAGES)
+                    == PackageManager.PERMISSION_DENIED) {
+                throw new SecurityException("Not allowed to perform APEX updates");
+            }
         } else if (params.isStaged) {
             mContext.enforceCallingOrSelfPermission(Manifest.permission.INSTALL_PACKAGES, TAG);
         }
