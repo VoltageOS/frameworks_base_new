@@ -38639,6 +38639,7 @@ package android.provider {
     field @Deprecated public static final String DIM_SCREEN = "dim_screen";
     field public static final String DTMF_TONE_TYPE_WHEN_DIALING = "dtmf_tone_type";
     field public static final String DTMF_TONE_WHEN_DIALING = "dtmf_tone";
+    field public static final String ENABLE_TASKBAR = "enable_taskbar";
     field public static final String END_BUTTON_BEHAVIOR = "end_button_behavior";
     field public static final String FONT_SCALE = "font_scale";
     field @Deprecated public static final String HAPTIC_FEEDBACK_ENABLED = "haptic_feedback_enabled";
