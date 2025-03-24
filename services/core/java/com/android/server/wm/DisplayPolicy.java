@@ -83,9 +83,11 @@ import android.app.ActivityManager;
 import android.app.ActivityThread;
 import android.app.LoadedApk;
 import android.app.ResourcesManager;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.database.ContentObserver;
 import android.graphics.Insets;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
@@ -147,6 +149,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Consumer;
+
+import android.provider.Settings;
 
 /**
  * The policy that provides the basic behaviors and states of a display to show UI.
@@ -236,6 +240,7 @@ public class DisplayPolicy {
 
     private volatile boolean mHasStatusBar;
     private volatile boolean mHasNavigationBar;
+    private volatile boolean mTaskBarEnabled;
     // Can the navigation bar ever move to the side?
     private volatile boolean mNavigationBarCanMove;
     private volatile boolean mNavigationBarAlwaysShowOnSideGesture;
@@ -390,6 +395,24 @@ public class DisplayPolicy {
                     disablePointerLocation();
                     break;
             }
+        }
+    }
+
+    private class SettingsObserver extends ContentObserver {
+        public SettingsObserver(Handler handler) {
+            super(handler);
+
+            ContentResolver resolver = mContext.getContentResolver();
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.ENABLE_TASKBAR), false, this,
+                    UserHandle.USER_ALL);
+
+            updateSettings();
+        }
+
+        @Override
+        public void onChange(boolean selfChange) {
+            updateSettings();
         }
     }
 
@@ -701,6 +724,18 @@ public class DisplayPolicy {
         if (mService.mPointerLocationEnabled) {
             setPointerLocationEnabled(true);
         }
+    }
+
+    public void updateSettings() {
+        ContentResolver resolver = mContext.getContentResolver();
+
+        mTaskBarEnabled = Settings.System.getIntForUser(resolver,
+                Settings.System.ENABLE_TASKBAR, isTablet() ? 1 : 0,
+                UserHandle.USER_CURRENT) != 0;
+    }
+    
+    private boolean isTablet() {
+        return getCurrentUserResources().getConfiguration().smallestScreenWidthDp >= 600;
     }
 
     private int getDisplayId() {
@@ -1803,10 +1838,12 @@ public class DisplayPolicy {
                 R.bool.config_remoteInsetsControllerControlsSystemBars);
 
         updateConfigurationAndScreenSizeDependentBehaviors();
+        
+        final boolean isMobileTaskbarEnabled = !isTablet() && mTaskBarEnabled;
 
         final boolean shouldAttach =
                 res.getBoolean(R.bool.config_attachNavBarToAppDuringTransition)
-                        && !Flags.enableTinyTaskbar();
+                        && !isMobileTaskbarEnabled;
         if (mShouldAttachNavBarToAppDuringTransition != shouldAttach) {
             mShouldAttachNavBarToAppDuringTransition = shouldAttach;
         }
