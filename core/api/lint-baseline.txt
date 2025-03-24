@@ -436,6 +436,8 @@ KotlinOperator: android.graphics.Matrix44#get(int, int):
 KotlinOperator: android.graphics.Matrix44#set(int, int, float):
     Method can be invoked with an indexing operator from Kotlin: `set` (this is usually desirable; just make sure it makes sense for this type of object)
 
+NoSettingsProvider: android.provider.Settings.System#ENABLE_TASKBAR:
+     New setting keys are not allowed (Field: ENABLE_TASKBAR); use getters/setters in relevant manager class
 
 ManagerLookup: android.telephony.SubscriptionManager#createForAllUserProfiles():
     Managers must always be obtained from Context (`createForAllUserProfiles`)
@@ -1606,6 +1608,8 @@ UnflaggedApi: android.telecom.Call.AudioProcessingUseCase:
     New API must be flagged with @FlaggedApi: class android.telecom.Call.AudioProcessingUseCase
 UnflaggedApi: android.provider.Settings.Secure#TETHERING_ALLOW_VPN_UPSTREAMS:
     New API must be flagged with @FlaggedApi: field android.provider.Settings.Secure.TETHERING_ALLOW_VPN_UPSTREAMS
+UnflaggedApi: android.provider.Settings.System#ENABLE_TASKBAR:
+     New API must be flagged with @FlaggedApi: field android.provider.Settings.System.ENABLE_TASKBAR
 UnflaggedApi: android.telecom.Call.Details#getId():
     New API must be flagged with @FlaggedApi: method android.telecom.Call.Details.getId()
 UnflaggedApi: android.telecom.Connection#STATE_AUDIO_PROCESSING:
