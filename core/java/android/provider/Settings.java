@@ -7352,6 +7352,10 @@ public final class Settings {
         @Protected(read = KnownSystemPackage.SYSTEM_UI, readWrite = KnownSystemPackage.SETTINGS)
         public static final String SCREENSHOT_TIMESTAMP_EXIF = "screenshot_timestamp_exif";
 
+        /** @hide */
+        @Protected(readWrite = KnownSystemPackage.SETTINGS)
+        public static final String CROSS_PROFILE_CLIPBOARD_ACCESS = "cross_profile_clipboard_access";
+
         // ExtSettings END
 
         // NOTE: If you add new settings here, be sure to add them to
