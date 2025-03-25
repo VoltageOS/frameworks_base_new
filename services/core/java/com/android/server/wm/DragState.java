@@ -509,6 +509,10 @@ class DragState {
         final UserManagerInternal userManager = LocalServices.getService(UserManagerInternal.class);
         mCrossProfileCopyAllowed = !userManager.getUserRestriction(
                 mSourceUserId, UserManager.DISALLOW_CROSS_PROFILE_COPY_PASTE);
+        if (!android.ext.settings.CrossProfileClipboardAccessSettings
+                .isExportAccessAllowed(mCurrentDisplayContent.mAtmService.mContext, mSourceUserId)) {
+            mCrossProfileCopyAllowed = false;
+        }
 
         if (DEBUG_DRAG) {
             Slog.d(TAG_WM, "Broadcasting DRAG_STARTED at (" + touchX + ", " + touchY + ")");
