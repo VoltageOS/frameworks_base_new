@@ -992,6 +992,10 @@ public class ClipboardService extends SystemService {
         }
         setPrimaryClipInternalLocked(clipboard, clip, uid, sourcePackage);
 
+        if (!android.ext.settings.CrossProfileClipboardAccessSettings
+                .isExportAccessAllowed(getContext(), userId)) {
+            return;
+        }
         // Update related users
         List<UserInfo> related = getRelatedProfiles(userId);
         if (related != null) {
@@ -1023,6 +1027,10 @@ public class ClipboardService extends SystemService {
                     if (id != userId) {
                         final boolean canCopyIntoProfile = !hasRestriction(
                                 UserManager.DISALLOW_SHARE_INTO_MANAGED_PROFILE, id);
+                        if (!android.ext.settings.CrossProfileClipboardAccessSettings
+                                .isImportAccessAllowed(getContext(), id)) {
+                            continue;
+                        }
                         if (canCopyIntoProfile) {
                             Clipboard relatedClipboard = getClipboardLocked(id, deviceId);
                             if (relatedClipboard != null) {
