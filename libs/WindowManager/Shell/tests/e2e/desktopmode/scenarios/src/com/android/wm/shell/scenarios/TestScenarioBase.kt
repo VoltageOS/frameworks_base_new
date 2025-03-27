@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-package com.android.wm.shell.functional
+package com.android.wm.shell.scenarios
 
-import android.platform.test.annotations.Postsubmit
 import android.platform.test.rule.ScreenRecordRule
-import com.android.wm.shell.scenarios.OpenAppFromTaskbar
-import org.junit.runner.RunWith
-import org.junit.runners.BlockJUnit4ClassRunner
+import org.junit.Ignore
+import org.junit.Rule
 
-/* Functional test for [OpenAppsInDesktopMode]. */
-@RunWith(BlockJUnit4ClassRunner::class)
-@Postsubmit
-@ScreenRecordRule.ScreenRecord
-class OpenAppFromTaskbarTest : OpenAppFromTaskbar()
+@Ignore("Base Test Class")
+abstract class TestScenarioBase {
+    @get:Rule val screenRecordRule = ScreenRecordRule(/* keepTestLevelRecordingOnSuccess= */ false)
+}
