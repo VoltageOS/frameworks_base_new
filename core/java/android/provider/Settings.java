@@ -11915,6 +11915,7 @@ public final class Settings {
          */
         @SystemApi
         @Readable
+        @Protected(immutableValue = "0")
         public static final String INSTANT_APPS_ENABLED = "instant_apps_enabled";
 
         /**
@@ -17864,6 +17865,7 @@ public final class Settings {
          * @hide
          */
         @Readable
+        @Protected(immutableValue = "0")
         public static final String ENABLE_EPHEMERAL_FEATURE = "enable_ephemeral_feature";
 
         /**
