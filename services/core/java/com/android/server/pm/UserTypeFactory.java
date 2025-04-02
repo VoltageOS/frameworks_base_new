@@ -307,7 +307,6 @@ public final class UserTypeFactory {
                 .setName(USER_TYPE_PROFILE_PRIVATE)
                 .setBaseType(FLAG_PROFILE)
                 .setProfileParentRequired(true)
-                .setMaxAllowed(1)
                 .setMaxAllowedPerParent(1)
                 .setEnabled(UserManager.isPrivateProfileEnabled() ? 1 : 0)
                 .setLabels(R.string.profile_label_private)
