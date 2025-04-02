@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,38 +16,45 @@
 
 package com.android.systemui.keyguard.ui.viewmodel
 
+import android.app.WallpaperColors
+import android.os.Bundle
+import android.os.IBinder
+import android.view.Display
 import com.android.systemui.keyguard.domain.interactor.KeyguardPreviewInteractor
-import com.android.systemui.keyguard.shared.model.ClockSizeSetting
-import com.android.systemui.plugins.clocks.ClockController
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 
 @AssistedFactory
-interface KeyguardPreviewClockViewModelFactory {
-    fun create(interactor: KeyguardPreviewInteractor): KeyguardPreviewClockViewModel
+interface KeyguardPreviewViewModelFactory {
+    fun create(interactor: KeyguardPreviewInteractor): KeyguardPreviewViewModel
 }
 
 /** View model for the small clock view, large clock view. */
-class KeyguardPreviewClockViewModel
+class KeyguardPreviewViewModel
 @AssistedInject
 constructor(@Assisted private val interactor: KeyguardPreviewInteractor) {
-    val shouldHideClock: Boolean
-        get() = interactor.shouldHideClock
+    val request: Bundle
+        get() = interactor.request
 
     val shouldHighlightSelectedAffordance: Boolean
         get() = interactor.shouldHighlightSelectedAffordance
 
-    val previewClockSize = interactor.previewClockSize
+    val hostToken: IBinder?
+        get() = interactor.hostToken
 
-    val isLargeClockVisible: Flow<Boolean>
-        get() = previewClockSize.map { it == ClockSizeSetting.DYNAMIC }
+    val targetWidth: Int
+        get() = interactor.targetWidth
 
-    val isSmallClockVisible: Flow<Boolean>
-        get() = previewClockSize.map { it == ClockSizeSetting.SMALL }
+    val targetHeight: Int
+        get() = interactor.targetHeight
 
-    val previewClock: Flow<ClockController>
-        get() = interactor.previewClock
+    val display: Display?
+        get() = interactor.display
+
+    val isShadeLayoutWide: Boolean
+        get() = interactor.isShadeLayoutWide
+
+    val wallpaperColors: WallpaperColors?
+        get() = interactor.wallpaperColors
 }
