@@ -625,8 +625,12 @@ public class UserInfo implements Parcelable {
      **/
     public boolean canHaveProfileOfType(@NonNull String profileType) {
         switch (profileType) {
-            case UserManager.USER_TYPE_PROFILE_PRIVATE,
-                 UserManager.USER_TYPE_PROFILE_CLONE,
+            case UserManager.USER_TYPE_PROFILE_PRIVATE -> {
+                if (UserManager.USER_TYPE_FULL_SECONDARY.equals(this.userType)) {
+                    return true;
+                }
+            }
+            case UserManager.USER_TYPE_PROFILE_CLONE,
                  UserManager.USER_TYPE_PROFILE_COMMUNAL,
                  UserManager.USER_TYPE_PROFILE_MANAGED,
                  UserManager.USER_TYPE_PROFILE_TEST -> {
