@@ -616,4 +616,26 @@ public class UserInfo implements Parcelable {
         restrictedProfileParentId = source.readInt();
         profileBadge = source.readInt();
     }
+
+    /**
+     * @param profileType User type string to check, must be a profile
+     * @return true if the particular user info can have a profile with profileType
+     * Use {@link #canHaveProfile()} for general purpose checking if a user info can have profile
+     * @hide
+     **/
+    public boolean canHaveProfileOfType(@NonNull String profileType) {
+        switch (profileType) {
+            case UserManager.USER_TYPE_PROFILE_PRIVATE,
+                 UserManager.USER_TYPE_PROFILE_CLONE,
+                 UserManager.USER_TYPE_PROFILE_COMMUNAL,
+                 UserManager.USER_TYPE_PROFILE_MANAGED,
+                 UserManager.USER_TYPE_PROFILE_TEST -> {
+            }
+            default -> {
+                throw new IllegalArgumentException("Not a profile type: " + profileType);
+            }
+        }
+
+        return canHaveProfile();
+    }
 }

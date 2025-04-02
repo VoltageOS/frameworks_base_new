@@ -7000,4 +7000,23 @@ public class UserManager {
             return userRestrictionSource;
         }
     }
+
+    /**
+     * Checks if the context user can have a profile of type profileType.
+     * @param profileType the profile type name to check
+     * @return whether the context user can have profileType as its child profile.
+     * @hide
+     **/
+    @RequiresPermission(anyOf = {
+            Manifest.permission.MANAGE_USERS,
+            Manifest.permission.CREATE_USERS,
+            Manifest.permission.QUERY_USERS})
+    @UserHandleAware
+    public boolean canHaveProfileOfType(@NonNull String profileType) {
+        UserInfo userInfo = getUserInfo(mUserId);
+        if (userInfo == null) {
+            return false;
+        }
+        return userInfo.canHaveProfileOfType(profileType);
+    }
 }
