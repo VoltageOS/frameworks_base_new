@@ -317,7 +317,7 @@ public final class UserTypeFactory {
                 .setName(USER_TYPE_PROFILE_PRIVATE)
                 .setBaseType(FLAG_PROFILE)
                 .setProfileParentRequired(true)
-                .setMaxAllowed(1)
+                .setMaxAllowed(getDefaultMaxAllowedForSwitchableTypes())
                 .setMaxAllowedPerParent(1)
                 .setEnabled(!android.multiuser.Flags.blockPrivateSpaceCreation()
                         || !ActivityManager.isLowRamDeviceStatic() ? 1 : 0)
