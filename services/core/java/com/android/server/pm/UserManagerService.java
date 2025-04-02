@@ -3396,7 +3396,9 @@ public class UserManagerService extends IUserManager.Stub {
             return isUserTypeEnabled(USER_TYPE_PROFILE_PRIVATE)
                     && canAddMoreProfilesToUser(USER_TYPE_PROFILE_PRIVATE,
                     userId, /* allowedToRemoveOne */ false)
-                    && (parentUserInfo != null && parentUserInfo.isMain())
+                    && (parentUserInfo != null
+                && (parentUserInfo.isMain()
+                || parentUserInfo.canHaveProfileOfType(USER_TYPE_PROFILE_PRIVATE)))
                     && doSystemFeaturesSupportUserType(USER_TYPE_PROFILE_PRIVATE)
                     && !hasUserRestriction(UserManager.DISALLOW_ADD_PRIVATE_PROFILE, userId);
         }
@@ -4565,7 +4567,10 @@ public class UserManagerService extends IUserManager.Stub {
         synchronized (mUsersLock) {
             // Check if the parent exists and its type is even allowed to have a profile.
             UserInfo userInfo = getUserInfoLU(userId);
-            if (userInfo == null || !userInfo.canHaveProfile()) {
+
+            if (userInfo == null || (!userInfo.canHaveProfile()
+                    && (!List.of(USER_TYPE_PROFILE_PRIVATE).contains(userType) ||
+                    !userInfo.canHaveProfileOfType(userType)))) {
                 return 0;
             }
 
