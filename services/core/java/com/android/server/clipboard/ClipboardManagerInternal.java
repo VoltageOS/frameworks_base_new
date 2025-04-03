@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package android.service.selectiontoolbar;
-
-import android.os.IBinder;
+package com.android.server.clipboard;
 
 /**
- * The interface from the SelectionToolbarRenderService to the system.
- *
- * @hide
+ * Internal interface for the clipboard manager.
  */
-interface ISelectionToolbarRenderServiceCallback {
-    oneway void transferTouch(in IBinder source, in IBinder target);
+public interface ClipboardManagerInternal {
 
-    void onPasteAction(int uid);
+    /**
+     * Notify that there was a recent action taken by the user that the system trusts was an
+     * intentional authorization of clip data.
+     *
+     * @param uid The uid expected to access clip data.
+     */
+    void notifyUserAuthorizedClipAccess(int uid);
 }
