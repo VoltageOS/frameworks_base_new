@@ -14,13 +14,6 @@
  * limitations under the License.
  */
 
-package com.android.systemui.topwindoweffects.data.repository
+package com.android.systemui.topwindoweffects.data.entity
 
-import com.android.systemui.topwindoweffects.data.entity.SqueezeEffectCornerResourceId
-import kotlinx.coroutines.flow.Flow
-
-interface SqueezeEffectRepository {
-    val isSqueezeEffectEnabled: Flow<Boolean>
-
-    suspend fun getRoundedCornersResourceId(): SqueezeEffectCornerResourceId
-}
+data class SqueezeEffectCornerResourceId(val top: Int, val bottom: Int)
