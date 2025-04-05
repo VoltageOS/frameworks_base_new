@@ -14372,6 +14372,16 @@ public final class Settings {
         public static final String ADVANCED_REBOOT = "advanced_reboot";
 
         /**
+          * Which navigation bar layout to use
+          * 0 = Normal (Default)
+          * 1 = Compact
+          * 2 = Left-leaning
+          * 3 = Right-leaning
+          * @hide
+          */
+         public static final String NAVBAR_LAYOUT_MODE = "navbar_layout_mode";
+
+	/**
          * Our GameSpace can't write to device_config directly [GTS]
          * Use this as intermediate to pass device_config property
          * from our GameSpace to com.android.server.app.GameManagerService
