@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The Android Open Source Project
+ * Copyright 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.systemui.underlay
+package com.android.systemui.underlay.domain.interactor
 
-import com.android.systemui.CoreStartable
-import com.android.systemui.underlay.ui.startable.UnderlayCoreStartable
-import dagger.Binds
-import dagger.Module
-import dagger.multibindings.ClassKey
-import dagger.multibindings.IntoMap
+import com.android.systemui.underlay.data.repository.UnderlayRepository
+import javax.inject.Inject
+import kotlinx.coroutines.flow.StateFlow
 
-@Module
-interface UnderlayModule {
-
-    @Binds
-    @IntoMap
-    @ClassKey(UnderlayCoreStartable::class)
-    fun bindUnderlayCoreStartable(startable: UnderlayCoreStartable): CoreStartable
+class UnderlayInteractor @Inject constructor(repository: UnderlayRepository) {
+    val isUnderlayAttached: StateFlow<Boolean> = repository.isUnderlayAttached
 }
