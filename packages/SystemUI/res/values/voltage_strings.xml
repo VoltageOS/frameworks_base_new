@@ -227,4 +227,7 @@
     <string name="usb_use_tethering">USB tethering</string>
     <string name="usb_use_MIDI">MIDI</string>
     <string name="usb_use">Use USB for</string>
+
+    <!-- Ringer QS tile -->
+    <string name="qs_tile_ringer_mode_label">Ringer mode</string>
 </resources>
