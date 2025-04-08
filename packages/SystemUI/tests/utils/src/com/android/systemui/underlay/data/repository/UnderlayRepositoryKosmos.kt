@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-package com.android.systemui.underlay.ui.compose
+package com.android.systemui.underlay.data.repository
 
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import javax.inject.Inject
+import com.android.systemui.broadcast.broadcastDispatcher
+import com.android.systemui.kosmos.Kosmos
+import com.android.systemui.kosmos.backgroundScope
 
-interface UnderlayComposableProvider {
-    @Composable fun Content(modifier: Modifier)
-}
-
-class UnderlayComposableProviderImpl @Inject constructor() : UnderlayComposableProvider {
-
-    @Composable override fun Content(modifier: Modifier) {}
-}
+val Kosmos.underlayRepository by
+    Kosmos.Fixture {
+        UnderlayRepository(
+            backgroundScope = backgroundScope,
+            broadcastDispatcher = broadcastDispatcher,
+        )
+    }
