@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.systemui.scene.domain.model
+package com.android.systemui.scene.shared.model
 
-/** Enumerates the type of education still needed. */
-enum class DualShadeEducationModel {
-    None,
-    ForNotificationsShade,
-    ForQuickSettingsShade,
+enum class DualShadeEducationElement {
+    Notifications,
+    QuickSettings,
 }
