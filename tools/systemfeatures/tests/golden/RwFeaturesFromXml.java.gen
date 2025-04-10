@@ -1,10 +1,7 @@
 // This file is auto-generated. DO NOT MODIFY.
-// Args: com.android.systemfeatures.RwFeatures \
+// Args: com.android.systemfeatures.RwFeaturesFromXml \
 //            --readonly=false \
-//            --feature=WATCH:1 \
-//            --feature=WIFI:0 \
-//            --feature=VULKAN:UNAVAILABLE \
-//            --feature=AUTO:
+//            --feature-xml-files=frameworks/base/tools/systemfeatures/tests/data/features-1.xml,frameworks/base/tools/systemfeatures/tests/data/features-2.xml
 package com.android.systemfeatures;
 
 import android.annotation.NonNull;
@@ -17,23 +14,32 @@ import android.util.ArrayMap;
 /**
  * @hide
  */
-public final class RwFeatures {
+public final class RwFeaturesFromXml {
     /**
-     * Check for FEATURE_AUTO.
+     * Check for FEATURE_BLUETOOTH.
      *
      * @hide
      */
-    public static boolean hasFeatureAuto(Context context) {
-        return hasFeatureFallback(context, PackageManager.FEATURE_AUTO);
+    public static boolean hasFeatureBluetooth(Context context) {
+        return hasFeatureFallback(context, PackageManager.FEATURE_BLUETOOTH);
     }
 
     /**
-     * Check for FEATURE_VULKAN.
+     * Check for FEATURE_EMBEDDED.
      *
      * @hide
      */
-    public static boolean hasFeatureVulkan(Context context) {
-        return hasFeatureFallback(context, PackageManager.FEATURE_VULKAN);
+    public static boolean hasFeatureEmbedded(Context context) {
+        return hasFeatureFallback(context, PackageManager.FEATURE_EMBEDDED);
+    }
+
+    /**
+     * Check for FEATURE_PC.
+     *
+     * @hide
+     */
+    public static boolean hasFeaturePc(Context context) {
+        return hasFeatureFallback(context, PackageManager.FEATURE_PC);
     }
 
     /**
