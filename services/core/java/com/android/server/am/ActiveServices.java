@@ -6014,6 +6014,7 @@ public final class ActiveServices {
             // ends up just being cached, so quickly killed, then restarted again and again.
             // Let's not let that happen.
             Slog.wtf(TAG, "Restarting service that is not needed: " + r);
+            mRestartingServices.remove(r);
             return;
         }
         // Don't restart yet if all auto-create clients are frozen and no
