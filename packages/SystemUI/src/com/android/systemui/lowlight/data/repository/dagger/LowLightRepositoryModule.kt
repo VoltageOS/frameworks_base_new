@@ -14,9 +14,15 @@
  * limitations under the License.
  */
 
-package com.android.systemui.lowlight
+package com.android.systemui.lowlight.data.repository.dagger
 
-import com.android.systemui.kosmos.Kosmos
+import com.android.systemui.lowlight.data.repository.LowLightRepository
+import com.android.systemui.lowlight.data.repository.LowLightRepositoryImpl
+import dagger.Binds
+import dagger.Module
 
-val Kosmos.ambientLightModeMonitor: AmbientLightModeMonitor by
-    Kosmos.Fixture { FakeAmbientLightModeMonitor() }
+/** This module allows for the {@link LowLightRepository} to be included in the dagger graph. */
+@Module
+interface LowLightRepositoryModule {
+    @Binds fun lowLightRepository(impl: LowLightRepositoryImpl): LowLightRepository
+}

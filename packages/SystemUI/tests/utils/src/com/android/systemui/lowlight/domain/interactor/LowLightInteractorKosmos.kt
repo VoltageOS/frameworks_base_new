@@ -14,9 +14,17 @@
  * limitations under the License.
  */
 
-package com.android.systemui.lowlight
+package com.android.systemui.lowlight.domain.interactor
 
 import com.android.systemui.kosmos.Kosmos
+import com.android.systemui.kosmos.Kosmos.Fixture
+import com.android.systemui.kosmos.testDispatcher
+import com.android.systemui.lowlight.data.repository.lowLightRepository
 
-val Kosmos.ambientLightModeMonitor: AmbientLightModeMonitor by
-    Kosmos.Fixture { FakeAmbientLightModeMonitor() }
+val Kosmos.lowLightInteractor by Fixture {
+    LowLightInteractor(
+        repository = lowLightRepository,
+        lowLightSettingsInteractor = lowLightSettingInteractor,
+        bgDispatcher = testDispatcher,
+    )
+}

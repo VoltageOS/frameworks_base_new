@@ -14,9 +14,18 @@
  * limitations under the License.
  */
 
-package com.android.systemui.lowlight
+package com.android.systemui.lowlight.data.repository
 
+import android.content.res.mainResources
 import com.android.systemui.kosmos.Kosmos
+import com.android.systemui.kosmos.Kosmos.Fixture
+import com.android.systemui.kosmos.testDispatcher
+import com.android.systemui.util.settings.fakeSettings
 
-val Kosmos.ambientLightModeMonitor: AmbientLightModeMonitor by
-    Kosmos.Fixture { FakeAmbientLightModeMonitor() }
+val Kosmos.lowLightSettingsRepository by Fixture {
+    LowLightSettingsRepositoryImpl(
+        bgDispatcher = testDispatcher,
+        secureSettings = fakeSettings,
+        resources = mainResources,
+    )
+}
