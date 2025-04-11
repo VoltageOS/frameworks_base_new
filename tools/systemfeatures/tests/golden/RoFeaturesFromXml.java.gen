@@ -1,11 +1,7 @@
 // This file is auto-generated. DO NOT MODIFY.
-// Args: com.android.systemfeatures.RoFeatures \
+// Args: com.android.systemfeatures.RoFeaturesFromXml \
 //            --readonly=true \
-//            --feature=WATCH:1 \
-//            --feature=WIFI:0 \
-//            --feature=VULKAN:UNAVAILABLE \
-//            --feature=AUTO: \
-//            --feature-apis=WATCH,PC
+//            --feature-xml-files=frameworks/base/tools/systemfeatures/tests/data/features-1.xml,frameworks/base/tools/systemfeatures/tests/data/features-2.xml
 package com.android.systemfeatures;
 
 import android.annotation.NonNull;
@@ -20,14 +16,24 @@ import com.android.aconfig.annotations.AssumeTrueForR8;
 /**
  * @hide
  */
-public final class RoFeatures {
+public final class RoFeaturesFromXml {
     /**
-     * Check for FEATURE_AUTO.
+     * Check for FEATURE_BLUETOOTH.
      *
      * @hide
      */
-    public static boolean hasFeatureAuto(Context context) {
-        return hasFeatureFallback(context, PackageManager.FEATURE_AUTO);
+    public static boolean hasFeatureBluetooth(Context context) {
+        return hasFeatureFallback(context, PackageManager.FEATURE_BLUETOOTH);
+    }
+
+    /**
+     * Check for FEATURE_EMBEDDED.
+     *
+     * @hide
+     */
+    @AssumeTrueForR8
+    public static boolean hasFeatureEmbedded(Context context) {
+        return true;
     }
 
     /**
@@ -35,17 +41,8 @@ public final class RoFeatures {
      *
      * @hide
      */
-    public static boolean hasFeaturePc(Context context) {
-        return hasFeatureFallback(context, PackageManager.FEATURE_PC);
-    }
-
-    /**
-     * Check for FEATURE_VULKAN.
-     *
-     * @hide
-     */
     @AssumeFalseForR8
-    public static boolean hasFeatureVulkan(Context context) {
+    public static boolean hasFeaturePc(Context context) {
         return false;
     }
 
@@ -54,9 +51,9 @@ public final class RoFeatures {
      *
      * @hide
      */
-    @AssumeTrueForR8
+    @AssumeFalseForR8
     public static boolean hasFeatureWatch(Context context) {
-        return true;
+        return false;
     }
 
     /**
@@ -79,8 +76,9 @@ public final class RoFeatures {
     @Nullable
     public static Boolean maybeHasFeature(String featureName, int version) {
         switch (featureName) {
-            case PackageManager.FEATURE_VULKAN: return false;
-            case PackageManager.FEATURE_WATCH: return 1 >= version;
+            case PackageManager.FEATURE_EMBEDDED: return 1 >= version;
+            case PackageManager.FEATURE_PC: return false;
+            case PackageManager.FEATURE_WATCH: return false;
             case PackageManager.FEATURE_WIFI: return 0 >= version;
             default: break;
         }
@@ -96,7 +94,7 @@ public final class RoFeatures {
     public static ArrayMap<String, FeatureInfo> getReadOnlySystemEnabledFeatures() {
         ArrayMap<String, FeatureInfo> features = new ArrayMap<>(2);
         FeatureInfo fi = new FeatureInfo();
-        fi.name = PackageManager.FEATURE_WATCH;
+        fi.name = PackageManager.FEATURE_EMBEDDED;
         fi.version = 1;
         features.put(fi.name, new FeatureInfo(fi));
         fi.name = PackageManager.FEATURE_WIFI;
