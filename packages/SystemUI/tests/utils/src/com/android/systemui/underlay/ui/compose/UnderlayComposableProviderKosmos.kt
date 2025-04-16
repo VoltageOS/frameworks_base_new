@@ -16,15 +16,7 @@
 
 package com.android.systemui.underlay.ui.compose
 
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import javax.inject.Inject
+import com.android.systemui.kosmos.Kosmos
+import com.android.systemui.kosmos.Kosmos.Fixture
 
-interface UnderlayComposableProvider {
-    @Composable fun Content(modifier: Modifier)
-}
-
-class UnderlayComposableProviderImpl @Inject constructor() : UnderlayComposableProvider {
-
-    @Composable override fun Content(modifier: Modifier) {}
-}
+val Kosmos.underlayComposableProvider by Fixture { UnderlayComposableProviderImpl() }
