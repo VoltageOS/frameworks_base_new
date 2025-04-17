@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-package android.app
+package com.android.systemui.topui
 
+import android.app.activityManagerInterface
+import com.android.systemui.dump.dumpManager
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.util.mockito.mock
+import com.android.systemui.kosmos.testDispatcher
+import org.mockito.kotlin.mock
 
-val Kosmos.activityManager by Kosmos.Fixture { mock<ActivityManager>() }
-
-val Kosmos.activityManagerInterface by Kosmos.Fixture { mock<IActivityManager>() }
+var Kosmos.topUiController: TopUiController by
+    Kosmos.Fixture { TopUiControllerImpl(activityManagerInterface, testDispatcher, dumpManager) }
+var Kosmos.mockTopUiController by Kosmos.Fixture { mock<TopUiController>() }
