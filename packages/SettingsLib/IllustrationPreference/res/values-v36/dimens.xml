@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Copyright (C) 2021 The Android Open Source Project
+  Copyright (C) 2025 The Android Open Source Project
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -17,12 +17,5 @@
 
 <resources>
     <!-- Padding of illustration -->
-    <dimen name="settingslib_illustration_padding">16dp</dimen>
-    <dimen name="settingslib_illustration_vertical_padding">0dp</dimen>
-
-    <dimen name="settingslib_illustration_width">412dp</dimen>
-    <dimen name="settingslib_illustration_height">300dp</dimen>
-
-    <dimen name="settingslib_illustration_width_tablet">498dp</dimen>
-    <dimen name="settingslib_illustration_height_tablet">362dp</dimen>
+    <dimen name="settingslib_illustration_vertical_padding">@dimen/settingslib_expressive_space_extrasmall4</dimen>
 </resources>
