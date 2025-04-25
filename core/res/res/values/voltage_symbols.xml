@@ -223,4 +223,7 @@
 
     <!-- NightLight UDFPS -->
     <java-symbol type="bool" name="disable_udfps_night_light"/>
+
+    <!-- GameSpace -->
+    <java-symbol type="string" name="gamespace_new_game_added" />
 </resources>
