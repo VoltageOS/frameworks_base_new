@@ -1231,7 +1231,12 @@ public final class ViewRootImpl implements ViewParent,
             Flags.enableInvalidateCheckThread();
     private static boolean sSurfaceFlingerBugfixFlagValue =
             com.android.graphics.surfaceflinger.flags.Flags.vrrBugfix24q4();
-    private static final boolean sEnableVrr = ViewProperties.vrr_enabled().orElse(true);
+    // Disable VRR feature to meet power expectations.
+    // VRR wakes up the idle device after 750ms timeout. This bounds Display and GPU to
+    // wake up as well, leading to higher power consumption during idling.
+    // Disable VRR to avoid this extra wakeup call as it can cause power regression.
+    // Google bug: https://partnerissuetracker.corp.google.com/u/0/issues/409971466
+    private static final boolean sEnableVrr = false;
     private static final boolean sToolkitInitialTouchBoostFlagValue = toolkitInitialTouchBoost();
     private static boolean sToolkitFrameRateDebugFlagValue =  toolkitFrameRateDebug();
 
