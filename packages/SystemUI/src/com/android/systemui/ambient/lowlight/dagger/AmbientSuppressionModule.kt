@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package com.android.systemui.lowlight
+package com.android.systemui.ambient.lowlight.dagger
 
-import com.android.systemui.kosmos.Kosmos
+import dagger.Module
 
-val Kosmos.ambientLightModeMonitor: AmbientLightModeMonitor by
-    Kosmos.Fixture { FakeAmbientLightModeMonitor() }
+@Module
+object AmbientSuppressionModule {
+    const val AMBIENT_SUPPRESSION_SUPPRESSION_FLAGS = "suppression_flags"
+}

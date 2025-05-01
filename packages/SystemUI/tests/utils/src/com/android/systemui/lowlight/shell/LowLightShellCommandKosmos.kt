@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.systemui.lowlight
+package com.android.systemui.lowlight.shell
 
 import com.android.systemui.kosmos.Kosmos
+import com.android.systemui.kosmos.Kosmos.Fixture
+import com.android.systemui.statusbar.commandline.commandRegistry
 
-val Kosmos.ambientLightModeMonitor: AmbientLightModeMonitor by
-    Kosmos.Fixture { FakeAmbientLightModeMonitor() }
+val Kosmos.lowLightShellCommand by Fixture {
+    LowLightShellCommand(commandRegistry = commandRegistry)
+}

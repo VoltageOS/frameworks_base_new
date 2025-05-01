@@ -14,9 +14,30 @@
  * limitations under the License.
  */
 
-package com.android.systemui.lowlight
+package com.android.systemui.lowlight.shared.model
 
-import com.android.systemui.kosmos.Kosmos
+enum class LowLightDisplayBehavior {
+    NONE,
+    UNKNOWN,
+    LOW_LIGHT_DREAM,
+    NO_DREAM,
+    SCREEN_OFF,
+}
 
-val Kosmos.ambientLightModeMonitor: AmbientLightModeMonitor by
-    Kosmos.Fixture { FakeAmbientLightModeMonitor() }
+enum class ScreenState {
+    ON,
+    DOZE,
+    OFF,
+}
+
+fun LowLightDisplayBehavior.allowedInScreenState(screenState: ScreenState): Boolean {
+    return when (screenState) {
+        ScreenState.ON -> true
+        ScreenState.DOZE -> {
+            this == LowLightDisplayBehavior.NO_DREAM || this == LowLightDisplayBehavior.SCREEN_OFF
+        }
+        ScreenState.OFF -> {
+            this == LowLightDisplayBehavior.SCREEN_OFF
+        }
+    }
+}

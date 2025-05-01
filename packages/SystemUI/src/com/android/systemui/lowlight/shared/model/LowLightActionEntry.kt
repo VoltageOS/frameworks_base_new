@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
-package com.android.systemui.lowlight
+package com.android.systemui.lowlight.shared.model
 
-import com.android.systemui.kosmos.Kosmos
+import com.android.systemui.lifecycle.ExclusiveActivatable
+import javax.inject.Provider
 
-val Kosmos.ambientLightModeMonitor: AmbientLightModeMonitor by
-    Kosmos.Fixture { FakeAmbientLightModeMonitor() }
+/** This data class houses a mapping between an action and the associated behavior. */
+data class LowLightActionEntry(
+    val behavior: LowLightDisplayBehavior,
+    val action: Provider<ExclusiveActivatable>,
+)
