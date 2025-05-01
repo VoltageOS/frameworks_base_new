@@ -29,6 +29,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.content.pm.ActivityInfo;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.GosPackageState;
 import android.content.pm.GosPackageStateFlag;
 import android.content.pm.IPackageDataObserver;
@@ -66,61 +67,80 @@ public final class PlayStoreHooks {
     private static final String TAG = "GmsCompat/PlayStore";
 
     static PackageManager packageManager;
+    private static String obbDir;
+    private static String playStoreObbDir;
 
     public static void init() {
         obbDir = Environment.getExternalStorageDirectory().getPath() + "/Android/obb";
         playStoreObbDir = obbDir + '/' + GmsInfo.PACKAGE_PLAY_STORE;
         File.mkdirsFailedHook = PlayStoreHooks::mkdirsFailed;
         Context ctx = GmsCompat.appContext();
-        packageManager = ctx.getPackageManager();
-        InternalBroadcastReceiver.register(ctx);
+        if (ctx != null) {
+            packageManager = ctx.getPackageManager();
+            InternalBroadcastReceiver.register(ctx);
+        }
     }
 
-    // PackageInstaller#createSession
     public static void adjustSessionParams(PackageInstaller.SessionParams params) {
-        String pkg = requireNonNull(params.appPackageName);
+        if (params == null) return;
+        String pkg = params.appPackageName;
+        if (pkg == null) return; // Or requireNonNull(params.appPackageName);
 
         switch (pkg) {
             case GmsInfo.PACKAGE_GMS_CORE:
             case GmsInfo.PACKAGE_PLAY_STORE:
                 String updateRequestReason = "Play Store created PackageInstaller SessionParams for " + pkg;
-                GmsCompatConfig config;
+                GmsCompatConfig newConfig = null;
                 try {
-                    config = GmsCompatApp.iGms2Gca().requestConfigUpdate(updateRequestReason);
+                    IGms2Gca gmsInterface = GmsCompatApp.iGms2Gca();
+                    if (gmsInterface != null) {
+                        newConfig = gmsInterface.requestConfigUpdate(updateRequestReason);
+                    }
                 } catch (RemoteException e) {
-                    throw GmsCompatApp.callFailed(e);
                 }
-                if (GmsHooks.config().version != config.version) {
-                    GmsHooks.setConfig(config);
+
+                if (newConfig != null) {
+                    GmsCompatConfig currentConfig = GmsHooks.config();
+                    if (currentConfig == null || currentConfig.version != newConfig.version) {
+                        GmsHooks.setConfig(newConfig);
+                    }
                 }
                 break;
         }
 
-        switch (pkg) {
-            case GmsInfo.PACKAGE_GMS_CORE:
-                params.maxAllowedVersion = GmsHooks.config().maxGmsCoreVersion;
-                break;
-            case GmsInfo.PACKAGE_PLAY_STORE:
-                params.maxAllowedVersion = GmsHooks.config().maxPlayStoreVersion;
-                break;
+        GmsCompatConfig configForLimits = GmsHooks.config();
+        if (configForLimits != null) {
+            switch (pkg) {
+                case GmsInfo.PACKAGE_GMS_CORE:
+                    params.maxAllowedVersion = configForLimits.maxGmsCoreVersion;
+                    break;
+                case GmsInfo.PACKAGE_PLAY_STORE:
+                    params.maxAllowedVersion = configForLimits.maxPlayStoreVersion;
+                    break;
+            }
         }
     }
 
-    // PackageInstaller.Session#commit(IntentSender)
     public static IntentSender wrapCommitStatusReceiver(PackageInstaller.Session session, IntentSender statusReceiver) {
-        return PackageInstallerStatusForwarder.register((intent, extras) -> sendIntent(intent, statusReceiver))
-                .getIntentSender();
+        if (statusReceiver == null) return null;
+        PendingIntent pi = PackageInstallerStatusForwarder.register((intent, extras) -> sendIntent(intent, statusReceiver));
+        return (pi != null) ? pi.getIntentSender() : null;
     }
 
     public static void onActivityResumed(Activity activity) {
-        Intent pendingActionIntent;
+        if (activity == null) return;
+        Intent pendingActionIntent = null;
         try {
-            pendingActionIntent = GmsCompatApp.iGms2Gca().maybeGetPlayStorePendingUserActionIntent();
+            IGms2Gca gmsInterface = GmsCompatApp.iGms2Gca();
+            if (gmsInterface != null) {
+                pendingActionIntent = gmsInterface.maybeGetPlayStorePendingUserActionIntent();
+            }
         } catch (RemoteException e) {
-            throw GmsCompatApp.callFailed(e);
         }
         if (pendingActionIntent != null) {
-            activity.startActivity(pendingActionIntent);
+            try {
+                activity.startActivity(pendingActionIntent);
+            } catch (Exception e) { /* Ignore */ }
         }
     }
 
@@ -132,8 +152,12 @@ public final class PlayStoreHooks {
         private static final AtomicLong lastId = new AtomicLong();
 
         static PendingIntent register(BiConsumer<Intent, Bundle> target) {
+            if (target == null) return null;
+
             PackageInstallerStatusForwarder sf = new PackageInstallerStatusForwarder();
             Context context = GmsCompat.appContext();
+            if (context == null) return null;
+
             sf.context = context;
             sf.target = target;
 
@@ -141,136 +165,180 @@ public final class PlayStoreHooks {
                 + "." + PackageInstallerStatusForwarder.class.getName() + "."
                 + lastId.getAndIncrement();
 
-            var intent = new Intent(intentAction);
+            Intent intent = new Intent(intentAction);
             intent.setPackage(context.getPackageName());
 
-            sf.pendingIntent = PendingIntent.getBroadcast(context, 0, intent,
-                    PendingIntent.FLAG_CANCEL_CURRENT |
-                        PendingIntent.FLAG_MUTABLE);
+            try {
+                 sf.pendingIntent = PendingIntent.getBroadcast(context, 0, intent,
+                         PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_MUTABLE);
 
-            context.registerReceiver(sf, new IntentFilter(intentAction), Context.RECEIVER_NOT_EXPORTED);
-            return sf.pendingIntent;
+                 context.registerReceiver(sf, new IntentFilter(intentAction), Context.RECEIVER_NOT_EXPORTED);
+                 return sf.pendingIntent;
+            } catch (Exception e) {
+                 return null; // Failed to register
+            }
         }
 
         public void onReceive(Context receiverContext, Intent intent) {
+            if (intent == null || context == null || target == null || pendingIntent == null) {
+                 if (context != null && pendingIntent != null) {
+                     try {
+                         pendingIntent.cancel();
+                         context.unregisterReceiver(this);
+                     } catch (Exception e) { /* Ignore */ }
+                 }
+                 return;
+            }
+
             Bundle extras = intent.getExtras();
-            int status = getIntFromBundle(extras, PackageInstaller.EXTRA_STATUS);
+            if (extras == null) {
+                 pendingIntent.cancel();
+                 context.unregisterReceiver(this);
+                 return; // Cannot proceed without extras
+            }
+
+            int status = getIntFromBundle(extras, PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE);
 
             if (status == PackageInstaller.STATUS_PENDING_USER_ACTION) {
                 Intent confirmationIntent = intent.getParcelableExtra(Intent.EXTRA_INTENT);
-
                 String packageName = null;
 
                 if (extras.containsKey(PackageInstaller.EXTRA_SESSION_ID)) {
-                    int sessionId = getIntFromBundle(extras, PackageInstaller.EXTRA_SESSION_ID);
-                    PackageInstaller pkgInstaller = packageManager.getPackageInstaller();
-                    PackageInstaller.SessionInfo si = pkgInstaller.getSessionInfo(sessionId);
-                    if (si != null) {
-                        packageName = si.getAppPackageName();
+                    int sessionId = getIntFromBundle(extras, PackageInstaller.EXTRA_SESSION_ID, -1);
+                    if (sessionId != -1 && packageManager != null) {
+                        PackageInstaller pkgInstaller = packageManager.getPackageInstaller();
+                        if (pkgInstaller != null) {
+                            PackageInstaller.SessionInfo si = pkgInstaller.getSessionInfo(sessionId);
+                            if (si != null) {
+                                packageName = si.getAppPackageName();
+                            }
+                        }
                     }
                 }
 
                 try {
-                    GmsCompatApp.iGms2Gca().onPlayStorePendingUserAction(confirmationIntent, packageName);
+                    IGms2Gca gmsInterface = GmsCompatApp.iGms2Gca();
+                    if (gmsInterface != null) {
+                        gmsInterface.onPlayStorePendingUserAction(confirmationIntent, packageName);
+                    }
                 } catch (RemoteException e) {
-                    GmsCompatApp.callFailed(e);
                 }
-
-                // confirmationIntent has a PendingIntent to this instance, don't unregister yet
                 return;
             }
-            pendingIntent.cancel();
-            context.unregisterReceiver(this);
+
+            try {
+                pendingIntent.cancel();
+                context.unregisterReceiver(this);
+            } catch (Exception e) { /* Ignore */ }
 
             target.accept(intent, extras);
         }
     }
 
-    // Request user action to uninstall a package
     public static void deletePackage(PackageManager pm, String packageName, IPackageDeleteObserver observer, int flags) {
-        if (flags != 0) {
-            throw new IllegalStateException("unexpected flags: " + flags);
+        if (flags != 0 || pm == null || packageName == null || observer == null) {
+            if (observer != null) {
+                try {
+                    observer.packageDeleted(packageName, PackageManager.DELETE_FAILED_INTERNAL_ERROR);
+                } catch (RemoteException e) { /* Ignore */ }
+            }
+            if (flags != 0) throw new IllegalStateException("unexpected flags: " + flags);
+            return;
         }
 
-        // Play Store expects call to deletePackage() to always succeed, which almost always happens
-        // when it has the privileged DELETE_PACKAGES permission.
-        // This is not the case when Play Store has only the unprivileged REQUEST_DELETE_PACKAGES
-        // permission, which requires confirmation from the user.
-        // There are two difficulties:
-        // - user may reject the confirmation prompt, which produces DELETE_FAILED_ABORTED error code,
-        // which Play Store ignores
-        // - user may dismiss the confirmation prompt without making a choice, which doesn't make
-        // any callback at all
-        // In both cases, Play Store remains stuck in "Uninstalling..." state for that package.
-        // This state is written to persistent storage, it remains stuck even after device reboot.
-        //
-        // To work-around all these issues, pretend that the package was uninstalled and then installed
-        // again, which moves the package state from "Uninstalling..." to "Installed" state, and
-        // launch the uninstall request separately.
+        PackageInstaller packageInstaller = pm.getPackageInstaller();
+        if (packageInstaller == null) {
+             try {
+                 observer.packageDeleted(packageName, PackageManager.DELETE_FAILED_INTERNAL_ERROR);
+             } catch (RemoteException e) { /* Ignore */ }
+             return;
+        }
 
-        PendingIntent pi = PackageInstallerStatusForwarder.register((BiConsumer<Intent, Bundle>) (intent, extras) -> {
-            Log.d(TAG, "uninstall status " + extras.getString(PackageInstaller.EXTRA_STATUS_MESSAGE));
+        PendingIntent pi = PackageInstallerStatusForwarder.register((intent, extras) -> {
+            // Optional: Log status if needed
         });
-        pm.getPackageInstaller().uninstall(packageName, pi.getIntentSender());
 
-        GmsCompat.appContext().getMainThreadHandler().postDelayed(() -> {
-            try {
-                // Play Store ignores this callback as of version 33.6.13, but provide it anyway
-                // in case it's fixed
-                observer.packageDeleted(packageName, PackageManager.DELETE_FAILED_ABORTED);
-            } catch (RemoteException e) {
-                throw e.rethrowAsRuntimeException();
-            }
+        if (pi == null) {
+             try {
+                 observer.packageDeleted(packageName, PackageManager.DELETE_FAILED_INTERNAL_ERROR);
+             } catch (RemoteException e) { /* Ignore */ }
+             return;
+        }
 
-            resetPackageState(packageName);
-        }, 100L); // delay the callback for to workaround a race condition in Play Store
+        packageInstaller.uninstall(packageName, pi.getIntentSender());
+
+        Context ctx = GmsCompat.appContext();
+        if (ctx != null && ctx.getMainThreadHandler() != null) {
+            ctx.getMainThreadHandler().postDelayed(() -> {
+                try {
+                    observer.packageDeleted(packageName, PackageManager.DELETE_FAILED_ABORTED);
+                } catch (RemoteException e) {
+                }
+                resetPackageState(packageName);
+            }, 100L);
+        } else {
+             // Fallback if context or handler is null, call immediately but might race
+             try {
+                 observer.packageDeleted(packageName, PackageManager.DELETE_FAILED_ABORTED);
+             } catch (RemoteException e) { /* Ignore */ }
+             resetPackageState(packageName);
+        }
     }
 
     public static class InternalBroadcastReceiver extends BroadcastReceiver {
-        private static final String TAG = "GmcInternalBroacastReceiver";
-
         private static final String ACTION_PREFIX = "GmsCompat.InternalBroadcastReceiver";
         private static final String ACTION_SEND_SELF_BROADCAST = ACTION_PREFIX + ".ACTION_SEND_SELF_BROADCAST";
         private static final String ACTION_REMOVE_PSEUDO_DISABLED_PKG = ACTION_PREFIX + ".ACTION_REMOVE_PSEUDO_DISABLED_PKG";
         private static final String EXTRA_INTENTS = "intents";
 
         static void register(Context ctx) {
+            if (ctx == null) return;
             var f = new IntentFilter(ACTION_SEND_SELF_BROADCAST);
             f.addAction(ACTION_REMOVE_PSEUDO_DISABLED_PKG);
-            ctx.registerReceiver(new InternalBroadcastReceiver(), f, Context.RECEIVER_NOT_EXPORTED);
+            try {
+                ctx.registerReceiver(new InternalBroadcastReceiver(), f, Context.RECEIVER_NOT_EXPORTED);
+            } catch (Exception e) { /* Ignore registration errors */ }
         }
 
         public static void sendManualBroadcasts(Context ctx, Intent... intents) {
-            Log.d(TAG, "sendManualBroadcasts: " + Arrays.toString(intents));
+            if (ctx == null || intents == null || intents.length == 0) return;
             var i = new Intent(ACTION_SEND_SELF_BROADCAST);
             i.putExtra(EXTRA_INTENTS, intents);
             sendBroadcast(ctx, i);
         }
 
         public static void removePseudoDisabledPackage(Context ctx, String pkgName) {
-            Log.d(TAG, "removePseudoDisabledPackage: " + pkgName);
+             if (ctx == null || pkgName == null) return;
             var i = new Intent(ACTION_REMOVE_PSEUDO_DISABLED_PKG);
             i.putExtra(Intent.EXTRA_PACKAGE_NAME, pkgName);
             sendBroadcast(ctx, i);
         }
 
         private static void sendBroadcast(Context ctx, Intent i) {
+            if (ctx == null || i == null) return;
             i.setPackage(ctx.getPackageName());
-            ctx.sendBroadcast(i);
+            try {
+                ctx.sendBroadcast(i);
+            } catch (Exception e) { /* Ignore send errors */ }
         }
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.d(TAG, "onReceive: " + intent + ", process: " + Application.getProcessName());
+            if (context == null || intent == null || intent.getAction() == null) return;
+
             switch (intent.getAction()) {
                 case ACTION_SEND_SELF_BROADCAST: {
                     Intent[] intents = intent.getParcelableArrayExtra(EXTRA_INTENTS, Intent.class);
-                    sendManualSelfBroadcasts(requireNonNull(intents));
+                    if (intents != null) {
+                        sendManualSelfBroadcasts(intents);
+                    }
                     break;
                 }
                 case ACTION_REMOVE_PSEUDO_DISABLED_PKG: {
                     String pkg = intent.getStringExtra(Intent.EXTRA_PACKAGE_NAME);
-                    GmcPackageManager.removePseudoDisabledPackage(pkg);
+                    if (pkg != null) {
+                        GmcPackageManager.removePseudoDisabledPackage(pkg);
+                    }
                     break;
                 }
             }
@@ -279,20 +347,26 @@ public final class PlayStoreHooks {
 
     static void sendManualSelfBroadcasts(Intent[] broadcasts) {
         Context context = GmsCompat.appContext();
+        if (context == null || broadcasts == null || packageManager == null) return;
 
-        // default ClassLoader fails to load the needed class
         ClassLoader cl = context.getClassLoader();
-
         String selfProcessName = Application.getProcessName();
+        if (selfProcessName == null) return;
 
         for (Intent intent : broadcasts) {
+            if (intent == null) continue;
             intent.setPackage(context.getPackageName());
-            List<ResolveInfo> result = packageManager.queryBroadcastReceivers(intent, 0);
+            List<ResolveInfo> result = null;
+            try {
+                 result = packageManager.queryBroadcastReceivers(intent, PackageManager.GET_RESOLVED_FILTER);
+            } catch (Exception e) { continue; } // Ignore query errors
+
+            if (result == null) continue;
+
             for (ResolveInfo resolveInfo : result) {
                 ActivityInfo receiver = resolveInfo.activityInfo;
-                if (receiver == null) {
-                    continue;
-                }
+                if (receiver == null) continue;
+
                 String processName = receiver.processName;
                 if (TextUtils.isEmpty(processName)) {
                     processName = context.getPackageName();
@@ -301,131 +375,176 @@ public final class PlayStoreHooks {
                     continue;
                 }
                 String clsName = receiver.name;
-                Log.d(TAG, "sending manual self broadcast to " + clsName + ": " + intent);
+                if (clsName == null) continue;
+
                 try {
-                    Class cls = cl.loadClass(clsName);
-                    BroadcastReceiver br = (BroadcastReceiver) cls.newInstance();
+                    Class<?> cls = cl.loadClass(clsName);
+                    BroadcastReceiver br = (BroadcastReceiver) cls.getDeclaredConstructor().newInstance();
                     br.onReceive(context, intent);
-                } catch (ReflectiveOperationException e) {
-                    Log.e(TAG, clsName, e);
+                } catch (ReflectiveOperationException | ClassCastException e) {
+                    // Ignore instantiation/cast/receive errors
                 }
             }
         }
     }
 
-    // If state transition that is expected to never fail by Play Store does fail, it may get stuck
-    // in the old state. This happens, for example, when package uninstall fails.
-    // To work-around this, pretend that the package was removed and installed again
     public static void resetPackageState(String packageName) {
+        if (packageName == null) return;
         updatePackageState(packageName, Intent.ACTION_PACKAGE_REMOVED, Intent.ACTION_PACKAGE_ADDED);
     }
 
     public static void updatePackageState(String packageName, String... actions) {
+        if (packageName == null || actions == null || actions.length == 0) return;
+        Context ctx = GmsCompat.appContext();
+        if (ctx == null) return;
+
         var intents = new Intent[actions.length];
         Uri uri = packageUri(packageName);
         for (int i = 0; i < intents.length; ++i) {
-            intents[i] = new Intent(actions[i], uri);
+            if (actions[i] != null) {
+                intents[i] = new Intent(actions[i], uri);
+            }
         }
-        InternalBroadcastReceiver.sendManualBroadcasts(GmsCompat.appContext(), intents);
+        InternalBroadcastReceiver.sendManualBroadcasts(ctx, intents);
     }
 
-    // Called during self-update sequence because PackageManager requires
-    // the restricted CLEAR_APP_CACHE permission
     public static void freeStorageAndNotify(String volumeUuid, long idealStorageSize,
             IPackageDataObserver observer) {
         if (volumeUuid != null) {
             throw new IllegalStateException("unexpected volumeUuid " + volumeUuid);
         }
-        StorageManager sm = GmsCompat.appContext().getSystemService(StorageManager.class);
+        if (observer == null) return;
+
+        Context ctx = GmsCompat.appContext();
+        if (ctx == null) {
+             try { observer.onRemoveCompleted(null, false); } catch (RemoteException e) {}
+             return;
+        }
+        StorageManager sm = ctx.getSystemService(StorageManager.class);
         boolean success = false;
-        try {
-            sm.allocateBytes(StorageManager.UUID_DEFAULT, idealStorageSize);
-            success = true;
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (sm != null) {
+            try {
+                sm.allocateBytes(StorageManager.UUID_DEFAULT, idealStorageSize);
+                success = true;
+            } catch (IOException e) {
+                // Ignore IOExceptions
+            }
         }
         try {
-            // same behavior as PackageManagerService#freeStorageAndNotify()
             String packageName = null;
             observer.onRemoveCompleted(packageName, success);
         } catch (RemoteException e) {
-            throw e.rethrowAsRuntimeException();
         }
     }
 
-    // StorageStatsManager#queryStatsForPackage(UUID, String, UserHandle)
     public static StorageStats queryStatsForPackage(String packageName) throws PackageManager.NameNotFoundException {
-        String apkPath = packageManager.getApplicationInfo(packageName, 0).sourceDir;
+        if (packageManager == null || packageName == null) {
+             throw new PackageManager.NameNotFoundException("PackageManager or packageName is null");
+        }
+        ApplicationInfo appInfo = packageManager.getApplicationInfo(packageName, 0);
+        String apkPath = appInfo.sourceDir;
 
         StorageStats stats = new StorageStats();
-        stats.codeBytes = new File(apkPath).length();
-        // leave dataBytes, cacheBytes, externalCacheBytes at 0
+        if (apkPath != null) {
+            File apkFile = new File(apkPath);
+            if (apkFile.exists()) {
+                 stats.codeBytes = apkFile.length();
+            }
+        }
         return stats;
     }
 
-    // ApplicationPackageManager#setApplicationEnabledSetting
     public static void setApplicationEnabledSetting(String packageName, int newState) {
-        if (newState == PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+        if (packageName != null && newState == PackageManager.COMPONENT_ENABLED_STATE_ENABLED
                     && GmcActivityUtils.getMostRecentVisibleActivity() != null)
         {
             openAppSettings(packageName);
         }
     }
 
-    private static String obbDir;
-    private static String playStoreObbDir;
-
-    // File#mkdirs()
     public static void mkdirsFailed(File file) {
+        if (file == null) return;
         String path = file.getPath();
+        Context ctx = GmsCompat.appContext();
+        if (ctx == null || path == null || obbDir == null || playStoreObbDir == null) return;
 
         if (path.startsWith(obbDir) && !path.startsWith(playStoreObbDir)) {
-            GosPackageState ps = GosPackageState.getForSelf(GmsCompat.appContext());
+            GosPackageState ps = GosPackageState.getForSelf(ctx);
+            if (ps == null) return;
             boolean hasObbAccess = ps.hasFlag(GosPackageStateFlag.ALLOW_ACCESS_TO_OBB_DIRECTORY);
 
             if (!hasObbAccess) {
                 try {
-                    GmsCompatApp.iGms2Gca().showPlayStoreMissingObbPermissionNotification();
+                    IGms2Gca gmsInterface = GmsCompatApp.iGms2Gca();
+                    if (gmsInterface != null) {
+                        gmsInterface.showPlayStoreMissingObbPermissionNotification();
+                    }
                 } catch (RemoteException e) {
-                    GmsCompatApp.callFailed(e);
                 }
             }
         }
     }
 
     static Uri packageUri(String packageName) {
+        if (packageName == null) return null;
         return Uri.fromParts("package", packageName, null);
     }
 
-    // Unfortunately, there's no other way to ensure that the value is present and is of the right type.
-    // Note that Intent.getExtras() makes a copy of the Bundle each time, so reuse its result
-    static int getIntFromBundle(Bundle b, String key) {
-        return ((Integer) b.get(key)).intValue();
+    static int getIntFromBundle(Bundle b, String key, int defaultValue) {
+        if (b == null || key == null || !b.containsKey(key)) {
+            return defaultValue;
+        }
+        Object value = b.get(key);
+        if (value instanceof Integer) {
+            return ((Integer) value).intValue();
+        }
+        // Attempt conversion if it's a String representing an int
+        if (value instanceof String) {
+            try {
+                return Integer.parseInt((String) value);
+            } catch (NumberFormatException e) {
+                return defaultValue;
+            }
+        }
+        return defaultValue;
     }
 
     static void openAppSettings(String packageName) {
+        if (packageName == null) return;
+        Context ctx = GmsCompat.appContext();
+        if (ctx == null) return;
+
         Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-        i.setData(packageUri(packageName));
-        // FLAG_ACTIVITY_CLEAR_TASK is needed to ensure that the right screen is shown (it's a bug in the Settings app)
+        Uri packageUri = packageUri(packageName);
+        if (packageUri == null) return;
+        i.setData(packageUri);
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        GmsCompat.appContext().startActivity(i);
+        try {
+            ctx.startActivity(i);
+        } catch (Exception e) { /* Ignore activity start errors */ }
     }
 
     static void sendIntent(Intent intent, IntentSender target) {
+        if (intent == null || target == null) return;
+        Context ctx = GmsCompat.appContext();
+        if (ctx == null) return;
         try {
-            target.sendIntent(GmsCompat.appContext(), 0, intent, null, null);
+            target.sendIntent(ctx, 0, intent, null, null);
         } catch (IntentSender.SendIntentException e) {
-            Log.d(TAG, "", e);
+            // Ignore send errors
         }
     }
 
     public static boolean isInstallAllowed(String pkgName, ContentResolver cr) {
+        if (pkgName == null || cr == null) return true; // Default to allowed if info missing
         switch (pkgName) {
             case PackageId.GMS_CORE_NAME:
             case PackageId.PLAY_STORE_NAME:
             case PackageId.ANDROID_AUTO_NAME:
             case PackageId.PIXEL_HEALTH_NAME:
-                return Settings.Global.getInt(cr, "gmscompat_play_store_can_install_" + pkgName, 0) == 1;
+                try {
+                    return Settings.Global.getInt(cr, "gmscompat_play_store_can_install_" + pkgName, 0) == 1;
+                } catch (Exception e) { return false; } // Default to not allowed on error
         }
         return true;
     }
@@ -433,41 +552,50 @@ public final class PlayStoreHooks {
     @Nullable
     public static LocaleList overrideApplicationLocales(LocaleList actualLocales, @Nullable String targetPackage) {
         Context ctx = GmsCompat.appContext();
+        if (ctx == null || actualLocales == null) return null;
 
         ContentResolver resolver = ctx.getContentResolver();
+        if (resolver == null) return null;
 
-        String settingRegex = Settings.Global.getString(resolver, "gmscompat_play_store_fetch_all_locales");
+        String settingRegex = null;
+        try {
+             settingRegex = Settings.Global.getString(resolver, "gmscompat_play_store_fetch_all_locales");
+        } catch (Exception e) { return null; }
+
         if (settingRegex == null) {
             return null;
         }
         String pkgName = targetPackage != null ? targetPackage : ctx.getPackageName();
-        if (!pkgName.matches(settingRegex)) {
-            return null;
-        }
+        if (pkgName == null) return null;
 
-        String tag = targetPackage == null ? "GmcAppLocaleSelf" : "GmcAppLocale";
-        if (Log.isLoggable(tag, Log.VERBOSE)) {
-            Log.v(tag, "overriding locales for " + (targetPackage == null ? "self" : targetPackage), new Throwable());
-        }
+        try {
+            if (!pkgName.matches(settingRegex)) {
+                return null;
+            }
+        } catch (Exception e) { return null; } // Invalid regex pattern
 
         int numActualLocales = actualLocales.size();
         ArraySet<Locale> actualLocalesSet = new ArraySet<>(numActualLocales);
 
         Locale[] allLocales = Locale.getAvailableLocales();
+        if (allLocales == null) return null;
         var res = new ArrayList<Locale>(allLocales.length);
 
         for (int i = 0; i < numActualLocales; ++i) {
             Locale l = actualLocales.get(i);
-            res.add(l);
-            actualLocalesSet.add(l);
+            if (l != null) {
+                res.add(l);
+                actualLocalesSet.add(l);
+            }
         }
 
         for (int i = 0; i < allLocales.length; ++i) {
             Locale l = allLocales[i];
-            if (!actualLocalesSet.contains(l)) {
+            if (l != null && !actualLocalesSet.contains(l)) {
                 res.add(l);
             }
         }
+        if (res.isEmpty()) return null;
         return new LocaleList(res.toArray(new Locale[0]));
     }
 
