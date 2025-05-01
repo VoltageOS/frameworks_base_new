@@ -81,14 +81,11 @@ public final class GmsHooks {
     public static final String UI_GmsCore_PROCESS = PACKAGE_GMS_CORE + ".ui";
 
     public static GmsCompatConfig config() {
-        // thread-safe: immutable after publication
         return config;
     }
 
     public static void init(Context ctx, String packageName, String processName) {
         if (!packageName.equals(processName)) {
-            // Fix RuntimeException: Using WebView from more than one process at once with the same data
-            // directory is not supported. https://crbug.com/558377
             WebView.setDataDirectorySuffix("process-shim--" + processName);
         }
 
@@ -109,9 +106,6 @@ public final class GmsHooks {
         configUpdateLock = new Object();
         tlPermissionsToSpoof = new ThreadLocal<>();
 
-        // Locking is needed to prevent a race that would occur if config is updated via
-        // BinderGca2Gms#updateConfig in the time window between BinderGms2Gca#connect and setConfig()
-        // call below. Older GmsCompatConfig would overwrite the newer one in that case.
         synchronized (configUpdateLock) {
             GmsCompatConfig config = GmsCompatApp.connect(ctx, processName);
             setConfig(config);
@@ -129,8 +123,6 @@ public final class GmsHooks {
     static Object configUpdateLock;
 
     static void setConfig(GmsCompatConfig c) {
-        // configUpdateLock should never be null at this point, it's initialized before GmsCompatApp
-        // gets a handle to BinderGca2Gms that is used for updating GmsCompatConfig
         synchronized (configUpdateLock) {
             config = c;
         }
@@ -152,15 +144,13 @@ public final class GmsHooks {
             aer.applicationInfo = ai;
             aer.processName = Application.getProcessName();
 
-            // In some cases, GMS kills its process when it receives an uncaught exception, which
-            // bypasses the standard crash handling infrastructure.
-            // Send the report to GmsCompatApp before GMS receives the uncaughtException() callback.
-
             if (!shouldSkipException(e)) {
                 try {
-                    GmsCompatApp.iGms2Gca().onUncaughtException(aer);
+                    IGms2Gca gmsInterface = GmsCompatApp.iGms2Gca();
+                    if (gmsInterface != null) {
+                        gmsInterface.onUncaughtException(aer);
+                    }
                 } catch (RemoteException re) {
-                    Log.e(TAG, "", re);
                 }
             }
 
@@ -174,83 +164,59 @@ public final class GmsHooks {
                 if (e == null) {
                     return false;
                 }
-
-                boolean skip =
-    // in some cases a DeadSystemRuntimeException is thrown despite the system being actually
-    // still alive, likely when the Binder buffer space is full and a binder transaction with
-    // system_server fails.
-    // See https://cs.android.com/android/platform/superproject/+/android-13.0.0_r3:frameworks/base/core/jni/android_util_Binder.cpp;l=894
-    // (DeadObjectException is rethrown as DeadSystemRuntimeException by
-    // android.os.RemoteException#rethrowFromSystemServer())
-                    e instanceof DeadSystemRuntimeException
-                ;
-
+                boolean skip = e instanceof DeadSystemRuntimeException;
                 if (skip) {
                     return true;
                 }
-
                 e = e.getCause();
             }
         }
     }
 
-    // ContextImpl#getSystemService(String)
     public static boolean isHiddenSystemService(String name) {
-        // return true only for services that are null-checked
         switch (name) {
             case Context.WIFI_SCANNING_SERVICE:
                 return !GmsCompat.isAndroidAuto();
             case Context.CONTEXTHUB_SERVICE:
             case Context.APP_INTEGRITY_SERVICE:
-            // used for factory reset protection
             case Context.PERSISTENT_DATA_BLOCK_SERVICE:
-            // used for updateable fonts
             case Context.FONT_SERVICE:
                 return true;
         }
         return false;
     }
 
-    /**
-     * Use the per-app SSAID as a random serial number for SafetyNet. This doesn't necessarily make
-     * pass, but at least it retusn a valid "failed" response and stops spamming device key
-     * requests.
-     *
-     * This isn't a privacy risk because all unprivileged apps already have access to random SSAIDs.
-     */
-    // Build#getSerial()
     @SuppressLint("HardwareIds")
     public static String getSerial() {
         String ssaid = Settings.Secure.getString(GmsCompat.appContext().getContentResolver(),
                 Settings.Secure.ANDROID_ID);
-        String serial = ssaid.toUpperCase();
-        Log.d(TAG, "Generating serial number from SSAID: " + serial);
-        return serial;
+        if (ssaid == null) {
+            ssaid = "0000000000000000"; // Default if null
+        }
+        return ssaid.toUpperCase();
     }
 
     static class RecentBinderPid implements Comparable<RecentBinderPid> {
         int pid;
         int uid;
         long lastSeen;
-        volatile String[] packageNames; // lazily inited
+        volatile String[] packageNames;
 
         static final int MAX_MAP_SIZE = 50;
         static final int MAP_SIZE_TRIM_TO = 40;
         static final SparseArray<RecentBinderPid> map = new SparseArray(MAX_MAP_SIZE + 1);
 
         public int compareTo(RecentBinderPid b) {
-            return Long.compare(b.lastSeen, lastSeen); // newest come first
+            return Long.compare(b.lastSeen, lastSeen);
         }
     }
 
-    // Remember recent Binder peers to include them in the result of ActivityManager.getRunningAppProcesses()
-    // Binder#execTransact(int, long, long, int)
     public static void onBinderTransaction(int pid, int uid) {
         SparseArray<RecentBinderPid> map = RecentBinderPid.map;
         synchronized (map) {
             RecentBinderPid rbp = map.get(pid);
             if (rbp != null) {
-                if (rbp.uid != uid) { // pid was reused
+                if (rbp.uid != uid) {
                     rbp = null;
                 }
             }
@@ -270,7 +236,6 @@ public final class GmsHooks {
             for (int i = 0; i < mapSize; ++i) {
                 arr[i] = map.valueAt(i);
             }
-            // sorted by lastSeen field in reverse order
             Arrays.sort(arr);
             map.clear();
             for (int i = 0; i < RecentBinderPid.MAP_SIZE_TRIM_TO; ++i) {
@@ -280,16 +245,10 @@ public final class GmsHooks {
         }
     }
 
-    // In some cases (Play Games Services, Play {Asset, Feature} Delivery)
-    // GMS relies on getRunningAppProcesses() to figure out whether its client is running.
-    // This workaround is racy, because unprivileged apps can't know whether an arbitrary pid is alive.
-    // ActivityManager#getRunningAppProcesses()
     public static ArrayList<RunningAppProcessInfo> addRecentlyBoundPids(Context context,
                                                                         List<RunningAppProcessInfo> orig) {
         final RecentBinderPid[] binderPids;
         final int binderPidsCount;
-        // copy to array to avoid long lock contention with Binder.execTransact(),
-        // there are expensive getPackagesForUid() calls below
         {
             SparseArray<RecentBinderPid> map = RecentBinderPid.map;
             synchronized (map) {
@@ -308,22 +267,20 @@ public final class GmsHooks {
             String[] pkgs = rbp.packageNames;
             if (pkgs == null) {
                 if (UserHandle.getUserId(rbp.uid) != UserHandle.myUserId()) {
-                    // SystemUI from userId 0 sends callbacks to apps from all userIds via
-                    // android.window.IOnBackInvokedCallback.
-                    // getPackagesForUid() will fail due to missing privileged
-                    // INTERACT_ACROSS_USERS permission
                     continue;
                 }
-
-                pkgs = pm.getPackagesForUid(rbp.uid);
+                try {
+                    pkgs = pm.getPackagesForUid(rbp.uid);
+                } catch (Exception e) {
+                    // Ignore if package manager fails
+                    pkgs = null;
+                }
                 if (pkgs == null || pkgs.length == 0) {
                     continue;
                 }
-                // this field is volatile
                 rbp.packageNames = pkgs;
             }
             RunningAppProcessInfo pi = new RunningAppProcessInfo();
-            // these fields are immutable after publication
             pi.pid = rbp.pid;
             pi.uid = rbp.uid;
             pi.processName = pkgs[0];
@@ -334,52 +291,51 @@ public final class GmsHooks {
         return res;
     }
 
-    // ContentResolver#query(Uri, String[], Bundle, CancellationSignal)
     public static Cursor maybeModifyQueryResult(Uri uri,
             @Nullable String[] projection, @Nullable Bundle queryArgs, @Nullable Cursor origCursor) {
         String uriString = uri.toString();
-        Log.d(TAG, "maybeModifyQueryResult for " + uriString);
 
         Consumer<ArrayMap<String, String>> mutator = null;
         if (uriString.startsWith(GmsFlag.PHENOTYPE_URI_PREFIX)) {
             List<String> path = uri.getPathSegments();
-            if (path.size() != 1) {
-                Log.e(TAG, "unknown phenotype uri " + uriString, new Throwable());
+            if (path == null || path.size() != 1) {
                 return null;
             }
 
             String namespace = path.get(0);
+            GmsCompatConfig currentConfig = config();
+            if (currentConfig == null || currentConfig.forceDefaultFlagsMap == null) {
+                return null;
+            }
 
-            GmsCompatConfig config = config();
-
-            ArrayList<String> forceDefaultFlagsRegexes = config.forceDefaultFlagsMap.get(namespace);
-
-            if (forceDefaultFlagsRegexes == null) {
+            ArrayList<String> forceDefaultFlagsRegexes = currentConfig.forceDefaultFlagsMap.get(namespace);
+            if (forceDefaultFlagsRegexes == null || forceDefaultFlagsRegexes.isEmpty()) {
                 return null;
             }
 
             mutator = map -> {
-                if (forceDefaultFlagsRegexes != null) {
-                    int patternCnt = forceDefaultFlagsRegexes.size();
-                    Pattern[] patterns = new Pattern[patternCnt];
-                    for (int i = 0; i < patternCnt; ++i) {
+                int patternCnt = forceDefaultFlagsRegexes.size();
+                Pattern[] patterns = new Pattern[patternCnt];
+                for (int i = 0; i < patternCnt; ++i) {
+                    try {
                         patterns[i] = Pattern.compile(forceDefaultFlagsRegexes.get(i));
-                    }
-                    ArrayMap filteredMap = new ArrayMap<>(map.size());
-
-                    outer:
-                    for (int entryIdx = 0, entryCnt = map.size(); entryIdx < entryCnt; ++entryIdx) {
-                        String key = map.keyAt(entryIdx);
-                        for (int patternIdx = 0; patternIdx < patternCnt; ++patternIdx) {
-                            if (patterns[patternIdx].matcher(key).matches()) {
-                                continue outer;
-                            }
-                        }
-                        filteredMap.put(key, map.valueAt(entryIdx));
-                    }
-                    map.clear();
-                    map.putAll(filteredMap);
+                    } catch (Exception e) { patterns[i] = null; } // Ignore invalid patterns
                 }
+                ArrayMap<String, String> filteredMap = new ArrayMap<>(map.size());
+
+                outer:
+                for (int entryIdx = 0, entryCnt = map.size(); entryIdx < entryCnt; ++entryIdx) {
+                    String key = map.keyAt(entryIdx);
+                    if (key == null) continue; // Skip null keys
+                    for (int patternIdx = 0; patternIdx < patternCnt; ++patternIdx) {
+                        if (patterns[patternIdx] != null && patterns[patternIdx].matcher(key).matches()) {
+                            continue outer;
+                        }
+                    }
+                    filteredMap.put(key, map.valueAt(entryIdx));
+                }
+                map.clear();
+                map.putAll(filteredMap);
             };
         }
 
@@ -397,14 +353,15 @@ public final class GmsHooks {
         final int projectionLength = 2;
 
         if (origCursor != null) {
-            projection = origCursor.getColumnNames();
+            try {
+                projection = origCursor.getColumnNames();
+            } catch (Exception e) { return null; } // Handle cursor errors
         }
 
         boolean expectedProjection = projection != null && projection.length == projectionLength
                 && "key".equals(projection[keyIndex]) && "value".equals(projection[valueIndex]);
 
         if (!expectedProjection) {
-            Log.e(TAG, "unexpected projection " + Arrays.toString(projection), new Throwable());
             return null;
         }
 
@@ -412,18 +369,27 @@ public final class GmsHooks {
         if (origCursor == null) {
             map = new ArrayMap<>();
         } else {
-            map = new ArrayMap<>(origCursor.getColumnCount() + 10);
+            map = new ArrayMap<>(origCursor.getCount() + 10);
             try (Cursor orig = origCursor) {
                 while (orig.moveToNext()) {
                     String key = orig.getString(keyIndex);
                     String value = orig.getString(valueIndex);
-
-                    map.put(key, value);
+                    if (key != null) { // Avoid null keys
+                        map.put(key, value);
+                    }
                 }
+            } catch (Exception e) {
+                // Handle potential cursor exceptions during iteration
+                return null;
             }
         }
 
-        mutator.accept(map);
+        try {
+            mutator.accept(map);
+        } catch (Exception e) {
+            // Handle potential exceptions within the mutator
+            return null;
+        }
 
         final int mapSize = map.size();
         MatrixCursor result = new MatrixCursor(projection, mapSize);
@@ -432,71 +398,58 @@ public final class GmsHooks {
             Object[] row = new Object[projectionLength];
             row[keyIndex] = map.keyAt(i);
             row[valueIndex] = map.valueAt(i);
-
             result.addRow(row);
         }
 
         return result;
     }
 
-    // Instrumentation#execStartActivity(Context, IBinder, IBinder, Activity, Intent, int, Bundle)
     public static void onActivityStart(int resultCode, Intent intent, int requestCode, Bundle options) {
-        if (resultCode != ActivityManager.START_ABORTED) {
+        if (resultCode != ActivityManager.START_ABORTED || intent == null) {
             return;
         }
-
-        // handle background activity starts, which normally require a privileged permission
 
         if (requestCode >= 0) {
-            Log.d(TAG, "attempt to call startActivityForResult() from the background " + intent, new Throwable());
             return;
         }
 
-        // needed to prevent invalid reuse of PendingIntents, see PendingIntent doc
         intent.setIdentifier(UUID.randomUUID().toString());
 
         Context ctx = GmsCompat.appContext();
         PendingIntent pendingIntent = PendingIntent.getActivity(ctx, 0, intent,
                 PendingIntent.FLAG_IMMUTABLE, options);
         try {
-            GmsCompatApp.iGms2Gca().startActivityFromTheBackground(ctx.getPackageName(), pendingIntent);
+            IGms2Gca gmsInterface = GmsCompatApp.iGms2Gca();
+            if (gmsInterface != null) {
+                gmsInterface.startActivityFromTheBackground(ctx.getPackageName(), pendingIntent);
+            }
         } catch (RemoteException e) {
-            GmsCompatApp.callFailed(e);
         }
     }
 
-    // Activity#onCreate(Bundle)
     public static void activityOnCreate(Activity activity) {
-
+        // Hook placeholder
     }
 
-    // ContentResolver#insert(Uri, ContentValues, Bundle)
     public static void filterContentValues(Uri url, ContentValues values) {
         if (values != null && Downloads.Impl.CONTENT_URI.equals(url)) {
-            Integer otherUid = values.getAsInteger(Downloads.Impl.COLUMN_OTHER_UID);
-            if (otherUid != null) {
-                if (otherUid.intValue() != Process.SYSTEM_UID) {
-                    throw new IllegalStateException("unexpected COLUMN_OTHER_UID " + otherUid);
-                }
-                // gated by the privileged ACCESS_DOWNLOAD_MANAGER_ADVANCED permission
-                values.remove(Downloads.Impl.COLUMN_OTHER_UID);
+            if (values.containsKey(Downloads.Impl.COLUMN_OTHER_UID)) {
+                 Integer otherUid = values.getAsInteger(Downloads.Impl.COLUMN_OTHER_UID);
+                 if (otherUid == null || otherUid.intValue() != Process.SYSTEM_UID) {
+                     throw new IllegalStateException("unexpected COLUMN_OTHER_UID " + otherUid);
+                 }
+                 values.remove(Downloads.Impl.COLUMN_OTHER_UID);
             }
         }
     }
 
     private static boolean hasNearbyDevicesPermission() {
-        // "Nearby devices" user-facing permission grants multiple underlying permissions,
-        // checking one is enough
         return GmsCompat.hasPermission(Manifest.permission.BLUETOOTH_SCAN);
     }
 
-    // ContextImpl#sendBroadcast
-    // ContextImpl#sendOrderedBroadcast
-    // ContextImpl#sendBroadcastAsUser
-    // ContextImpl#sendOrderedBroadcastAsUser
     public static Bundle filterBroadcastOptions(Intent intent, Bundle options) {
-        if (options == null) {
-            return null;
+        if (options == null || intent == null) {
+            return options;
         }
 
         String targetPkg = intent.getPackage();
@@ -515,19 +468,16 @@ public final class GmsHooks {
         return filterBroadcastOptions(options, targetPkg);
     }
 
-    // PendingIntent#send
     public static Bundle filterBroadcastOptions(Bundle options, String targetPkg) {
+        if (options == null || targetPkg == null) return options;
+
         BroadcastOptions bo = new BroadcastOptions(options);
 
         if (bo.getTemporaryAppAllowlistType() == PowerExemptionManager.TEMPORARY_ALLOW_LIST_TYPE_NONE) {
             return options;
         }
-        // handle privileged BroadcastOptions#setTemporaryAppAllowlist() that is used for
-        // high-priority FCM pushes, location updates via PendingIntent,
-        // geofencing and activity detection notifications etc
 
         long duration = bo.getTemporaryAppAllowlistDuration();
-
         if (duration <= 0) {
             return options;
         }
@@ -540,44 +490,36 @@ public final class GmsHooks {
         return bo.toBundle();
     }
 
-    // Parcel#readException
     public static boolean interceptException(Exception e, Parcel p) {
-        if (!(e instanceof SecurityException)) {
+        if (!(e instanceof SecurityException) || p == null) {
             return false;
         }
 
         if (p.dataAvail() != 0) {
-            Log.w(TAG, "malformed Parcel: dataAvail() " + p.dataAvail() + " after exception", e);
             return false;
         }
 
-        StubDef stub = StubDef.find(e.getStackTrace(), config(), StubDef.FIND_MODE_Parcel);
+        GmsCompatConfig currentConfig = config();
+        if (currentConfig == null) {
+            return false;
+        }
 
+        StubDef stub = StubDef.find(e.getStackTrace(), currentConfig, StubDef.FIND_MODE_Parcel);
         if (stub == null) {
             return false;
         }
 
-        boolean res = stub.stubOutMethod(p);
-
-        String logTag = "GmcDynStub";
-        if (GmsCompat.isDevBuild() || Log.isLoggable(logTag, Log.DEBUG)) {
-            Log.d(logTag, res ? "intercepted" : "stubOut failed", e);
-        }
-
-        return res;
+        return stub.stubOutMethod(p);
     }
 
     public static void onSQLiteOpenHelperConstructed(SQLiteOpenHelper h, @Nullable Context context) {
-        if (context == null) {
+        if (context == null || h == null) {
             return;
         }
 
         if (GmsCompat.isGmsCore()) {
             if (inPersistentGmsCoreProcess) {
                 if ("phenotype.db".equals(h.getDatabaseName()) && !context.isDeviceProtectedStorage()) {
-                    if (phenotypeDb != null) {
-                        Log.w(TAG, "reassigning phenotypeDb", new Throwable());
-                    }
                     phenotypeDb = h;
                 }
             }
@@ -586,6 +528,8 @@ public final class GmsHooks {
 
     @Nullable
     public static Service maybeInstantiateService(String className) {
+        if (className == null) return null;
+
         if (GmsCompatClientService.class.getName().equals(className)) {
             return new GmsCompatClientService();
         }
@@ -612,67 +556,62 @@ public final class GmsHooks {
     private static ThreadLocal<ArraySet<String>> tlPermissionsToSpoof;
 
     public static boolean shouldSpoofSelfPermissionCheck(String perm) {
+        if (perm == null) return false;
         ArraySet<String> set = tlPermissionsToSpoof.get();
-        if (set == null) {
-            return false;
-        }
-
-        return set.contains(perm);
+        return set != null && set.contains(perm);
     }
 
     public static final String GMS_SERVICE_BROKER_INTERFACE_DESCRIPTOR =
             "com.google.android.gms.common.internal.IGmsServiceBroker";
 
     public static boolean onBeginGmsServiceBrokerCall(int transactionCode, Parcel data) {
-        if (transactionCode != 46) { // getService() method
+        if (transactionCode != 46 || data == null) { // getService() method
             return false;
         }
 
+        int origPos = data.dataPosition();
         try {
             data.enforceInterface(GMS_SERVICE_BROKER_INTERFACE_DESCRIPTOR);
-            // IGmsCallbacks binder
-            data.readStrongBinder();
+            data.readStrongBinder(); // IGmsCallbacks binder
 
             if (data.readInt() == 1) { // GetServiceRequest is present
-                // GetServiceRequest object header
+                data.readInt(); // GetServiceRequest object header
                 data.readInt();
+                data.readInt(); // version
                 data.readInt();
-
-                // version
-                data.readInt();
-                data.readInt();
-
-                // id of serviceId property
-                data.readInt();
+                data.readInt(); // id of serviceId property
 
                 int serviceId = data.readInt();
 
-                ArraySet<String> permsToSpoof = config().gmsServiceBrokerPermissionBypasses.get(serviceId);
+                GmsCompatConfig currentConfig = config();
+                ArraySet<String> permsToSpoof = null;
+                if (currentConfig != null && currentConfig.gmsServiceBrokerPermissionBypasses != null) {
+                    permsToSpoof = currentConfig.gmsServiceBrokerPermissionBypasses.get(serviceId);
+                }
+
                 if (permsToSpoof != null) {
-                    Log.d(TAG, "start spoofing self permission checks for getService() call for API "
-                            + serviceId + ", perms: " + Arrays.toString(permsToSpoof.toArray()));
                     tlPermissionsToSpoof.set(permsToSpoof);
-                    // there's a second layer of caching inside GmsCore, need to notify permission
-                    // change listener used by that cache
                     GmcPackageManager.notifyPermissionsChangeListeners();
                     return true;
                 }
             }
+        } catch (Exception e) {
+             // Ignore parcel reading errors
         } finally {
-            data.setDataPosition(0);
+            data.setDataPosition(origPos);
         }
 
         return false;
     }
 
     public static void onEndGmsServiceBrokerCall() {
-        Log.d(TAG, "end self permission check spoofing");
         tlPermissionsToSpoof.set(null);
-        // invalidate the cache of permission state inside GmsCore
         GmcPackageManager.notifyPermissionsChangeListeners();
     }
 
     public static IBinder maybeOverrideBinder(IBinder binder) {
+        if (binder == null) return null;
+
         boolean proceed = GmsCompat.isEnabled() || GmsCompat.isClientOfGmsCore();
         if (!proceed) {
             return null;
@@ -682,7 +621,7 @@ public final class GmsHooks {
         try {
             ifaceName = binder.getInterfaceDescriptor();
         } catch (RemoteException e) {
-            Log.d(TAG, "", e);
+            // Ignore
         }
 
         if (ifaceName == null) {
