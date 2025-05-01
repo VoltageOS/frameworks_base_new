@@ -48,6 +48,7 @@ import android.util.ArraySet;
 import android.util.Log;
 import android.util.PackageUtils;
 
+import com.android.internal.gmscompat.GmsCompatConfig;
 import com.android.internal.gmscompat.GmsHooks;
 import com.android.internal.gmscompat.GmsInfo;
 import com.android.internal.gmscompat.PlayStoreHooks;
@@ -57,7 +58,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@SuppressLint("WrongConstant") // lint doesn't like "flags & ~" expressions
+@SuppressLint("WrongConstant")
 public class GmcPackageManager extends ApplicationPackageManager {
     private static final String TAG = GmcPackageManager.class.getSimpleName();
 
@@ -72,32 +73,21 @@ public class GmcPackageManager extends ApplicationPackageManager {
             ArraySet<String> hiddenPkgs = HIDDEN_PACKAGES;
 
             if (Application.getProcessName().equals(PackageId.PLAY_STORE_NAME)) {
-                // PackageInstaller.abandonSession() calls are conditionally stubbed out to prevent
-                // Play Store from destroying sessions that are waiting for confirmation from the
-                // user.
-                //
-                // To avoid having too many pending sessions, clean them up when the main Play Store
-                // process starts up, before any of its code is executed.
                 PackageInstaller installerWrapper = ctx.getPackageManager().getPackageInstaller();
                 IPackageInstaller installer = installerWrapper.getIPackageInstaller();
 
                 for (PackageInstaller.SessionInfo si : installerWrapper.getAllSessions()) {
                     try {
-                        // PackageInstaller.abandonSession() is conditionally stubbed out, call
-                        // the binder method directly
                         installer.abandonSession(si.sessionId);
                     } catch (RemoteException | SecurityException e) {
-                        // confusingly, SecurityException is thrown when session is already racily
-                        // abandoned
-                        Log.e(TAG, "", e);
                     }
-                    Log.d(TAG, "abandoned session " + si.sessionId);
                 }
             }
         }
     }
 
     public static void maybeAdjustPackageInfo(PackageInfo pi) {
+        if (pi == null) return;
         ApplicationInfo ai = pi.applicationInfo;
         if (ai != null) {
             maybeAdjustApplicationInfo(ai);
@@ -105,16 +95,10 @@ public class GmcPackageManager extends ApplicationPackageManager {
     }
 
     public static void maybeAdjustApplicationInfo(ApplicationInfo ai) {
+        if (ai == null) return;
         String packageName = ai.packageName;
 
         if (GmsInfo.PACKAGE_GMS_CORE.equals(packageName)) {
-            // Checked before accessing com.google.android.gms.phenotype content provider
-            // in com.google.android.libraries.phenotype.client
-            // .PhenotypeClientHelper#validateContentProvider() -> isGmsCorePreinstalled()
-            // PhenotypeFlags will always return their default values if these flags aren't set.
-            //
-            // Also need to be set to allow updates of GmsCore through Play Store without a
-            // logged-in Google account
             if (GmsCompat.isGmsCore() || GmsCompat.isClientOfGmsCore(ai)) {
                 ai.flags |= ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP;
             }
@@ -133,7 +117,6 @@ public class GmcPackageManager extends ApplicationPackageManager {
             PlayStoreHooks.deletePackage(this, packageName, observer, flags);
             return;
         }
-
         super.deletePackage(packageName, observer, flags);
     }
 
@@ -143,7 +126,6 @@ public class GmcPackageManager extends ApplicationPackageManager {
             PlayStoreHooks.freeStorageAndNotify(volumeUuid, idealStorageSize, observer);
             return;
         }
-
         super.freeStorageAndNotify(volumeUuid, idealStorageSize, observer);
     }
 
@@ -152,15 +134,15 @@ public class GmcPackageManager extends ApplicationPackageManager {
         if (GmsCompat.isPlayStore()) {
             if (isPseudoDisabledPackage(packageName)) {
                 try {
-                    // check whether this package is actually absent
                     super.getApplicationInfoAsUser(packageName, ApplicationInfoFlags.of(0L), getUserId());
                 } catch (NameNotFoundException e) {
-                    // package state tracking happens in the same process that tries to enable
-                    // the package, no need to sync this across all processes, at least for now
-                    GmsCompat.appContext().getMainThreadHandler().post(() -> {
-                        PlayStoreHooks.InternalBroadcastReceiver.removePseudoDisabledPackage(GmsCompat.appContext(), packageName);
-                        PlayStoreHooks.updatePackageState(packageName, Intent.ACTION_PACKAGE_CHANGED, Intent.ACTION_PACKAGE_REMOVED);
-                    });
+                    Context ctx = GmsCompat.appContext();
+                    if (ctx != null && ctx.getMainThreadHandler() != null) {
+                        ctx.getMainThreadHandler().post(() -> {
+                            PlayStoreHooks.InternalBroadcastReceiver.removePseudoDisabledPackage(ctx, packageName);
+                            PlayStoreHooks.updatePackageState(packageName, Intent.ACTION_PACKAGE_CHANGED, Intent.ACTION_PACKAGE_REMOVED);
+                        });
+                    }
                     return;
                 }
             }
@@ -171,22 +153,18 @@ public class GmcPackageManager extends ApplicationPackageManager {
         try {
             super.setApplicationEnabledSetting(packageName, newState, flags);
         } catch (SecurityException e) {
-            Log.d(TAG, "", e);
         }
     }
 
     @Override
     public boolean hasSystemFeature(String name) {
         switch (name) {
-            // checked before accessing privileged UwbManager
             case "android.hardware.uwb":
                 return false;
         }
-
         return super.hasSystemFeature(name);
     }
 
-    // requires privileged OBSERVE_GRANT_REVOKE_PERMISSIONS permission
     @Override
     public void addOnPermissionsChangeListener(OnPermissionsChangedListener listener) {
         synchronized (onPermissionsChangedListeners) {
@@ -202,7 +180,6 @@ public class GmcPackageManager extends ApplicationPackageManager {
     }
 
     public static void notifyPermissionsChangeListeners() {
-        Log.d("GmcPackageManager", "notifyPermissionsChangeListeners");
         int myUid = Process.myUid();
         synchronized (onPermissionsChangedListeners) {
             for (OnPermissionsChangedListener l : onPermissionsChangedListeners) {
@@ -214,15 +191,11 @@ public class GmcPackageManager extends ApplicationPackageManager {
     private static final ArrayList<OnPermissionsChangedListener> onPermissionsChangedListeners =
             new ArrayList<>();
 
-    // MATCH_ANY_USER flag requires privileged INTERACT_ACROSS_USERS permission
-
     private static PackageInfoFlags filterFlags(PackageInfoFlags flags) {
         long v = flags.getValue();
-
         if ((v & MATCH_ANY_USER) != 0) {
             return PackageInfoFlags.of(v & ~MATCH_ANY_USER);
         }
-
         return flags;
     }
 
@@ -245,44 +218,48 @@ public class GmcPackageManager extends ApplicationPackageManager {
     public PackageInfo getPackageInfo(VersionedPackage versionedPackage, PackageInfoFlags flags) throws NameNotFoundException {
         throwIfHidden(versionedPackage.getPackageName());
         flags = filterFlags(flags);
-        try {
-            PackageInfo pi = super.getPackageInfo(versionedPackage, flags);
-            maybeAdjustPackageInfo(pi);
-            return pi;
-        } catch (NameNotFoundException e) {
-            return makePseudoDisabledPackageInfoOrThrow(versionedPackage.getPackageName(), flags);
+
+        PackageInfo pdi = makePseudoDisabledPackageInfoOrThrow(versionedPackage.getPackageName(), flags);
+        if (pdi != null) {
+            return pdi;
         }
+
+        PackageInfo pi = super.getPackageInfo(versionedPackage, flags);
+        maybeAdjustPackageInfo(pi);
+        return pi;
     }
 
     @Override
     public PackageInfo getPackageInfoAsUser(String packageName, PackageInfoFlags flags, int userId) throws NameNotFoundException {
         throwIfHidden(packageName);
         flags = filterFlags(flags);
-        try {
-            PackageInfo pi = super.getPackageInfoAsUser(packageName, flags, userId);
-            maybeAdjustPackageInfo(pi);
-            return pi;
-        } catch (NameNotFoundException e) {
-            return makePseudoDisabledPackageInfoOrThrow(packageName, flags);
+
+        PackageInfo pdi = makePseudoDisabledPackageInfoOrThrow(packageName, flags);
+        if (pdi != null) {
+            return pdi;
         }
+
+        PackageInfo pi = super.getPackageInfoAsUser(packageName, flags, userId);
+        maybeAdjustPackageInfo(pi);
+        return pi;
     }
 
     @Override
     public ApplicationInfo getApplicationInfoAsUser(String packageName, ApplicationInfoFlags flags, int userId) throws NameNotFoundException {
-        try {
-            ApplicationInfo ai = super.getApplicationInfoAsUser(packageName, flags, userId);
-            maybeAdjustApplicationInfo(ai);
-            return ai;
-        } catch (NameNotFoundException e) {
-            return makePseudoDisabledApplicationInfoOrThrow(packageName, flags);
+        ApplicationInfo adi = makePseudoDisabledApplicationInfoOrThrow(packageName, flags);
+        if (adi != null) {
+            return adi;
         }
+
+        ApplicationInfo ai = super.getApplicationInfoAsUser(packageName, flags, userId);
+        maybeAdjustApplicationInfo(ai);
+        return ai;
     }
 
     @Override
     public List<ApplicationInfo> getInstalledApplicationsAsUser(ApplicationInfoFlags flags, int userId) {
         List<ApplicationInfo> ret = super.getInstalledApplicationsAsUser(flags, userId);
         List<ApplicationInfo> res = new ArrayList<>(ret.size());
-
         ArraySet<String> pseudoDisabledPackages = clonePseudoDisabledPackages();
 
         for (ApplicationInfo ai : ret) {
@@ -301,7 +278,6 @@ public class GmcPackageManager extends ApplicationPackageManager {
                 res.add(ai);
             }
         }
-
         return res;
     }
 
@@ -310,7 +286,6 @@ public class GmcPackageManager extends ApplicationPackageManager {
         flags = filterFlags(flags);
         List<PackageInfo> ret = super.getInstalledPackagesAsUser(flags, userId);
         List<PackageInfo> res = new ArrayList<>(ret.size());
-
         ArraySet<String> pseudoDisabledPackages = clonePseudoDisabledPackages();
 
         for (PackageInfo pi : ret) {
@@ -329,7 +304,6 @@ public class GmcPackageManager extends ApplicationPackageManager {
                 res.add(pi);
             }
         }
-
         return res;
     }
 
@@ -337,15 +311,12 @@ public class GmcPackageManager extends ApplicationPackageManager {
     public String[] getPackagesForUid(int uid) {
         int userId = UserHandle.getUserId(uid);
         int myUserId = UserHandle.myUserId();
-
         if (userId != myUserId) {
             if (userId != 0) {
                 throw new IllegalArgumentException("uid from unexpected userId: " + uid);
             }
-            // querying uids from other userIds requires a privileged permission
             uid = UserHandle.getUid(myUserId, UserHandle.getAppId(uid));
         }
-
         return super.getPackagesForUid(uid);
     }
 
@@ -354,7 +325,6 @@ public class GmcPackageManager extends ApplicationPackageManager {
     public int getApplicationEnabledSetting(String packageName) {
         try {
             int res = super.getApplicationEnabledSetting(packageName);
-
             switch (res) {
                 case COMPONENT_ENABLED_STATE_DISABLED:
                 case COMPONENT_ENABLED_STATE_DISABLED_USER:
@@ -363,7 +333,6 @@ public class GmcPackageManager extends ApplicationPackageManager {
                         res = COMPONENT_ENABLED_STATE_DEFAULT;
                     }
             }
-
             return res;
         } catch (Exception e) {
             if (isPseudoDisabledPackage(packageName)) {
@@ -404,20 +373,13 @@ public class GmcPackageManager extends ApplicationPackageManager {
             case PackageId.ANDROID_AUTO_NAME:
             case PackageId.PIXEL_HEALTH_NAME:
             case PackageId.GMS_CORE_NAME:
-                // These packages need to be exempted from updates via Play Store to prevent breaking the
-                // compatibility layer.
-                //
-                // Play Store respects the value of InstallSourceInfo#getUpdateOwnerPackageName():
-                // packages that have non-Play Store update owners are not updated by Play Store
-                ContentResolver cr = GmsCompat.appContext().getContentResolver();
+                Context ctx = GmsCompat.appContext();
+                if (ctx == null) break; // Cannot proceed without context
+                ContentResolver cr = ctx.getContentResolver();
+                if (cr == null) break; // Cannot proceed without resolver
                 String updateOwnerPackage = PlayStoreHooks.isInstallAllowed(packageName, cr) ?
-                        // Play Store tries to use installer session preapporaval when update ownership is
-                        // set and Play Store is not the update owner. Installer session preapproval is
-                        // disabled on GrapheneOS, which leads to installation failure. As a workaround,
-                        // unconditionally return to Play Store that it's already the update owner. OS
-                        // will handle update ownership change confirmation itself.
                         PackageId.PLAY_STORE_NAME :
-                        PackageUtils.getFirstPartyAppSourcePackageName(GmsCompat.appContext());
+                        PackageUtils.getFirstPartyAppSourcePackageName(ctx);
                 res = new InstallSourceInfo(
                         res.getInitiatingPackageName(),
                         res.getInitiatingPackageSigningInfo(),
@@ -428,29 +390,24 @@ public class GmcPackageManager extends ApplicationPackageManager {
                 );
                 break;
         }
-
         return res;
     }
 
-    private PackageInfo makePseudoDisabledPackageInfoOrThrow(String pkgName, PackageInfoFlags flags) throws NameNotFoundException {
+    @Nullable
+    private PackageInfo makePseudoDisabledPackageInfoOrThrow(String pkgName, PackageInfoFlags flags) {
         if (!isPseudoDisabledPackage(pkgName)) {
-            throw new NameNotFoundException();
+            return null;
         }
         PackageInfo pi = maybeMakePseudoDisabledPackageInfo(pkgName, flags);
-        if (pi == null) {
-            throw new NameNotFoundException();
-        }
         return pi;
     }
 
-    private ApplicationInfo makePseudoDisabledApplicationInfoOrThrow(String pkgName, ApplicationInfoFlags flags) throws NameNotFoundException {
+    @Nullable
+    private ApplicationInfo makePseudoDisabledApplicationInfoOrThrow(String pkgName, ApplicationInfoFlags flags) {
         if (!isPseudoDisabledPackage(pkgName)) {
-            throw new NameNotFoundException();
+            return null;
         }
         ApplicationInfo ai = maybeMakePseudoDisabledApplicationInfo(pkgName, flags);
-        if (ai == null) {
-            throw new NameNotFoundException();
-        }
         return ai;
     }
 
@@ -463,8 +420,10 @@ public class GmcPackageManager extends ApplicationPackageManager {
             return null;
         }
         pi.packageName = pkgName;
-        pi.applicationInfo.packageName = pkgName;
-        pi.applicationInfo.enabled = false;
+        if (pi.applicationInfo != null) {
+            pi.applicationInfo.packageName = pkgName;
+            pi.applicationInfo.enabled = false;
+        }
         pi.setLongVersionCode(Integer.MAX_VALUE);
         return pi;
     }
@@ -480,30 +439,20 @@ public class GmcPackageManager extends ApplicationPackageManager {
         ai.packageName = pkgName;
         ai.enabled = false;
         ai.longVersionCode = Integer.MAX_VALUE;
-        ai.versionCode = Integer.MAX_VALUE;
         return ai;
     }
 
     private static String selfPkgName() {
-        return GmsCompat.appContext().getPackageName();
+        Context ctx = GmsCompat.appContext();
+        return (ctx != null) ? ctx.getPackageName() : "com.google.android.gms"; // Fallback if context is null
     }
 
-    // Pseudo-disabled PackageInfo/ApplicationInfo is used to prevent Play Store from auto-installing
-    // optional packages, such as "Play Services for AR". It's returned only when the package is
-    // not installed.
-    // When Play Store tries to enable a pseudo-disabled package, it receives a callback that
-    // the package was uninstalled. This allows the user to install a pseudo-disabled package
-    // by pressing the "Enable" button, which reveals the "Install" button.
-
-    // important to have it static: there are multiple instances of enclosing class in the same process
     private static final ArraySet<String> pseudoDisabledPackages = new ArraySet<>();
 
     private static void initPseudoDisabledPackages() {
         if (GmsCompat.isPlayStore()) {
-            // "Play Services for AR"
             pseudoDisabledPackages.add("com.google.ar.core");
         }
-
         if (GmsCompat.isAndroidAuto()) {
             pseudoDisabledPackages.add(PackageId.G_SEARCH_APP_NAME);
             pseudoDisabledPackages.add("com.google.android.apps.maps");
@@ -533,7 +482,6 @@ public class GmcPackageManager extends ApplicationPackageManager {
         if (!GmsCompat.isPlayStore()) {
             return false;
         }
-
         switch (pkgName) {
             case GmsInfo.PACKAGE_GMS_CORE:
                 return false;
@@ -545,15 +493,17 @@ public class GmcPackageManager extends ApplicationPackageManager {
     private static ArraySet<ComponentName> componentsWithForcedEnabledSetting;
 
     private static void initForceDisabledComponents(Context ctx) {
+        if (ctx == null) return;
         final String pkgName = ctx.getPackageName();
-        ArrayMap<String, Integer> forcedCes = GmsHooks.config().forceComponentEnabledSettingsMap.get(pkgName);
+        GmsCompatConfig config = GmsHooks.config();
+        if (config == null || config.forceComponentEnabledSettingsMap == null) return;
 
+        ArrayMap<String, Integer> forcedCes = config.forceComponentEnabledSettingsMap.get(pkgName);
         if (forcedCes == null) {
             return;
         }
 
         final int cnt = forcedCes.size();
-
         var components = new ArraySet<ComponentName>(cnt);
         var settings = new ArrayList<ComponentEnabledSetting>(cnt);
         for (int i = 0; i < cnt; ++i) {
@@ -563,10 +513,8 @@ public class GmcPackageManager extends ApplicationPackageManager {
             var ces = new ComponentEnabledSetting(name, state, DONT_KILL_APP | SKIP_IF_MISSING);
             settings.add(ces);
         }
-
         componentsWithForcedEnabledSetting = components;
 
-        // Don't repeat setComponentEnabledSettings() in all processes
         boolean shouldUpdate;
         if (GmsCompat.isGmsCore()) {
             shouldUpdate = GmsHooks.inPersistentGmsCoreProcess;
@@ -578,9 +526,11 @@ public class GmcPackageManager extends ApplicationPackageManager {
 
         if (shouldUpdate) {
             try {
-                ActivityThread.getPackageManager().setComponentEnabledSettings(settings, ctx.getUserId(), pkgName);
+                IPackageManager pm = ActivityThread.getPackageManager();
+                if (pm != null) {
+                    pm.setComponentEnabledSettings(settings, ctx.getUserId(), pkgName);
+                }
             } catch (Exception e) {
-                Log.d(TAG, "", e);
             }
         }
     }
@@ -589,14 +539,10 @@ public class GmcPackageManager extends ApplicationPackageManager {
         if (cn == null) {
             return true;
         }
-
         ArraySet<ComponentName> set = componentsWithForcedEnabledSetting;
         if (set != null && set.contains(cn)) {
-            Log.d(TAG, "skipped setComponentEnabledSetting for " + cn + ", newState " + newState
-                    + ", flags " + flags);
             return false;
         }
-
         return true;
     }
 
@@ -606,16 +552,15 @@ public class GmcPackageManager extends ApplicationPackageManager {
         if (!isSetComponentEnabledSettingAllowed(componentName, newState, flags)) {
             return;
         }
-
         try {
             super.setComponentEnabledSetting(componentName, newState, flags);
         } catch (SecurityException e) {
-            Log.d(TAG, "", e);
         }
     }
 
     @Override
     public void setComponentEnabledSettings(List<ComponentEnabledSetting> settings) {
+        if (settings == null) return;
         settings = settings.stream()
                 .filter(s -> isSetComponentEnabledSettingAllowed(s.getComponentName(),
                         s.getEnabledState(), s.getEnabledFlags()))
@@ -623,46 +568,32 @@ public class GmcPackageManager extends ApplicationPackageManager {
         if (settings.isEmpty()) {
             return;
         }
-
         try {
             super.setComponentEnabledSettings(settings);
         } catch (SecurityException e) {
-            Log.d(TAG, "", e);
         }
     }
 
-    /** @see android.app.ContextImpl#createPackageContext */
     @Nullable
     public static Context maybeOverrideGsfPackageContext(String packageName) {
-        if (!GmsCompat.isGmsCore()) {
+        if (!GmsCompat.isGmsCore() || !PackageId.GSF_NAME.equals(packageName)) {
             return null;
         }
-
-        if (!PackageId.GSF_NAME.equals(packageName)) {
-            return null;
-        }
-
-        // On first launch, GmsCore attempts to migrate GSF databases into itself. GSF is a
-        // hasCode=false package since Android 15 and is not needed for fresh installs of GmsCore.
-        // If GSF is absent, GmsCore crashes when it tries to create package context for GSF as
-        // part of database migration. To prevent this crash, return GmsCore app context instead
-        // of GSF package context, which turns database migration into a no-op.
 
         Context ctx = GmsCompat.appContext();
+        if (ctx == null) return null;
         PackageManager pkgManager = ctx.getPackageManager();
+        if (pkgManager == null) return null;
 
         try {
             pkgManager.getApplicationInfo(packageName, 0);
         } catch (PackageManager.NameNotFoundException e) {
-            Log.d(TAG, "replacing GSF package context with GmsCore app context", new Throwable());
             return ctx;
         }
 
         try {
             PackageInfo pi = pkgManager.getPackageInfo(PackageId.GMS_CORE_NAME, 0);
             if (pi.sharedUserId == null) {
-                // GmsCore has left the GSF sharedUid but GSF is still present
-                Log.d(TAG, "maybeReplaceGsfPackageName: sharedUserId is null, ignoring GSF", new Throwable());
                 return ctx;
             }
             return null;
