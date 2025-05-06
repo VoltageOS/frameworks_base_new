@@ -15,14 +15,20 @@
  */
 package android.platform.test.ravenwood;
 
-public class RavenwoodUnsupportedApiException extends UnsupportedOperationException {
-    public RavenwoodUnsupportedApiException(String message) {
-        super(message);
+import android.content.ComponentName;
+import android.content.pm.InstrumentationInfo;
+
+public class RavenwoodPackageManager extends RavenwoodBasePackageManager {
+
+    private final RavenwoodContext mContext;
+
+    public RavenwoodPackageManager(RavenwoodContext context) {
+        mContext = context;
     }
 
-    public RavenwoodUnsupportedApiException() {
-        super("This method is not yet supported under the Ravenwood deviceless testing "
-                + "environment; consider requesting support from the API owner or "
-                + "consider using Mockito; more details at go/ravenwood");
+    @Override
+    public InstrumentationInfo getInstrumentationInfo(ComponentName className, int flags)
+            throws NameNotFoundException {
+        return new InstrumentationInfo();
     }
 }
