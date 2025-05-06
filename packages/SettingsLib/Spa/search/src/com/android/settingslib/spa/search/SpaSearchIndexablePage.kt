@@ -18,12 +18,14 @@ package com.android.settingslib.spa.search
 
 import android.content.Context
 
-interface SearchablePage {
-    data class SearchItem(val itemTitle: String, val keywords: String? = null)
+data class SpaSearchIndexablePage(
+    val targetClass: Class<*>,
+    val itemsProvider: (Context) -> List<SpaSearchIndexableItem>,
+)
 
-    /** Gets the title of the page. */
-    fun getPageTitleForSearch(context: Context): String
-
-    /** Gets the titles of the searchable items at the current moment. */
-    fun getSearchItems(context: Context): List<SearchItem>
-}
+data class SpaSearchIndexableItem(
+    val searchLandingKey: SpaSearchLanding.SpaSearchLandingKey,
+    val pageTitle: String,
+    val itemTitle: String,
+    val keywords: String? = null,
+)
