@@ -4848,7 +4848,7 @@ public class PackageManagerService implements PackageSender, TestUtilityService 
                             PackageManagerService.this, packageName, userId);
 
                     final boolean succeeded;
-                    try (PackageFreezer freezer = freezePackage(packageName, UserHandle.USER_ALL,
+                    try (PackageFreezer freezer = freezePackage(packageName, userId,
                             "clearApplicationUserData",
                             ApplicationExitInfo.REASON_USER_REQUESTED, null /* request */,
                             /* waitAppKilled= */ true)) {
