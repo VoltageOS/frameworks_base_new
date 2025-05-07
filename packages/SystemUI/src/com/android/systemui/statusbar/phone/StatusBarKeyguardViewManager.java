@@ -1102,6 +1102,7 @@ public class StatusBarKeyguardViewManager implements RemoteInputController.Callb
     public void onStartedWakingUp() {
         mIsSleeping = false;
         setRootViewAnimationDisabled(false);
+        reset(false);
         NavigationBarView navBarView = mCentralSurfaces.getNavigationBarView();
         if (navBarView != null) {
             navBarView.forEachView(view ->
@@ -1116,6 +1117,7 @@ public class StatusBarKeyguardViewManager implements RemoteInputController.Callb
     public void onStartedGoingToSleep() {
         mIsSleeping = true;
         setRootViewAnimationDisabled(true);
+        reset(true);
         NavigationBarView navBarView = mCentralSurfaces.getNavigationBarView();
         if (navBarView != null) {
             navBarView.forEachView(view ->
