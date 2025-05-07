@@ -32,7 +32,6 @@ import com.android.systemui.qs.tiles.CompassTile
 import com.android.systemui.qs.tiles.RefreshRateTile
 import com.android.systemui.qs.tiles.ScreenshotTile
 import com.android.systemui.qs.tiles.SleepModeTile
-import com.android.systemui.qs.tiles.SoundTile
 import com.android.systemui.qs.tiles.UsbTetherTile
 import com.android.systemui.qs.tiles.VPNTetheringTile
 import com.android.systemui.qs.tiles.VolumeTile
@@ -125,12 +124,6 @@ interface VoltageModule {
     @IntoMap
     @StringKey(AmbientDisplayTile.TILE_SPEC)
     fun bindAmbientDisplayTile(ambientDisplayTile: AmbientDisplayTile): QSTileImpl<*>
-
-    /** Inject SoundTile into tileMap in QSModule */
-    @Binds
-    @IntoMap
-    @StringKey(SoundTile.TILE_SPEC)
-    fun bindSoundTile(soundTile: SoundTile): QSTileImpl<*>
 
     /** Inject UsbTetherTile into tileMap in QSModule */
     @Binds
