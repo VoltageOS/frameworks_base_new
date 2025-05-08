@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-package com.android.systemui.statusbar.notification.row.data.repository
+package com.android.systemui.statusbar.notification.row.ui.viewmodel
 
-import com.android.internal.R
-import com.android.systemui.statusbar.notification.collection.BundleSpec
-import com.android.systemui.statusbar.notification.stack.BUCKET_RECS
+import com.android.systemui.kosmos.Kosmos
+import com.android.systemui.statusbar.notification.row.data.repository.TEST_BUNDLE_SPEC
 
-val TEST_BUNDLE_SPEC =
-    BundleSpec(
-        key = "Test Bundle",
-        titleText = R.string.recs_notification_channel_label,
-        summaryText = R.string.redacted_notification_action_title,
-        icon = R.drawable.ic_settings,
-        bucket = BUCKET_RECS,
-        bundleType = 0,
-    )
+val Kosmos.bundleHeaderGutsViewModel by
+    Kosmos.Fixture {
+        BundleHeaderGutsViewModel(
+            titleText = TEST_BUNDLE_SPEC.titleText,
+            summaryText = TEST_BUNDLE_SPEC.summaryText,
+            bundleIcon = TEST_BUNDLE_SPEC.icon,
+        )
+    }
