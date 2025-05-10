@@ -6721,6 +6721,11 @@ public final class Settings {
          */
         public static final String ONGOING_ACTION_CHIP = "ongoing_action_chip";
 
+	/**
+         * @hide
+         */
+	private static final String COMPACT_MODE = "compact_mode";
+
         /**
          * @hide
          */
