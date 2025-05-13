@@ -24,9 +24,9 @@ import java.lang.annotation.Retention;
 import javax.inject.Scope;
 
 /**
- * Scope annotation for singleton items within the ExpandableNotificationRowComponent.
+ * Scope annotation for singleton items within the BundleRowComponent.
  */
 @Documented
 @Retention(RUNTIME)
 @Scope
-public @interface NotificationRowScope {}
+public @interface BundleRowScope {}
