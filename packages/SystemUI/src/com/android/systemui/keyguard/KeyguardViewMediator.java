@@ -3327,10 +3327,11 @@ public class KeyguardViewMediator implements CoreStartable,
 
         // It's possible that the device was unlocked (via BOUNCER) while dozing. It's time to
         // wake up.
-        // if (mAodShowing) {
-        //     mPM.wakeUp(mSystemClock.uptimeMillis(), PowerManager.WAKE_REASON_GESTURE,
-        //             "com.android.systemui:BOUNCER_DOZING");
-        // }
+        if (mAodShowing && !mLockPatternUtils.isLockScreenDisabled(
+                mSelectedUserInteractor.getSelectedUserId())) {
+            mPM.wakeUp(mSystemClock.uptimeMillis(), PowerManager.WAKE_REASON_GESTURE,
+                    "com.android.systemui:BOUNCER_DOZING");
+        }
 
         synchronized (KeyguardViewMediator.this) {
             if (DEBUG) Log.d(TAG, "handleHide");
