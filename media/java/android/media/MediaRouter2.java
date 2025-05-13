@@ -660,16 +660,14 @@ public final class MediaRouter2 {
             ex.rethrowFromSystemServer();
         }
 
-        if (!isProxyRouter && (currentSystemRoutes == null || currentSystemRoutes.isEmpty())) {
+        if (currentSystemRoutes == null || currentSystemRoutes.isEmpty()) {
             throw new RuntimeException("Null or empty currentSystemRoutes. Something is wrong.");
         }
 
-        if (currentSystemRoutes != null) {
-          for (MediaRoute2Info route : currentSystemRoutes) {
+        for (MediaRoute2Info route : currentSystemRoutes) {
             mRoutes.put(route.getId(), route);
         }
     }
-}
 
     /**
      * Gets the client package name of the app which this media router controls.
