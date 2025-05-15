@@ -129,7 +129,6 @@ open class ShadeViewControllerEmptyImpl @Inject constructor() :
     @Deprecated("Use SceneInteractor.currentScene instead.")
     override val legacyPanelExpansion = flowOf(0f)
     override val udfpsTransitionToFullShadeProgress = MutableStateFlow(0f)
-    override fun showIsland(show: Boolean) {}
 }
 
 class ShadeHeadsUpTrackerEmptyImpl : ShadeHeadsUpTracker {

@@ -228,12 +228,10 @@ public class HeadsUpAppearanceController extends ViewController<HeadsUpStatusBar
         if (newEntry != previousEntry) {
             if (newEntry == null) {
                 // no heads up anymore, lets start the disappear animation
-                mShadeViewController.showIsland(false);
                 setPinnedStatus(PinnedStatus.NotPinned);
             } else if (previousEntry == null) {
                 // We now have a headsUp and didn't have one before. Let's start the disappear
                 // animation
-                mShadeViewController.showIsland(true);
                 setPinnedStatus(PinnedStatus.PinnedBySystem);
             }
 

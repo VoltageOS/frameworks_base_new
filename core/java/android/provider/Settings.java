@@ -6709,16 +6709,6 @@ public final class Settings {
         /**
          * @hide
          */
-        public static final String ISLAND_NOTIFICATION = "island_notification";
-
-        /**
-         * @hide
-         */
-        public static final String ISLAND_NOTIFICATION_NOW_PLAYING = "island_notification_now_playing";
-
-        /**
-         * @hide
-         */
         public static final String ONGOING_ACTION_CHIP = "ongoing_action_chip";
 
 	/**
