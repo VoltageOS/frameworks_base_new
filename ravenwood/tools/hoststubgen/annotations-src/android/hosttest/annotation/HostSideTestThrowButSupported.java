@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,8 @@
  */
 package android.hosttest.annotation;
 
-import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.ElementType.CONSTRUCTOR;
+import static java.lang.annotation.ElementType.METHOD;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -24,8 +25,7 @@ import java.lang.annotation.Target;
 /**
  * Only used for HostStubGen tests. It's not used by Ravenwood.
  */
-@Target({TYPE})
+@Target({METHOD, CONSTRUCTOR})
 @Retention(RetentionPolicy.CLASS)
-public @interface HostSideTestRedirectionClass {
-    String value();
+public @interface HostSideTestThrowButSupported {
 }

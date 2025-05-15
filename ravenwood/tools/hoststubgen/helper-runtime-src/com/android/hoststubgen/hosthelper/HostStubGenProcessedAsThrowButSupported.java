@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.hosttest.annotation;
+package com.android.hoststubgen.hosthelper;
 
+import static java.lang.annotation.ElementType.CONSTRUCTOR;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
 
 import java.lang.annotation.Retention;
@@ -22,10 +25,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Only used for HostStubGen tests. It's not used by Ravenwood.
+ * Annotation injected to all classes/methods/fields that are kept in the processes jar.
  */
-@Target({TYPE})
-@Retention(RetentionPolicy.CLASS)
-public @interface HostSideTestRedirectionClass {
-    String value();
+@Target({TYPE, METHOD, CONSTRUCTOR, FIELD})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface HostStubGenProcessedAsThrowButSupported {
+    String CLASS_INTERNAL_NAME = HostTestUtils.getInternalName(
+            HostStubGenProcessedAsThrowButSupported.class);
+    String CLASS_DESCRIPTOR = "L" + CLASS_INTERNAL_NAME + ";";
 }
