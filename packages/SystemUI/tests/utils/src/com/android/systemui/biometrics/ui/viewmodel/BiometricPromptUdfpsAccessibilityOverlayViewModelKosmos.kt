@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,27 +14,23 @@
  * limitations under the License.
  */
 
-package com.android.systemui.deviceentry.data.ui.viewmodel
+package com.android.systemui.biometrics.ui.viewmodel
 
 import android.content.applicationContext
 import com.android.systemui.accessibility.domain.interactor.accessibilityInteractor
 import com.android.systemui.biometrics.domain.interactor.udfpsOverlayInteractor
 import com.android.systemui.biometrics.udfpsUtils
 import com.android.systemui.deviceentry.domain.interactor.deviceEntryUdfpsInteractor
-import com.android.systemui.deviceentry.ui.viewmodel.DeviceEntryUdfpsAccessibilityOverlayViewModel
-import com.android.systemui.keyguard.ui.viewmodel.deviceEntryForegroundIconViewModel
-import com.android.systemui.keyguard.ui.viewmodel.deviceEntryIconViewModel
 import com.android.systemui.kosmos.Kosmos
 
-val Kosmos.deviceEntryUdfpsAccessibilityOverlayViewModel by
+val Kosmos.biometricPromptUdfpsAccessibilityOverlayViewModel by
     Kosmos.Fixture {
-        DeviceEntryUdfpsAccessibilityOverlayViewModel(
-            applicationContext = applicationContext,
-            deviceEntryUdfpsInteractor = deviceEntryUdfpsInteractor,
-            udfpsOverlayInteractor = udfpsOverlayInteractor,
-            udfpsUtils = udfpsUtils,
-            accessibilityInteractor = accessibilityInteractor,
-            deviceEntryIconViewModel = deviceEntryIconViewModel,
-            deviceEntryFgIconViewModel = deviceEntryForegroundIconViewModel,
+        BiometricPromptUdfpsAccessibilityOverlayViewModel(
+            applicationContext,
+            deviceEntryUdfpsInteractor,
+            udfpsOverlayInteractor,
+            udfpsUtils,
+            accessibilityInteractor,
+            promptViewModel,
         )
     }
