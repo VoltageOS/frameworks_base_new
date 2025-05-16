@@ -18,12 +18,12 @@ package com.android.wm.shell.functional
 
 import android.platform.test.annotations.Postsubmit
 import android.platform.test.rule.ScreenRecordRule
-import com.android.wm.shell.scenarios.MinimizeWindowOnAppOpen
+import com.android.wm.shell.scenarios.MinimizeWindowOnAppOpenViaIntent
 import org.junit.runner.RunWith
 import org.junit.runners.BlockJUnit4ClassRunner
 
-/* Functional test for [MinimizeWindowOnAppOpen]. */
+/* Functional test for [MinimizeWindowOnAppOpenViaIntent]. */
 @RunWith(BlockJUnit4ClassRunner::class)
 @Postsubmit
 @ScreenRecordRule.ScreenRecord
-class MinimizeWindowOnAppOpenTest : MinimizeWindowOnAppOpen()
+class MinimizeWindowOnAppOpenViaIntentTest : MinimizeWindowOnAppOpenViaIntent()
