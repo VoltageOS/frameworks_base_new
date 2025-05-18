@@ -62,6 +62,9 @@ public class ExtSettings {
     public static final BoolSetting SHOW_SYSTEM_PROCESS_CRASH_NOTIFICATIONS = new BoolSetting(
             Setting.Scope.GLOBAL, Settings.Global.SHOW_SYSTEM_PROCESS_CRASH_NOTIFICATIONS, false);
 
+    public static final BoolSetting DISALLOW_DELAYED_LOCKING_ON_USER_STOP = new BoolSetting(
+            Setting.Scope.PER_USER, Settings.Secure.DISALLOW_DELAYED_LOCKING_ON_USER_STOP, false);
+
     private ExtSettings() {}
 
     public static Function<Context, Boolean> defaultBool(@BoolRes int res) {
