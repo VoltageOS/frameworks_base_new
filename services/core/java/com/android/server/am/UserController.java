@@ -1782,6 +1782,11 @@ class UserController implements Handler.Callback {
      * either due to a global device configuration or an individual user's property.
      */
     private boolean canDelayDataLockingForUser(@UserIdInt int userIdToLock) {
+        if (UserControllerHelper.disallowDelayedLockingForUser(mInjector.getContext(), userIdToLock)) {
+            Slogf.i(TAG, "Treating delayed data locking as false for userId=" + userIdToLock);
+            return false;
+        }
+
         final UserProperties userProperties = getUserProperties(userIdToLock);
         return (mDelayUserDataLocking || (userProperties != null
                 && userProperties.getAllowStoppingUserWithDelayedLocking()));
