@@ -7,7 +7,7 @@
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
+0 * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
@@ -24,30 +24,34 @@ import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Scene that draws a 2x2 checkboard background, toggling a blur every second
+ * A scene that draws translates an animating layer on top of a 4x4 checkerboard.
  */
-class BlurOnOffActivity : SceneActivity() {
+class MovingLayerActivity : SceneActivity() {
 
     override fun obtainScene(): Scene {
         return scene {
             externalScene {
-                checkerboardScene(2, 2)
+                checkerboardScene(4, 4)
             }
             scene {
                 content { data, width, height ->
-                    // SurfaceControl blurs don't work unless we draw a transparent buffer.
-                    // https://www.youtube.com/watch?v=76p_ncbffCE
-                    drawColor(Color.TRANSPARENT, data, width, height)
+                    drawColor(Color.MAGENTA, data, width, height)
                 }
                 properties { data ->
                     val animationTime =
                         ((data.preferredFrameTimeline.deadlineNanos - startTime) % 2.seconds.inWholeNanoseconds).nanoseconds
-                    if (animationTime < 1.seconds) {
-                        backgroundBlurRadius = 0
+
+                    val translation = if (animationTime < 1.seconds) {
+                        (animationTime.inWholeMilliseconds.toDouble() / 1.seconds.inWholeMilliseconds) * 0.5
                     } else {
-                        backgroundBlurRadius = 10
+                        ((2.seconds - animationTime).inWholeMilliseconds.toDouble() / 1.seconds.inWholeMilliseconds) * 0.5
                     }
+
+                    x = translation
+                    y = translation
                 }
+                width = 0.5
+                height = 0.5
             }
         }
     }
