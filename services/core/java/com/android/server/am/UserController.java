@@ -1730,10 +1730,12 @@ class UserController implements Handler.Callback {
         // Once we reach here, we are in a delayed locking scenario.
         // Now, no user will be locked, unless the device's policy dictates we should based on the
         // maximum of such users allowed for the device.
+        // DOWNSTREAM change: to allow user data storage locking at a later point,
+        // always add last active users for delayed locking, to be fetched if stopUser.
+        // arg should be object, not index
+        mLastActiveUsersForDelayedLocking.remove((Integer) userId);
+        mLastActiveUsersForDelayedLocking.add(0, userId);
         if (mDelayUserDataLocking) {
-            // arg should be object, not index
-            mLastActiveUsersForDelayedLocking.remove((Integer) userId);
-            mLastActiveUsersForDelayedLocking.add(0, userId);
             int totalUnlockedUsers = mStartedUsers.size()
                     + mLastActiveUsersForDelayedLocking.size();
             // The delayed locking determination is tangled with mMaxRunningUsers. This is
