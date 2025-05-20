@@ -7,8 +7,9 @@ package {
     default_applicable_licenses: ["frameworks_base_license"],
 }
 
-sh_binary_host {
-    name: "dump-jar",
-    src: "dump-jar",
+python_binary_host {
+    name: "csv-flattener",
+    srcs: ["csv-flattener.py"],
+
     visibility: ["//visibility:public"],
 }
