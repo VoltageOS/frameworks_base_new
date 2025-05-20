@@ -880,21 +880,31 @@ public class UserManagerService extends IUserManager.Stub {
         }
     }
 
+    private record QuietModeEnabledParams(boolean alwaysLockImmediately) {
+    }
+
     @VisibleForTesting
     void setQuietModeEnabledAsync(@UserIdInt int userId, boolean enableQuietMode,
             IntentSender target, @Nullable String callingPackage) {
+        setQuietModeEnabledAsync(userId, enableQuietMode, target, callingPackage,
+                new QuietModeEnabledParams(false));
+    }
+
+    void setQuietModeEnabledAsync(@UserIdInt int userId, boolean enableQuietMode,
+            IntentSender target, @Nullable String callingPackage,
+            QuietModeEnabledParams quietModeEnabledParams) {
         if (android.multiuser.Flags.moveQuietModeOperationsToSeparateThread()) {
             // Call setQuietModeEnabled on a separate thread. Calling this operation on the main
             // thread can cause ANRs, posting on a BackgroundThread can result in delays
             Slog.d(LOG_TAG, "Calling setQuietModeEnabled for user " + userId
                     + " on a separate thread");
             mInternalExecutor.execute(() -> setQuietModeEnabled(userId, enableQuietMode, target,
-                    callingPackage));
+                    callingPackage, quietModeEnabledParams));
         } else {
             // Call setQuietModeEnabled on bg thread to avoid ANR
             BackgroundThread.getHandler().post(
                     () -> setQuietModeEnabled(userId, enableQuietMode, target,
-                            callingPackage)
+                            callingPackage, quietModeEnabledParams)
             );
         }
     }
@@ -1067,6 +1077,7 @@ public class UserManagerService extends IUserManager.Stub {
                         // the boot user (e.g., setBootUser could be called later).
                         mUms.setLastEnteredForegroundTimeToNow(user);
                     }
+                    maybeSetQuietModeOnProfilesAndStop(user, "user is starting");
                 }
             }
         }
@@ -1102,6 +1113,27 @@ public class UserManagerService extends IUserManager.Stub {
                 if (user != null) {
                     user.startRealtime = 0;
                     user.unlockRealtime = 0;
+                    maybeSetQuietModeOnProfilesAndStop(user, "user is stopping");
+                }
+            }
+        }
+
+
+        private void maybeSetQuietModeOnProfilesAndStop(@Nullable UserData user, String reason) {
+            if (user != null) {
+                if (mUms.isAutoLockingPrivateSpaceOnRestartsEnabled()
+                        && user.info.id != UserHandle.USER_SYSTEM
+                        && !user.info.isMain() && user.info.isFull()) {
+                    final int privateProfileUserId =
+                            mUms.getPrivateProfileUserId(user.info.id);
+                    if (privateProfileUserId != UserHandle.USER_NULL) {
+                        Slog.i(LOG_TAG, "Auto-locking private space with user-id "
+                                + privateProfileUserId + " reason: " + reason);
+                        mUms.setQuietModeEnabledAsync(privateProfileUserId,
+                                /* enableQuietMode */true, /* target */ null,
+                                mUms.mContext.getPackageName(),
+                                new QuietModeEnabledParams(true));
+                    }
                 }
             }
         }
@@ -2255,6 +2287,13 @@ public class UserManagerService extends IUserManager.Stub {
 
     private void setQuietModeEnabled(@UserIdInt int userId, boolean enableQuietMode,
             IntentSender target, @Nullable String callingPackage) {
+        setQuietModeEnabled(userId, enableQuietMode, target, callingPackage,
+                new QuietModeEnabledParams(false));
+    }
+
+    private void setQuietModeEnabled(@UserIdInt int userId, boolean enableQuietMode,
+            IntentSender target, @Nullable String callingPackage,
+            QuietModeEnabledParams quietModeEnabledParams) {
         final UserInfo profile, parent;
         final UserData profileUserData;
         synchronized (mUsersLock) {
@@ -2264,7 +2303,8 @@ public class UserManagerService extends IUserManager.Stub {
             if (profile == null || !profile.isProfile()) {
                 throw new IllegalArgumentException("User " + userId + " is not a profile");
             }
-            if (profile.isQuietModeEnabled() == enableQuietMode) {
+            if (profile.isQuietModeEnabled() == enableQuietMode
+                    && !quietModeEnabledParams.alwaysLockImmediately()) {
                 Slog.i(LOG_TAG, "Quiet mode is already " + enableQuietMode);
                 return;
             }
@@ -2282,7 +2322,7 @@ public class UserManagerService extends IUserManager.Stub {
 
         try {
             if (enableQuietMode) {
-                stopUserForQuietMode(userId);
+                stopUserForQuietMode(userId, quietModeEnabledParams);
                 LocalServices.getService(ActivityManagerInternal.class)
                         .killForegroundAppsForUser(userId);
             } else {
@@ -2311,8 +2351,9 @@ public class UserManagerService extends IUserManager.Stub {
         }
     }
 
-    private void stopUserForQuietMode(int userId) throws RemoteException {
+    private void stopUserForQuietMode(int userId, QuietModeEnabledParams quietModeEnabledParams) throws RemoteException {
         if (android.os.Flags.allowPrivateProfile()
+                && !quietModeEnabledParams.alwaysLockImmediately()
                 && android.multiuser.Flags.enableBiometricsToUnlockPrivateSpace()
                 && android.multiuser.Flags.enablePrivateSpaceFeatures()) {
             // Allow delayed locking since some profile types want to be able to unlock again via
