@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import android.app.Instrumentation
 import android.content.Intent.FLAG_ACTIVITY_MULTIPLE_TASK
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.tools.device.apphelpers.BrowserAppHelper
-import android.tools.device.apphelpers.StandardAppHelper
 import android.tools.traces.parsers.WindowManagerStateHelper
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
@@ -42,7 +41,7 @@ import org.junit.Test
  * is 4.
  */
 @Ignore("Test Base Class")
-abstract class MinimizeWindowOnAppOpen : TestScenarioBase() {
+abstract class MinimizeWindowOnAppOpenViaIntent : TestScenarioBase() {
     private val instrumentation: Instrumentation = InstrumentationRegistry.getInstrumentation()
     private val tapl = LauncherInstrumentation()
     private val wmHelper = WindowManagerStateHelper(instrumentation)
@@ -65,46 +64,8 @@ abstract class MinimizeWindowOnAppOpen : TestScenarioBase() {
         tapl.enableTransientTaskbar(false)
         tapl.showTaskbarIfHidden()
         testAppDesktopHelper.enterDesktopMode(wmHelper, device)
-    }
-
-    @Test
-    open fun openAppFromAllApps() {
-        openMailApps(maxNum - 1)
-        // Launch a new task, which ends up opening [maxNum]+1 tasks in total. This should
-        // result in the first app we opened to be minimized.
-        tapl.launchedAppState.taskbar
-            .openAllApps()
-            .getAppIcon(browserAppHelper.appName)
-            .launch(browserAppHelper.packageName)
-        assertWindowManagerState(appShouldBeMinimized = testAppHelper, appShouldBeOnTop = browserAppHelper)
-    }
-
-    @Test
-    open fun openAppFromTaskbar() {
-        openMailApps(maxNum - 1)
-        // Launch a new task, which ends up opening [maxNum]+1 tasks in total. This should
-        // result in the first app we opened to be minimized.
-        tapl.launchedAppState.taskbar
-            .getAppIcon(browserAppHelper.appName)
-            .launch(browserAppHelper.packageName)
-        assertWindowManagerState(appShouldBeMinimized = testAppHelper, appShouldBeOnTop = browserAppHelper)
-    }
-
-    @Test
-    open fun unminimizeApp() {
-        openMailApps(maxNum - 2)
-        browserAppHelper.launchViaIntent(wmHelper)
-        browserAppHelper.closePopupsIfNeeded(device)
-        browserAppDesktopHelper.minimizeDesktopApp(wmHelper, device)
-        openMailApps(1)
-        tapl.launchedAppState.taskbar
-            .getAppIcon(browserAppHelper.appName)
-            .launch(browserAppHelper.packageName)
-        assertWindowManagerState(appShouldBeMinimized = testAppHelper, appShouldBeOnTop = browserAppHelper)
-    }
-
-    private fun openMailApps(limit: Int) {
-        for (i in 0..<limit) {
+        // Launch new [maxNum-1] tasks, which ends up opening [maxNum] tasks in total.
+        for (i in 1..<maxNum) {
             mailAppDesktopHelper.launchViaIntent(
                 wmHelper,
                 mailAppHelper.openAppIntent.apply {
@@ -114,15 +75,16 @@ abstract class MinimizeWindowOnAppOpen : TestScenarioBase() {
         }
     }
 
-    private fun assertWindowManagerState(
-        appShouldBeMinimized: StandardAppHelper,
-        appShouldBeOnTop: StandardAppHelper
-    ) {
+    @Test
+    open fun openAppViaIntent() {
+        // Launch a new task, which ends up opening [maxNum]+1 tasks in total. This should
+        // result in the first app we opened to be minimized.
+        browserAppHelper.launchViaIntent(wmHelper)
         wmHelper
             .StateSyncBuilder()
-            .withWindowSurfaceDisappeared(appShouldBeMinimized.componentMatcher)
+            .withWindowSurfaceDisappeared(testAppHelper.componentMatcher)
             .withLayerVisible(mailAppHelper.componentMatcher)
-            .withTopVisibleApp(appShouldBeOnTop.componentMatcher)
+            .withLayerVisible(browserAppHelper.componentMatcher)
             .waitForAndVerify()
     }
 
@@ -131,6 +93,5 @@ abstract class MinimizeWindowOnAppOpen : TestScenarioBase() {
         browserAppHelper.exit(wmHelper)
         mailAppDesktopHelper.exit(wmHelper)
         testAppDesktopHelper.exit(wmHelper)
-        tapl.goHome()
     }
 }
