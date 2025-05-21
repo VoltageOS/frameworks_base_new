@@ -19,48 +19,58 @@ package com.android.wm.shell.flicker.bubbles
 import android.platform.test.annotations.Presubmit
 import android.platform.test.annotations.RequiresDevice
 import android.platform.test.annotations.RequiresFlagsEnabled
-import android.tools.flicker.subject.events.EventLogSubject
-import android.tools.traces.component.ComponentNameMatcher.Companion.LAUNCHER
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.wm.shell.Flags
+import com.android.wm.shell.flicker.bubbles.testcase.BubbleAppBecomesExpandedTestCases
 import com.android.wm.shell.flicker.bubbles.testcase.BubbleStackAlwaysVisibleTestCases
 import com.android.wm.shell.flicker.bubbles.utils.FlickerPropertyInitializer
 import com.android.wm.shell.flicker.bubbles.utils.RecordTraceWithTransitionRule
 import com.android.wm.shell.flicker.bubbles.utils.collapseBubbleViaBackKey
+import com.android.wm.shell.flicker.bubbles.utils.expandBubbleViaTapOnBubbleStack
 import com.android.wm.shell.flicker.bubbles.utils.launchBubbleViaBubbleMenu
 import com.android.wm.shell.flicker.bubbles.utils.setUpBeforeTransition
+import org.junit.Assume.assumeFalse
+import org.junit.Before
 import org.junit.ClassRule
 import org.junit.FixMethodOrder
-import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.MethodSorters
 
 /**
- * Test collapse bubble via clicking back key.
+ * Test clicking bubble to expand a bubble that was in collapsed state.
  *
- * To run this test: `atest WMShellExplicitFlickerTestsBubbles:CollapseBubbleViaBackTest`
+ * To run this test: `atest WMShellExplicitFlickerTestsBubbles:ExpandBubbleViaBubbleStackTest`
  *
  * Pre-steps:
  * ```
- *     Launch [simpleApp] into bubble
+ *     Launch [testApp] into bubble and collapse the bubble
  * ```
  *
  * Actions:
  * ```
- *     Collapse bubble via back key
+ *     Expand the [testApp] bubble via clicking floating bubble icon
  * ```
- *
  * Verified tests:
  * - [BubbleFlickerTestBase]
  * - [BubbleStackAlwaysVisibleTestCases]
- * - The focus changes to [LAUNCHER] from [testApp] and [LAUNCHER] becomes the top window
+ * - [BubbleAppBecomesExpandedTestCases]
  */
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CREATE_ANY_BUBBLE)
 @RunWith(AndroidJUnit4::class)
 @RequiresDevice
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Presubmit
-class CollapseBubbleViaBackTest : BubbleFlickerTestBase(), BubbleStackAlwaysVisibleTestCases {
+class ExpandBubbleViaBubbleStackTest :
+    BubbleFlickerTestBase(), BubbleStackAlwaysVisibleTestCases, BubbleAppBecomesExpandedTestCases {
+
+    override val traceDataReader
+        get() = recordTraceWithTransitionRule.reader
+
+    // TODO(b/396020056): Verify expand bubble with bubble bar.
+    @Before
+    fun setUp() {
+        assumeFalse(tapl.isTablet)
+    }
 
     companion object : FlickerPropertyInitializer() {
 
@@ -70,62 +80,10 @@ class CollapseBubbleViaBackTest : BubbleFlickerTestBase(), BubbleStackAlwaysVisi
             setUpBeforeTransition = {
                 setUpBeforeTransition(instrumentation, wmHelper)
                 launchBubbleViaBubbleMenu(testApp, tapl, wmHelper)
+                collapseBubbleViaBackKey(testApp, tapl, wmHelper)
             },
-            transition = { collapseBubbleViaBackKey(testApp, tapl, wmHelper) },
+            transition = { expandBubbleViaTapOnBubbleStack(uiDevice, testApp, wmHelper) },
             tearDownAfterTransition = { testApp.exit(wmHelper) }
         )
     }
-
-    override val traceDataReader
-        get() = recordTraceWithTransitionRule.reader
-
-// region launcher related tests
-
-    /**
-     * Verifies the focus changed from launcher to [testApp].
-     */
-    @Test
-    fun focusChanges() {
-        EventLogSubject(
-            traceDataReader.readEventLogTrace() ?: error("Failed to read event log"),
-            traceDataReader
-        ).focusChanges(
-            testApp.toWindowName(),
-            LAUNCHER.toWindowName(),
-        )
-    }
-
-    /**
-     * Verifies the [testApp] replaces launcher to be the top window.
-     */
-    @Test
-    fun launcherWindowReplacesTestAppAsTopWindow() {
-        wmTraceSubject
-            .isAppWindowOnTop(testApp)
-            .then()
-            .isAppWindowOnTop(LAUNCHER)
-            .forAllEntries()
-    }
-
-    /**
-     * Verifies [LAUNCHER] is the top window at the end of transition.
-     */
-    @Test
-    fun launcherWindowAsTopWindowAtEnd() {
-        wmStateSubjectAtEnd.isAppWindowOnTop(LAUNCHER)
-    }
-
-    /**
-     * Verifies the [LAUNCHER] becomes the top window.
-     */
-    @Test
-    fun launcherWindowBecomesTopWindow() {
-        wmTraceSubject
-            .isAppWindowNotOnTop(LAUNCHER)
-            .then()
-            .isAppWindowOnTop(LAUNCHER)
-            .forAllEntries()
-    }
-
-// endregion
 }
