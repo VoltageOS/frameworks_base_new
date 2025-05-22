@@ -2269,7 +2269,11 @@ public class UserManagerService extends IUserManager.Stub {
                 return;
             }
             UserManager.invalidateQuietModeEnabledCache();
-            profile.flags ^= UserInfo.FLAG_QUIET_MODE;
+            if (enableQuietMode) {
+                profile.flags |= UserInfo.FLAG_QUIET_MODE;
+            } else {
+                profile.flags &= ~UserInfo.FLAG_QUIET_MODE;
+            }
             profileUserData = getUserDataLU(profile.id);
         }
         synchronized (mPackagesLock) {
