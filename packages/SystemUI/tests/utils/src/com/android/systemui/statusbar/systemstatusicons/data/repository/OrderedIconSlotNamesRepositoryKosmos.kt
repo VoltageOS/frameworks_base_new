@@ -14,16 +14,11 @@
  * limitations under the License.
  */
 
-package com.android.systemui.statusbar.systemstatusicons.ethernet.ui.viewmodel
+package com.android.systemui.statusbar.systemstatusicons.data.repository
 
-import android.content.Context
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.statusbar.pipeline.ethernet.domain.ethernetInteractor
+import com.android.systemui.kosmos.Kosmos.Fixture
 
-val Kosmos.ethernetIconViewModelFactory: EthernetIconViewModel.Factory by
-    Kosmos.Fixture {
-        object : EthernetIconViewModel.Factory {
-            override fun create(context: Context) =
-                EthernetIconViewModel(context, ethernetInteractor)
-        }
-    }
+val Kosmos.orderedIconSlotNamesRepository by Fixture {
+    OrderedIconSlotNamesRepository(configIconSlotNames = statusBarConfigIconSlotNames)
+}

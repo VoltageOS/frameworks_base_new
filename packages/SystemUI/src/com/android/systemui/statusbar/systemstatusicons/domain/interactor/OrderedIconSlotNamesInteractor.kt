@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package com.android.systemui.statusbar.systemstatusicons.ethernet.ui.viewmodel
+package com.android.systemui.statusbar.systemstatusicons.domain.interactor
 
-import android.content.Context
-import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.statusbar.pipeline.ethernet.domain.ethernetInteractor
+import com.android.systemui.dagger.SysUISingleton
+import com.android.systemui.statusbar.systemstatusicons.data.repository.OrderedIconSlotNamesRepository
+import javax.inject.Inject
+import kotlinx.coroutines.flow.StateFlow
 
-val Kosmos.ethernetIconViewModelFactory: EthernetIconViewModel.Factory by
-    Kosmos.Fixture {
-        object : EthernetIconViewModel.Factory {
-            override fun create(context: Context) =
-                EthernetIconViewModel(context, ethernetInteractor)
-        }
-    }
+/** Interactor for retrieving the ordered list of icon slot names. */
+@SysUISingleton
+class OrderedIconSlotNamesInteractor
+@Inject
+constructor(repository: OrderedIconSlotNamesRepository) {
+    val orderedIconSlotNames: StateFlow<List<String>> = repository.orderedIconSlotNames
+}
