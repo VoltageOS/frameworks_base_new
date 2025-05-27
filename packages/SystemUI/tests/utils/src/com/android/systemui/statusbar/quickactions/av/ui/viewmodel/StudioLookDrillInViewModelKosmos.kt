@@ -16,24 +16,17 @@
 
 package com.android.systemui.statusbar.quickactions.av.ui.viewmodel
 
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedFactory
-import dagger.assisted.AssistedInject
+import com.android.systemui.kosmos.Kosmos
 
-class StudioLookDrillInViewModel
-@AssistedInject
-constructor(
-    val portraitRelightButtonViewModelFactory: PortraitRelightButtonViewModel.Factory,
-    val faceRetouchButtonViewModelFactory: FaceRetouchButtonViewModel.Factory,
-    @Assisted val returnToMainPage: () -> Unit,
-) {
-
-    // TODO(b/436222258): Replace hardcoded strings with resource resolution
-    val drillInTitle = "Studio Look"
-
-    /** A factory to be used to create view model instances. */
-    @AssistedFactory
-    interface Factory {
-        fun create(returnToMainPage: () -> Unit): StudioLookDrillInViewModel
+val Kosmos.studioLookDrillInViewModelFactory: StudioLookDrillInViewModel.Factory by
+    Kosmos.Fixture {
+        object : StudioLookDrillInViewModel.Factory {
+            override fun create(returnToMainPage: () -> Unit): StudioLookDrillInViewModel {
+                return StudioLookDrillInViewModel(
+                    portraitRelightButtonViewModelFactory = portraitRelightButtonViewModelFactory,
+                    faceRetouchButtonViewModelFactory = faceRetouchButtonViewModelFactory,
+                    returnToMainPage = returnToMainPage,
+                )
+            }
+        }
     }
-}
