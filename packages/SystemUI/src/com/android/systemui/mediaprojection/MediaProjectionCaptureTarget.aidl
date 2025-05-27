@@ -14,21 +14,6 @@
  * limitations under the License.
  */
 
-package com.android.systemui.screenrecord.service;
+package com.android.systemui.mediaprojection;
 
-import android.app.PendingIntent;
-import android.content.Intent;
-import android.os.Bundle;
-
-oneway interface IScreenRecordingServiceCallback {
-
-    /**
-    * Called when the service actually starts the recording.
-    */
-    void onRecordingStarted();
-
-    /**
-    * Called when the recording is interrupted for some reason.
-    */
-    void onRecordingInterrupted(int userId, int reason);
-}
+parcelable MediaProjectionCaptureTarget;
