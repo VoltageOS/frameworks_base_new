@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.wm.shell.flicker.fundamentals
+package com.android.wm.shell.flicker.resizing
 
 import android.platform.test.annotations.RequiresDevice
 import android.tools.NavBar
@@ -23,29 +23,37 @@ import android.tools.flicker.junit.FlickerParametersRunnerFactory
 import android.tools.flicker.legacy.FlickerBuilder
 import android.tools.flicker.legacy.LegacyFlickerTest
 import android.tools.flicker.legacy.LegacyFlickerTestFactory
+import com.android.server.wm.flicker.helpers.MotionEventHelper
 import com.android.wm.shell.Utils
 import com.android.wm.shell.flicker.DesktopModeBaseTest
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
-import com.android.wm.shell.flicker.utils.appWindowInsideDisplayBoundsAtEnd
-import com.android.wm.shell.flicker.utils.appWindowOnTopAtEnd
-import com.android.wm.shell.flicker.utils.layerBecomesVisible
-import com.android.wm.shell.flicker.utils.cascadingEffectAppliedAtEnd
-import com.android.wm.shell.scenarios.OpenAppFromAllApps
+import com.android.wm.shell.flicker.utils.resizeVeilKeepsIncreasingInSize
+import com.android.wm.shell.scenarios.ResizeAppWithEdgeResize
 
+/**
+ * Resize an app to increase its size through its right edge using a mouse.
+ *
+ * Assert that the resize veil keeps increasing in size.
+ */
 @RequiresDevice
 @RunWith(Parameterized::class)
 @Parameterized.UseParametersRunnerFactory(FlickerParametersRunnerFactory::class)
-class OpenAppFromAllAppsFlickerTest(flicker: LegacyFlickerTest) : DesktopModeBaseTest(flicker) {
-    inner class OpenAppFromAllAppsScenario : OpenAppFromAllApps(flicker.scenario.startRotation)
+class ResizeAppWithEdgeResizeMouseFlickerTest(flicker: LegacyFlickerTest) : DesktopModeBaseTest(
+    flicker
+) {
+    inner class ResizeAppWithEdgeResizeMouseScenario : ResizeAppWithEdgeResize(
+        MotionEventHelper.InputMethod.MOUSE, flicker.scenario.startRotation
+    )
 
     @Rule
     @JvmField
     val testSetupRule = Utils.testSetupRule(NavBar.MODE_GESTURAL, flicker.scenario.startRotation)
-    val scenario = OpenAppFromAllAppsScenario()
-    private val openedApp = scenario.calculatorApp
+
+    val scenario = ResizeAppWithEdgeResizeMouseScenario()
+    private val testApp = scenario.testApp
 
     override val transition: FlickerBuilder.() -> Unit
         get() = {
@@ -53,7 +61,7 @@ class OpenAppFromAllAppsFlickerTest(flicker: LegacyFlickerTest) : DesktopModeBas
                 scenario.setup()
             }
             transitions {
-                scenario.openApp()
+                scenario.resizeAppWithEdgeResizeRight()
             }
             teardown {
                 scenario.teardown()
@@ -61,16 +69,7 @@ class OpenAppFromAllAppsFlickerTest(flicker: LegacyFlickerTest) : DesktopModeBas
         }
 
     @Test
-    fun appWindowInsideDisplayBoundsAtEnd() = flicker.appWindowInsideDisplayBoundsAtEnd(openedApp)
-
-    @Test
-    fun appWindowOnTopAtEnd() = flicker.appWindowOnTopAtEnd(openedApp)
-
-    @Test
-    fun layerBecomesVisible() = flicker.layerBecomesVisible(openedApp)
-
-    @Test
-    fun cascadingEffectAppliedAtEnd() = flicker.cascadingEffectAppliedAtEnd(openedApp)
+    fun resizeVeilKeepsIncreasingInSize() = flicker.resizeVeilKeepsIncreasingInSize(testApp)
 
     companion object {
         @Parameterized.Parameters(name = "{0}")
