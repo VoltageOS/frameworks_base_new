@@ -16,19 +16,17 @@
 
 package com.android.wm.shell.bubbles
 
-import android.app.ActivityManager
-import android.view.SurfaceControl
-import android.window.TransitionInfo
+import com.android.wm.shell.shared.bubbles.BubbleBarLocation
+import com.android.wm.shell.shared.bubbles.BubbleBarUpdate
 
-/** Merges a bubble task transition with the unfold transition. */
-interface BubbleTaskUnfoldTransitionMerger {
+/** A fake implementation of [Bubbles.BubbleStateListener] */
+class FakeBubblesStateListener : Bubbles.BubbleStateListener {
 
-    /** Attempts to merge the transition. Returns `true` if the change was merged. */
-    fun mergeTaskWithUnfold(
-        taskInfo: ActivityManager.RunningTaskInfo,
-        info: TransitionInfo,
-        change: TransitionInfo.Change,
-        startT: SurfaceControl.Transaction,
-        finishT: SurfaceControl.Transaction,
-    ): Boolean
+    override fun onBubbleStateChange(update: BubbleBarUpdate?) {}
+
+    override fun animateBubbleBarLocation(location: BubbleBarLocation?) {}
+
+    override fun onDragItemOverBubbleBarDragZone(location: BubbleBarLocation) {}
+
+    override fun onItemDraggedOutsideBubbleBarDropZone() {}
 }
