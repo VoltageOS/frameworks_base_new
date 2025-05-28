@@ -14,13 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.systemui.clock.ui.viewmodel
+package com.android.systemui.util.time
 
-import com.android.systemui.clock.domain.interactor.clockInteractor
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.util.time.dateFormatUtil
+import org.mockito.kotlin.mock
 
-val Kosmos.clockViewModel: ClockViewModel by
-    Kosmos.Fixture {
-        ClockViewModel(clockInteractor = clockInteractor, dateFormatUtil = dateFormatUtil)
-    }
+var Kosmos.dateFormatUtil by Kosmos.Fixture { mock<DateFormatUtil>() }
