@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,14 @@
 
 package com.android.systemui.keyguard.ui.viewmodel
 
-import com.android.systemui.deviceentry.domain.interactor.deviceEntryUdfpsInteractor
-import com.android.systemui.keyguard.ui.keyguardTransitionAnimationFlow
+import com.android.systemui.keyguard.domain.interactor.keyguardInteractor
+import com.android.systemui.keyguard.domain.interactor.keyguardTransitionInteractor
 import com.android.systemui.kosmos.Kosmos
 import com.android.systemui.kosmos.Kosmos.Fixture
 
-val Kosmos.goneToDozingTransitionViewModel by Fixture {
-    GoneToDozingTransitionViewModel(
-        deviceEntryUdfpsInteractor = deviceEntryUdfpsInteractor,
-        animationFlow = keyguardTransitionAnimationFlow,
-        dozingTransitionFlows = dozingTransitionFlows,
+val Kosmos.dozingTransitionFlows by Fixture {
+    DozingTransitionFlows(
+        keyguardInteractor = keyguardInteractor,
+        keyguardTransitionInteractor = keyguardTransitionInteractor,
     )
 }
