@@ -27,7 +27,7 @@
         android:outlineSpotShadowColor="@android:color/transparent"
         android:background="@android:color/transparent"
         android:touchscreenBlocksFocus="false"
-        app:expanded="false"
+        app:expanded="true"
         android:theme="@style/SettingsLibTheme.CollapsingToolbar.Expressive">
 
         <com.google.android.material.appbar.CollapsingToolbarLayout
