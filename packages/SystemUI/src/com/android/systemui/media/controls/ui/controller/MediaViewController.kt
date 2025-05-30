@@ -94,8 +94,6 @@ constructor(
 
     /** A listener when the current dimensions of the player change */
     lateinit var sizeChangedListener: () -> Unit
-    lateinit var configurationChangeListener: () -> Unit
-    lateinit var recsConfigurationChangeListener: (MediaViewController, TransitionLayout) -> Unit
     var locationChangeListener: (Int) -> Unit = {}
     private var firstRefresh: Boolean = true
     @VisibleForTesting private var transitionLayout: TransitionLayout? = null
@@ -288,18 +286,7 @@ constructor(
                             )
                         )
                     }
-                    if (SceneContainerFlag.isEnabled) {
-                        if (
-                            this@MediaViewController::recsConfigurationChangeListener.isInitialized
-                        ) {
-                            transitionLayout?.let {
-                                recsConfigurationChangeListener.invoke(this@MediaViewController, it)
-                            }
-                        }
-                    } else if (
-                        this@MediaViewController::configurationChangeListener.isInitialized
-                    ) {
-                        configurationChangeListener.invoke()
+                    if (!SceneContainerFlag.isEnabled) {
                         refreshState()
                     }
                 }
@@ -995,7 +982,7 @@ constructor(
             // Let's squish the media player if our size was overridden
             result = squishViewState(result, state.squishFraction)
         }
-        logger.logMediaSize("update to carousel", result.width, result.height)
+        logger.logMediaSize("update to carousel (squish ${state?.squishFraction}", result.width, result.height)
         return result
     }
 
