@@ -19,9 +19,12 @@ package com.android.systemui.qs.panels.data.repository
 import android.content.ComponentName
 import android.content.packageManager
 import android.content.pm.PackageManager
-import android.content.pm.UserInfo
+import android.content.pm.ServiceInfo
 import android.graphics.drawable.TestStubDrawable
-import androidx.test.ext.junit.runners.AndroidJUnit4
+import android.platform.test.annotations.DisableFlags
+import android.platform.test.annotations.EnableFlags
+import android.service.quicksettings.Flags
+import android.service.quicksettings.TileService
 import androidx.test.filters.SmallTest
 import com.android.systemui.SysuiTestCase
 import com.android.systemui.common.shared.model.ContentDescription
@@ -45,11 +48,14 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import platform.test.runner.parameterized.ParameterizedAndroidJunit4
+import platform.test.runner.parameterized.Parameters
 
-@RunWith(AndroidJUnit4::class)
+@RunWith(ParameterizedAndroidJunit4::class)
 @SmallTest
 @android.platform.test.annotations.EnabledOnRavenwood
-class IconAndNameCustomRepositoryTest : SysuiTestCase() {
+internal class IconAndNameCustomRepositoryParameterizedTest(private val testCase: TestCase) :
+    SysuiTestCase() {
     private val kosmos = testKosmos()
 
     private val packageManager: PackageManager = kosmos.packageManager
@@ -57,24 +63,6 @@ class IconAndNameCustomRepositoryTest : SysuiTestCase() {
         kosmos.fakeUserTracker.apply {
             whenever(userContext.packageManager).thenReturn(packageManager)
         }
-
-    private val service1 =
-        FakeInstalledTilesComponentRepository.ServiceInfo(
-            component1,
-            tileService1,
-            drawable1,
-            appName1,
-            appIcon1,
-        )
-
-    private val service2 =
-        FakeInstalledTilesComponentRepository.ServiceInfo(
-            component2,
-            tileService2,
-            drawable2,
-            appName2,
-            appIcon2,
-        )
 
     private val underTest =
         with(kosmos) {
@@ -90,12 +78,13 @@ class IconAndNameCustomRepositoryTest : SysuiTestCase() {
     fun setUp() {
         kosmos.fakeInstalledTilesRepository.setInstalledServicesForUser(
             userTracker.userId,
-            listOf(service1, service2),
+            listOf(testCase.toServiceInfo()),
         )
     }
 
     @Test
-    fun loadDataForCurrentServices() =
+    @EnableFlags(Flags.FLAG_QUICKSETTINGS_TILE_CATEGORIES)
+    fun tileService_categoriesEnabled_returnsValidCategory() =
         with(kosmos) {
             testScope.runTest {
                 val editTileDataList = underTest.getCustomTileData()
@@ -105,71 +94,85 @@ class IconAndNameCustomRepositoryTest : SysuiTestCase() {
                         Icon.Loaded(drawable1, ContentDescription.Loaded(tileService1)),
                         Text.Loaded(tileService1),
                         Text.Loaded(appName1),
-                        Icon.Loaded(appIcon1, ContentDescription.Loaded(null)),
-                        TileCategory.PROVIDED_BY_APP,
-                    )
-                val expectedData2 =
-                    EditTileData(
-                        TileSpec.create(component2),
-                        Icon.Loaded(drawable2, ContentDescription.Loaded(tileService2)),
-                        Text.Loaded(tileService2),
-                        Text.Loaded(appName2),
-                        Icon.Loaded(appIcon2, ContentDescription.Loaded(null)),
-                        TileCategory.PROVIDED_BY_APP,
+                        null,
+                        testCase.expected,
                     )
 
-                assertThat(editTileDataList).containsExactly(expectedData1, expectedData2)
-            }
-        }
-
-    @Test
-    fun loadDataForCurrentServices_otherCurrentUser_empty() =
-        with(kosmos) {
-            testScope.runTest {
-                userTracker.set(listOf(UserInfo(11, "", 0)), 0)
-                val editTileDataList = underTest.getCustomTileData()
-
-                assertThat(editTileDataList).isEmpty()
-            }
-        }
-
-    @Test
-    fun loadDataForCurrentServices_serviceInfoWithNullIcon_notInList() =
-        with(kosmos) {
-            testScope.runTest {
-                val serviceNullIcon =
-                    FakeInstalledTilesComponentRepository.ServiceInfo(component2, tileService2)
-                fakeInstalledTilesRepository.setInstalledServicesForUser(
-                    userTracker.userId,
-                    listOf(service1, serviceNullIcon),
-                )
-
-                val expectedData1 =
-                    EditTileData(
-                        TileSpec.create(component1),
-                        Icon.Loaded(drawable1, ContentDescription.Loaded(tileService1)),
-                        Text.Loaded(tileService1),
-                        Text.Loaded(appName1),
-                        Icon.Loaded(appIcon1, ContentDescription.Loaded(null)),
-                        TileCategory.PROVIDED_BY_APP,
-                    )
-
-                val editTileDataList = underTest.getCustomTileData()
                 assertThat(editTileDataList).containsExactly(expectedData1)
             }
         }
 
-    private companion object {
+    @Test
+    @DisableFlags(Flags.FLAG_QUICKSETTINGS_TILE_CATEGORIES)
+    fun tileService_categoriesDisabled_returnsValidCategory() =
+        with(kosmos) {
+            testScope.runTest {
+                val editTileDataList = underTest.getCustomTileData()
+                val expectedData1 =
+                    EditTileData(
+                        TileSpec.create(component1),
+                        Icon.Loaded(drawable1, ContentDescription.Loaded(tileService1)),
+                        Text.Loaded(tileService1),
+                        Text.Loaded(appName1),
+                        null,
+                        testCase.expectedDefault,
+                    )
+
+                assertThat(editTileDataList).containsExactly(expectedData1)
+            }
+        }
+
+    internal data class TestCase(
+        val category: String,
+        val isSystemApp: Boolean,
+        val expected: TileCategory,
+        val expectedDefault: TileCategory =
+            if (isSystemApp) TileCategory.PROVIDED_BY_SYSTEM_APP else TileCategory.PROVIDED_BY_APP,
+    ) {
+        fun toServiceInfo(): ServiceInfo {
+            return FakeInstalledTilesComponentRepository.ServiceInfo(
+                component1,
+                tileService1,
+                drawable1,
+                appName1,
+                null,
+                isSystemApp,
+                category,
+            )
+        }
+
+        override fun toString(): String =
+            "category=$category," +
+                "isSystemApp=$isSystemApp," +
+                "expected=${expected.name}," +
+                "expectedDefault=${expectedDefault.name}"
+    }
+
+    companion object {
         val drawable1 = TestStubDrawable("drawable1")
-        val appIcon1 = TestStubDrawable("appIcon1")
         val appName1 = "App1"
         val tileService1 = "Tile Service 1"
         val component1 = ComponentName("pkg1", "srv1")
 
-        val drawable2 = TestStubDrawable("drawable2")
-        val appIcon2 = TestStubDrawable("appIcon2")
-        val appName2 = "App2"
-        val tileService2 = "Tile Service 2"
-        val component2 = ComponentName("pkg2", "srv2")
+        @Parameters(name = "{0}")
+        @JvmStatic
+        fun data() =
+            listOf(
+                TestCase(TileService.CATEGORY_CONNECTIVITY, true, TileCategory.CONNECTIVITY),
+                TestCase(TileService.CATEGORY_DISPLAY, false, TileCategory.DISPLAY),
+                TestCase(TileService.CATEGORY_UTILITIES, true, TileCategory.UTILITIES),
+                TestCase(TileService.CATEGORY_PRIVACY, false, TileCategory.PRIVACY),
+                TestCase(TileService.CATEGORY_ACCESSIBILITY, true, TileCategory.ACCESSIBILITY),
+                TestCase(
+                    "android.service.quicksettings.CATEGORY_NON_VALID",
+                    true,
+                    TileCategory.PROVIDED_BY_SYSTEM_APP,
+                ),
+                TestCase(
+                    "android.service.quicksettings.CATEGORY_NON_VALID",
+                    false,
+                    TileCategory.PROVIDED_BY_APP,
+                ),
+            )
     }
 }
