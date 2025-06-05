@@ -18,7 +18,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="android.test.pagesizecompat">
     <application
-        android:label="PageSizeCompatTestApp">
+        android:label="PageSizeCompatTestApp"
+        android:debuggable="true">
         <uses-library android:name="android.test.runner"/>
         <activity android:name=".MainActivity"
                   android:exported="true"
