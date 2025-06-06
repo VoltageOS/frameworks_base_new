@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,19 @@
  * limitations under the License.
  */
 
-package android.content.pm;
+package {
+    default_team: "trendy_team_framework_android_packages",
+    // See: http://go/android-license-faq
+    // A large-scale-change added 'default_applicable_licenses' to import
+    // all of the 'license_kinds' from "frameworks_base_license"
+    // to get the below license kinds:
+    //   SPDX-license-identifier-Apache-2.0
+    default_applicable_licenses: ["frameworks_base_license"],
+}
 
-parcelable PackageInstaller.InstallConstraints;
-parcelable PackageInstaller.SessionParams;
-parcelable PackageInstaller.SessionInfo;
-parcelable PackageInstaller.PreapprovalDetails;
-parcelable PackageInstaller.DeveloperVerificationUserConfirmationInfo;
+filegroup {
+    name: "adi-java-sources",
+    srcs: [
+        "*.java",
+    ],
+}
