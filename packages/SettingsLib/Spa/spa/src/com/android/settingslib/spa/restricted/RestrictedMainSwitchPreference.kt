@@ -18,29 +18,29 @@ package com.android.settingslib.spa.restricted
 
 import androidx.annotation.VisibleForTesting
 import androidx.compose.runtime.Composable
-import com.android.settingslib.spa.widget.preference.SwitchPreference
+import com.android.settingslib.spa.widget.preference.MainSwitchPreference
 import com.android.settingslib.spa.widget.preference.SwitchPreferenceModel
 
 /**
- * Restricted version [SwitchPreference].
+ * Restricted version [MainSwitchPreference].
  *
  * @param ifBlockedOverrideCheckedTo if this is not null and the current [RestrictedMode] is
  *   [Blocked] and [Blocked.canOverrideSwitchChecked] is set to true, the switch's checked status
  *   will be overridden to this value.
  */
 @Composable
-fun RestrictedSwitchPreference(
+fun RestrictedMainSwitchPreference(
     model: SwitchPreferenceModel,
     restrictions: Restrictions,
     ifBlockedOverrideCheckedTo: Boolean? = null,
 ) {
     val repository = rememberRestrictedRepository()
-    RestrictedSwitchPreference(model, restrictions, repository, ifBlockedOverrideCheckedTo)
+    RestrictedMainSwitchPreference(model, restrictions, repository, ifBlockedOverrideCheckedTo)
 }
 
 @VisibleForTesting
 @Composable
-internal fun RestrictedSwitchPreference(
+internal fun RestrictedMainSwitchPreference(
     model: SwitchPreferenceModel,
     restrictions: Restrictions,
     repository: RestrictedRepository,
@@ -52,6 +52,6 @@ internal fun RestrictedSwitchPreference(
         repository = repository,
         ifBlockedOverrideCheckedTo = ifBlockedOverrideCheckedTo,
     ) { model, modifier ->
-        SwitchPreference(model, modifier)
+        MainSwitchPreference(model, modifier)
     }
 }

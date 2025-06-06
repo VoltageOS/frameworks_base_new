@@ -33,7 +33,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class RestrictedSwitchPreferenceTest {
+class RestrictedMainSwitchPreferenceTest {
     @get:Rule val composeTestRule = createComposeRule()
 
     private val switchPreferenceModel =
@@ -141,7 +141,7 @@ class RestrictedSwitchPreferenceTest {
         ifBlockedOverrideCheckedTo: Boolean? = null,
     ) {
         composeTestRule.setContent {
-            RestrictedSwitchPreference(
+            RestrictedMainSwitchPreference(
                 model = switchPreferenceModel,
                 restrictions = restrictions,
                 repository = testRestrictedRepository,
