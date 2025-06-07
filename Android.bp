@@ -268,7 +268,6 @@ java_library {
         "SurfaceFlingerProperties",
         "vendor.lineage.livedisplay-V2.0-java",
         "vendor.lineage.livedisplay-V2.1-java",
-        "vendor.lineage.touch-V1.0-java",
         "vendor.lineage.health-V2-java",
         "vendor.lineage.touch-V1-java",
     ],
