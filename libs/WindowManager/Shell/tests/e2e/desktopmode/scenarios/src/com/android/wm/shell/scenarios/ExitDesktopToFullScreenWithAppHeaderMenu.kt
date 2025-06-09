@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,9 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import com.android.launcher3.tapl.LauncherInstrumentation
 import com.android.server.wm.flicker.helpers.DesktopModeAppHelper
+import com.android.wm.shell.shared.desktopmode.DesktopState
 import com.android.server.wm.flicker.helpers.SimpleAppHelper
 import com.android.wm.shell.Utils
-import com.android.wm.shell.shared.desktopmode.DesktopState
 import org.junit.After
 import org.junit.Assume
 import org.junit.Before
@@ -37,7 +37,7 @@ import org.junit.Rule
 import org.junit.Test
 
 @Ignore("Test Base Class")
-abstract class EnterDesktopWithAppHandleMenu(val rotation: Rotation = Rotation.ROTATION_0) : TestScenarioBase() {
+abstract class ExitDesktopToFullScreenWithAppHeaderMenu(val rotation: Rotation = Rotation.ROTATION_0) : TestScenarioBase() {
 
     private val instrumentation: Instrumentation = InstrumentationRegistry.getInstrumentation()
     private val tapl = LauncherInstrumentation()
@@ -53,19 +53,21 @@ abstract class EnterDesktopWithAppHandleMenu(val rotation: Rotation = Rotation.R
     @Before
     fun setup() {
         Assume.assumeTrue(
-            DesktopState.fromContext(instrumentation.context)
-                .isDesktopModeSupportedOnDisplay(DEFAULT_DISPLAY)
+           DesktopState.fromContext(instrumentation.context)
+               .isDesktopModeSupportedOnDisplay(DEFAULT_DISPLAY)
         )
         tapl.setEnableRotation(true)
         tapl.setExpectedRotation(rotation.value)
         tapl.enableTransientTaskbar(false)
         ChangeDisplayOrientationRule.setRotation(rotation)
+        // Launch app in order to enter desktop mode
+        simpleAppHelper.launchViaIntent(wmHelper)
+        testApp.enterDesktopMode(wmHelper, device)
     }
 
     @Test
-    open fun enterDesktopWithAppHandleMenu() {
-        simpleAppHelper.launchViaIntent(wmHelper)
-        testApp.enterDesktopModeFromAppHandleMenu(wmHelper, device)
+    open fun exitDesktopToFullScreenWithAppHeaderMenu() {
+        testApp.exitDesktopModeToFullScreenWithAppHeader(wmHelper)
     }
 
     @After
