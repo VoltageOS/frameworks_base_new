@@ -16,18 +16,23 @@
 
 package com.android.wm.shell.flicker.bubbles
 
+import android.graphics.Bitmap
 import android.platform.test.annotations.Presubmit
 import android.platform.test.annotations.RequiresFlagsEnabled
+import android.tools.Rotation
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.FlakyTest
 import androidx.test.filters.RequiresDevice
+import com.android.server.wm.flicker.helpers.ImeShownOnAppStartHelper
 import com.android.wm.shell.Flags
+import com.android.wm.shell.flicker.bubbles.testcase.ImeBecomesVisibleAndBubbleIsShrunkTestCase
 import com.android.wm.shell.flicker.bubbles.utils.FlickerPropertyInitializer
 import com.android.wm.shell.flicker.bubbles.utils.RecordTraceWithTransitionRule
 import com.android.wm.shell.flicker.bubbles.utils.collapseBubbleAppViaBackKey
-import com.android.wm.shell.flicker.bubbles.utils.expandBubbleAppViaTapOnBubbleStack
+import com.android.wm.shell.flicker.bubbles.utils.expandBubbleAppViaBubbleBar
 import com.android.wm.shell.flicker.bubbles.utils.launchBubbleViaBubbleMenu
 import com.android.wm.shell.flicker.bubbles.utils.setUpBeforeTransition
-import org.junit.Assume.assumeFalse
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.FixMethodOrder
@@ -35,9 +40,9 @@ import org.junit.runner.RunWith
 import org.junit.runners.MethodSorters
 
 /**
- * Test clicking bubble to expand a bubble that was in collapsed state.
+ * Test tapping on bubble bar to expand a bubble that was in collapsed state and show IME.
  *
- * To run this test: `atest WMShellExplicitFlickerTestsBubbles:ExpandBubbleViaBubbleStackTest`
+ * To run this test: `atest WMShellExplicitFlickerTestsBubbles:ExpandBubbleWithImeViaBubbleBarTest`
  *
  * Pre-steps:
  * ```
@@ -46,37 +51,77 @@ import org.junit.runners.MethodSorters
  *
  * Actions:
  * ```
- *     Expand the [testApp] bubble via clicking floating bubble icon
+ *     Expand the [testApp] bubble via tapping on bubble bar and show IME
  * ```
  * Verified tests:
  * - [ExpandBubbleTestBase]
+ * - [ImeBecomesVisibleAndBubbleIsShrunkTestCase]
  */
-@RequiresFlagsEnabled(Flags.FLAG_ENABLE_CREATE_ANY_BUBBLE)
+@RequiresFlagsEnabled(Flags.FLAG_ENABLE_CREATE_ANY_BUBBLE, Flags.FLAG_ENABLE_BUBBLE_BAR)
 @RunWith(AndroidJUnit4::class)
 @RequiresDevice
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Presubmit
-class ExpandBubbleViaBubbleStackTest : ExpandBubbleTestBase() {
+@FlakyTest(bugId = 421000153)
+class ExpandBubbleWithImeViaBubbleBarTest :
+    ExpandBubbleTestBase(),
+    ImeBecomesVisibleAndBubbleIsShrunkTestCase {
 
     companion object : FlickerPropertyInitializer() {
+        /**
+         * The screenshot took at the end of the transition.
+         */
+        private lateinit var bitmapAtEnd: Bitmap
+
+        /**
+         * The IME inset observed from [testApp]
+         */
+        private var imeInset: Int = -1
+
         @ClassRule
         @JvmField
         val recordTraceWithTransitionRule = RecordTraceWithTransitionRule(
             setUpBeforeTransition = {
                 setUpBeforeTransition(instrumentation, wmHelper)
+                // Launch and collapse the bubble.
                 launchBubbleViaBubbleMenu(testApp, tapl, wmHelper)
+                // Press back to dismiss IME window.
+                tapl.pressBack()
                 collapseBubbleAppViaBackKey(testApp, tapl, wmHelper)
+                // Checks that the IME is gone and the bubble is in collapsed state
+                wmHelper
+                    .StateSyncBuilder()
+                    .withImeGone()
+                    .waitForAndVerify()
             },
-            transition = { expandBubbleAppViaTapOnBubbleStack(uiDevice, testApp, wmHelper) },
+            transition = {
+                expandBubbleAppViaBubbleBar(uiDevice, testApp, wmHelper)
+                testApp.waitIMEShown(wmHelper)
+                bitmapAtEnd = instrumentation.uiAutomation.takeScreenshot()
+                imeInset = testApp.retrieveImeBottomInset()
+            },
             tearDownAfterTransition = { testApp.exit(wmHelper) }
         )
+
+        override val testApp
+            get() = ImeShownOnAppStartHelper(instrumentation, Rotation.ROTATION_0)
     }
 
     override val traceDataReader
         get() = recordTraceWithTransitionRule.reader
 
+    // This is necessary or the test will use the testApp from BubbleFlickerTestBase.
+    override val testApp
+        get() = ExpandBubbleWithImeViaBubbleBarTest.testApp
+
+    override val bitmapAtEnd: Bitmap
+        get() = ExpandBubbleWithImeViaBubbleBarTest.bitmapAtEnd
+
+    override val expectedImeInset: Int
+        get() = imeInset
+
     @Before
     fun setUp() {
-        assumeFalse(tapl.isTablet)
+        assumeTrue(tapl.isTablet)
     }
 }
