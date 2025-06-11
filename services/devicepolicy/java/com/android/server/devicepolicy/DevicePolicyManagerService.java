@@ -3938,6 +3938,9 @@ public class DevicePolicyManagerService extends IDevicePolicyManager.Stub {
             preferentialNetworkServiceConfigs = owner != null
                     ? owner.mPreferentialNetworkServiceConfigs
                     : List.of(PreferentialNetworkServiceConfig.DEFAULT);
+            if (owner == null && userId != UserHandle.USER_SYSTEM) {
+                setLogoutUserIdLocked(UserHandle.USER_SYSTEM);
+            }
         }
         updateNetworkPreferenceForUser(userId, preferentialNetworkServiceConfigs);
 
