@@ -232,4 +232,7 @@
 
     <!-- Album art max bitmap size -->
     <java-symbol type="integer" name="config_maxBitmapSizePx" />
+
+    <!-- KeyboxImitationHooks -->
+    <java-symbol type="array" name="config_certifiedKeybox" />
 </resources>
