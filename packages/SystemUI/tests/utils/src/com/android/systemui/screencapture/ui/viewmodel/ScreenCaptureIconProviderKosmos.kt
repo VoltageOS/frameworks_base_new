@@ -19,10 +19,8 @@ package com.android.systemui.screencapture.ui.viewmodel
 import android.content.applicationContext
 import com.android.systemui.kosmos.Kosmos
 import com.android.systemui.kosmos.Kosmos.Fixture
+import com.android.systemui.kosmos.backgroundCoroutineContext
 
-val Kosmos.screenCaptureViewModel by Fixture {
-    ScreenCaptureViewModel(
-        context = applicationContext,
-        iconProvider = screenCaptureIconProviderKosmos,
-    )
+val Kosmos.screenCaptureIconProviderKosmos by Fixture {
+    ScreenCaptureIconProvider(applicationContext, backgroundCoroutineContext)
 }

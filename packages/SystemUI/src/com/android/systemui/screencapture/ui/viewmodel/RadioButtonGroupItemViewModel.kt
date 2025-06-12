@@ -16,13 +16,12 @@
 
 package com.android.systemui.screencapture.ui.viewmodel
 
-import android.content.applicationContext
-import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.kosmos.Kosmos.Fixture
+import com.android.systemui.common.shared.model.Icon
 
-val Kosmos.screenCaptureViewModel by Fixture {
-    ScreenCaptureViewModel(
-        context = applicationContext,
-        iconProvider = screenCaptureIconProviderKosmos,
-    )
-}
+/** Models a single button within the RadioButtonGroup. */
+data class RadioButtonGroupItemViewModel(
+    val label: String? = null,
+    val icon: Icon? = null,
+    val isSelected: Boolean,
+    val onClick: () -> Unit,
+)
