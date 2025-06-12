@@ -14,20 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.systemui.screenrecord.domain.interactor
+package com.android.systemui.screenrecord
 
-import android.content.applicationContext
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.kosmos.applicationCoroutineScope
-import com.android.systemui.screenrecord.screenRecordUxController
-import com.android.systemui.user.data.repository.userRepository
+import org.mockito.kotlin.mock
 
-val Kosmos.screenRecordingServiceInteractor: ScreenRecordingServiceInteractor by
-    Kosmos.Fixture {
-        ScreenRecordingServiceInteractor(
-            applicationContext,
-            applicationCoroutineScope,
-            userRepository,
-            screenRecordUxController,
-        )
-    }
+var Kosmos.screenRecordUxController: ScreenRecordUxController by Kosmos.Fixture { mock {} }
