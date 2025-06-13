@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2024 The Android Open Source Project
+// Copyright (C) 2025 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,19 +19,30 @@ package {
 }
 
 java_library {
-    name: "com.android.systemui.util.settings-api",
+    name: "com.android.systemui.util.time-api",
     srcs: [
         "*.java",
         "*.kt",
     ],
-    libs: [
-        "//frameworks/libs/systemui:tracinglib-platform",
-        "com.android.systemui.dagger-api",
-        "SystemUICommon",
-        "androidx.annotation_annotation",
-        "kotlinx_coroutines_android",
-    ],
     defaults: [
         "SystemUI_pod_defaults_api",
+    ],
+}
+
+java_library {
+    name: "com.android.systemui.util.time-impl",
+    srcs: [
+        "impl/*.java",
+        "impl/*.kt",
+    ],
+    libs: [
+        "com.android.systemui.dagger-api",
+        "dagger2",
+    ],
+    static_libs: [
+        "com.android.systemui.util.time-api",
+    ],
+    defaults: [
+        "SystemUI_pod_defaults_impl",
     ],
 }
