@@ -40,7 +40,7 @@ abstract class SettingsBasePreferenceFragment : PreferenceFragmentCompat() {
     @CallSuper
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        if (SettingsThemeHelper.isExpressiveTheme(requireContext())) {
+	if (listView != null && SettingsThemeHelper.isExpressiveTheme(requireContext())) {
             // Don't allow any divider in between the preferences in expressive design.
             setDivider(null)
         }
