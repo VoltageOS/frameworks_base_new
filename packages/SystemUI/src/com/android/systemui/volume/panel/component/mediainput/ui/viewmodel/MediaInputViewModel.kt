@@ -14,24 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.systemui.volume.dialog.domain.interactor
+package com.android.systemui.volume.panel.component.mediainput.ui.viewmodel
 
-import android.content.Context
-import com.android.systemui.dagger.SysUISingleton
-import com.android.systemui.dagger.qualifiers.Application
-import com.android.systemui.qs.flags.QsDetailedView
-import com.android.systemui.res.R
+import com.android.systemui.volume.panel.dagger.scope.VolumePanelScope
 import javax.inject.Inject
 
-@SysUISingleton
-class DesktopAudioTileDetailsFeatureInteractor
-@Inject
-constructor(@Application private val context: Context) {
-    private val isEnabled =
-        QsDetailedView.isEnabled &&
-            context.resources.getBoolean(R.bool.config_enableDesktopAudioTileDetailsView)
-
-    fun isEnabled(): Boolean {
-        return isEnabled
-    }
+@VolumePanelScope
+class MediaInputViewModel @Inject constructor() {
+    // TODO(b/378513663): Implement the content of media input view model
 }
