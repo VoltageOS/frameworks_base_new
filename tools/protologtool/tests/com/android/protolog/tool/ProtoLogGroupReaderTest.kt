@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,17 @@
 
 package com.android.protolog.tool
 
-data class LogGroup(
-    val name: String,
-    val enabled: Boolean,
-    val textEnabled: Boolean,
-    val tag: String,
-    val id: Int,
-)
+import com.google.common.truth.Truth.assertThat
+import org.junit.Test
+
+class ProtoLogGroupReaderTest {
+    @Test
+    fun loadFromClass_usesProvidedGroupId() {
+        val reader = ProtoLogGroupReader()
+        val groups = reader.loadFromClass(TestProtoLogGroups::class.java)
+
+        assertThat(groups).hasSize(TestProtoLogGroups.entries.size)
+        assertThat(groups["TEST_GROUP_1"]?.id).isEqualTo(TestProtoLogGroups.TEST_GROUP_1.id)
+        assertThat(groups["TEST_GROUP_2"]?.id).isEqualTo(TestProtoLogGroups.TEST_GROUP_2.id)
+    }
+}
