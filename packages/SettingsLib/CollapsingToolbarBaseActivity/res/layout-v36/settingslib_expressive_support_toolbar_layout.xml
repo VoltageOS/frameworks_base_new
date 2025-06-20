@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Copyright (C) 2024 The Android Open Source Project
+  Copyright (C) 2025 The Android Open Source Project
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -39,8 +39,8 @@
             app:maxLines="2"
             style="@style/SettingsLibCollapsingToolbarLayoutStyle.Expressive">
 
-            <Toolbar
-                android:id="@+id/action_bar"
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/support_action_bar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
                 android:layout_marginStart="@dimen/settingslib_expressive_space_extrasmall4"
@@ -51,7 +51,7 @@
                 app:layout_collapseMode="pin">
 
                 <include layout="@layout/settingslib_expressive_toolbar_buttons"/>
-            </Toolbar>
+            </androidx.appcompat.widget.Toolbar>
 
         </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>
