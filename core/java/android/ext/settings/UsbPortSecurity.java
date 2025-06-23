@@ -1,5 +1,7 @@
 package android.ext.settings;
 
+import android.os.Build;
+
 /** @hide */
 public class UsbPortSecurity {
     public static final int MODE_DISABLED = 0;
@@ -12,5 +14,7 @@ public class UsbPortSecurity {
 
     // keep in sync with USB HAL implementations that check this sysprop during init
     public static final IntSysProperty MODE_SETTING = new IntSysProperty(
-            "persist.security.usb_mode", MODE_CHARGING_ONLY_WHEN_LOCKED);
+            "persist.security.usb_mode",
+            // USB adb access is needed for debugging early boot failures
+            Build.IS_DEBUGGABLE ? MODE_ENABLED : MODE_CHARGING_ONLY_WHEN_LOCKED);
 }
