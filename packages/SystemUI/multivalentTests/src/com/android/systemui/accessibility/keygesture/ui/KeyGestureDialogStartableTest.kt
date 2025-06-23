@@ -14,99 +14,103 @@
  * limitations under the License.
  */
 
-package com.android.systemui.accessibility.keygesture.domain
+package com.android.systemui.accessibility.keygesture.ui
 
 import android.content.Intent
 import android.hardware.input.KeyGestureEvent
+import android.platform.test.annotations.EnableFlags
 import android.view.KeyEvent
+import androidx.test.annotation.UiThreadTest
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import com.android.hardware.input.Flags
 import com.android.internal.accessibility.common.KeyGestureEventConstants
 import com.android.systemui.SysuiTestCase
-import com.android.systemui.accessibility.data.repository.AccessibilityShortcutsRepository
+import com.android.systemui.accessibility.keygesture.domain.KeyGestureDialogInteractor
+import com.android.systemui.accessibility.keygesture.domain.keyGestureDialogInteractor
 import com.android.systemui.broadcast.broadcastDispatcher
-import com.android.systemui.coroutines.collectLastValue
-import com.android.systemui.kosmos.testDispatcher
+import com.android.systemui.kosmos.applicationCoroutineScope
 import com.android.systemui.kosmos.testScope
+import com.android.systemui.statusbar.phone.systemUIDialogFactory
 import com.android.systemui.testKosmos
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.Mockito.mock
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.verify
 
 @SmallTest
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
-class KeyGestureDialogInteractorTest : SysuiTestCase() {
+@UiThreadTest
+@EnableFlags(Flags.FLAG_ENABLE_TALKBACK_AND_MAGNIFIER_KEY_GESTURES)
+class KeyGestureDialogStartableTest : SysuiTestCase() {
     private val kosmos = testKosmos()
     private val broadcastDispatcher = kosmos.broadcastDispatcher
-    private val testDispatcher = kosmos.testDispatcher
+    private val interactor = kosmos.keyGestureDialogInteractor
     private val testScope = kosmos.testScope
 
-    // mocks
-    private val repository = mock(AccessibilityShortcutsRepository::class.java)
-
-    private lateinit var underTest: KeyGestureDialogInteractor
+    private lateinit var underTest: KeyGestureDialogStartable
 
     @Before
     fun setUp() {
-        underTest = KeyGestureDialogInteractor(repository, broadcastDispatcher, testDispatcher)
+        underTest =
+            KeyGestureDialogStartable(
+                interactor,
+                kosmos.systemUIDialogFactory,
+                kosmos.applicationCoroutineScope,
+            )
+    }
+
+    @After
+    fun tearDown() {
+        // If we show the dialog, we must dismiss the dialog at the end of the test on the main
+        // thread.
+        underTest.currentDialog?.dismiss()
     }
 
     @Test
-    fun onPositiveButtonClick_enabledShortcutsForFakeTarget() {
-        val enabledTargetName = "fakeTargetName"
-
-        underTest.onPositiveButtonClick(enabledTargetName)
-
-        verify(repository).enableShortcutsForTargets(eq(enabledTargetName))
-    }
-
-    @Test
-    fun keyGestureConfirmDialogRequest_invalidRequestReceived() {
+    fun start_doesNotShowDialogByDefault() =
         testScope.runTest {
-            val keyGestureType = KeyGestureEvent.KEY_GESTURE_TYPE_TOGGLE_MAGNIFICATION
-            val metaState = 0
-            val keyCode = 0
-            val testTargetName = "fakeTargetName"
-            val keyGestureConfirmInfo by collectLastValue(underTest.keyGestureConfirmDialogRequest)
+            underTest.start()
             runCurrent()
 
-            sendIntentBroadcast(keyGestureType, metaState, keyCode, testTargetName)
-            runCurrent()
-
-            assertThat(keyGestureConfirmInfo).isNull()
+            assertThat(underTest.currentDialog).isNull()
         }
-    }
 
     @Test
-    fun keyGestureConfirmDialogRequest_getFlowFromIntentForMagnification() {
+    fun start_onValidRequestReceived_showDialog() =
         testScope.runTest {
-            val keyGestureType = KeyGestureEvent.KEY_GESTURE_TYPE_TOGGLE_MAGNIFICATION
-            val metaState = KeyEvent.META_META_ON or KeyEvent.META_ALT_ON
-            val keyCode = KeyEvent.KEYCODE_M
-            val testTargetName = "targetNameForMagnification"
-            collectLastValue(underTest.keyGestureConfirmDialogRequest)
+            underTest.start()
             runCurrent()
 
-            sendIntentBroadcast(keyGestureType, metaState, keyCode, testTargetName)
+            // Trigger to send a broadcast event
+            sendIntentBroadcast(
+                KeyGestureEvent.KEY_GESTURE_TYPE_TOGGLE_MAGNIFICATION,
+                KeyEvent.META_META_ON or KeyEvent.META_ALT_ON,
+                KeyEvent.KEYCODE_M,
+                "targetNameForMagnification",
+            )
             runCurrent()
 
-            verify(repository)
-                .getTitleToContentForKeyGestureDialog(
-                    eq(keyGestureType),
-                    eq(metaState),
-                    eq(keyCode),
-                    eq(testTargetName),
-                )
+            assertThat(underTest.currentDialog?.isShowing).isTrue()
         }
-    }
+
+    @Test
+    fun start_onInvalidRequestReceived_noDialog() =
+        testScope.runTest {
+            underTest.start()
+            runCurrent()
+
+            // Trigger to send a broadcast event
+            sendIntentBroadcast(0, 0, KeyEvent.KEYCODE_M, "targetName")
+            runCurrent()
+
+            assertThat(underTest.currentDialog).isNull()
+        }
 
     private fun sendIntentBroadcast(
         keyGestureType: Int,
