@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,14 @@
 
 package com.android.systemui.qs.panels.ui.viewmodel
 
-import com.android.systemui.dagger.SysUISingleton
-import com.android.systemui.qs.panels.domain.interactor.InFirstPageInteractor
-import javax.inject.Inject
+import com.android.systemui.kosmos.Kosmos
+import com.android.systemui.qs.panels.domain.interactor.inFirstPageInteractor
 
-/*
- * Tracks whether the current HorizontalPager (using this viewmodel) is in the first page.
- * This requires it to be a `@SysUISingleton` to be shared between viewmodels.
- */
-@SysUISingleton
-class InFirstPageViewModel @Inject constructor(inFirstPageInteractor: InFirstPageInteractor) {
-    var inFirstPage by inFirstPageInteractor::inFirstPage
-}
+val Kosmos.animateQsTilesViewModelFactory by
+    Kosmos.Fixture {
+        object : AnimateQsTilesViewModel.Factory {
+            override fun create(): AnimateQsTilesViewModel {
+                return AnimateQsTilesViewModel(inFirstPageInteractor)
+            }
+        }
+    }
