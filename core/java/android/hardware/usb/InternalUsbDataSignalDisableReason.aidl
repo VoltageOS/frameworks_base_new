@@ -16,13 +16,10 @@
 
 package android.hardware.usb;
 
-import android.hardware.usb.IUsbOperationInternal;
-import android.hardware.usb.InternalUsbDataSignalDisableReason;
-
 /** @hide */
-interface IUsbManagerInternal {
-
-    /* Disable/enable USB data on a port for System Service callers. */
-    boolean enableUsbDataSignal(boolean enable, InternalUsbDataSignalDisableReason disableReason);
+@Backing(type="int")
+enum InternalUsbDataSignalDisableReason {
+    USB_DISABLE_REASON_LOCKDOWN_MODE = 0,
+    USB_DISABLE_REASON_APM = 1,
+    USB_DISABLE_REASON_ENTERPRISE = 2
 }
-
