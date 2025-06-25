@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,22 +18,22 @@ package com.android.systemui.display.ui.view
 
 import android.app.Dialog
 import android.graphics.Insets
-import android.platform.test.annotations.RequiresFlagsDisabled
+import android.graphics.Rect
+import android.platform.test.annotations.RequiresFlagsEnabled
 import android.testing.TestableLooper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.Window
 import android.view.WindowInsets
 import android.view.WindowInsetsAnimation
+import android.widget.CompoundButton
+import androidx.core.view.marginBottom
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import com.android.app.animation.Interpolators
+import com.android.server.display.feature.flags.Flags.FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT
 import com.android.systemui.SysuiTestCase
 import com.android.systemui.res.R
-import com.android.systemui.util.mockito.any
-import com.android.systemui.util.mockito.capture
-import com.android.systemui.util.mockito.mock
-import com.android.systemui.util.mockito.whenever
 import com.android.window.flags.Flags.FLAG_ENABLE_UPDATED_DISPLAY_CONNECTION_DIALOG
 import com.google.common.truth.Truth.assertThat
 import org.junit.Before
@@ -42,53 +42,72 @@ import org.junit.runner.RunWith
 import org.mockito.ArgumentCaptor
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
+import org.mockito.kotlin.any
+import org.mockito.kotlin.capture
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 
 @SmallTest
-@RequiresFlagsDisabled(FLAG_ENABLE_UPDATED_DISPLAY_CONNECTION_DIALOG)
+@RequiresFlagsEnabled(
+    FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT,
+    FLAG_ENABLE_UPDATED_DISPLAY_CONNECTION_DIALOG,
+)
 @RunWith(AndroidJUnit4::class)
 @TestableLooper.RunWithLooper(setAsMainLooper = true)
-class MirroringConfirmationDialogDelegateTest : SysuiTestCase() {
+class ExternalDisplayConnectionDialogDelegateTest : SysuiTestCase() {
 
-    private lateinit var underTest: MirroringConfirmationDialogDelegate
-
+    private val rememberChoiceCallback = mock<CompoundButton.OnCheckedChangeListener>()
+    private val onStartDesktopCallback = mock<View.OnClickListener>()
     private val onStartMirroringCallback = mock<View.OnClickListener>()
     private val onCancelCallback = mock<View.OnClickListener>()
-    private val windowDecorView: View = mock {}
     private val windowInsetsAnimationCallbackCaptor =
         ArgumentCaptor.forClass(WindowInsetsAnimation.Callback::class.java)
-    private val dialog: Dialog =
-        mock<Dialog> {
-            var view: View? = null
-            whenever(setContentView(any<Int>())).then {
-                view =
-                    LayoutInflater.from(this@MirroringConfirmationDialogDelegateTest.context)
-                        .inflate(it.arguments[0] as Int, null, false)
-                Unit
-            }
-            whenever(requireViewById<View>(any<Int>())).then {
-                view?.requireViewById(it.arguments[0] as Int)
-            }
-            val window: Window = mock { whenever(decorView).thenReturn(windowDecorView) }
-            whenever(this.window).thenReturn(window)
-        }
+    private val dialog: Dialog = mock()
+    private val window: Window = mock()
+    private val windowDecorView: View = mock()
+
+    private lateinit var inflatedView: View
+    private lateinit var underTest: ExternalDisplayConnectionDialogDelegate
 
     @Before
     fun setUp() {
+        inflatedView =
+            LayoutInflater.from(context).inflate(R.layout.connected_display_dialog_2, null, false)
+
+        whenever(dialog.window).thenReturn(window)
+        whenever(window.decorView).thenReturn(windowDecorView)
+        whenever(dialog.requireViewById<View>(any())).thenAnswer { invocation ->
+            val viewId = invocation.getArgument<Int>(0)
+            inflatedView.requireViewById(viewId)
+        }
+
         underTest =
-            MirroringConfirmationDialogDelegate(
+            ExternalDisplayConnectionDialogDelegate(
                 context = context,
                 showConcurrentDisplayInfo = false,
+                rememberChoiceCheckBoxListener = rememberChoiceCallback,
+                onStartDesktopClickListener = onStartDesktopCallback,
                 onStartMirroringClickListener = onStartMirroringCallback,
-                onCancelMirroring = onCancelCallback,
-                navbarBottomInsetsProvider = { 0 },
+                onCancelClickListener = onCancelCallback,
+                insetsProvider = { Insets.of(Rect()) },
             )
+    }
+
+    @Test
+    fun startDesktopButton_clicked_callsCorrectCallback() {
+        underTest.onCreate(dialog, null)
+
+        dialog.requireViewById<View>(R.id.start_desktop_mode).callOnClick()
+
+        verify(onStartDesktopCallback).onClick(any())
+        verify(onCancelCallback, never()).onClick(any())
     }
 
     @Test
     fun startMirroringButton_clicked_callsCorrectCallback() {
         underTest.onCreate(dialog, null)
 
-        dialog.requireViewById<View>(R.id.enable_display).callOnClick()
+        dialog.requireViewById<View>(R.id.start_mirroring).callOnClick()
 
         verify(onStartMirroringCallback).onClick(any())
         verify(onCancelCallback, never()).onClick(any())
@@ -102,12 +121,13 @@ class MirroringConfirmationDialogDelegateTest : SysuiTestCase() {
 
         verify(onCancelCallback).onClick(any())
         verify(onStartMirroringCallback, never()).onClick(any())
+        verify(onStartDesktopCallback, never()).onClick(any())
     }
 
     @Test
     fun onCancel_afterEnablingMirroring_cancelCallbackNotCalled() {
         underTest.onCreate(dialog, null)
-        dialog.requireViewById<View>(R.id.enable_display).callOnClick()
+        dialog.requireViewById<View>(R.id.start_mirroring).callOnClick()
 
         underTest.onStop(dialog)
 
@@ -116,18 +136,18 @@ class MirroringConfirmationDialogDelegateTest : SysuiTestCase() {
     }
 
     @Test
-    fun onDismiss_afterEnablingMirroring_cancelCallbackNotCalled() {
+    fun onCancel_afterEnablingDesktopMode_cancelCallbackNotCalled() {
         underTest.onCreate(dialog, null)
-        dialog.requireViewById<View>(R.id.enable_display).callOnClick()
+        dialog.requireViewById<View>(R.id.start_desktop_mode).callOnClick()
 
         underTest.onStop(dialog)
 
         verify(onCancelCallback, never()).onClick(any())
-        verify(onStartMirroringCallback).onClick(any())
+        verify(onStartDesktopCallback).onClick(any())
     }
 
     @Test
-    fun onInsetsChanged_navBarInsets_updatesBottomPadding() {
+    fun onInsetsChanged_navBarInsets_updatesBottomMargin() {
         underTest.onCreate(dialog, null)
         underTest.onStart(dialog)
 
@@ -135,7 +155,7 @@ class MirroringConfirmationDialogDelegateTest : SysuiTestCase() {
 
         triggerInsetsChanged(WindowInsets.Type.navigationBars(), insets)
 
-        assertThat(dialog.requireViewById<View>(R.id.cd_bottom_sheet).paddingBottom)
+        assertThat(dialog.requireViewById<View>(R.id.cancel).marginBottom)
             .isEqualTo(TEST_BOTTOM_INSETS)
     }
 
@@ -147,7 +167,7 @@ class MirroringConfirmationDialogDelegateTest : SysuiTestCase() {
         val insets = buildInsets(WindowInsets.Type.ime(), TEST_BOTTOM_INSETS)
         triggerInsetsChanged(WindowInsets.Type.ime(), insets)
 
-        assertThat(dialog.requireViewById<View>(R.id.cd_bottom_sheet).paddingBottom)
+        assertThat(dialog.requireViewById<View>(R.id.cancel).marginBottom)
             .isNotEqualTo(TEST_BOTTOM_INSETS)
     }
 
