@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2021 Chaldeaprjkt
+ * Copyright (C) 2022-2024 crDroid Android Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,8 +119,18 @@ class GameSpaceManager @Inject constructor(
         handler.sendEmptyMessage(MSG_UPDATE_FOREGROUND_APP)
         context.registerReceiver(interactivityReceiver, IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_OFF)
-        })
+        }, Context.RECEIVER_NOT_EXPORTED)
         keyguardStateController.addCallback(keyguardStateCallback)
+    }
+
+    fun unobserve() {
+        val taskStackChangeListeners = TaskStackChangeListeners.getInstance();
+        if (!isRegistered) {
+            taskStackChangeListeners.unregisterTaskStackListener(taskStackChangeListener)
+        }
+        isRegistered = false;
+        context.unregisterReceiver(interactivityReceiver)
+        keyguardStateController.removeCallback(keyguardStateCallback)
     }
 
     fun isGameActive() = activeGame != null
