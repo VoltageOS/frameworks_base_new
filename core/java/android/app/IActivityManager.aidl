@@ -1048,4 +1048,15 @@ interface IActivityManager {
      *  Force full screen for devices with cutout
      */
     boolean shouldForceCutoutFullscreen(in String packageName);
+
+    /**
+     * Boost framework
+     */
+    void releaseMemory(int minAdj, int maxKillCount, boolean includeUIProcesses, boolean skipCamera);
+    void executeAdjustCpusetCpus(String path, String cpuset);
+    void adjustCpusetCpus(String path, String cpuset, long durationMillis);
+    void animationBoost(int pid, boolean enabled);
+    void setThreadAffinity(int pid, int affinity);
+    void setPerformanceMode(boolean enabled);
+    boolean isBoostingAnimation();
 }
