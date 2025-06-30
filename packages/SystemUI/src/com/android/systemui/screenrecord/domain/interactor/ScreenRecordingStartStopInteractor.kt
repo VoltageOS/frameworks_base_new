@@ -16,18 +16,12 @@
 
 package com.android.systemui.screenrecord.domain.interactor
 
-import android.content.applicationContext
-import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.kosmos.applicationCoroutineScope
-import com.android.systemui.screenrecord.screenRecordUxController
-import com.android.systemui.user.data.repository.userRepository
+import android.media.projection.StopReason
+import com.android.systemui.screenrecord.domain.ScreenRecordingParameters
 
-val Kosmos.screenRecordingServiceInteractor: ScreenRecordingServiceInteractor by
-    Kosmos.Fixture {
-        ScreenRecordingServiceInteractor(
-            applicationContext,
-            applicationCoroutineScope,
-            userRepository,
-            screenRecordUxController,
-        )
-    }
+interface ScreenRecordingStartStopInteractor {
+
+    fun startRecording(parameters: ScreenRecordingParameters)
+
+    fun stopRecording(@StopReason reason: Int)
+}
