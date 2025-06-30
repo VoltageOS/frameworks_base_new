@@ -14,19 +14,11 @@
  * limitations under the License.
  */
 
-package com.android.systemui.screencapture.ui.viewmodel
+package com.android.systemui.screencapture.record.largescreen.domain.interactor
 
-import android.content.applicationContext
 import com.android.systemui.kosmos.Kosmos
 import com.android.systemui.kosmos.Kosmos.Fixture
-import com.android.systemui.screencapture.domain.interactor.screenshotInteractor
-import com.android.systemui.screencapture.record.largescreen.domain.interactor.screenCaptureRecordLargeScreenFeaturesInteractor
 
-val Kosmos.screenCaptureViewModel by Fixture {
-    ScreenCaptureViewModel(
-        applicationContext = applicationContext,
-        iconProvider = screenCaptureIconProviderKosmos,
-        screenshotInteractor = screenshotInteractor,
-        featuresInteractor = screenCaptureRecordLargeScreenFeaturesInteractor,
-    )
+val Kosmos.screenCaptureRecordLargeScreenFeaturesInteractor by Fixture {
+    ScreenCaptureRecordLargeScreenFeaturesInteractor()
 }
