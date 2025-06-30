@@ -15,23 +15,19 @@
  */
 package android.app;
 
-import android.content.Context;
 import android.platform.test.ravenwood.RavenwoodAppDriver;
 
 /**
- * Inject Ravenwood methods to {@link ActivityThread}.
+ * Helper class to access package-private stuff in {@code android.app}, such as {@link ContextImpl}.
  */
-public class ActivityThread_ravenwood {
-    private ActivityThread_ravenwood() {
+public class RavenwoodAndroidAppBridge {
+    private final ContextImpl mSystemContext;
+
+    public RavenwoodAndroidAppBridge(RavenwoodAppDriver appDriver) {
+        mSystemContext = ContextImpl.createSystemContext(appDriver.getActivityThread());
     }
 
-    /** Override the corresponding ActivityThread method. */
-    public static Context currentSystemContext() {
-        return RavenwoodAppDriver.getInstance().getAndroidAppBridge().getSystemContext();
-    }
-
-    /** Override the corresponding ActivityThread method. */
-    public static Application currentApplication() {
-        return RavenwoodAppDriver.getInstance().getApplication();
+    public ContextImpl getSystemContext() {
+        return mSystemContext;
     }
 }
