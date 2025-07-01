@@ -286,7 +286,7 @@ public class ScrollCaptureController {
             }
             mEventLogger.log(ScreenshotEvent.SCREENSHOT_LONG_SCREENSHOT_STARTED, 0, mWindowOwner);
             requestNextTile(0);
-        } catch (InterruptedException | ExecutionException | CancellationException e) {
+        } catch (InterruptedException | ExecutionException e) {
             // Failure to start, propagate to caller
             Log.e(TAG, "session start failed!");
             if (mCaptureCompleter != null) {
