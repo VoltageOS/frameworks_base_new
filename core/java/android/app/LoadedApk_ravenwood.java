@@ -15,23 +15,14 @@
  */
 package android.app;
 
-import android.content.Context;
-import android.platform.test.ravenwood.RavenwoodAppDriver;
+import android.content.res.Resources;
+import android.platform.test.ravenwood.RavenwoodEnvironment;
 
-/**
- * Inject Ravenwood methods to {@link ActivityThread}.
- */
-public class ActivityThread_ravenwood {
-    private ActivityThread_ravenwood() {
+public class LoadedApk_ravenwood {
+    private LoadedApk_ravenwood() {
     }
 
-    /** Override the corresponding ActivityThread method. */
-    public static Context currentSystemContext() {
-        return RavenwoodAppDriver.getInstance().getAndroidAppBridge().getSystemContext();
-    }
-
-    /** Override the corresponding ActivityThread method. */
-    public static Application currentApplication() {
-        return RavenwoodAppDriver.getInstance().getApplication();
+    static Resources getResources(LoadedApk loadedApk) {
+        return RavenwoodEnvironment.getInstance().loadResources(loadedApk.getPackageName());
     }
 }
