@@ -30,7 +30,7 @@
         <item name="expandedTitleTextColor">@color/settingslib_materialColorOnSurface</item>
     </style>
     <style name="SettingsLibCollapsingToolbarLayoutStyle.Expressive">
-        <item name="contentScrim">@color/settingslib_materialColorSurfaceContainer</item>
+        <item name="contentScrim">@color/legacy_settingslib_materialColorSurfaceContainer</item>
     </style>
 
     <style name="SettingsLibCollapsingToolbarTitle.Collapsed" parent="@style/TextAppearance.SettingsLib.TitleLarge.Emphasized">
