@@ -1057,6 +1057,7 @@ interface IActivityManager {
     void adjustCpusetCpus(String path, String cpuset, long durationMillis);
     void animationBoost(int pid, boolean enabled);
     void setThreadAffinity(int pid, int affinity);
-    void setPerformanceMode(boolean enabled);
-    boolean isBoostingAnimation();
+    void setPerformanceMode(boolean enabled, String reason);
+    void boostHint(String reason, long duration);
+
 }

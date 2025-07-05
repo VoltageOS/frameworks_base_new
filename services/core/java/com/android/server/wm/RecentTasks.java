@@ -1328,6 +1328,7 @@ class RecentTasks {
     void remove(Task task) {
         mTasks.remove(task);
         notifyTaskRemoved(task, false /* wasTrimmed */, false /* killProcess */);
+        com.android.internal.util.BoostHelper.boostHint("Task Removed", 500);
     }
 
     /**
