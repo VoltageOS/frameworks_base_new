@@ -354,6 +354,7 @@ import com.android.server.am.PendingIntentRecord;
 import com.android.server.contentcapture.ContentCaptureManagerInternal;
 import com.android.server.display.color.ColorDisplayService;
 import com.android.server.pm.UserManagerInternal;
+import com.android.server.pm.pkg.PackageStateInternal;
 import com.android.server.uri.GrantUri;
 import com.android.server.uri.NeededUriGrants;
 import com.android.server.uri.UriPermissionOwner;
@@ -5051,9 +5052,27 @@ final class ActivityRecord extends WindowToken {
         IRemoteCallback finishCallback = null;
         switch (animationType) {
             case ANIM_CUSTOM:
+                boolean isAllowed = false;
+                if (packageName.equals(launchedFromPackage)) {
+                    isAllowed = true;
+                } else {
+                    if (launchedFromPackage != null) {
+                        var pkgManager = LocalServices.getService(PackageManagerInternal.class);
+                        PackageStateInternal pkgState = pkgManager.getPackageStateInternal(launchedFromPackage);
+                        isAllowed = pkgState != null && pkgState.isSystem();
+                    }
+                }
+                int enterResId = AnimationOptions.DEFAULT_ANIMATION_RESOURCES_ID;
+                int exitResId = AnimationOptions.DEFAULT_ANIMATION_RESOURCES_ID;
+                if (isAllowed) {
+                    enterResId = pendingOptions.getCustomEnterResId();
+                    exitResId = pendingOptions.getCustomExitResId();
+                } else {
+                    Slog.d(TAG, "applyOptionsAnimation: ignoring custom animation from " + launchedFromPackage + " for " + intent);
+                }
                 options = AnimationOptions.makeCustomAnimOptions(pendingOptions.getPackageName(),
-                        pendingOptions.getCustomEnterResId(), 0 /* changeResId */,
-                        pendingOptions.getCustomExitResId(),
+                        enterResId, 0 /* changeResId */,
+                        exitResId,
                         pendingOptions.getOverrideTaskTransition());
                 startCallback = pendingOptions.getAnimationStartedListener();
                 finishCallback = pendingOptions.getAnimationFinishedListener();
