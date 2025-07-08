@@ -7072,12 +7072,6 @@ public final class Settings {
         public static final String ENABLE_RIPPLE_EFFECT = "enable_ripple_effect";
 
         /**
-         * Whether to disable qs on secure lockscreen.
-         * @hide
-         */
-        public static final String SECURE_LOCKSCREEN_QS_DISABLED = "secure_lockscreen_qs_disabled";
-
-        /**
          * Whether to vibrate on succesful fingerprint authentication
          * @hide
          */
