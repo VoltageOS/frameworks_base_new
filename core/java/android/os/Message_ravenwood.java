@@ -16,19 +16,13 @@
 package android.os;
 
 import android.annotation.NonNull;
+import android.platform.test.ravenwood.RavenwoodMessageTracker;
 
-import com.android.internal.util.function.TriFunction;
-
-public class Handler_ravenwood {
-    private Handler_ravenwood() {
+public class Message_ravenwood {
+    private Message_ravenwood() {
     }
 
-    public static volatile TriFunction<MessageQueue, Message, Long, Void>
-            sOnBeforeEnqueue = (a, b, c) -> null;
-
-    static void onBeforeEnqueue(@NonNull MessageQueue queue, @NonNull Message msg,
-            long uptimeMillis) {
-        // Check for a pendign exception, and throw it if any.
-        sOnBeforeEnqueue.apply(queue, msg, uptimeMillis);
+    static void onClear(@NonNull Message msg) {
+        RavenwoodMessageTracker.getInstance().untrackMessage(msg);
     }
 }
