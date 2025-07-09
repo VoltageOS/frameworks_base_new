@@ -353,6 +353,21 @@ interface VoltageModule {
 
        @Provides
         @IntoMap
+        @StringKey(SleepModeTile.TILE_SPEC)
+        fun provideSleepModeConfig(uiEventLogger: QsEventLogger): QSTileConfig {
+            return QSTileConfig(
+                tileSpec = TileSpec.create(SleepModeTile.TILE_SPEC),
+                uiConfig = QSTileUIConfig.Resource(
+                    iconRes = com.android.internal.R.drawable.ic_sleep,
+                    labelRes = R.string.quick_settings_sleep_mode_label
+                ),
+                instanceId = uiEventLogger.getNewInstanceId(),
+                category = TileCategory.UTILITIES
+            )
+        }
+
+       @Provides
+        @IntoMap
         @StringKey(UsbTetherTile.TILE_SPEC)
         fun provideUsbTetherConfig(uiEventLogger: QsEventLogger): QSTileConfig {
             return QSTileConfig(
