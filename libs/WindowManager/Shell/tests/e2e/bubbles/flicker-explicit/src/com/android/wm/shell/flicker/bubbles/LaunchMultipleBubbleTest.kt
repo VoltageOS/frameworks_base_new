@@ -16,75 +16,90 @@
 
 package com.android.wm.shell.flicker.bubbles
 
+import android.platform.systemui_tapl.ui.Bubble
+import android.platform.systemui_tapl.ui.Root
 import android.platform.test.annotations.Presubmit
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.tools.NavBar
+import androidx.test.filters.FlakyTest
 import androidx.test.filters.RequiresDevice
 import com.android.wm.shell.Flags
 import com.android.wm.shell.Utils
-import com.android.wm.shell.flicker.bubbles.testcase.ExpandBubbleTestCases
+import com.android.wm.shell.flicker.bubbles.testcase.BubbleAlwaysVisibleTestCases
+import com.android.wm.shell.flicker.bubbles.testcase.BubbleAppBecomesExpandedTestCases
 import com.android.wm.shell.flicker.bubbles.utils.ApplyPerParameterRule
 import com.android.wm.shell.flicker.bubbles.utils.FlickerPropertyInitializer
 import com.android.wm.shell.flicker.bubbles.utils.RecordTraceWithTransitionRule
-import com.android.wm.shell.flicker.bubbles.utils.collapseBubbleAppViaBackKey
-import com.android.wm.shell.flicker.bubbles.utils.expandBubbleAppViaTapOnBubbleStack
+import com.android.wm.shell.flicker.bubbles.utils.dismissMultipleBubbles
 import com.android.wm.shell.flicker.bubbles.utils.launchBubbleViaBubbleMenu
-import com.android.wm.shell.flicker.bubbles.utils.setUpBeforeTransition
-import org.junit.Assume.assumeFalse
-import org.junit.Before
+import com.android.wm.shell.flicker.bubbles.utils.launchMultipleBubbleAppsViaBubbleMenuAndCollapse
+import com.google.common.truth.Truth.assertWithMessage
 import org.junit.FixMethodOrder
 import org.junit.Rule
+import org.junit.rules.TestRule
 import org.junit.runners.MethodSorters
 
 /**
- * Test clicking bubble to expand a bubble that was in collapsed state.
+ * Test launch multiple bubbles.
  *
- * To run this test: `atest WMShellExplicitFlickerTestsBubbles:ExpandBubbleViaBubbleStackTest`
+ * To run this test: `atest WMShellExplicitFlickerTestsBubbles:LaunchMultipleBubbleTest`
  *
  * Pre-steps:
  * ```
- *     Launch [testApp] into bubble and collapse the bubble
+ *   Launch five apps into bubble and collapse.
  * ```
  *
  * Actions:
  * ```
- *     Expand the [testApp] bubble via clicking floating bubble icon
+ *   Launch [testApp] into bubble
+ *   The oldest bubble app will be removed from the bubble stack, or bubble bar.
  * ```
  * Verified tests:
  * - [BubbleFlickerTestBase]
- * - [ExpandBubbleTestCases]
+ * - [BubbleAlwaysVisibleTestCases]
+ * - [BubbleAppBecomesExpandedTestCases]
  */
+@FlakyTest(bugId = 430273288)
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CREATE_ANY_BUBBLE)
 @RequiresDevice
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Presubmit
-class ExpandBubbleViaBubbleStackTest(navBar: NavBar) : BubbleFlickerTestBase(),
-    ExpandBubbleTestCases {
+class LaunchMultipleBubbleTest(navBar: NavBar) : BubbleFlickerTestBase(),
+    BubbleAlwaysVisibleTestCases, BubbleAppBecomesExpandedTestCases {
 
     companion object : FlickerPropertyInitializer() {
+
+        private lateinit var bubbleIconsBeforeTransition: List<Bubble>
+
         private val recordTraceWithTransitionRule = RecordTraceWithTransitionRule(
             setUpBeforeTransition = {
-                setUpBeforeTransition(instrumentation, wmHelper)
-                launchBubbleViaBubbleMenu(testApp, tapl, wmHelper)
-                collapseBubbleAppViaBackKey(testApp, tapl, wmHelper)
+                bubbleIconsBeforeTransition =
+                    launchMultipleBubbleAppsViaBubbleMenuAndCollapse(
+                        tapl,
+                        wmHelper
+                    )
             },
-            transition = { expandBubbleAppViaTapOnBubbleStack(uiDevice, testApp, wmHelper) },
-            tearDownAfterTransition = { testApp.exit(wmHelper) }
+            transition = {
+                launchBubbleViaBubbleMenu(testApp, tapl, wmHelper)
+                val bubbleIconsAfterTransition = Root.get().expandedBubbleStack.bubbles
+                val oldestBubble = bubbleIconsBeforeTransition.first()
+                assertWithMessage("The oldest bubble must be removed.")
+                    .that(bubbleIconsAfterTransition)
+                    .doesNotContain(oldestBubble)
+            },
+            tearDownAfterTransition = {
+                testApp.exit()
+                dismissMultipleBubbles()
+            }
         )
     }
 
     @get:Rule
-    val setUpRule = ApplyPerParameterRule(
+    val setUpRule: TestRule = ApplyPerParameterRule(
         Utils.testSetupRule(navBar).around(recordTraceWithTransitionRule),
         params = arrayOf(navBar)
     )
 
     override val traceDataReader
         get() = recordTraceWithTransitionRule.reader
-
-    @Before
-    override fun setUp() {
-        assumeFalse(tapl.isTablet)
-        super.setUp()
-    }
 }
