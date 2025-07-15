@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,13 @@
  */
 package com.android.hoststubgen.test.tinyframework.packagetest;
 
-public class A {
+import android.hosttest.annotation.HostSideTestWholeClassKeep;
+
+// This package also has "keep" in the policy file as a package policy.
+// Because the package directive and the annotation have the same policy,
+// we use the annotation as the "reason"
+@HostSideTestWholeClassKeep
+public class C {
     public void foo() {
     }
 }
