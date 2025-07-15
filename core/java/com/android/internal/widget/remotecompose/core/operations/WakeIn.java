@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,60 +19,58 @@ import android.annotation.NonNull;
 
 import com.android.internal.widget.remotecompose.core.Operation;
 import com.android.internal.widget.remotecompose.core.Operations;
+import com.android.internal.widget.remotecompose.core.PaintContext;
+import com.android.internal.widget.remotecompose.core.PaintOperation;
 import com.android.internal.widget.remotecompose.core.RemoteContext;
 import com.android.internal.widget.remotecompose.core.VariableSupport;
 import com.android.internal.widget.remotecompose.core.WireBuffer;
 import com.android.internal.widget.remotecompose.core.documentation.DocumentationBuilder;
 import com.android.internal.widget.remotecompose.core.documentation.DocumentedOperation;
+import com.android.internal.widget.remotecompose.core.serialize.MapSerializer;
+import com.android.internal.widget.remotecompose.core.serialize.Serializable;
 
 import java.util.List;
 
-/**
- * This prints debugging message useful for debugging. It should not be use in production documents
- */
-public class DebugMessage extends Operation implements VariableSupport {
-    private static final int OP_CODE = Operations.DEBUG_MESSAGE;
-    private static final String CLASS_NAME = "DebugMessage";
-    int mTextID;
-    float mFloatValue;
-    float mOutFloatValue;
-    int mFlags = 0;
+/** WakeIn operation */
+public class WakeIn extends PaintOperation implements VariableSupport, Serializable {
+    private static final int OP_CODE = Operations.WAKE_IN;
+    private static final String CLASS_NAME = "WakeIn";
 
-    public DebugMessage(int textId, float value, int flags) {
-        mTextID = textId;
-        mFloatValue = value;
-        mFlags = flags;
+    float mWake;
+    float mWakeOut;
+
+    String mLastString;
+
+    public static final int ANCHOR_TEXT_RTL = 1;
+    public static final int ANCHOR_MONOSPACE_MEASURE = 2;
+    public static final int MEASURE_EVERY_TIME = 4;
+
+    public WakeIn(float wake) {
+        mWake = wake;
+        mWakeOut = wake;
     }
 
     @Override
     public void updateVariables(@NonNull RemoteContext context) {
-        mOutFloatValue =
-                Float.isNaN(mFloatValue)
-                        ? context.getFloat(Utils.idFromNan(mFloatValue))
-                        : mFloatValue;
+        mWakeOut = Float.isNaN(mWake) ? context.getFloat(Utils.idFromNan(mWake)) : mWake;
     }
 
     @Override
     public void registerListening(@NonNull RemoteContext context) {
-        if (Float.isNaN(mFloatValue)) {
-            context.listensTo(Utils.idFromNan(mFloatValue), this);
+        if (Float.isNaN(mWake)) {
+            context.listensTo(Utils.idFromNan(mWake), this);
         }
     }
 
     @Override
     public void write(@NonNull WireBuffer buffer) {
-        apply(buffer, mTextID, mFloatValue, mFlags);
+        apply(buffer, mWake);
     }
 
     @NonNull
     @Override
     public String toString() {
-        return "DebugMessage "
-                + mTextID
-                + ", "
-                + Utils.floatToString(mFloatValue, mOutFloatValue)
-                + ", "
-                + mFlags;
+        return "DrawTextAnchored [" + Utils.floatToString(mWake, mWakeOut);
     }
 
     /**
@@ -82,10 +80,8 @@ public class DebugMessage extends Operation implements VariableSupport {
      * @param operations the list of operations that will be added to
      */
     public static void read(@NonNull WireBuffer buffer, @NonNull List<Operation> operations) {
-        int text = buffer.readInt();
-        float floatValue = buffer.readFloat();
-        int flags = buffer.readInt();
-        DebugMessage op = new DebugMessage(text, floatValue, flags);
+        float wake = buffer.readFloat();
+        WakeIn op = new WakeIn(wake);
         operations.add(op);
     }
 
@@ -111,16 +107,12 @@ public class DebugMessage extends Operation implements VariableSupport {
     /**
      * Writes out the operation to the buffer
      *
-     * @param buffer write the command to the buffer
-     * @param textId id of the text
-     * @param value value to print
-     * @param flags flags to print
+     * @param buffer the buffer to write to
+     * @param wake the value to write
      */
-    public static void apply(@NonNull WireBuffer buffer, int textId, float value, int flags) {
+    public static void apply(@NonNull WireBuffer buffer, float wake) {
         buffer.start(OP_CODE);
-        buffer.writeInt(textId);
-        buffer.writeFloat(value);
-        buffer.writeInt(flags);
+        buffer.writeFloat(wake);
     }
 
     /**
@@ -129,22 +121,18 @@ public class DebugMessage extends Operation implements VariableSupport {
      * @param doc to append the description to.
      */
     public static void documentation(@NonNull DocumentationBuilder doc) {
-        doc.operation("DebugMessage Operations", id(), CLASS_NAME)
-                .description("Print debugging messages")
-                .field(DocumentedOperation.INT, "textId", "test to print")
-                .field(DocumentedOperation.FLOAT, "value", "value of a float to print")
-                .field(DocumentedOperation.INT, "flags", "print additional information");
+        doc.operation("Draw Operations", OP_CODE, CLASS_NAME)
+                .description("Wake up the render loop after a certain amount of time")
+                .field(DocumentedOperation.FLOAT, "wakeSec", "The time in seconds to wake up");
     }
 
     @Override
-    public void apply(@NonNull RemoteContext context) {
-        String str = context.getText(mTextID);
-        System.out.println("Debug message : " + str + " " + mOutFloatValue + " " + mFlags);
+    public void paint(@NonNull PaintContext context) {
+        context.wakeIn(mWakeOut);
     }
 
-    @NonNull
     @Override
-    public String deepToString(@NonNull String indent) {
-        return indent + toString();
+    public void serialize(@NonNull MapSerializer serializer) {
+        serializer.addType(CLASS_NAME).add("wake", mWake);
     }
 }
