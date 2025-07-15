@@ -45,6 +45,7 @@ import com.android.systemui.statusbar.core.StatusBarEventForwardingModernization
 import com.android.systemui.statusbar.data.repository.StatusBarConfigurationController
 import com.android.systemui.statusbar.gesture.StatusBarLongPressGestureDetector
 import com.android.systemui.statusbar.layout.StatusBarContentInsetsProvider
+import com.android.systemui.statusbar.notification.headsup.HeadsUpManager
 import com.android.systemui.statusbar.NotificationListener
 import com.android.systemui.statusbar.OnGoingActionProgressGroup
 import com.android.systemui.statusbar.policy.Clock
@@ -93,6 +94,7 @@ private constructor(
     private val statusBarWindowControllerStore: StatusBarWindowControllerStore,
     private val notificationListener: NotificationListener,
     private val keyguardStateController: KeyguardStateController,
+    private val headsUpManager: HeadsUpManager,
 ) : ViewController<PhoneStatusBarView>(view) {
 
     private var ongoingActionProgressController: OnGoingActionProgressController? = null
@@ -215,6 +217,7 @@ private constructor(
                 getOngoingActionProgressGroup(),
                 notificationListener,
                 keyguardStateController,
+                headsUpManager,
             )
         }
     }
@@ -495,6 +498,7 @@ private constructor(
         private val statusBarWindowControllerStore: StatusBarWindowControllerStore,
         private val notificationListener: NotificationListener,
         private val keyguardStateController: KeyguardStateController,
+        private val headsUpManager: HeadsUpManager,
     ) {
         fun create(view: PhoneStatusBarView): PhoneStatusBarViewController {
             return PhoneStatusBarViewController(
@@ -522,6 +526,7 @@ private constructor(
                 statusBarWindowControllerStore,
                 notificationListener,
                 keyguardStateController,
+                headsUpManager,
             )
         }
     }
