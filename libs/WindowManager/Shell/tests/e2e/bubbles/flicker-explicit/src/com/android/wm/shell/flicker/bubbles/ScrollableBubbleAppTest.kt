@@ -19,29 +19,32 @@ package com.android.wm.shell.flicker.bubbles
 import android.platform.test.annotations.Presubmit
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.tools.NavBar
-import androidx.test.filters.FlakyTest
 import androidx.test.filters.RequiresDevice
+import com.android.server.wm.flicker.helpers.ScrollToFinishHelper
 import com.android.wm.shell.Flags
 import com.android.wm.shell.Utils
 import com.android.wm.shell.flicker.bubbles.testcase.DismissExpandedBubbleTestCases
 import com.android.wm.shell.flicker.bubbles.utils.ApplyPerParameterRule
 import com.android.wm.shell.flicker.bubbles.utils.FlickerPropertyInitializer
 import com.android.wm.shell.flicker.bubbles.utils.RecordTraceWithTransitionRule
-import com.android.wm.shell.flicker.bubbles.utils.dismissBubbleAppViaBubbleView
 import com.android.wm.shell.flicker.bubbles.utils.launchBubbleViaBubbleMenu
-import com.android.wm.shell.flicker.bubbles.utils.setUpBeforeTransition
-import org.junit.Assume.assumeFalse
-import org.junit.Before
+import com.android.wm.shell.flicker.bubbles.utils.waitAndVerifyBubbleGone
 import org.junit.FixMethodOrder
 import org.junit.Rule
-import org.junit.Test
 import org.junit.runners.MethodSorters
 
 /**
- * Test dismiss bubble app via dragging bubble to the dismiss view when the bubble is in expanded
- * state.
+ * Verifies that the content within a bubble can be scrolled and that its UI elements can be clicked.
  *
- * To run this test: `atest WMShellExplicitFlickerTestsBubbles:DismissExpandedBubbleTest`
+ * This test validates user interaction by launching a bubble that displays an activity with a
+ * [android.widget.ScrollView]. The scrollable content is intentionally long enough to not be
+ * fully visible, with a "finish" button located at the very bottom.
+ *
+ * The test succeeds if it can programmatically scroll to the button and click it, which in
+ * turn dismisses the bubble app. This confirms that both scrolling and touch events are
+ * processed correctly within the bubble app.
+ *
+ * To run this test: `atest WMShellExplicitFlickerTestsBubbles:ScrollableBubbleAppTest`
  *
  * Pre-steps:
  * ```
@@ -50,28 +53,32 @@ import org.junit.runners.MethodSorters
  *
  * Actions:
  * ```
- *     Dismiss bubble app via dragging bubble icon to the dismiss view
+ *     Scroll the [testApp] until find the finish button
+ *     Click the finish button to finish the bubble app
  * ```
  * Verified tests:
  * - [BubbleFlickerTestBase]
  * - [DismissExpandedBubbleTestCases]
  */
-@FlakyTest(bugId = 427850786)
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CREATE_ANY_BUBBLE)
 @RequiresDevice
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Presubmit
-class DismissExpandedBubbleViaBubbleViewTest(navBar: NavBar) : BubbleFlickerTestBase(),
+class ScrollableBubbleAppTest(navBar: NavBar) : BubbleFlickerTestBase(),
     DismissExpandedBubbleTestCases {
+
     companion object : FlickerPropertyInitializer() {
         private val recordTraceWithTransitionRule = RecordTraceWithTransitionRule(
-            setUpBeforeTransition = {
-                setUpBeforeTransition(instrumentation, wmHelper)
-                launchBubbleViaBubbleMenu(testApp, tapl, wmHelper)
+            setUpBeforeTransition = { launchBubbleViaBubbleMenu(testApp, tapl, wmHelper) },
+            transition = {
+                testApp.scrollToFinish()
+                waitAndVerifyBubbleGone(wmHelper)
             },
-            transition = { dismissBubbleAppViaBubbleView(uiDevice, wmHelper) },
             tearDownAfterTransition = { testApp.exit() }
         )
+
+        override val testApp
+            get() = ScrollToFinishHelper(instrumentation)
     }
 
     @get:Rule
@@ -80,27 +87,10 @@ class DismissExpandedBubbleViaBubbleViewTest(navBar: NavBar) : BubbleFlickerTest
         params = arrayOf(navBar)
     )
 
+    // This is necessary or the test will use the testApp from BubbleFlickerTestBase.
+    override val testApp
+        get() = ScrollableBubbleAppTest.testApp
+
     override val traceDataReader
         get() = recordTraceWithTransitionRule.reader
-
-    // TODO(b/396020056): Verify expand bubble with bubble bar.
-    @Before
-    override fun setUp() {
-        assumeFalse(tapl.isTablet)
-        super.setUp()
-    }
-
-    @FlakyTest(bugId = 396020056)
-    @Test
-    override fun appLayerBecomesInvisible() {
-        super.appLayerBecomesInvisible()
-    }
-
-    @FlakyTest(bugId = 396020056)
-    @Test
-    override fun visibleLayersShownMoreThanOneConsecutiveEntry() {
-        super.visibleLayersShownMoreThanOneConsecutiveEntry()
-    }
-
-// endregion
 }
