@@ -14,7 +14,7 @@
      limitations under the License.
 -->
 
-<shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="@color/accessibility_autoclick_type_button_container_background" />
-    <corners android:radius="24dp" />
-</shape>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/materialColorPrimary" android:state_selected="true"/>
+    <item android:color="@color/materialColorSurfaceContainer"/>
+</selector>
