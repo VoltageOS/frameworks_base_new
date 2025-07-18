@@ -104,11 +104,16 @@ constructor(
             )
             constrainHeight(R.id.keyguard_slice_view, ConstraintSet.WRAP_CONTENT)
 
+            val topMargin = context.resources.getDimensionPixelSize(
+                customR.dimen.keyguard_smartspace_top_offset
+            )
+
             connect(
                 R.id.keyguard_slice_view,
                 ConstraintSet.TOP,
                 customR.id.lockscreen_clock_view,
                 ConstraintSet.BOTTOM,
+                topMargin
             )
 
             createBarrier(
