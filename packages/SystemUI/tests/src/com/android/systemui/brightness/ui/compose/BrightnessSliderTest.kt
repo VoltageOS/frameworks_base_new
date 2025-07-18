@@ -72,6 +72,7 @@ class BrightnessSliderTest : SysuiTestCase() {
                         gammaValue = value,
                         modifier = Modifier.wrapContentHeight().fillMaxWidth(),
                         valueRange = range,
+                        autoMode = false,
                         iconResProvider = BrightnessSliderViewModel::getIconForPercentage,
                         imageLoader = { resId, context ->
                             context.getDrawable(resId)!!.asIcon(null)
@@ -80,6 +81,7 @@ class BrightnessSliderTest : SysuiTestCase() {
                         onRestrictedClick = {},
                         onDrag = {},
                         onStop = {},
+                        onIconClick = {},
                         overriddenByAppState = false,
                         hapticsViewModelFactory = kosmos.sliderHapticsViewModelFactory,
                     )
@@ -103,6 +105,7 @@ class BrightnessSliderTest : SysuiTestCase() {
                         gammaValue = value,
                         modifier = Modifier.wrapContentHeight().fillMaxWidth(),
                         valueRange = range,
+                        autoMode = false,
                         iconResProvider = BrightnessSliderViewModel::getIconForPercentage,
                         imageLoader = { resId, context ->
                             context.getDrawable(resId)!!.asIcon(null)
@@ -111,6 +114,7 @@ class BrightnessSliderTest : SysuiTestCase() {
                         onRestrictedClick = {},
                         onDrag = {},
                         onStop = {},
+                        onIconClick = {},
                         overriddenByAppState = false,
                         hapticsViewModelFactory = kosmos.sliderHapticsViewModelFactory,
                     )
@@ -136,6 +140,7 @@ class BrightnessSliderTest : SysuiTestCase() {
                         gammaValue = value,
                         modifier = Modifier.wrapContentHeight().fillMaxWidth(),
                         valueRange = range,
+                        autoMode = false,
                         iconResProvider = BrightnessSliderViewModel::getIconForPercentage,
                         imageLoader = { resId, context ->
                             context.getDrawable(resId)!!.asIcon(null)
@@ -144,6 +149,7 @@ class BrightnessSliderTest : SysuiTestCase() {
                         onRestrictedClick = {},
                         onDrag = {},
                         onStop = {},
+                        onIconClick = {},
                         overriddenByAppState = false,
                         hapticsViewModelFactory = kosmos.sliderHapticsViewModelFactory,
                     )

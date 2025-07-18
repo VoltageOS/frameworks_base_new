@@ -77,6 +77,8 @@ constructor(
     val maxBrightness = screenBrightnessInteractor.maxGammaBrightness
     val minBrightness = screenBrightnessInteractor.minGammaBrightness
 
+    val autoMode by screenBrightnessInteractor.isAutoBrightnessEnabledFlow.hydratedStateOf()
+
     val policyRestriction = brightnessPolicyEnforcementInteractor.brightnessPolicyRestriction
 
     fun showPolicyRestrictionDialog(restriction: PolicyRestriction.Restricted) {
@@ -117,6 +119,10 @@ constructor(
             is Drag.Dragging -> screenBrightnessInteractor.setTemporaryBrightness(drag.brightness)
             is Drag.Stopped -> screenBrightnessInteractor.setBrightness(drag.brightness)
         }
+    }
+
+    fun onIconClick() {
+        screenBrightnessInteractor.toggleBrightnessMode()
     }
 
     fun setIsDragging(dragging: Boolean) {
