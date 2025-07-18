@@ -212,4 +212,7 @@
     <!-- Nirvana QS tile -->
     <string name="quick_settings_nirvana_label">Nirvana Mode</string>
 
+    <!-- QS button to enable adaptive brightness -->
+    <string name="accessibility_adaptive_brightness">Adaptive brightness</string>
+
 </resources>

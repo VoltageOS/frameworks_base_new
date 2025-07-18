@@ -18,6 +18,7 @@ package com.android.systemui.brightness.domain.interactor
 
 import com.android.settingslib.display.BrightnessUtils
 import com.android.systemui.brightness.data.model.LinearBrightness
+import com.android.systemui.brightness.data.repository.AutoBrightnessRepository
 import com.android.systemui.brightness.data.repository.ScreenBrightnessRepository
 import com.android.systemui.brightness.domain.model.GammaBrightness
 import com.android.systemui.brightness.domain.model.logDiffForTable
@@ -43,6 +44,7 @@ public class ScreenBrightnessInteractorImpl
 @Inject
 constructor(
     private val screenBrightnessRepository: ScreenBrightnessRepository,
+    private val autoBrightnessRepository: AutoBrightnessRepository,
     @Application private val applicationScope: CoroutineScope,
     @BrightnessLog private val tableBuffer: TableLogBuffer,
 ) : ScreenBrightnessInteractor {
@@ -72,6 +74,13 @@ constructor(
 
     override val brightnessOverriddenByWindow: StateFlow<Boolean> =
         screenBrightnessRepository.isBrightnessOverriddenByWindow
+
+    override val isAutoBrightnessEnabledFlow: StateFlow<Boolean> =
+        autoBrightnessRepository.isAutoBrightnessEnabled
+
+    override fun toggleBrightnessMode() {
+        autoBrightnessRepository.toggleBrightnessMode()
+    }
 
     /** Sets the brightness temporarily, while the user is changing it. */
     override suspend fun setTemporaryBrightness(gammaBrightness: GammaBrightness) {
