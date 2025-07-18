@@ -22,54 +22,49 @@ import android.tools.NavBar
 import androidx.test.filters.RequiresDevice
 import com.android.wm.shell.Flags
 import com.android.wm.shell.Utils
-import com.android.wm.shell.flicker.bubbles.testcase.ExpandBubbleTestCases
+import com.android.wm.shell.flicker.bubbles.testcase.DismissExpandedBubbleTestCases
 import com.android.wm.shell.flicker.bubbles.utils.ApplyPerParameterRule
 import com.android.wm.shell.flicker.bubbles.utils.FlickerPropertyInitializer
 import com.android.wm.shell.flicker.bubbles.utils.RecordTraceWithTransitionRule
-import com.android.wm.shell.flicker.bubbles.utils.collapseBubbleAppViaBackKey
-import com.android.wm.shell.flicker.bubbles.utils.expandBubbleAppViaTapOnBubbleStack
+import com.android.wm.shell.flicker.bubbles.utils.dismissBubbleAppViaBubbleBarHandle
 import com.android.wm.shell.flicker.bubbles.utils.launchBubbleViaBubbleMenu
-import com.android.wm.shell.flicker.bubbles.utils.setUpBeforeTransition
-import org.junit.Assume.assumeFalse
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.FixMethodOrder
 import org.junit.Rule
 import org.junit.runners.MethodSorters
 
 /**
- * Test clicking bubble to expand a bubble that was in collapsed state.
+ * Test dismiss bubble app via dragging bubble bar handle to the dismiss view when the bubble is in
+ * expanded state.
  *
- * To run this test: `atest WMShellExplicitFlickerTestsBubbles:ExpandBubbleViaBubbleStackTest`
+ * To run this test:
+ *     `atest WMShellExplicitFlickerTestsBubbles:DismissExpandedBubbleViaBubbleBarHandleTest`
  *
  * Pre-steps:
  * ```
- *     Launch [testApp] into bubble and collapse the bubble
+ *     Launch [testApp] into bubble
  * ```
  *
  * Actions:
  * ```
- *     Expand the [testApp] bubble via clicking floating bubble icon
+ *     Dismiss bubble app via dragging bubble bar handle to the dismiss view
  * ```
  * Verified tests:
  * - [BubbleFlickerTestBase]
- * - [ExpandBubbleTestCases]
+ * - [DismissExpandedBubbleTestCases]
  */
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CREATE_ANY_BUBBLE)
 @RequiresDevice
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Presubmit
-class ExpandBubbleViaBubbleStackTest(navBar: NavBar) : BubbleFlickerTestBase(),
-    ExpandBubbleTestCases {
-
+class DismissExpandedBubbleViaBubbleBarHandleTest(navBar: NavBar) : BubbleFlickerTestBase(),
+    DismissExpandedBubbleTestCases {
     companion object : FlickerPropertyInitializer() {
         private val recordTraceWithTransitionRule = RecordTraceWithTransitionRule(
-            setUpBeforeTransition = {
-                setUpBeforeTransition(instrumentation, wmHelper)
-                launchBubbleViaBubbleMenu(testApp, tapl, wmHelper)
-                collapseBubbleAppViaBackKey(testApp, tapl, wmHelper)
-            },
-            transition = { expandBubbleAppViaTapOnBubbleStack(testApp, uiDevice, wmHelper) },
-            tearDownAfterTransition = { testApp.exit(wmHelper) }
+            setUpBeforeTransition = { launchBubbleViaBubbleMenu(testApp, tapl, wmHelper) },
+            transition = { dismissBubbleAppViaBubbleBarHandle(testApp, wmHelper) },
+            tearDownAfterTransition = { testApp.exit() }
         )
     }
 
@@ -84,7 +79,8 @@ class ExpandBubbleViaBubbleStackTest(navBar: NavBar) : BubbleFlickerTestBase(),
 
     @Before
     override fun setUp() {
-        assumeFalse(tapl.isTablet)
+        // Bubble bar is only enabled on large screen device.
+        assumeTrue(tapl.isTablet)
         super.setUp()
     }
 }
