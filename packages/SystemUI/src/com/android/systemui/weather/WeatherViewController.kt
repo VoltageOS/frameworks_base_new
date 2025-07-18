@@ -15,19 +15,18 @@
  */
 package com.android.systemui.weather
 
+import android.content.ContentValues
 import android.content.Context
 import android.os.UserHandle
 import android.provider.Settings
+import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
-
 import com.android.internal.util.crdroid.OmniJawsClient
-
 import com.android.systemui.Dependency
 import com.android.systemui.plugins.statusbar.StatusBarStateController
 import com.android.systemui.res.R
-
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
@@ -53,15 +52,12 @@ class WeatherViewController(
                 return
             }
             mDozing = dozing
-
             val weatherEnabled = weatherSettingsFlow.value.weatherEnabled
-
             val visible = !mDozing && weatherEnabled
             scope.launch {
                 updateViewVisibility(weatherInfoView, visible)
             }
         }
-
     }
 
     private val weatherSettingsFlow = flow {
@@ -108,7 +104,6 @@ class WeatherViewController(
                 weatherClient.addObserver(this@WeatherViewController)
                 updateWeather()
             }
-
             updateViewVisibility(weatherInfoView, settings.weatherEnabled)
             updateViewVisibility(weatherIcon, settings.weatherEnabled)
             updateViewVisibility(weatherTemp, settings.weatherEnabled)
@@ -117,28 +112,51 @@ class WeatherViewController(
 
     override fun weatherUpdated() = updateWeather()
 
+    private fun forceRefresh() {
+        if (weatherClient.isOmniJawsEnabled) {
+            val values = ContentValues().apply {
+                put("update", true)
+            }
+            context.contentResolver.update(OmniJawsClient.CONTROL_URI, values, "", null)
+        }
+    }
+
     private fun updateWeather() {
         if (!weatherSettingsFlow.value.weatherEnabled) {
             hideAllViews()
             return
         }
 
-        try {
-            weatherClient.queryWeather()
-            weatherInfo = weatherClient.weatherInfo
-            weatherInfo?.let { info ->
-                weatherIcon.setImageDrawable(weatherClient.getWeatherConditionImage(info.conditionCode))
-                weatherTemp.text = buildWeatherText(info)
-                weatherTemp.isSelected = true
+        scope.launch {
+            try {
+                val localWeatherInfo = withContext(Dispatchers.IO) {
+                    weatherClient.queryWeather()
+                    weatherClient.weatherInfo
+                }
+                weatherInfo = localWeatherInfo
+
+                localWeatherInfo?.let { info ->
+                    updateViewVisibility(weatherIcon, true)
+                    updateViewVisibility(weatherTemp, true)
+                    weatherIcon.setImageDrawable(weatherClient.getWeatherConditionImage(info.conditionCode))
+                    weatherTemp.text = buildWeatherText(info)
+                    weatherTemp.isSelected = true
+                } ?: run {
+                    hideAllViews()
+                    forceRefresh()
+                }
+            } catch (e: Exception) {
+                Log.e("WeatherViewController", "Failed to update weather", e)
+                hideAllViews()
             }
-        } catch (e: Exception) {}
+        }
     }
 
     private fun hideAllViews() {
         scope.launch {
-            listOf(weatherInfoView, weatherIcon, weatherTemp).forEach {
-                updateViewVisibility(it, false)
-            }
+            updateViewVisibility(weatherInfoView, false)
+            updateViewVisibility(weatherIcon, false)
+            updateViewVisibility(weatherTemp, false)
         }
     }
 
@@ -167,10 +185,8 @@ class WeatherViewController(
         statusBarStateController.removeCallback(statusBarStateListener)
     }
 
-    private suspend fun updateViewVisibility(view: View, visible: Boolean) {
-        withContext(Dispatchers.Main) {
-            view.visibility = if (visible) View.VISIBLE else View.GONE
-        }
+    private fun updateViewVisibility(view: View, visible: Boolean) {
+        view.visibility = if (visible) View.VISIBLE else View.GONE
     }
 
     data class WeatherSettings(
