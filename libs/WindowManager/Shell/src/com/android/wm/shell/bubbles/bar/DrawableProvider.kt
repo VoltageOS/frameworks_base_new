@@ -14,18 +14,23 @@
  * limitations under the License.
  */
 
-package com.android.wm.shell.bubbles.appinfo
+package com.android.wm.shell.bubbles.bar
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.drawable.Drawable
-import android.os.UserHandle
-import com.android.wm.shell.bubbles.Bubble
+import com.android.launcher3.icons.BitmapInfo
 
-/** Resolves app info for bubbles. */
-fun interface BubbleAppInfoProvider {
-    /** Resolves app info for the bubble. Returns `null` if the app could not be resolved. */
-    fun resolveAppInfo(context: Context, bubble: Bubble): BubbleAppInfo?
+fun interface DrawableProvider {
+
+    fun getDrawable(ctx: Context): Drawable
+
+    companion object {
+        @JvmStatic
+        @SuppressLint("UseCompatLoadingForDrawables")
+        fun forResource(resId: Int) = DrawableProvider { it.getDrawable(resId)!! }
+
+        @JvmStatic
+        fun forInfo(info: BitmapInfo) = DrawableProvider { info.newIcon(it) }
+    }
 }
-
-/** Data object for the resolved app info. */
-data class BubbleAppInfo(val appName: String?, val appIcon: Drawable, val user: UserHandle)
