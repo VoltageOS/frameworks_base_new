@@ -74,7 +74,7 @@ public interface DeviceIdleInternal {
 
     boolean isAppOnWhitelist(int appid);
 
-    int[] getPowerSaveWhitelistAppIds();
+    int[] getPowerSaveWhitelistUserAppIds();
 
     int[] getPowerSaveTempWhitelistAppIds();
 
