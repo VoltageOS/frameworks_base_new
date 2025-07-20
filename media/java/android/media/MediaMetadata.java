@@ -976,31 +976,22 @@ public final class MediaMetadata implements Parcelable {
         }
 
         private Bitmap scaleBitmap(Bitmap bmp, int maxDimension) {
-            if (bmp == null) {
-                return null;
-            }
+            if (bmp == null) return null;
             int srcWidth = bmp.getWidth();
             int srcHeight = bmp.getHeight();
             if (srcWidth <= maxDimension && srcHeight <= maxDimension) {
-                return bmp;
+                return bmp.getConfig() == Bitmap.Config.RGB_565
+                        ? bmp
+                        : bmp.copy(Bitmap.Config.RGB_565, false);
             }
-            int sampleSize = calculateSampleSize(srcWidth, srcHeight, maxDimension, maxDimension);
-            int scaledWidth = srcWidth / sampleSize;
-            int scaledHeight = srcHeight / sampleSize;
-            if (scaledWidth > maxDimension) {
-                scaledWidth = maxDimension;
-            }
-            if (scaledHeight > maxDimension) {
-                scaledHeight = maxDimension;
-            }
-            Bitmap scaledBitmap = Bitmap.createScaledBitmap(bmp, scaledWidth, scaledHeight, true);
-            java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
-            scaledBitmap.compress(Bitmap.CompressFormat.WEBP_LOSSY, 90, outputStream);
-            byte[] compressedData = outputStream.toByteArray();
-            Bitmap compressedBitmap = BitmapFactory.decodeByteArray(compressedData, 0, compressedData.length);
-            scaledBitmap.recycle();
-            bmp.recycle();
-            return compressedBitmap;
+            float maxDimensionF = maxDimension;
+            float widthScale = maxDimensionF / srcWidth;
+            float heightScale = maxDimensionF / srcHeight;
+            float scale = Math.min(widthScale, heightScale);
+            int width = (int) (srcWidth * scale);
+            int height = (int) (srcHeight * scale);
+            Bitmap scaled = Bitmap.createScaledBitmap(bmp, width, height, true);
+            return scaled.copy(Bitmap.Config.RGB_565, false);
         }
 
         private static int calculateSampleSize(int srcWidth, int srcHeight, int dstWidth, int dstHeight) {
