@@ -3,11 +3,9 @@ package com.android.server.pm.ext;
 import android.Manifest;
 import android.content.pm.ServiceInfo;
 import android.os.SystemProperties;
-import android.service.credentials.CredentialProviderService;
 
 import com.android.internal.gmscompat.GmcMediaProjectionService;
 import com.android.internal.gmscompat.GmsHooks;
-import com.android.internal.pm.pkg.component.ParsedIntentInfo;
 import com.android.internal.pm.pkg.component.ParsedPermission;
 import com.android.internal.pm.pkg.component.ParsedService;
 import com.android.internal.pm.pkg.component.ParsedServiceImpl;
@@ -37,19 +35,6 @@ class GmsCoreHooks extends PackageHooks {
         @Override
         public boolean shouldSkipPermissionDefinition(ParsedPermission p) {
             return shouldSkipPermissionDefinition(p.getName());
-        }
-
-        @Override
-        public void amendParsedService(ParsedServiceImpl s) {
-            super.amendParsedService(s);
-
-            if (android.Manifest.permission.BIND_CREDENTIAL_PROVIDER_SERVICE.equals(s.getPermission())) {
-                for (ParsedIntentInfo intentInfo : s.getIntents()) {
-                    // SYSTEM_SERVICE_INTERFACE is allowed only for preinstalled providers
-                    intentInfo.getIntentFilter().replaceAction(CredentialProviderService.SYSTEM_SERVICE_INTERFACE,
-                            CredentialProviderService.SERVICE_INTERFACE);
-                }
-            }
         }
 
         static boolean shouldSkipPermissionDefinition(String name) {
