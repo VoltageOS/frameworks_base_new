@@ -1163,10 +1163,9 @@ public final class Icon implements Parcelable {
                     Math.max(1, scaledHeight), 
                     true /* filter */);
         }
-        java.io.ByteArrayOutputStream byteArrayOutputStream = new java.io.ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.WEBP_LOSSY, 100, byteArrayOutputStream);
-        byte[] compressedBytes = byteArrayOutputStream.toByteArray();
-        return BitmapFactory.decodeByteArray(compressedBytes, 0, compressedBytes.length);
+        return bitmap.getConfig() == Bitmap.Config.RGB_565
+                ? bitmap
+                : bitmap.copy(Bitmap.Config.RGB_565, false);
     }
 
     /**
