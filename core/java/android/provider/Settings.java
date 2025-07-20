@@ -14687,6 +14687,23 @@ public final class Settings {
         public static final String QS_SHOW_AUTO_BRIGHTNESS = "qs_show_auto_brightness";
 
         /**
+        * Quick Settings brightness slider position.
+         * 0 = top (default)
+         * 1 = bottom
+         * @hide
+         */
+        public static final String QS_BRIGHTNESS_SLIDER_POSITION = "qs_brightness_slider_position";
+
+        /**
+         * Quick Settings brightness slider visibility.
+         * 0 = never show
+         * 1 = show only when QS expanded (default)
+         * 2 = show always (QQS and QS)
+         * @hide
+         */
+        public static final String QS_SHOW_BRIGHTNESS_SLIDER = "qs_show_brightness_slider";
+
+        /**
          * These entries are considered common between the personal and the managed profile,
          * since the managed profile doesn't get to change them.
          */
