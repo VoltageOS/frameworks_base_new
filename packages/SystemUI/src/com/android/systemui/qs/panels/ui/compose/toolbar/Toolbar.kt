@@ -28,11 +28,16 @@ import androidx.compose.ui.unit.dp
 import com.android.systemui.compose.modifiers.sysuiResTag
 import com.android.systemui.development.ui.compose.BuildNumber
 import com.android.systemui.qs.footer.ui.compose.IconButton
+import com.android.systemui.qs.footer.ui.viewmodel.FooterActionsDataUsageViewModel
 import com.android.systemui.qs.panels.ui.viewmodel.toolbar.ToolbarViewModel
 import com.android.systemui.qs.ui.compose.borderOnFocus
 
 @Composable
-fun Toolbar(viewModel: ToolbarViewModel, modifier: Modifier = Modifier) {
+fun Toolbar(
+    viewModel: ToolbarViewModel, 
+    dataUsageViewModel: FooterActionsDataUsageViewModel? = null,
+    modifier: Modifier = Modifier
+) {
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         viewModel.userSwitcherViewModel?.let {
             IconButton(
@@ -54,6 +59,7 @@ fun Toolbar(viewModel: ToolbarViewModel, modifier: Modifier = Modifier) {
             BuildNumber(
                 viewModelFactory = viewModel.buildNumberViewModelFactory,
                 textColor = MaterialTheme.colorScheme.onSurface,
+                dataUsageViewModel = dataUsageViewModel,
                 modifier =
                     Modifier.borderOnFocus(
                             color = MaterialTheme.colorScheme.secondary,

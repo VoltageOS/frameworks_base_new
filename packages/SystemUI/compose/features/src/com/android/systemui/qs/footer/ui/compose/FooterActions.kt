@@ -84,6 +84,7 @@ import com.android.systemui.compose.modifiers.sysuiResTag
 import com.android.systemui.qs.flags.QSComposeFragment
 import com.android.systemui.qs.flags.QsInCompose
 import com.android.systemui.qs.footer.ui.viewmodel.FooterActionsButtonViewModel
+import com.android.systemui.qs.footer.ui.viewmodel.FooterActionsDataUsageViewModel
 import com.android.systemui.qs.footer.ui.viewmodel.FooterActionsForegroundServicesButtonViewModel
 import com.android.systemui.qs.footer.ui.viewmodel.FooterActionsSecurityButtonViewModel
 import com.android.systemui.qs.footer.ui.viewmodel.FooterActionsViewModel
@@ -145,6 +146,7 @@ fun FooterActions(
     }
     var userSwitcher by remember { mutableStateOf<FooterActionsButtonViewModel?>(null) }
     var power by remember { mutableStateOf(viewModel.initialPower()) }
+    var dataUsage by remember { mutableStateOf<FooterActionsDataUsageViewModel?>(null) }
 
     LaunchedEffect(
         context,
@@ -165,6 +167,8 @@ fun FooterActions(
             launch { viewModel.foregroundServices.collect { foregroundServices = it } }
             launch { viewModel.userSwitcher.collect { userSwitcher = it } }
             launch { viewModel.power.collect { power = it } }
+            // Set data usage view model immediately since it's not a Flow
+            dataUsage = viewModel.dataUsage
         }
     }
 
@@ -220,7 +224,7 @@ fun FooterActions(
                 Spacer(Modifier.weight(1f))
             }
 
-            val useModifierBasedExpandable = remember { QSComposeFragment.isEnabled }
+            val useModifierBasedExpandable = remember { QSComposeFragment.isEnabled }            
             SecurityButton({ security }, useModifierBasedExpandable, Modifier.weight(1f))
             ForegroundServicesButton({ foregroundServices }, useModifierBasedExpandable)
             IconButton(

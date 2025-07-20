@@ -16,12 +16,25 @@
 
 package com.android.systemui.qs.footer.dagger
 
+import android.content.Context
+import android.telephony.SubscriptionManager
+import com.android.settingslib.net.DataUsageController
+import com.android.systemui.dagger.SysUISingleton
+import com.android.systemui.plugins.ActivityStarter
 import com.android.systemui.qs.footer.data.repository.ForegroundServicesRepository
 import com.android.systemui.qs.footer.data.repository.ForegroundServicesRepositoryImpl
 import com.android.systemui.qs.footer.domain.interactor.FooterActionsInteractor
 import com.android.systemui.qs.footer.domain.interactor.FooterActionsInteractorImpl
+import com.android.systemui.qs.footer.ui.viewmodel.FooterActionsDataUsageViewModel
+import com.android.systemui.settings.UserTracker
+import com.android.systemui.statusbar.connectivity.NetworkController
+import android.net.wifi.WifiManager
+import com.android.systemui.tuner.TunerService
+import com.android.systemui.util.settings.GlobalSettings
 import dagger.Binds
 import dagger.Module
+import dagger.Provides
+import javax.inject.Inject
 
 /** Dagger module to provide/bind footer actions singletons. */
 @Module
@@ -33,4 +46,38 @@ interface FooterActionsModule {
     ): ForegroundServicesRepository
 
     @Binds fun footerActionsInteractor(impl: FooterActionsInteractorImpl): FooterActionsInteractor
+
+    companion object {
+        @Provides
+        @SysUISingleton
+        fun provideDataUsageController(context: Context): DataUsageController {
+            return DataUsageController(context)
+        }
+
+        @Provides
+        @SysUISingleton
+        fun provideFooterActionsDataUsageViewModel(
+            context: Context,
+            dataController: DataUsageController,
+            subManager: SubscriptionManager,
+            wifiManager: WifiManager?,
+            networkController: NetworkController,
+            tunerService: TunerService,
+            globalSettings: GlobalSettings,
+            activityStarter: ActivityStarter,
+            userTracker: UserTracker
+        ): FooterActionsDataUsageViewModel {
+            return FooterActionsDataUsageViewModel(
+                context,
+                dataController,
+                subManager,
+                wifiManager,
+                networkController,
+                tunerService,
+                globalSettings,
+                activityStarter,
+                userTracker
+            )
+        }
+    }
 }

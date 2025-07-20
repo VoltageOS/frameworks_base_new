@@ -19,6 +19,14 @@ package com.android.systemui.qs.panels.ui.compose
 import com.android.systemui.kosmos.Kosmos
 import com.android.systemui.qs.panels.ui.compose.infinitegrid.infiniteGridLayout
 import com.android.systemui.qs.panels.ui.viewmodel.paginatedGridViewModelFactory
+import com.android.systemui.qs.footer.ui.viewmodel.FooterActionsDataUsageViewModel
+import com.android.systemui.util.mockito.mock
 
 val Kosmos.paginatedGridLayout by
-    Kosmos.Fixture { PaginatedGridLayout(paginatedGridViewModelFactory, infiniteGridLayout) }
+    Kosmos.Fixture { 
+        PaginatedGridLayout(
+            paginatedGridViewModelFactory, 
+            infiniteGridLayout,
+            mock()
+        ) 
+    }

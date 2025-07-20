@@ -18,8 +18,12 @@ package com.android.systemui.development.ui.compose
 
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
@@ -31,9 +35,11 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.semantics
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.android.systemui.communal.ui.compose.extensions.detectLongPressGesture
 import com.android.systemui.development.ui.viewmodel.BuildNumberViewModel
 import com.android.systemui.lifecycle.rememberViewModel
+import com.android.systemui.qs.footer.ui.viewmodel.FooterActionsDataUsageViewModel
 import com.android.systemui.res.R
 
 @Composable
@@ -41,41 +47,48 @@ fun BuildNumber(
     viewModelFactory: BuildNumberViewModel.Factory,
     textColor: Color,
     modifier: Modifier = Modifier,
+    dataUsageViewModel: FooterActionsDataUsageViewModel? = null,
 ) {
     val viewModel = rememberViewModel(traceName = "BuildNumber") { viewModelFactory.create() }
-
     val buildNumber = viewModel.buildNumber
 
-    if (buildNumber != null) {
-        val haptics = LocalHapticFeedback.current
-        val copyToClipboardActionLabel = stringResource(id = R.string.copy_to_clipboard_a11y_action)
-
-        Text(
-            text = buildNumber.value,
-            modifier =
-                modifier
-                    .focusable()
-                    .wrapContentWidth()
-                    // Using this instead of combinedClickable because this node should not support
-                    // single click
-                    .pointerInput(Unit) {
-                        detectLongPressGesture {
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.onBuildNumberLongPress()
+    // If data usage is enabled and available, show it instead of build number
+    if (dataUsageViewModel != null) {
+        val dataUsageText = dataUsageViewModel.dataUsageText.collectAsStateWithLifecycle().value
+        val isVisible = dataUsageViewModel.isVisible.collectAsStateWithLifecycle().value
+        
+        if (isVisible && dataUsageText != null) {
+            val haptics = LocalHapticFeedback.current
+            
+            Text(
+                text = dataUsageText,
+                modifier =
+                    modifier
+                        .focusable()
+                        .wrapContentWidth()
+                        .padding(start = 8.dp)
+                        .combinedClickable(
+                            onClick = { dataUsageViewModel.onDataUsageClick() },
+                            onLongClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                dataUsageViewModel.onDataUsageLongClick()
+                            }
+                        )
+                        .semantics {
+                            onLongClick("Open data usage settings") {
+                                dataUsageViewModel.onDataUsageLongClick()
+                                true
+                            }
                         }
-                    }
-                    .semantics {
-                        onLongClick(copyToClipboardActionLabel) {
-                            viewModel.onBuildNumberLongPress()
-                            true
-                        }
-                    }
-                    .basicMarquee(iterations = 1, initialDelayMillis = 2000)
-                    .minimumInteractiveComponentSize(),
-            color = textColor,
-            maxLines = 1,
-        )
-    } else {
-        Spacer(modifier)
+                        .basicMarquee(iterations = 1, initialDelayMillis = 2000)
+                        .minimumInteractiveComponentSize(),
+                color = textColor,
+                maxLines = 1,
+            )
+            return
+        }
     }
+
+    // Show nothing (build number is always null)
+    Spacer(modifier)
 }
