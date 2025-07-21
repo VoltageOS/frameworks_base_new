@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.systemui.media.controls.data.repository
+package com.android.systemui.media.remedia.data.model
 
-import android.content.applicationContext
-import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.util.time.systemClock
-
-val Kosmos.mediaFilterRepository by
-    Kosmos.Fixture {
-        MediaFilterRepository(applicationContext = applicationContext, systemClock = systemClock)
-    }
+/** Data model representing the status of images in updated media data */
+data class UpdateArtInfoModel(val isBackgroundUpdated: Boolean, val isAppIconUpdated: Boolean)
