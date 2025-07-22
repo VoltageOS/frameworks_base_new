@@ -15,8 +15,6 @@
  */
 package com.android.internal.widget.remotecompose.core.operations;
 
-import static com.android.internal.widget.remotecompose.core.operations.Utils.floatToString;
-
 import android.annotation.NonNull;
 
 import com.android.internal.widget.remotecompose.core.Operation;
@@ -32,64 +30,60 @@ import com.android.internal.widget.remotecompose.core.serialize.MapSerializer;
 
 import java.util.List;
 
-/** Draw Text */
-public class DrawBitmapFontText extends PaintOperation implements VariableSupport {
-    private static final int OP_CODE = Operations.DRAW_BITMAP_FONT_TEXT_RUN;
-    private static final String CLASS_NAME = "DrawBitmapFontText";
+/** Draw bitmap font text on a path. */
+public class DrawBitmapFontTextOnPath extends PaintOperation implements VariableSupport {
+    private static final int OP_CODE = Operations.DRAW_BITMAP_FONT_TEXT_RUN_ON_PATH;
+    private static final String CLASS_NAME = "DrawBitmapFontTextOnPath";
     int mTextID;
     int mBitmapFontID;
+    int mPathID;
     int mStart;
     int mEnd;
-    float mX;
-    float mY;
-    float mOutX;
-    float mOutY;
+    float mYAdj;
+    float mOutYAdj;
 
-    public DrawBitmapFontText(int textId, int bitmapFontID, int start, int end, float x, float y) {
-        mTextID = textId;
+    public DrawBitmapFontTextOnPath(
+            int textID, int bitmapFontID, int pathID, int start, int end, float yAdj) {
+        mTextID = textID;
         mBitmapFontID = bitmapFontID;
+        mPathID = pathID;
         mStart = start;
         mEnd = end;
-        mOutX = mX = x;
-        mOutY = mY = y;
-    }
-
-    @Override
-    public void updateVariables(@NonNull RemoteContext context) {
-        mOutX = Float.isNaN(mX) ? context.getFloat(Utils.idFromNan(mX)) : mX;
-        mOutY = Float.isNaN(mY) ? context.getFloat(Utils.idFromNan(mY)) : mY;
-    }
-
-    @Override
-    public void registerListening(@NonNull RemoteContext context) {
-        if (Float.isNaN(mX)) {
-            context.listensTo(Utils.idFromNan(mX), this);
-        }
-        if (Float.isNaN(mY)) {
-            context.listensTo(Utils.idFromNan(mY), this);
-        }
+        mYAdj = yAdj;
     }
 
     @Override
     public void write(@NonNull WireBuffer buffer) {
-        apply(buffer, mTextID, mBitmapFontID, mStart, mEnd, mX, mY);
+        apply(buffer, mTextID, mBitmapFontID, mPathID, mStart, mEnd, mYAdj);
+    }
+
+    @Override
+    public void updateVariables(@NonNull RemoteContext context) {
+        mOutYAdj = Float.isNaN(mYAdj) ? context.getFloat(Utils.idFromNan(mYAdj)) : mYAdj;
+    }
+
+    @Override
+    public void registerListening(@NonNull RemoteContext context) {
+        if (Float.isNaN(mYAdj)) {
+            context.listensTo(Utils.idFromNan(mYAdj), this);
+        }
     }
 
     @NonNull
     @Override
     public String toString() {
-        return "DrawBitmapFontText ["
+        return "DrawBitmapFontTextOnPath ["
                 + mTextID
                 + "] "
                 + mBitmapFontID
+                + ", "
+                + mPathID
                 + ", "
                 + mStart
                 + ", "
                 + mEnd
                 + ", "
-                + floatToString(mX, mOutX)
-                + ", "
-                + floatToString(mY, mOutY);
+                + mYAdj;
     }
 
     /**
@@ -101,11 +95,12 @@ public class DrawBitmapFontText extends PaintOperation implements VariableSuppor
     public static void read(@NonNull WireBuffer buffer, @NonNull List<Operation> operations) {
         int text = buffer.readInt();
         int bitmapFont = buffer.readInt();
+        int path = buffer.readInt();
         int start = buffer.readInt();
         int end = buffer.readInt();
-        float x = buffer.readFloat();
-        float y = buffer.readFloat();
-        DrawBitmapFontText op = new DrawBitmapFontText(text, bitmapFont, start, end, x, y);
+        float yAdj = buffer.readFloat();
+        DrawBitmapFontTextOnPath op =
+                new DrawBitmapFontTextOnPath(text, bitmapFont, path, start, end, yAdj);
 
         operations.add(op);
     }
@@ -135,26 +130,26 @@ public class DrawBitmapFontText extends PaintOperation implements VariableSuppor
      * @param buffer write the command to the buffer
      * @param textId id of the text
      * @param bitmapFontID id of the bitmap font
+     * @param pathID id of the bitmap font
      * @param start Start position
      * @param end end position
-     * @param x position of where to draw
-     * @param y position of where to draw
+     * @param yAdj position of where to draw
      */
     public static void apply(
             @NonNull WireBuffer buffer,
             int textId,
             int bitmapFontID,
+            int pathID,
             int start,
             int end,
-            float x,
-            float y) {
-        buffer.start(Operations.DRAW_BITMAP_FONT_TEXT_RUN);
+            float yAdj) {
+        buffer.start(OP_CODE);
         buffer.writeInt(textId);
         buffer.writeInt(bitmapFontID);
+        buffer.writeInt(pathID);
         buffer.writeInt(start);
         buffer.writeInt(end);
-        buffer.writeFloat(x);
-        buffer.writeFloat(y);
+        buffer.writeFloat(yAdj);
     }
 
     /**
@@ -167,6 +162,7 @@ public class DrawBitmapFontText extends PaintOperation implements VariableSuppor
                 .description("Draw a run of bitmap font text, all in a single direction")
                 .field(DocumentedOperation.INT, "textId", "id of bitmap")
                 .field(DocumentedOperation.INT, "bitmapFontId", "id of the bitmap font")
+                .field(DocumentedOperation.INT, "pathId", "id of the path")
                 .field(
                         DocumentedOperation.INT,
                         "start",
@@ -180,9 +176,43 @@ public class DrawBitmapFontText extends PaintOperation implements VariableSuppor
                         DocumentedOperation.INT,
                         "contextEnd",
                         "the index of the end of the shaping context")
-                .field(DocumentedOperation.FLOAT, "x", "The x position at which to draw the text")
-                .field(DocumentedOperation.FLOAT, "y", "The y position at which to draw the text")
-                .field(DocumentedOperation.BOOLEAN, "RTL", "Whether the run is in RTL direction");
+                .field(
+                        DocumentedOperation.FLOAT,
+                        "yAdj",
+                        "the index of the end of the shaping context");
+    }
+
+    private int measureWidth(String text, BitmapFontData bitmapFont) {
+        int pos = 0;
+        int width = 0;
+        String prevGlyph = "";
+        while (pos < text.length()) {
+            BitmapFontData.Glyph glyph = bitmapFont.lookupGlyph(text, pos);
+            if (glyph == null) {
+                pos++;
+                prevGlyph = "";
+                continue;
+            }
+
+            pos += glyph.mChars.length();
+            if (glyph.mBitmapId == -1) {
+                // Space is represented by a glyph of -1.
+                width += glyph.mMarginLeft + glyph.mMarginRight;
+                prevGlyph = "";
+                continue;
+            }
+
+            width += glyph.mMarginLeft;
+            Short kerningAdjustment = bitmapFont.mKerningTable.get(prevGlyph + glyph.mChars);
+            if (kerningAdjustment != null) {
+                width += kerningAdjustment;
+            }
+
+            width += glyph.mBitmapWidth + glyph.mMarginRight;
+            prevGlyph = glyph.mChars;
+        }
+
+        return width;
     }
 
     @Override
@@ -207,7 +237,8 @@ public class DrawBitmapFontText extends PaintOperation implements VariableSuppor
             return;
         }
 
-        float xPos = mOutX;
+        float width = (float) measureWidth(textToPaint, bitmapFont);
+        float progress = 0f;
         int pos = 0;
         String prevGlyph = "";
         while (pos < textToPaint.length()) {
@@ -221,26 +252,30 @@ public class DrawBitmapFontText extends PaintOperation implements VariableSuppor
             pos += glyph.mChars.length();
             if (glyph.mBitmapId == -1) {
                 // Space is represented by a glyph of -1.
-                xPos += glyph.mMarginLeft + glyph.mMarginRight;
-                prevGlyph = glyph.mChars;
+                progress += glyph.mMarginLeft + glyph.mMarginRight;
+                prevGlyph = "";
                 continue;
             }
 
-            xPos += glyph.mMarginLeft;
+            progress += glyph.mMarginLeft;
             Short kerningAdjustment = bitmapFont.mKerningTable.get(prevGlyph + glyph.mChars);
             if (kerningAdjustment != null) {
-                xPos += kerningAdjustment;
+                progress += kerningAdjustment;
             }
 
-            float xPos2 = xPos + glyph.mBitmapWidth;
+            float halfGlyphWidth = 0.5f * (float) glyph.mBitmapWidth;
+            float fractionAtMiddleOfGlyph = (progress + halfGlyphWidth) / width;
+            context.save();
+            context.matrixFromPath(mPathID, fractionAtMiddleOfGlyph, 0, 3);
             context.drawBitmap(
                     glyph.mBitmapId,
-                    xPos,
-                    mOutY + glyph.mMarginTop,
-                    xPos2,
-                    mOutY + glyph.mBitmapHeight + glyph.mMarginTop);
-            xPos = xPos2 + glyph.mMarginRight;
+                    -halfGlyphWidth,
+                    mOutYAdj + glyph.mMarginTop,
+                    halfGlyphWidth,
+                    mOutYAdj + glyph.mBitmapHeight + glyph.mMarginTop);
+            progress += glyph.mBitmapWidth + glyph.mMarginRight;
             prevGlyph = glyph.mChars;
+            context.restore();
         }
     }
 
@@ -250,9 +285,8 @@ public class DrawBitmapFontText extends PaintOperation implements VariableSuppor
                 .addType(CLASS_NAME)
                 .add("textId", mTextID)
                 .add("bitmapFontId", mBitmapFontID)
+                .add("path", mPathID)
                 .add("start", mStart)
-                .add("end", mEnd)
-                .add("x", mX, mOutX)
-                .add("y", mY, mOutY);
+                .add("end", mEnd);
     }
 }
