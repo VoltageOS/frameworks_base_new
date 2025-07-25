@@ -30,10 +30,14 @@ import android.content.Context;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.database.ContentObserver;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
+import android.os.Handler;
+import android.os.UserHandle;
+import android.provider.Settings;
 import android.util.AttributeSet;
 import android.util.IndentingPrintWriter;
 import android.view.View;
@@ -68,6 +72,7 @@ public class FooterView extends StackScrollerDecorView {
     private FooterViewButton mHistoryButton;
     private boolean mShouldBeHidden;
     private boolean mIsBlurSupported;
+    private ContentObserver mTransparencyObserver;
 
     // Footer label
     private TextView mSeenNotifsFooterTextView;
@@ -92,6 +97,29 @@ public class FooterView extends StackScrollerDecorView {
 
     protected View findSecondaryView() {
         return findViewById(R.id.dismiss_text);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        mTransparencyObserver = new ContentObserver(new Handler(mContext.getMainLooper())) {
+            @Override
+            public void onChange(boolean selfChange) {
+                updateColors();
+            }
+        };
+        mContext.getContentResolver().registerContentObserver(
+                Settings.System.getUriFor("notification_row_transparency"),
+                false, mTransparencyObserver, UserHandle.USER_CURRENT);
+        updateColors();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (mTransparencyObserver != null) {
+            mContext.getContentResolver().unregisterContentObserver(mTransparencyObserver);
+        }
     }
 
     /** Whether the "Clear all" button is currently visible. */
@@ -388,7 +416,11 @@ public class FooterView extends StackScrollerDecorView {
         final Drawable historyBg = NotifRedesignFooter.isEnabled()
                 ? theme.getDrawable(R.drawable.notif_footer_btn_background).mutate() : null;
 
-        if (notificationShadeBlur() && mIsBlurSupported) {
+        final boolean isNotificationTransparencyOn = Settings.System.getIntForUser(
+                mContext.getContentResolver(),
+                "notification_row_transparency", 0, UserHandle.USER_CURRENT) == 1;
+
+        if (isNotificationTransparencyOn) {
             clearAllBg.setAlpha(0);
             settingsBg.setAlpha(0);
             if (historyBg != null) {
