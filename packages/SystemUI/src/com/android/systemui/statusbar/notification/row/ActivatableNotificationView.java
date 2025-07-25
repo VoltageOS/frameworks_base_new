@@ -27,6 +27,8 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.os.UserHandle;
+import android.provider.Settings;
 import android.graphics.Canvas;
 import android.graphics.Point;
 import android.util.AttributeSet;
@@ -131,10 +133,19 @@ public abstract class ActivatableNotificationView extends ExpandableOutlineView 
     }
 
     protected void updateColors() {
+        final boolean isTransparent = Settings.System.getIntForUser(
+                mContext.getContentResolver(), "notification_row_transparency", 0, UserHandle.USER_CURRENT) == 1;
+
         if (notificationRowTransparency()) {
-            mNormalColor = SurfaceEffectColors.surfaceEffect1(getContext());
-            mOpaqueColor = mContext.getColor(
-                    com.android.internal.R.color.materialColorSurfaceContainer);
+            if (isTransparent) {
+                mNormalColor = SurfaceEffectColors.surfaceEffect1(getContext());
+                mOpaqueColor = mContext.getColor(
+                        com.android.internal.R.color.materialColorSurfaceContainer);
+            } else {
+                mNormalColor = mContext.getColor(
+                        com.android.internal.R.color.materialColorSurfaceContainerHigh);
+                mOpaqueColor = mNormalColor;
+            }
         } else {
             mNormalColor = mContext.getColor(
                     com.android.internal.R.color.materialColorSurfaceContainerHigh);
@@ -343,7 +354,9 @@ public abstract class ActivatableNotificationView extends ExpandableOutlineView 
     }
 
     protected boolean usesTransparentBackground() {
-        return mIsBlurSupported && notificationRowTransparency();
+        final boolean isTransparent = Settings.System.getIntForUser(
+                mContext.getContentResolver(), "notification_row_transparency", 0, UserHandle.USER_CURRENT) == 1;
+        return mIsBlurSupported && isTransparent;
     }
 
     @Override
