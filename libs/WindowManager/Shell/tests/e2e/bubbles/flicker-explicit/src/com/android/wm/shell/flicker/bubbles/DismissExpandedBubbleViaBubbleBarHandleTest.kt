@@ -22,49 +22,65 @@ import android.tools.NavBar
 import androidx.test.filters.RequiresDevice
 import com.android.wm.shell.Flags
 import com.android.wm.shell.Utils
-import com.android.wm.shell.flicker.bubbles.testcase.EnterBubbleTestCases
+import com.android.wm.shell.flicker.bubbles.testcase.DismissExpandedBubbleTestCases
 import com.android.wm.shell.flicker.bubbles.utils.ApplyPerParameterRule
+import com.android.wm.shell.flicker.bubbles.utils.BubbleFlickerTestHelper.dismissBubbleAppViaBubbleBarHandle
 import com.android.wm.shell.flicker.bubbles.utils.BubbleFlickerTestHelper.launchBubbleViaBubbleMenu
 import com.android.wm.shell.flicker.bubbles.utils.FlickerPropertyInitializer
 import com.android.wm.shell.flicker.bubbles.utils.RecordTraceWithTransitionRule
+import org.junit.Assume.assumeTrue
+import org.junit.Before
 import org.junit.FixMethodOrder
 import org.junit.Rule
 import org.junit.runners.MethodSorters
 
 /**
- * Test entering bubble via clicking bubble menu.
+ * Test dismiss bubble app via dragging bubble bar handle to the dismiss view when the bubble is in
+ * expanded state.
  *
- * To run this test: `atest WMShellExplicitFlickerTestsBubbles:EnterBubbleViaBubbleMenuTest`
+ * To run this test:
+ *     `atest WMShellExplicitFlickerTestsBubbles:DismissExpandedBubbleViaBubbleBarHandleTest`
+ *
+ * Pre-steps:
+ * ```
+ *     Launch [testApp] into bubble
+ * ```
  *
  * Actions:
  * ```
- *     Long press [simpleApp] icon to show [AppIconMenu].
- *     Click the bubble menu to launch [simpleApp] into bubble.
+ *     Dismiss bubble app via dragging bubble bar handle to the dismiss view
  * ```
  * Verified tests:
  * - [BubbleFlickerTestBase]
- * - [EnterBubbleTestCases]
+ * - [DismissExpandedBubbleTestCases]
  */
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CREATE_ANY_BUBBLE)
 @RequiresDevice
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Presubmit
-open class EnterBubbleViaBubbleMenuTest(navBar: NavBar) : BubbleFlickerTestBase(),
-    EnterBubbleTestCases {
-
+class DismissExpandedBubbleViaBubbleBarHandleTest(navBar: NavBar) : BubbleFlickerTestBase(),
+    DismissExpandedBubbleTestCases {
     companion object : FlickerPropertyInitializer() {
         private val recordTraceWithTransitionRule = RecordTraceWithTransitionRule(
-            transition = { launchBubbleViaBubbleMenu(testApp, tapl, wmHelper) },
-            tearDownAfterTransition = { testApp.exit(wmHelper) }
+            setUpBeforeTransition = { launchBubbleViaBubbleMenu(testApp, tapl, wmHelper) },
+            transition = { dismissBubbleAppViaBubbleBarHandle(testApp, wmHelper) },
+            tearDownAfterTransition = { testApp.exit() }
         )
     }
 
     @get:Rule
-    open val setUpRule = ApplyPerParameterRule(
+    val setUpRule = ApplyPerParameterRule(
         Utils.testSetupRule(navBar).around(recordTraceWithTransitionRule),
         params = arrayOf(navBar)
     )
 
     override val traceDataReader
         get() = recordTraceWithTransitionRule.reader
+
+    @Before
+    override fun setUp() {
+        // Bubble bar is only enabled on large screen device.
+        assumeTrue(tapl.isTablet)
+        super.setUp()
+    }
 }
