@@ -261,6 +261,7 @@ public class Clock extends TextView implements
             // The receiver will return immediately if the view does not have a Handler yet.
             mBroadcastDispatcher.registerReceiverWithHandler(mIntentReceiver, filter,
                     Dependency.get(Dependency.TIME_TICK_HANDLER), UserHandle.ALL);
+            if (!StatusBarRootModernization.isEnabled()) {
             Dependency.get(TunerService.class).addTunable(this,
                     STATUS_BAR_CLOCK_SECONDS,
                     STATUS_BAR_AM_PM,
@@ -272,6 +273,7 @@ public class Clock extends TextView implements
                     STATUS_BAR_CLOCK_AUTO_HIDE,
                     STATUS_BAR_CLOCK_AUTO_HIDE_HDURATION,
                     STATUS_BAR_CLOCK_AUTO_HIDE_SDURATION);
+            }
             mCommandQueue.addCallback(this);
             if (mShowDark) {
                 Dependency.get(DarkIconDispatcher.class).addDarkReceiver(this);
@@ -392,22 +394,29 @@ public class Clock extends TextView implements
     }
 
     public void setClockVisibleByUser(boolean visible) {
+        if (StatusBarRootModernization.isEnabled()) return;
         StatusBarRootModernization.assertInLegacyMode();
         mClockVisibleByUser = visible;
         updateClockVisibility();
     }
 
     private void setClockVisibilityByPolicy(boolean visible) {
+        if (StatusBarRootModernization.isEnabled()) return;
         StatusBarRootModernization.assertInLegacyMode();
         mClockVisibleByPolicy = visible;
         updateClockVisibility();
     }
 
     public boolean shouldBeVisible() {
+        if (StatusBarRootModernization.isEnabled()) {
+            // In modern mode, the legacy clock should never be visible.
+            return false;
+        }
         return !mClockAutoHideLauncher && mClockVisibleByPolicy && mClockVisibleByUser;
     }
 
     private void updateClockVisibility() {
+        if (StatusBarRootModernization.isEnabled()) return;
         StatusBarRootModernization.assertInLegacyMode();
 
         boolean visible = shouldBeVisible();
