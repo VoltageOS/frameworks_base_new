@@ -203,6 +203,7 @@ import com.android.systemui.statusbar.policy.KeyguardStateController;
 import com.android.systemui.statusbar.policy.SplitShadeStateController;
 import com.android.systemui.unfold.SysUIUnfoldComponent;
 import com.android.systemui.util.Compile;
+import com.android.systemui.util.NTCpuBindController;
 import com.android.systemui.util.Utils;
 import com.android.systemui.util.time.SystemClock;
 import com.android.systemui.wallpapers.ui.viewmodel.WallpaperFocalAreaViewModel;
@@ -1488,6 +1489,7 @@ public final class NotificationPanelViewController implements
             @Override
             public void onAnimationCancel(Animator animation) {
                 mCancelled = true;
+                NTCpuBindController.INSTANCE().animationBoostOff(NTCpuBindController.REQUEST_ANIMATION_BOOST_TYPE_FLING_NOTIFICATION_PANEL_VIEW);
             }
 
             @Override
@@ -1498,6 +1500,7 @@ public final class NotificationPanelViewController implements
                     springBack();
                 } else {
                     onFlingEnd(mCancelled);
+                    NTCpuBindController.INSTANCE().animationBoostOff(NTCpuBindController.REQUEST_ANIMATION_BOOST_TYPE_FLING_NOTIFICATION_PANEL_VIEW);
                 }
             }
         });
@@ -1509,6 +1512,7 @@ public final class NotificationPanelViewController implements
         }
         setAnimator(animator);
         animator.start();
+        NTCpuBindController.INSTANCE().animationBoostOn(NTCpuBindController.REQUEST_ANIMATION_BOOST_TYPE_FLING_NOTIFICATION_PANEL_VIEW);
     }
 
     private final boolean shouldIgnoreStartFlingAnimavor(ValueAnimator newAnimator, ValueAnimator oldAnimator, float vel, boolean expand) {
@@ -2061,6 +2065,13 @@ public final class NotificationPanelViewController implements
         setPanelScrimMinFraction(0.0f);
         // Reset status bar alpha so alpha can be calculated upon updating view state.
         setKeyguardStatusBarAlpha(-1f);
+        if (!isPanelExpanded()) {
+            NTCpuBindController.INSTANCE().requestUnLimitOtherProcessCPU(NTCpuBindController.REQUEST_LIMIT_OTHER_PROCESS_CPU_WHEN_NOTIFICATION_EXPAND);
+            mView.postDelayed(() -> {
+                NTCpuBindController.INSTANCE().setLimitForegroundAppCpu(false);
+            }, 50);
+        }
+        NTCpuBindController.INSTANCE().animationBoostOff(NTCpuBindController.REQUEST_ANIMATION_BOOST_TYPE_SPEED_UP_NOTIFICATION_PANEL_VIEW_EXPAND);
     }
 
     private void setListening(boolean listening) {
@@ -2146,6 +2157,7 @@ public final class NotificationPanelViewController implements
     }
 
     private void onTrackingStarted() {
+        NTCpuBindController.INSTANCE().animationBoostOn(NTCpuBindController.REQUEST_ANIMATION_BOOST_TYPE_FLING_NOTIFICATION_PANEL_VIEW);
         endClosing();
         mShadeRepository.setLegacyShadeTracking(true);
         if (mTrackingStartedListener != null) {
@@ -2175,6 +2187,7 @@ public final class NotificationPanelViewController implements
         // If we unlocked from a swipe, the user's finger might still be down after the
         // unlock animation ends. We need to wait until ACTION_UP to enable blurs again.
         mDepthController.setBlursDisabledForUnlock(false);
+        NTCpuBindController.INSTANCE().animationBoostOff(NTCpuBindController.REQUEST_ANIMATION_BOOST_TYPE_TRACKING_NOTIFICATION_PANEL_VIEW);
     }
 
     private void updateMaxHeadsUpTranslation() {
@@ -2870,6 +2883,11 @@ public final class NotificationPanelViewController implements
             mIsExpandingOrCollapsing = true;
             mQsController.onExpandingStarted(mQsController.getFullyExpanded());
         }
+        NTCpuBindController.INSTANCE().requestLimitOtherProcessCPU(NTCpuBindController.REQUEST_LIMIT_OTHER_PROCESS_CPU_WHEN_NOTIFICATION_EXPAND);
+        NTCpuBindController.INSTANCE().animationBoostOn(NTCpuBindController.REQUEST_ANIMATION_BOOST_TYPE_SPEED_UP_NOTIFICATION_PANEL_VIEW_EXPAND);
+        mView.postDelayed(() -> {
+            NTCpuBindController.INSTANCE().setLimitForegroundAppCpu(true);
+        }, 50);
     }
 
     void notifyExpandingFinished() {
@@ -3108,16 +3126,19 @@ public final class NotificationPanelViewController implements
             @Override
             public void onAnimationCancel(Animator animation) {
                 mCancelled = true;
+                NTCpuBindController.INSTANCE().animationBoostOff(NTCpuBindController.REQUEST_ANIMATION_BOOST_TYPE_SPEED_UP_QS_SB_ANIMATION);
             }
 
             @Override
             public void onAnimationEnd(Animator animation) {
                 mIsSpringBackAnimation = false;
                 onFlingEnd(mCancelled);
+                NTCpuBindController.INSTANCE().animationBoostOff(NTCpuBindController.REQUEST_ANIMATION_BOOST_TYPE_SPEED_UP_QS_SB_ANIMATION);
             }
         });
         setAnimator(animator);
         animator.start();
+        NTCpuBindController.INSTANCE().animationBoostOn(NTCpuBindController.REQUEST_ANIMATION_BOOST_TYPE_SPEED_UP_QS_SB_ANIMATION);
     }
 
     @VisibleForTesting
