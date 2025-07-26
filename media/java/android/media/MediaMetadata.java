@@ -22,6 +22,9 @@ import android.compat.annotation.UnsupportedAppUsage;
 import android.content.ContentResolver;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Matrix;
+import android.graphics.Paint;
 import android.media.browse.MediaBrowser;
 import android.media.session.MediaController;
 import android.media.session.MediaSession;
@@ -983,29 +986,22 @@ public final class MediaMetadata implements Parcelable {
             if (bmp == null) return null;
             int srcWidth = bmp.getWidth();
             int srcHeight = bmp.getHeight();
-            if (srcWidth <= maxDimension && srcHeight <= maxDimension) {
-                return bmp.getConfig() == Bitmap.Config.RGB_565
-                        ? bmp
-                        : bmp.copy(Bitmap.Config.RGB_565, false);
-            }
-            float maxDimensionF = maxDimension;
-            float widthScale = maxDimensionF / srcWidth;
-            float heightScale = maxDimensionF / srcHeight;
-            float scale = Math.min(widthScale, heightScale);
-            int width = (int) (srcWidth * scale);
-            int height = (int) (srcHeight * scale);
-            Bitmap scaled = Bitmap.createScaledBitmap(bmp, width, height, true);
-            return scaled.copy(Bitmap.Config.RGB_565, false);
-        }
-
-        private static int calculateSampleSize(int srcWidth, int srcHeight, int dstWidth, int dstHeight) {
-            int sampleSize = 1;
-            if (srcWidth > dstWidth || srcHeight > dstHeight) {
-                int widthSample = (int) Math.ceil((float) srcWidth / dstWidth);
-                int heightSample = (int) Math.ceil((float) srcHeight / dstHeight);
-                sampleSize = Math.max(widthSample, heightSample);
-            }
-            return sampleSize;
+            float scale = Math.max(
+                (float) maxDimension / srcWidth,
+                (float) maxDimension / srcHeight
+            );
+            float scaledWidth = scale * srcWidth;
+            float scaledHeight = scale * srcHeight;
+            float dx = (maxDimension - scaledWidth) / 2f;
+            float dy = (maxDimension - scaledHeight) / 2f;
+            Bitmap output = Bitmap.createBitmap(maxDimension, maxDimension, bmp.getConfig());
+            Canvas canvas = new Canvas(output);
+            Matrix matrix = new Matrix();
+            matrix.setScale(scale, scale);
+            matrix.postTranslate(dx, dy);
+            Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
+            canvas.drawBitmap(bmp, matrix, paint);
+            return output;
         }
     }
 }
