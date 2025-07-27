@@ -1163,9 +1163,7 @@ public final class Icon implements Parcelable {
                     Math.max(1, scaledHeight), 
                     true /* filter */);
         }
-        return bitmap.getConfig() == Bitmap.Config.RGB_565
-                ? bitmap
-                : bitmap.copy(Bitmap.Config.RGB_565, false);
+        return bitmap;
     }
 
     /**
