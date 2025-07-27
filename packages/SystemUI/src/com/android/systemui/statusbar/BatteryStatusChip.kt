@@ -22,7 +22,7 @@ import android.util.AttributeSet
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
-import com.android.settingslib.flags.Flags.newStatusBarIcons
+import com.android.settingslib.RuntimeFlags.newStatusBarIcons
 import com.android.systemui.battery.BatteryMeterView
 import com.android.systemui.battery.unified.BatteryColors
 import com.android.systemui.res.R

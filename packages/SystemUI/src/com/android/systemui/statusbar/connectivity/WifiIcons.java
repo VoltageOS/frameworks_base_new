@@ -16,7 +16,7 @@
 
 package com.android.systemui.statusbar.connectivity;
 
-import static com.android.settingslib.flags.Flags.newStatusBarIcons;
+import com.android.settingslib.RuntimeFlags;
 
 import com.android.settingslib.AccessibilityContentDescriptions;
 import com.android.settingslib.R;
@@ -31,7 +31,7 @@ public class WifiIcons {
      * Check the aconfig flag to decide on which icons to use. Can be removed once the flag is gone
      */
     private static int[] getIconsBasedOnFlag() {
-        if (newStatusBarIcons()) {
+        if (RuntimeFlags.newStatusBarIcons()) {
             // TODO(b/396664075):
             // The new wifi icons only define a range of [0, 3]. Since this array is indexed on
             // level, we can simulate the range squash by mapping both level 3 to drawn-level 2, and
@@ -57,7 +57,7 @@ public class WifiIcons {
     public static final int[] WIFI_NO_INTERNET_ICONS = getErrorIconsBasedOnFlag();
 
     private static int [] getErrorIconsBasedOnFlag() {
-        if (newStatusBarIcons()) {
+        if (RuntimeFlags.newStatusBarIcons()) {
             // See above note, new wifi icons only have 3 bars, so levels 2 and 3 are the same
             return new int[] {
                 R.drawable.ic_wifi_0_error,
