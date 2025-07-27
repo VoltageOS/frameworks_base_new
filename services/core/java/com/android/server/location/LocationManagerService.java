@@ -23,6 +23,8 @@ import static android.app.compat.CompatChanges.isChangeEnabled;
 import static android.content.pm.PackageManager.MATCH_DIRECT_BOOT_AWARE;
 import static android.content.pm.PackageManager.MATCH_SYSTEM_ONLY;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
+import static android.ext.settings.GeocoderSettings.GEOCODER_DISABLED;
+import static android.ext.settings.GeocoderSettings.GEOCODER_SETTING;
 import static android.location.LocationManager.BLOCK_PENDING_INTENT_SYSTEM_API_USAGE;
 import static android.location.LocationManager.FUSED_PROVIDER;
 import static android.location.LocationManager.GPS_HARDWARE_PROVIDER;
@@ -1457,7 +1459,9 @@ public class LocationManagerService extends ILocationManager.Stub implements
 
     @Override
     public boolean isGeocodeAvailable() {
-        return mGeocodeProvider != null;
+        return mGeocodeProvider != null && GEOCODER_SETTING.get(mContext) != GEOCODER_DISABLED
+                && mContext.checkCallingPermission(android.Manifest.permission.INTERNET)
+                == PERMISSION_GRANTED;
     }
 
     @Override
@@ -1467,8 +1471,18 @@ public class LocationManagerService extends ILocationManager.Stub implements
                         mContext, request.getCallingPackage(), request.getCallingAttributionTag());
         Preconditions.checkArgument(identity.getUid() == request.getCallingUid());
 
-        if (mGeocodeProvider != null) {
-            mGeocodeProvider.reverseGeocode(request, callback);
+        if (mGeocodeProvider != null && GEOCODER_SETTING.get(mContext) != GEOCODER_DISABLED) {
+            boolean hasInternetPerm = mContext.checkCallingPermission(
+                    android.Manifest.permission.INTERNET) == PERMISSION_GRANTED;
+            if (hasInternetPerm) {
+                mGeocodeProvider.reverseGeocode(request, callback);
+            } else {
+                try {
+                    callback.onError("geocoding requires android.permission.INTERNET");
+                } catch (RemoteException e) {
+                    // ignore
+                }
+            }
         } else {
             try {
                 callback.onError(null);
@@ -1485,8 +1499,18 @@ public class LocationManagerService extends ILocationManager.Stub implements
                         mContext, request.getCallingPackage(), request.getCallingAttributionTag());
         Preconditions.checkArgument(identity.getUid() == request.getCallingUid());
 
-        if (mGeocodeProvider != null) {
-            mGeocodeProvider.forwardGeocode(request, callback);
+        if (mGeocodeProvider != null && GEOCODER_SETTING.get(mContext) != GEOCODER_DISABLED) {
+            boolean hasInternetPerm = mContext.checkCallingPermission(
+                    android.Manifest.permission.INTERNET) == PERMISSION_GRANTED;
+            if (hasInternetPerm) {
+                mGeocodeProvider.forwardGeocode(request, callback);
+            } else {
+                try {
+                    callback.onError("geocoding requires android.permission.INTERNET");
+                } catch (RemoteException e) {
+                    // ignore
+                }
+            }
         } else {
             try {
                 callback.onError(null);
