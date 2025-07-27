@@ -19,10 +19,16 @@ package com.android.systemui.statusbar
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
+import android.content.Context
+import android.database.ContentObserver
+import android.os.Handler
 import android.os.SystemClock
+import android.os.UserHandle
+import android.provider.Settings
 import android.util.IndentingPrintWriter
 import android.util.Log
 import android.util.MathUtils
+import android.util.TypedValue
 import android.view.Choreographer
 import android.view.Display
 import android.view.View
@@ -37,6 +43,7 @@ import com.android.systemui.Flags
 import com.android.systemui.Flags.spatialModelAppPushback
 import com.android.systemui.animation.ShadeInterpolation
 import com.android.systemui.dagger.SysUISingleton
+import com.android.systemui.dagger.qualifiers.Main
 import com.android.systemui.dagger.qualifiers.Application
 import com.android.systemui.dump.DumpManager
 import com.android.systemui.keyguard.domain.interactor.KeyguardInteractor
@@ -72,6 +79,8 @@ import kotlinx.coroutines.launch
 class NotificationShadeDepthController
 @Inject
 constructor(
+    @Application private val context: Context,
+    @Main private val mainHandler: Handler,
     private val statusBarStateController: StatusBarStateController,
     private val blurUtils: BlurUtils,
     private val biometricUnlockController: BiometricUnlockController,
@@ -99,6 +108,8 @@ constructor(
         private const val TRANSITION_THRESHOLD = 0.98f
         private const val TAG = "DepthController"
     }
+
+    private var userDefinedMaxBlurRadius: Int = 0
 
     lateinit var root: View
     private var keyguardAnimator: Animator? = null
@@ -134,10 +145,9 @@ constructor(
     @VisibleForTesting var brightnessMirrorSpring = DepthAnimation()
     var brightnessMirrorVisible: Boolean = false
         set(value) {
+            if (field == value) return
             field = value
-            brightnessMirrorSpring.animateTo(
-                if (value) blurUtils.blurRadiusOfRatio(1f).toInt() else 0
-            )
+            brightnessMirrorSpring.animateTo(if (value) getShadeBlurRadiusOfRatio(1f) else 0)
         }
 
     var qsPanelExpansion = 0f
@@ -231,6 +241,35 @@ constructor(
             scheduleUpdate()
         }
 
+    private fun updateMaxBlurRadius() {
+        val radiusDpSetting = Settings.System.getIntForUser(
+                context.contentResolver,
+                "shade_blur_radius",
+                20,
+                UserHandle.USER_CURRENT
+        )
+
+        userDefinedMaxBlurRadius = TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                radiusDpSetting.toFloat(),
+                context.resources.displayMetrics
+        ).toInt()
+        scheduleUpdate()
+    }
+
+    private fun getShadeBlurRadiusOfRatio(ratio: Float): Int {
+        return (ratio * userDefinedMaxBlurRadius).toInt()
+    }
+
+    private fun getShadeRatioOfBlurRadius(radius: Float): Float {
+        if (userDefinedMaxBlurRadius == 0) return 0f
+        return radius / userDefinedMaxBlurRadius.toFloat()
+    }
+
+    private fun getSystemBlurRadiusOfRatio(ratio: Float): Float {
+        return blurUtils.blurRadiusOfRatio(ratio)
+    }
+
     private data class WakeAndUnlockBlurData(val radius: Float, val useZoom: Boolean = true)
 
     private val isShadeOnDefaultDisplay: Boolean
@@ -254,21 +293,20 @@ constructor(
             MathUtils.constrain(
                 shadeAnimation.radius,
                 blurUtils.minBlurRadius,
-                blurUtils.maxBlurRadius,
+                userDefinedMaxBlurRadius.toFloat(),
             )
-        val expansionRadius =
-            blurUtils.blurRadiusOfRatio(
-                ShadeInterpolation.getNotificationScrimAlpha(
-                    if (shouldApplyShadeBlur()) shadeExpansion else 0f
-                )
+
+        val expansionRadius = getShadeBlurRadiusOfRatio(
+                ShadeInterpolation.getNotificationScrimAlpha(if (shouldApplyShadeBlur())
+                    shadeExpansion else 0f)
             )
         var combinedBlur =
-            (expansionRadius * INTERACTION_BLUR_FRACTION +
+            (expansionRadius.toFloat() * INTERACTION_BLUR_FRACTION +
                 animationRadius * ANIMATION_BLUR_FRACTION)
         val qsExpandedRatio =
             ShadeInterpolation.getNotificationScrimAlpha(qsPanelExpansion) * shadeExpansion
-        combinedBlur = max(combinedBlur, blurUtils.blurRadiusOfRatio(qsExpandedRatio))
-        combinedBlur = max(combinedBlur, blurUtils.blurRadiusOfRatio(transitionToFullShadeProgress))
+        combinedBlur = max(combinedBlur, getShadeBlurRadiusOfRatio(qsExpandedRatio).toFloat())
+        combinedBlur = max(combinedBlur, getShadeBlurRadiusOfRatio(transitionToFullShadeProgress).toFloat())
         var shadeRadius = max(combinedBlur, wakeAndUnlockBlurData.radius)
 
         if (areBlursDisabledForAppLaunch || blursDisabledForUnlock) {
@@ -304,7 +342,7 @@ constructor(
     }
 
     private fun blurRadiusToZoomOut(blurRadius: Float): Float {
-        var zoomOut = MathUtils.saturate(blurUtils.ratioOfBlurRadius(blurRadius))
+        var zoomOut = MathUtils.saturate(getShadeRatioOfBlurRadius(blurRadius))
         if (shadeModeInteractor.isSplitShade) {
             zoomOut = 0f
         }
@@ -380,10 +418,8 @@ constructor(
                         startDelay = keyguardStateController.keyguardFadingAwayDelay
                         interpolator = Interpolators.FAST_OUT_SLOW_IN
                         addUpdateListener { animation: ValueAnimator ->
-                            wakeAndUnlockBlurData =
-                                WakeAndUnlockBlurData(
-                                    blurUtils.blurRadiusOfRatio(animation.animatedValue as Float)
-                                )
+                             wakeAndUnlockBlurData =
+                                WakeAndUnlockBlurData(getShadeBlurRadiusOfRatio(animation.animatedValue as Float).toFloat())
                         }
                         addListener(
                             object : AnimatorListenerAdapter() {
@@ -438,11 +474,21 @@ constructor(
         return if (!wallpaperSupportsAmbientMode) {
             0f
         } else {
-            blurUtils.blurRadiusOfRatio(ratio)
+            getSystemBlurRadiusOfRatio(ratio)
         }
     }
 
+    private val settingsObserver: ContentObserver
+
     init {
+        settingsObserver = object : ContentObserver(mainHandler) {
+            override fun onChange(selfChange: Boolean) {
+                updateMaxBlurRadius()
+            }
+        }
+        context.contentResolver.registerContentObserver(
+                Settings.System.getUriFor("shade_blur_radius"), false, settingsObserver, UserHandle.USER_ALL)
+        updateMaxBlurRadius()
         dumpManager.registerCriticalDumpable(javaClass.name, this)
         if (WAKE_UP_ANIMATION_ENABLED) {
             keyguardStateController.addCallback(keyguardStateCallback)
@@ -631,7 +677,7 @@ constructor(
             }
 
         shadeAnimation.setStartVelocity(velocity)
-        shadeAnimation.animateTo(blurUtils.blurRadiusOfRatio(targetBlurNormalized).toInt())
+        shadeAnimation.animateTo(getShadeBlurRadiusOfRatio(targetBlurNormalized))
     }
 
     private fun scheduleUpdate() {
@@ -684,6 +730,7 @@ constructor(
             it.println("qsPanelExpansion: $qsPanelExpansion")
             it.println("transitionToFullShadeProgress: $transitionToFullShadeProgress")
             it.println("lastAppliedBlur: $lastAppliedBlur")
+            it.println("userDefinedMaxBlurRadius: $userDefinedMaxBlurRadius")
         }
     }
 
@@ -697,7 +744,7 @@ constructor(
 
         /** Depth ratio of the current blur radius. */
         val ratio
-            get() = blurUtils.ratioOfBlurRadius(radius)
+            get() = this@NotificationShadeDepthController.getShadeRatioOfBlurRadius(radius)
 
         /** Radius that we're animating to. */
         private var pendingRadius = -1
