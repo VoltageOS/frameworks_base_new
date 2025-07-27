@@ -14493,6 +14493,10 @@ public final class Settings {
         @Protected(restrictReads = false, readWrite = KnownSystemPackage.SETTINGS)
         public static final String NETWORK_LOCATION = "network_location";
 
+        /** @hide */
+        @Protected(restrictReads = false, readWrite = KnownSystemPackage.SETTINGS)
+        public static final String GEOCODER = "geocoder";
+
         // ExtSettings END
 
         // NOTE: If you add new settings here, be sure to add them to
