@@ -45,8 +45,11 @@ import java.util.concurrent.TimeoutException;
  * example one might contain the full street address of the closest building, while another might
  * contain only a city name and postal code.
  *
- * <p>Use the isPresent() method to determine whether a Geocoder implementation exists on the
+ * <p>The android.permission.INTERNET permission is required to geocode or else an error will be
+ * returned. Use the isPresent() method to determine whether a Geocoder implementation exists on the
  * current device. If no implementation is present, any attempt to geocode will result in an error.
+ * For compatibility, the isPresent() method also returns false if you don't have the
+ * android.permission.INTERNET permission.
  *
  * <p>Geocoder implementations are only required to make a best effort to return results in the
  * chosen locale. Note that geocoder implementations may return results in other locales if they
