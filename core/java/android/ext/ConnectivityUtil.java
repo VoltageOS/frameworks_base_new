@@ -26,9 +26,10 @@ public class ConnectivityUtil {
         if (packageNames == null) {
             return false;
         }
+        int userId = UserHandle.getUserId(uid);
         for (String packageName : packageNames) {
             try {
-                ApplicationInfo appInfo = pm.getApplicationInfo(packageName, 0);
+                ApplicationInfo appInfo = pm.getApplicationInfoAsUser(packageName, 0, userId);
                 if (appInfo.isSystemApp()) {
                     return true;
                 }
