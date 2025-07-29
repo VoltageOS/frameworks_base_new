@@ -16,23 +16,27 @@
 
 package com.android.wm.shell.flicker.bubbles.testcase
 
+import android.tools.traces.component.ComponentNameMatcher
+import com.android.wm.shell.flicker.bubbles.utils.BubbleFlickerSubjects
 import org.junit.Test
 
 /**
- * Verifies collapsing a bubble, which verifies:
- * - [BubbleAlwaysVisibleTestCases]
- * - [BubbleAppBecomesNotExpandedTestCases]
- * - [LauncherAlwaysVisibleTestCases]
+ * Verifies [ComponentNameMatcher.LAUNCHER] is always visible.
  */
-interface CollapseBubbleAppTestCases : BubbleAlwaysVisibleTestCases,
-    BubbleAppBecomesNotExpandedTestCases, LauncherAlwaysVisibleTestCases
-{
-
+interface LauncherAlwaysVisibleTestCases : BubbleFlickerSubjects {
     /**
-     * Verifies bubble app window is invisible at the end of the transition.
+     * Verifies the launcher window is always visible.
      */
     @Test
-    override fun appWindowIsInvisibleAtEnd() {
-        wmStateSubjectAtEnd.isAppWindowInvisible(testApp, mustExist = true)
+    fun launcherWindowIsAlwaysVisible() {
+        wmTraceSubject.isAppWindowVisible(ComponentNameMatcher.LAUNCHER).forAllEntries()
+    }
+
+    /**
+     * Verifies the launcher layer is always visible.
+     */
+    @Test
+    fun launcherLayerIsAlwaysVisible() {
+        layersTraceSubject.isVisible(ComponentNameMatcher.LAUNCHER).forAllEntries()
     }
 }
