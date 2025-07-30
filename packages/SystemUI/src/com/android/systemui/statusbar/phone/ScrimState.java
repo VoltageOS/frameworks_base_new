@@ -91,7 +91,7 @@ public enum ScrimState {
             if (Flags.notificationShadeBlur()) {
                 mBehindTint = Color.TRANSPARENT;
                 mNotifTint = ShadeColors.notificationScrim(mScrimBehind.getResources(),
-                        mIsBlurSupported.get());
+                        mIsBlurSupported.get(), mScrimBehind.getContext());
                 mBehindAlpha = 0.0f;
                 mNotifAlpha = 0.0f;
                 mFrontAlpha = 0.0f;
@@ -190,10 +190,10 @@ public enum ScrimState {
         public void prepare(ScrimState previousState) {
             if (Flags.notificationShadeBlur()) {
                 mBehindTint = ShadeColors.shadePanel(mScrimBehind.getResources(),
-                        mIsBlurSupported.get());
+                        mIsBlurSupported.get(), mScrimBehind.getContext());
                 mBehindAlpha = Color.alpha(mBehindTint) / 255.0f;
                 mNotifTint = ShadeColors.notificationScrim(mScrimBehind.getResources(),
-                        mIsBlurSupported.get());
+                        mIsBlurSupported.get(), mScrimBehind.getContext());
                 mNotifAlpha = Color.alpha(mNotifTint) / 255.0f;
                 mFrontAlpha = 0.0f;
             } else {
@@ -204,6 +204,7 @@ public enum ScrimState {
                     mNotifAlpha = 1f;
                     mFrontAlpha = 0f;
                     mBehindTint = mBackgroundColor;
+                    mNotifTint = mBackgroundColor;
                     return;
                 }
                 mBehindAlpha = mClipQsScrim ? 1 : mDefaultScrimAlpha;
@@ -226,6 +227,7 @@ public enum ScrimState {
         public void prepare(ScrimState previousState) {
             mBehindAlpha = 0;
             mFrontAlpha = 0;
+            mNotifAlpha = 0;
         }
     },
 
@@ -325,10 +327,10 @@ public enum ScrimState {
                 mBlankScreen = true;
             } else if (Flags.notificationShadeBlur()) {
                 mBehindTint = ShadeColors.shadePanel(mScrimBehind.getResources(),
-                        mIsBlurSupported.get());
+                        mIsBlurSupported.get(), mScrimBehind.getContext());
                 mBehindAlpha = Color.alpha(mBehindTint) / 255.0f;
                 mNotifTint = ShadeColors.notificationScrim(mScrimBehind.getResources(),
-                        mIsBlurSupported.get());
+                        mIsBlurSupported.get(), mScrimBehind.getContext());
                 mNotifAlpha = Color.alpha(mNotifTint) / 255.0f;
                 mFrontAlpha = 0.0f;
                 return;
