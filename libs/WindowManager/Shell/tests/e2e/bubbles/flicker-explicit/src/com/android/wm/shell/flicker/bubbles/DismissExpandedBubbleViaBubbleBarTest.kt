@@ -20,68 +20,75 @@ import android.platform.test.annotations.Presubmit
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.tools.NavBar
 import android.tools.device.apphelpers.MessagingAppHelper
-import android.tools.traces.component.ComponentNameMatcher.Companion.BUBBLE
 import android.tools.traces.component.ComponentNameMatcher.Companion.LAUNCHER
+import android.tools.traces.component.IComponentNameMatcher
+import androidx.test.filters.FlakyTest
 import androidx.test.filters.RequiresDevice
 import com.android.wm.shell.Flags
 import com.android.wm.shell.Utils
-import com.android.wm.shell.flicker.bubbles.testcase.MultipleBubbleExpandBubbleAppTestCases
+import com.android.wm.shell.flicker.bubbles.testcase.BubbleAlwaysVisibleTestCases
+import com.android.wm.shell.flicker.bubbles.testcase.BubbleAppBecomesNotExpandedTestCases
 import com.android.wm.shell.flicker.bubbles.utils.ApplyPerParameterRule
-import com.android.wm.shell.flicker.bubbles.utils.BubbleFlickerTestHelper.dismissBubbleAppViaBubbleView
+import com.android.wm.shell.flicker.bubbles.utils.BubbleFlickerTestHelper.collapseBubbleAppViaTouchOutside
+import com.android.wm.shell.flicker.bubbles.utils.BubbleFlickerTestHelper.dismissBubbleAppViaBubbleBarItem
 import com.android.wm.shell.flicker.bubbles.utils.BubbleFlickerTestHelper.launchBubbleViaBubbleMenu
-import com.android.wm.shell.flicker.bubbles.utils.BubbleFlickerTestHelper.launchBubbleViaOverflow
 import com.android.wm.shell.flicker.bubbles.utils.FlickerPropertyInitializer
 import com.android.wm.shell.flicker.bubbles.utils.RecordTraceWithTransitionRule
+import org.junit.Assume.assumeTrue
+import org.junit.Before
 import org.junit.FixMethodOrder
 import org.junit.Rule
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.MethodSorters
 import org.junit.runners.Parameterized
 
 /**
- * Test enter bubble via clicking the overflow view in the overflow page.
+ * Test dismissing one of bubble apps by dragging a bubble item from bubble bar to dismiss view.
  *
- * To run this test: `atest WMShellExplicitFlickerTestsBubbles:EnterBubbleViaOverflowMenuTest`
+ * To run this test:
+ *     `atest WMShellExplicitFlickerTestsBubbles:DismissExpandedBubbleViaBubbleBarTest`
  *
  * Pre-steps:
  * ```
- *     Launch [testApp] into bubble and dismiss. -> It's to make [testApp] shown in overflow page.
- *     Launch [messageApp] into bubble.
+ *     1. Launch [previousApp] into bubble and collapse.
+ *     2. Launch [testApp] into bubble.
  * ```
  *
  * Actions:
  * ```
- *     Switch to the overflow page
- *     Launch [testApp] into bubble again by clicking the overflow view
+ *     Drag the [testApp] bubble bar item from the bubble bar to the dismiss view.
+ *     [previousApp] will be expanded.
  * ```
  *
  * Verified tests:
  * - [BubbleFlickerTestBase]
- * - [MultipleBubbleExpandBubbleAppTestCases]
+ * - [BubbleAlwaysVisibleTestCases]
+ * - [BubbleAppBecomesNotExpandedTestCases]
  */
-@RequiresFlagsEnabled(Flags.FLAG_ENABLE_CREATE_ANY_BUBBLE)
+@FlakyTest(bugId = 430273288)
+@RequiresFlagsEnabled(Flags.FLAG_ENABLE_CREATE_ANY_BUBBLE, Flags.FLAG_ENABLE_BUBBLE_BAR)
 @RequiresDevice
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Presubmit
 @RunWith(Parameterized::class)
-class EnterBubbleViaOverflowMenuTest(navBar: NavBar) : BubbleFlickerTestBase(),
-    MultipleBubbleExpandBubbleAppTestCases {
+class DismissExpandedBubbleViaBubbleBarTest(navBar: NavBar) :
+    BubbleFlickerTestBase(),
+    BubbleAlwaysVisibleTestCases,
+    BubbleAppBecomesNotExpandedTestCases {
 
     companion object : FlickerPropertyInitializer() {
-        private val messageApp = MessagingAppHelper()
-
+        private val previousApp = MessagingAppHelper(instrumentation)
         private val recordTraceWithTransitionRule = RecordTraceWithTransitionRule(
             setUpBeforeTransition = {
-                // Launch and dismiss a bubble app to make it show in overflow.
+                launchBubbleViaBubbleMenu(previousApp, tapl, wmHelper)
+                collapseBubbleAppViaTouchOutside(previousApp, wmHelper)
                 launchBubbleViaBubbleMenu(testApp, tapl, wmHelper)
-                dismissBubbleAppViaBubbleView(testApp, wmHelper)
-                // Launch message app to bubble to make overflow show.
-                launchBubbleViaBubbleMenu(messageApp, tapl, wmHelper)
             },
-            transition = { launchBubbleViaOverflow(testApp, wmHelper) },
+            transition = { dismissBubbleAppViaBubbleBarItem(testApp, wmHelper, previousApp) },
             tearDownAfterTransition = {
-                testApp.exit()
-                messageApp.exit()
+                testApp.exit(wmHelper)
+                previousApp.exit(wmHelper)
             }
         )
 
@@ -99,24 +106,34 @@ class EnterBubbleViaOverflowMenuTest(navBar: NavBar) : BubbleFlickerTestBase(),
     override val traceDataReader
         get() = recordTraceWithTransitionRule.reader
 
-    override fun focusChanges() {
-        eventLogSubject.focusChanges(
-            messageApp.toWindowName(),
-            // Switch to the overflow page
-            BUBBLE.toWindowName(),
-            // Launch the test app to bubble
-            testApp.toWindowName()
-        )
+    override val previousApp: IComponentNameMatcher
+        get() = DismissExpandedBubbleViaBubbleBarTest.previousApp
+
+    @Before
+    override fun setUp() {
+        assumeTrue(tapl.isTablet)
+        super.setUp()
     }
 
-    override fun appWindowReplacesPreviousAppAsTopWindow() {
+    @Test
+    override fun previousAppWindowReplacesTestAppAsTopWindow() {
         wmTraceSubject
-            // Before clicking the overflow, the focused app is messageApp.
-            .isAppWindowOnTop(messageApp)
-            .then()
-            .isAppWindowOnTop(LAUNCHER)
-            .then()
             .isAppWindowOnTop(testApp)
+            .then()
+            // Launcher becomes the top when touching task bar
+            .isAppWindowOnTop(LAUNCHER, isOptional = true)
+            .then()
+            .isAppWindowOnTop(previousApp)
             .forAllEntries()
+    }
+
+    @Test
+    override fun focusChanges() {
+        eventLogSubject.focusChanges(
+            testApp.toWindowName(),
+            // Launcher get focus when tapping bubble bar
+            LAUNCHER.toWindowName(),
+            previousApp.toWindowName()
+        )
     }
 }
