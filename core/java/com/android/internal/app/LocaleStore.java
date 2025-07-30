@@ -464,8 +464,6 @@ public class LocaleStore {
 
         Set<String> simCountries = getSimCountries(context);
 
-        final boolean isInDeveloperMode = Settings.Global.getInt(context.getContentResolver(),
-                Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) != 0;
         Set<Locale> numberSystemLocaleList = new HashSet<>();
         for (String localeId : LocalePicker.getSupportedLocales(context)) {
             if (Locale.forLanguageTag(localeId).getUnicodeLocaleType("nu") != null) {
@@ -479,14 +477,8 @@ public class LocaleStore {
             LocaleInfo li = new LocaleInfo(localeId);
 
             if (LocaleList.isPseudoLocale(li.getLocale())) {
-                if (isInDeveloperMode) {
-                    li.setTranslated(true);
-                    li.mIsPseudo = true;
-                    li.mSuggestionFlags |= LocaleInfo.SUGGESTION_TYPE_SIM;
-                } else {
-                    // Do not display pseudolocales unless in development mode.
-                    continue;
-                }
+                // Do not display pseudolocales
+                continue;
             }
 
             if (simCountries.contains(li.getLocale().getCountry())) {
