@@ -14,13 +14,23 @@
  * limitations under the License.
  */
 
-package com.android.systemui.statusbar.pipeline.airplane.data.repository
+package com.android.systemui.statusbar.pipeline.airplane.shared.impl
 
-import com.android.systemui.statusbar.pipeline.airplane.data.repository.impl.AirplaneModeRepositoryImpl
-import dagger.Binds
+import com.android.systemui.dagger.SysUISingleton
+import com.android.systemui.log.table.TableLogBuffer
+import com.android.systemui.log.table.TableLogBufferFactory
+import com.android.systemui.statusbar.pipeline.airplane.shared.AirplaneTableLog
 import dagger.Module
+import dagger.Provides
 
 @Module
-interface AirplaneModeDataLayerModule {
-    @Binds fun airplaneModeRepository(impl: AirplaneModeRepositoryImpl): AirplaneModeRepository
+public interface AirplaneModeSharedModule {
+    public companion object {
+        @Provides
+        @SysUISingleton
+        @AirplaneTableLog
+        public fun provideAirplaneTableLogBuffer(factory: TableLogBufferFactory): TableLogBuffer {
+            return factory.create("AirplaneTableLog", 30)
+        }
+    }
 }
