@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.android.systemui.screencapture.common.data.repository
+package com.android.systemui.screencapture.common.domain.interactor
 
 import com.android.systemui.kosmos.Kosmos
+import com.android.systemui.screencapture.common.data.repository.fakeScreenCaptureLabelRepository
 
-val Kosmos.fakeScreenCaptureRecentTaskRepository by
-    Kosmos.Fixture { FakeScreenCaptureRecentTaskRepository() }
+var Kosmos.screenCaptureLabelInteractor by
+    Kosmos.Fixture { ScreenCaptureLabelInteractor(fakeScreenCaptureLabelRepository) }
