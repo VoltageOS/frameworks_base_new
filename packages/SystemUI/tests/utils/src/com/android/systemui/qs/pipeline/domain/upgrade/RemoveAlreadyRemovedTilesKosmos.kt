@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,10 @@
  * limitations under the License.
  */
 
-package com.android.systemui.qs.pipeline.shared.logging
+package com.android.systemui.qs.pipeline.domain.upgrade
 
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.log.logcatLogBuffer
+import com.android.systemui.qs.pipeline.domain.interactor.currentTilesInteractor
 
-/** mock */
-var Kosmos.qsLogger: QSPipelineLogger by
-    Kosmos.Fixture {
-        QSPipelineLogger(
-            logcatLogBuffer(QSPipelineLogger.TILE_LIST_TAG),
-            logcatLogBuffer(QSPipelineLogger.AUTO_ADD_TAG),
-            logcatLogBuffer(QSPipelineLogger.RESTORE_TAG),
-            logcatLogBuffer(QSPipelineLogger.UPGRADER_TAG),
-        )
-    }
+val Kosmos.removeAlreadyRemovedTiles by
+    Kosmos.Fixture { RemoveAlreadyRemovedTiles(currentTilesInteractor) }
