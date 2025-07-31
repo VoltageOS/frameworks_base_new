@@ -24,7 +24,7 @@ import com.android.wm.shell.Flags
 import com.android.wm.shell.Utils
 import com.android.wm.shell.flicker.bubbles.testcase.CollapseBubbleAppTestCases
 import com.android.wm.shell.flicker.bubbles.utils.ApplyPerParameterRule
-import com.android.wm.shell.flicker.bubbles.utils.BubbleFlickerTestHelper.collapseBubbleAppViaBackKey
+import com.android.wm.shell.flicker.bubbles.utils.BubbleFlickerTestHelper.collapseBubbleAppViaTouchOutside
 import com.android.wm.shell.flicker.bubbles.utils.BubbleFlickerTestHelper.launchBubbleViaBubbleMenu
 import com.android.wm.shell.flicker.bubbles.utils.FlickerPropertyInitializer
 import com.android.wm.shell.flicker.bubbles.utils.RecordTraceWithTransitionRule
@@ -33,9 +33,9 @@ import org.junit.Rule
 import org.junit.runners.MethodSorters
 
 /**
- * Test collapse bubble app via clicking back key.
+ * Test collapse bubble app via touching outside the bubble window.
  *
- * To run this test: `atest WMShellExplicitFlickerTestsBubbles:CollapseBubbleViaBackTest`
+ * To run this test: `atest WMShellExplicitFlickerTestsBubbles:CollapseBubbleAppViaTouchOutsideTest`
  *
  * Pre-steps:
  * ```
@@ -44,7 +44,7 @@ import org.junit.runners.MethodSorters
  *
  * Actions:
  * ```
- *     Collapse bubbled [testApp] via back key
+ *     Collapse bubbled [testApp] via touching outside the bubble window
  * ```
  *
  * Verified tests:
@@ -55,13 +55,14 @@ import org.junit.runners.MethodSorters
 @RequiresDevice
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Presubmit
-class CollapseBubbleAppViaBackTest(navBar: NavBar) : BubbleFlickerTestBase(),
+class CollapseBubbleAppViaTouchOutsideTest(navBar: NavBar) :
+    BubbleFlickerTestBase(),
     CollapseBubbleAppTestCases
 {
     companion object : FlickerPropertyInitializer() {
         private val recordTraceWithTransitionRule = RecordTraceWithTransitionRule(
             setUpBeforeTransition = { launchBubbleViaBubbleMenu(testApp, tapl, wmHelper) },
-            transition = { collapseBubbleAppViaBackKey(testApp, tapl, wmHelper) },
+            transition = { collapseBubbleAppViaTouchOutside(testApp, wmHelper) },
             tearDownAfterTransition = { testApp.exit(wmHelper) }
         )
     }
