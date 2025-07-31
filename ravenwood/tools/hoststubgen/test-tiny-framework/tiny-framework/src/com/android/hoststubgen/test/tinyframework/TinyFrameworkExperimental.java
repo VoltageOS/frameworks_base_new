@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,24 @@
  */
 package com.android.hoststubgen.test.tinyframework;
 
-import android.hosttest.annotation.HostSideTestClassLoadHook;
 import android.hosttest.annotation.HostSideTestKeep;
-import android.hosttest.annotation.HostSideTestStaticInitializerKeep;
+import android.hosttest.annotation.HostSideTestSubstitute;
+import android.hosttest.annotation.HostSideTestThrow;
 
-@HostSideTestClassLoadHook(
-        "com.android.hoststubgen.test.tinyframework.TinyFrameworkHooks.onClassLoaded")
-@HostSideTestKeep
-@HostSideTestStaticInitializerKeep
-public class TinyFrameworkClassWithInitializerStub {
-    static {
-        sInitialized = true;
+public class TinyFrameworkExperimental {
+
+    public void simple() {}
+
+    @HostSideTestKeep
+    public void keep() {}
+
+    @HostSideTestSubstitute(suffix = "_host")
+    public void replace() {
+        throw new RuntimeException();
     }
 
-    @HostSideTestKeep
-    public static boolean sInitialized;
-    @HostSideTestKeep
-    public static Object sObject = new Object();
+    private void replace_host() {}
+
+    @HostSideTestThrow
+    public void unsupported() {}
 }
