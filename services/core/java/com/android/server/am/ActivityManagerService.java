@@ -19878,11 +19878,19 @@ public class ActivityManagerService extends IActivityManager.Stub
             mLocalPowerManager.setPowerMode(Mode.LAUNCH, false);
             mLocalPowerManager.setPowerMode(Mode.LAUNCH, true);
             mLocalPowerManager.setPowerMode(PowerManagerInternal.MODE_FIXED_PERFORMANCE, true);
+            if (reason.equals("sysui")) {
+                String fglimit = SystemProperties.get("persist.sys.voltage_cpu_limit_ui", "0-4");
+                executeAdjustCpusetCpus("fg", fglimit);
+            }
             currentReason = reason;
         } else {
             if (!reason.equals(currentReason)) return;
             mLocalPowerManager.setPowerMode(Mode.LAUNCH, false);
             mLocalPowerManager.setPowerMode(PowerManagerInternal.MODE_FIXED_PERFORMANCE, false);
+            if (reason.equals("sysui")) {
+                String fgCpu = SystemProperties.get("persist.sys.voltage_cpu_fg", "0-5");
+                executeAdjustCpusetCpus("fg", fgCpu);
+            }
             currentReason = "";
         }
     }
