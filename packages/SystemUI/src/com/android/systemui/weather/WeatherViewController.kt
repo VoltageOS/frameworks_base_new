@@ -17,6 +17,7 @@ package com.android.systemui.weather
 
 import android.content.ContentValues
 import android.content.Context
+import android.net.Uri
 import android.os.UserHandle
 import android.provider.Settings
 import android.util.Log
@@ -37,7 +38,8 @@ class WeatherViewController(
     private val weatherInfoView: View,
 ) : OmniJawsClient.OmniJawsObserver {
 
-    private val weatherClient = OmniJawsClient(context)
+    // 1. Use the new singleton getter instead of the old constructor
+    private val weatherClient = OmniJawsClient.get()
     private var weatherInfo: OmniJawsClient.WeatherInfo? = null
     private val scope = CoroutineScope(Dispatchers.Main.immediate + SupervisorJob())
 
@@ -99,9 +101,11 @@ class WeatherViewController(
         scope.launch {
             if (!settings.weatherEnabled) {
                 hideAllViews()
-                weatherClient.removeObserver(this@WeatherViewController)
+                // 2. Pass context to removeObserver
+                weatherClient.removeObserver(context, this@WeatherViewController)
             } else {
-                weatherClient.addObserver(this@WeatherViewController)
+                // 3. Pass context to addObserver
+                weatherClient.addObserver(context, this@WeatherViewController)
                 updateWeather()
             }
             updateViewVisibility(weatherInfoView, settings.weatherEnabled)
@@ -113,11 +117,13 @@ class WeatherViewController(
     override fun weatherUpdated() = updateWeather()
 
     private fun forceRefresh() {
-        if (weatherClient.isOmniJawsEnabled) {
+        // 4. Pass context to isOmniJawsEnabled
+        if (weatherClient.isOmniJawsEnabled(context)) {
             val values = ContentValues().apply {
                 put("update", true)
             }
-            context.contentResolver.update(OmniJawsClient.CONTROL_URI, values, "", null)
+            // 5. Use the locally defined CONTROL_URI
+            context.contentResolver.update(CONTROL_URI, values, "", null)
         }
     }
 
@@ -130,7 +136,8 @@ class WeatherViewController(
         scope.launch {
             try {
                 val localWeatherInfo = withContext(Dispatchers.IO) {
-                    weatherClient.queryWeather()
+                    // 6. Pass context to queryWeather
+                    weatherClient.queryWeather(context)
                     weatherClient.weatherInfo
                 }
                 weatherInfo = localWeatherInfo
@@ -138,7 +145,8 @@ class WeatherViewController(
                 localWeatherInfo?.let { info ->
                     updateViewVisibility(weatherIcon, true)
                     updateViewVisibility(weatherTemp, true)
-                    weatherIcon.setImageDrawable(weatherClient.getWeatherConditionImage(info.conditionCode))
+                    // 7. Pass context to getWeatherConditionImage
+                    weatherIcon.setImageDrawable(weatherClient.getWeatherConditionImage(context, info.conditionCode))
                     weatherTemp.text = buildWeatherText(info)
                     weatherTemp.isSelected = true
                 } ?: run {
@@ -181,7 +189,8 @@ class WeatherViewController(
 
     fun removeObserver() {
         scope.cancel()
-        weatherClient.removeObserver(this)
+        // 8. Pass context to removeObserver
+        weatherClient.removeObserver(context, this)
         statusBarStateController.removeCallback(statusBarStateListener)
     }
 
@@ -198,6 +207,9 @@ class WeatherViewController(
     )
 
     companion object {
+        // 9. Define CONTROL_URI here since it was removed from OmniJawsClient
+        private val CONTROL_URI = Uri.parse("content://org.omnirom.omnijaws.provider/control")
+
         private const val LOCKSCREEN_WEATHER_ENABLED = "lockscreen_weather_enabled"
         private const val LOCKSCREEN_WEATHER_LOCATION = "lockscreen_weather_location"
         private const val LOCKSCREEN_WEATHER_TEXT = "lockscreen_weather_text"
