@@ -34,6 +34,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
 import android.widget.TextView
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -175,6 +176,8 @@ constructor(
     private var cutout: DisplayCutout? = null
     private var lastInsets: WindowInsets? = null
     private var nextAlarmIntent: PendingIntent? = null
+
+    private val isDark = MutableStateFlow(true)
 
     private val showBatteryEstimate = MutableStateFlow(false)
 
@@ -332,11 +335,19 @@ constructor(
             }
 
             override fun onThemeChanged() {
+                updateIsDark()
                 updateShadeHeaderColors()
             }
             
             override fun onUiModeChanged() {
+                updateIsDark()
                 updateShadeHeaderColors()
+            }
+
+            private fun updateIsDark() {
+                val currentNightMode =
+                    resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+                isDark.value = currentNightMode == Configuration.UI_MODE_NIGHT_YES
             }
         }
 
@@ -371,6 +382,9 @@ constructor(
         }
 
     override fun onInit() {
+        val currentNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        isDark.value = currentNightMode == Configuration.UI_MODE_NIGHT_YES
+
         variableDateViewControllerFactory.create(date as VariableDateView).init()
 
         iconManager = tintedIconManagerFactory.create(iconContainer, StatusBarLocation.QS)
@@ -387,10 +401,11 @@ constructor(
                     setContent {
                         id = R.id.battery_meter_composable_view
                         val showBatteryEstimate by showBatteryEstimate.collectAsStateWithLifecycle()
+                        val isDarkTheme by isDark.collectAsStateWithLifecycle()
                         BatteryWithEstimate(
                             modifier = Modifier.height(17.dp).wrapContentWidth(),
+                            isDark = { isDarkTheme },
                             viewModelFactory = batteryViewModelFactory,
-                            isDark = { true },
                             showEstimate = showBatteryEstimate,
                         )
                     }
