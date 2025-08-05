@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package com.android.systemui.screencapture.record.domain.interactor
+package com.android.systemui.screencapture.sharescreen.ui.viewmodel
 
-import com.android.systemui.Flags
-import com.android.systemui.dagger.SysUISingleton
+import com.android.systemui.lifecycle.HydratedActivatable
+import com.android.systemui.screencapture.domain.interactor.ScreenCaptureUiInteractor
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 
-@SysUISingleton
-object ScreenCaptureRecordFeaturesInteractor {
+class ScreenCaptureShareScreenViewModel
+@AssistedInject
+constructor(interactor: ScreenCaptureUiInteractor) : HydratedActivatable() {
+    val isLargeScreen: Boolean? by interactor.isLargeScreen.hydratedStateOf(null)
 
-    val isNewScreenRecordToolbarEnabled: Boolean
-        get() = Flags.newScreenRecordToolbar()
-
-    val isLargeScreenScreencaptureEnabled: Boolean
-        get() = Flags.largeScreenScreencapture()
-
-    val shouldShowNewToolbar: Boolean
-        get() = isNewScreenRecordToolbarEnabled || isLargeScreenScreencaptureEnabled
+    @AssistedFactory
+    interface Factory {
+        fun create(): ScreenCaptureShareScreenViewModel
+    }
 }
