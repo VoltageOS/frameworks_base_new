@@ -33,10 +33,14 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.app.Fragment;
+import android.database.ContentObserver;
 import android.content.res.Resources;
 import android.graphics.Insets;
 import android.graphics.Rect;
 import android.graphics.Region;
+import android.os.Handler;
+import android.os.UserHandle;
+import android.provider.Settings;
 import android.util.IndentingPrintWriter;
 import android.util.Log;
 import android.util.MathUtils;
@@ -230,6 +234,7 @@ public class QuickSettingsControllerImpl implements QuickSettingsController, Dum
     private float mQuickQsHeaderHeight;
     private int mPanelTopMargin;
     private int mExpandedMediaHeight;
+    private int mQQSBrightnessSliderHeight;
     private int mQQsMinHeight;
     /**
      * Determines if QS should be already expanded when expanding shade.
@@ -300,6 +305,9 @@ public class QuickSettingsControllerImpl implements QuickSettingsController, Dum
     private ApplyClippingImmediatelyListener mApplyClippingImmediatelyListener;
     private FlingQsWithoutClickListener mFlingQsWithoutClickListener;
     private ExpansionHeightSetToMaxListener mExpansionHeightSetToMaxListener;
+    private boolean mQQSBrightnessEnabled = true;
+    private final ContentObserver mBrightnessObserver;
+
     private final QS.HeightListener mQsHeightListener = this::onHeightChanged;
     private final Runnable mQsCollapseExpandAction = this::collapseOrExpandQs;
     private final QS.ScrollListener mQsScrollListener = this::onScroll;
@@ -396,6 +404,20 @@ public class QuickSettingsControllerImpl implements QuickSettingsController, Dum
         mLockscreenShadeTransitionController.addCallback(new LockscreenShadeTransitionCallback());
         dumpManager.registerDumpable(this);
 
+        mBrightnessObserver = new ContentObserver(new Handler(mPanelView.getContext().getMainLooper())) {
+            @Override
+            public void onChange(boolean selfChange) {
+                mQQSBrightnessEnabled = Settings.Secure.getIntForUser(
+                        mPanelView.getContext().getContentResolver(),
+                        "qs_brightness_slider_enabled",
+                        2,
+                        UserHandle.USER_CURRENT
+                ) == 2;
+            }
+        };
+        // Get initial value
+        mBrightnessObserver.onChange(true);
+
         mWindowManagerProvider = windowManagerProvider;
     }
 
@@ -463,6 +485,10 @@ public class QuickSettingsControllerImpl implements QuickSettingsController, Dum
         mQQsMinHeight =
                 mResources.getDimensionPixelSize(
                         R.dimen.qqs_min_height);
+
+        mQQSBrightnessSliderHeight =
+                mResources.getDimensionPixelSize(
+                        R.dimen.qs_brightness_slider_height);
 
         mEnableClipping = mResources.getBoolean(R.bool.qs_enable_clipping);
         updateGestureInsetsCache();
@@ -2218,11 +2244,12 @@ public class QuickSettingsControllerImpl implements QuickSettingsController, Dum
                     if (QSComposeFragment.isEnabled() && mPreviouslyVisibleMedia && !visible) {
                         updateHeightsOnShadeLayoutChange();
                         mPanelViewControllerLazy.get().positionClockAndNotifications();
+                        int minQQSHeight = mQQsMinHeight - (mQQSBrightnessEnabled ? 0 : mQQSBrightnessSliderHeight);
                         // the current calculation is not reliable at all, there were times 
                         // that it is still including the media height which causes the stack scroller to not react
                         // to the top padding changes
                         int calculatedTopPadding = mPanelTopMargin + getHeaderHeight() - mExpandedMediaHeight;
-                        int topPadding = Math.max(calculatedTopPadding, mQQsMinHeight);
+                        int topPadding = Math.max(calculatedTopPadding, minQQSHeight);
                         // update notif shade intractor
                         mPanelViewControllerLazy.get().requestScrollerTopPaddingUpdate();
                         // do not wait for pending top padding changes. force update the notif stack srolllayout
@@ -2247,6 +2274,12 @@ public class QuickSettingsControllerImpl implements QuickSettingsController, Dum
             } else {
                 mNotificationStackScrollLayoutController.setQsHeader((ViewGroup) mQs.getHeader());
             }
+            mPanelView.getContext().getContentResolver().registerContentObserver(
+                    Settings.Secure.getUriFor("qs_brightness_slider_enabled"),
+                    false,
+                    mBrightnessObserver,
+                    UserHandle.USER_ALL
+            );
             mQs.setScrollListener(mQsScrollListener);
             updateExpansion();
         }
@@ -2265,6 +2298,8 @@ public class QuickSettingsControllerImpl implements QuickSettingsController, Dum
                     mNotificationStackScrollLayoutController.setQsHeader(null);
                 }
                 mQs = null;
+                mPanelView.getContext().getContentResolver()
+                        .unregisterContentObserver(mBrightnessObserver);
             }
         }
     }
