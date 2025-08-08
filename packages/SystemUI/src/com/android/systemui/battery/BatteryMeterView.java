@@ -623,15 +623,16 @@ public class BatteryMeterView extends LinearLayout implements DarkReceiver {
 
         // some boolean algebra, don't freak out
         final boolean chargeForcePercent = showBatteryPercentCharging && isCharging();
-        final boolean drawPercent = mShowPercentMode == MODE_DEFAULT
-                && (showBatteryPercent || chargeForcePercent);
+        final boolean showAnyPercent = showBatteryPercent || chargeForcePercent;
+        final boolean drawPercent = mShowPercentMode == MODE_DEFAULT && showAnyPercent;
         final boolean isEstimate = mShowPercentMode == MODE_ESTIMATE;
         final boolean isText = mBatteryStyle == BATTERY_STYLE_TEXT;
-        final boolean drawInside = drawPercent && userDrawPercentInside;
+        final boolean drawInside = userDrawPercentInside && showAnyPercent;
+        final boolean drawOutside = drawPercent && (!drawInside || chargeForcePercent);
 
         // always draw when we show estimate or in text mode
         // don't show if we're set to draw inside or we disabled % entirely
-        if (isEstimate || isText || (drawPercent && (!drawInside || chargeForcePercent))) {
+        if (isEstimate || isText || drawOutside) {
             // draw next to the icon
             if (mThemedDrawable != null)
                 mThemedDrawable.setShowPercent(false);
