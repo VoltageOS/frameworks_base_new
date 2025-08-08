@@ -260,7 +260,7 @@ constructor(
             }
 
             override fun onThemeChanged() {
-                updatePlayers(recreateMedia = false)
+                updatePlayers(recreateMedia = true)
                 inflateSettingsButton()
             }
 
@@ -636,7 +636,7 @@ constructor(
             val existingPlayer = MediaPlayerData.getMediaPlayer(key)
             if (existingPlayer == null) {
                 bgExecutor.execute {
-                    val mediaViewHolder = createMediaViewHolderInBg()
+                    val mediaViewHolder = MediaViewHolder.create(LayoutInflater.from(context), mediaContent)
                     mediaViewHolder.titleText.gravity = if (isRtl) Gravity.RIGHT else Gravity.LEFT
                     mediaViewHolder.artistText.gravity = if (isRtl) Gravity.RIGHT else Gravity.LEFT
                     // Add the new player in the main thread.
