@@ -11,20 +11,7 @@
  * KIND, either express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package com.android.systemui.customization.clocks
 
-import android.content.Context
-import android.content.res.Resources
-import android.os.Vibrator
-import com.android.systemui.log.core.MessageBuffer
-import com.android.systemui.plugins.keyguard.ui.clocks.ClockSettings
+package com.android.systemui.plugins.keyguard.data.model
 
-data class ClockContext(
-    val context: Context,
-    val resources: Resources,
-    val settings: ClockSettings,
-    val typefaceCache: TypefaceCache,
-    val messageBuffer: MessageBuffer,
-    val vibrator: Vibrator?,
-    val timeKeeper: TimeKeeper,
-)
+data class AlarmData(val nextAlarmMillis: Long?, val descriptionId: String?)

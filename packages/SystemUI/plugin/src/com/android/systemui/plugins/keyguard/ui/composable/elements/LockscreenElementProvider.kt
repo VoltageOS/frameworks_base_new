@@ -11,20 +11,18 @@
  * KIND, either express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package com.android.systemui.customization.clocks
 
-import android.content.Context
-import android.content.res.Resources
-import android.os.Vibrator
-import com.android.systemui.log.core.MessageBuffer
-import com.android.systemui.plugins.keyguard.ui.clocks.ClockSettings
+package com.android.systemui.plugins.keyguard.ui.composable.elements
 
-data class ClockContext(
-    val context: Context,
-    val resources: Resources,
-    val settings: ClockSettings,
-    val typefaceCache: TypefaceCache,
-    val messageBuffer: MessageBuffer,
-    val vibrator: Vibrator?,
-    val timeKeeper: TimeKeeper,
-)
+import com.android.systemui.plugins.annotations.GeneratedImport
+import com.android.systemui.plugins.annotations.ProtectedInterface
+import com.android.systemui.plugins.annotations.ProtectedReturn
+
+@ProtectedInterface
+@GeneratedImport("java.util.ArrayList")
+/** Provides Lockscreen Elements for use by the lockscreen layout */
+interface LockscreenElementProvider {
+    @get:ProtectedReturn("return new ArrayList<LockscreenElement>();")
+    /** Returns the clock views as a map of composable functions. */
+    val elements: List<LockscreenElement>
+}

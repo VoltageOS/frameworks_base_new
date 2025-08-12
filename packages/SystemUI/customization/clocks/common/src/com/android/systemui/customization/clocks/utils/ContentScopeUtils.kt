@@ -11,20 +11,19 @@
  * KIND, either express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-package com.android.systemui.customization.clocks
 
-import android.content.Context
-import android.content.res.Resources
-import android.os.Vibrator
-import com.android.systemui.log.core.MessageBuffer
-import com.android.systemui.plugins.keyguard.ui.clocks.ClockSettings
+package com.android.systemui.customization.clocks.utils
 
-data class ClockContext(
-    val context: Context,
-    val resources: Resources,
-    val settings: ClockSettings,
-    val typefaceCache: TypefaceCache,
-    val messageBuffer: MessageBuffer,
-    val vibrator: Vibrator?,
-    val timeKeeper: TimeKeeper,
-)
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import com.android.compose.animation.scene.ContentScope
+import com.android.compose.animation.scene.ElementKey
+
+object ContentScopeUtils {
+    @Composable
+    /** Convenience method for building an element w/ the default Modifier */
+    fun ContentScope.Element(key: ElementKey, content: @Composable BoxScope.() -> Unit) {
+        Element(key, Modifier, content)
+    }
+}
