@@ -19,17 +19,12 @@ package com.android.systemui.keyguard.ui.viewmodel
 import android.platform.test.flag.junit.FlagsParameterization
 import androidx.test.filters.SmallTest
 import com.android.systemui.SysuiTestCase
-import com.android.systemui.biometrics.authController
 import com.android.systemui.common.ui.data.repository.fakeConfigurationRepository
+import com.android.systemui.flags.EnableSceneContainer
 import com.android.systemui.flags.andSceneContainer
 import com.android.systemui.keyguard.data.repository.fakeKeyguardClockRepository
-import com.android.systemui.keyguard.data.repository.fakeKeyguardTransitionRepository
-import com.android.systemui.keyguard.data.repository.keyguardOcclusionRepository
 import com.android.systemui.keyguard.domain.interactor.keyguardClockInteractor
 import com.android.systemui.keyguard.shared.model.ClockSize
-import com.android.systemui.keyguard.shared.model.KeyguardState
-import com.android.systemui.keyguard.shared.transition.fakeKeyguardTransitionAnimationCallback
-import com.android.systemui.keyguard.shared.transition.keyguardTransitionAnimationCallbackDelegator
 import com.android.systemui.kosmos.Kosmos
 import com.android.systemui.kosmos.collectLastValue
 import com.android.systemui.kosmos.runCurrent
@@ -37,8 +32,6 @@ import com.android.systemui.kosmos.runTest
 import com.android.systemui.kosmos.testScope
 import com.android.systemui.lifecycle.activateIn
 import com.android.systemui.res.R
-import com.android.systemui.scene.domain.interactor.sceneInteractor
-import com.android.systemui.scene.shared.model.Scenes
 import com.android.systemui.shade.data.repository.shadeRepository
 import com.android.systemui.shade.domain.interactor.enableDualShade
 import com.android.systemui.shade.domain.interactor.enableSingleShade
@@ -52,7 +45,6 @@ import com.android.systemui.statusbar.notification.domain.interactor.activeNotif
 import com.android.systemui.testKosmos
 import com.android.systemui.unfold.fakeUnfoldTransitionProgressProvider
 import com.android.systemui.util.mockito.mock
-import com.android.systemui.util.mockito.whenever
 import com.google.common.truth.Truth.assertThat
 import java.util.Locale
 import kotlinx.coroutines.Job
@@ -64,11 +56,11 @@ import platform.test.runner.parameterized.Parameters
 
 @SmallTest
 @RunWith(ParameterizedAndroidJunit4::class)
-class LockscreenContentViewModelTest(flags: FlagsParameterization) : SysuiTestCase() {
+class LockscreenUpperRegionViewModelTest(flags: FlagsParameterization) : SysuiTestCase() {
 
     private val kosmos: Kosmos = testKosmos()
 
-    private lateinit var underTest: LockscreenContentViewModel
+    private lateinit var underTest: LockscreenUpperRegionViewModel
     private val activationJob = Job()
 
     companion object {
@@ -87,24 +79,25 @@ class LockscreenContentViewModelTest(flags: FlagsParameterization) : SysuiTestCa
     fun setup() {
         with(kosmos) {
             shadeRepository.setShadeLayoutWide(false)
-            underTest =
-                lockscreenContentViewModelFactory.create(fakeKeyguardTransitionAnimationCallback)
+            underTest = lockscreenUpperRegionViewModelFactory.create()
             underTest.activateIn(testScope, activationJob)
         }
     }
 
     @Test
-    fun isAmbientIndicationVisible_withUdfps_false() =
+    @EnableSceneContainer
+    fun isNotificationsVisible_hasNotifications_true() =
         kosmos.runTest {
-            whenever(authController.isUdfpsSupported).thenReturn(true)
-            assertThat(underTest.layout.isAmbientIndicationVisible).isFalse()
+            setupState(hasNotifications = true)
+            assertThat(underTest.isNotificationsVisible).isTrue()
         }
 
     @Test
-    fun isAmbientIndicationVisible_withoutUdfps_true() =
+    @EnableSceneContainer
+    fun isNotificationsVisible_hasNoNotifications_false() =
         kosmos.runTest {
-            whenever(authController.isUdfpsSupported).thenReturn(false)
-            assertThat(underTest.layout.isAmbientIndicationVisible).isTrue()
+            setupState(hasNotifications = false)
+            assertThat(underTest.isNotificationsVisible).isFalse()
         }
 
     @Test
@@ -115,104 +108,28 @@ class LockscreenContentViewModelTest(flags: FlagsParameterization) : SysuiTestCa
             val unfoldProvider = fakeUnfoldTransitionProgressProvider
             unfoldProvider.onTransitionStarted()
             runCurrent()
-            assertThat(underTest.layout.unfoldTranslations.start).isZero()
-            assertThat(underTest.layout.unfoldTranslations.end).isZero()
+            assertThat(underTest.unfoldTranslations.start).isZero()
+            assertThat(underTest.unfoldTranslations.end).isZero()
 
             repeat(10) { repetition ->
                 val transitionProgress = 0.1f * (repetition + 1)
                 unfoldProvider.onTransitionProgress(transitionProgress)
                 runCurrent()
-                assertThat(underTest.layout.unfoldTranslations.start)
+                assertThat(underTest.unfoldTranslations.start)
                     .isEqualTo((1 - transitionProgress) * maxTranslation)
-                assertThat(underTest.layout.unfoldTranslations.end)
+                assertThat(underTest.unfoldTranslations.end)
                     .isEqualTo(-(1 - transitionProgress) * maxTranslation)
             }
 
             unfoldProvider.onTransitionFinishing()
             runCurrent()
-            assertThat(underTest.layout.unfoldTranslations.start).isZero()
-            assertThat(underTest.layout.unfoldTranslations.end).isZero()
+            assertThat(underTest.unfoldTranslations.start).isZero()
+            assertThat(underTest.unfoldTranslations.end).isZero()
 
             unfoldProvider.onTransitionFinished()
             runCurrent()
-            assertThat(underTest.layout.unfoldTranslations.start).isZero()
-            assertThat(underTest.layout.unfoldTranslations.end).isZero()
-        }
-
-    @Test
-    fun isContentVisible_whenNotOccluded_visible() =
-        kosmos.runTest {
-            keyguardOcclusionRepository.setShowWhenLockedActivityInfo(false, null)
-            runCurrent()
-            assertThat(underTest.isContentVisible).isTrue()
-        }
-
-    @Test
-    fun isContentVisible_whenOccluded_notVisible() =
-        kosmos.runTest {
-            keyguardOcclusionRepository.setShowWhenLockedActivityInfo(true, null)
-            fakeKeyguardTransitionRepository.transitionTo(
-                KeyguardState.LOCKSCREEN,
-                KeyguardState.OCCLUDED,
-            )
-            runCurrent()
-            assertThat(underTest.isContentVisible).isFalse()
-        }
-
-    @Test
-    fun isContentVisible_whenOccluded_notVisible_evenIfShadeShown() =
-        kosmos.runTest {
-            enableSingleShade()
-            keyguardOcclusionRepository.setShowWhenLockedActivityInfo(true, null)
-            fakeKeyguardTransitionRepository.transitionTo(
-                KeyguardState.LOCKSCREEN,
-                KeyguardState.OCCLUDED,
-            )
-            runCurrent()
-
-            sceneInteractor.snapToScene(Scenes.Shade, "")
-            runCurrent()
-            assertThat(underTest.isContentVisible).isFalse()
-        }
-
-    @Test
-    fun activate_setsDelegate_onKeyguardTransitionAnimationCallbackDelegator() =
-        kosmos.runTest {
-            runCurrent()
-            assertThat(keyguardTransitionAnimationCallbackDelegator.delegate)
-                .isSameInstanceAs(fakeKeyguardTransitionAnimationCallback)
-        }
-
-    @Test
-    fun deactivate_clearsDelegate_onKeyguardTransitionAnimationCallbackDelegator() =
-        kosmos.runTest {
-            activationJob.cancel()
-            runCurrent()
-            assertThat(keyguardTransitionAnimationCallbackDelegator.delegate).isNull()
-        }
-
-    @Test
-    fun isContentVisible_whenOccluded_notVisibleInOccluded_visibleInAod() =
-        kosmos.runTest {
-            enableSingleShade()
-            keyguardOcclusionRepository.setShowWhenLockedActivityInfo(true, null)
-            fakeKeyguardTransitionRepository.transitionTo(
-                from = KeyguardState.LOCKSCREEN,
-                to = KeyguardState.OCCLUDED,
-            )
-            runCurrent()
-
-            sceneInteractor.snapToScene(Scenes.Shade, "")
-            runCurrent()
-            assertThat(underTest.isContentVisible).isFalse()
-
-            fakeKeyguardTransitionRepository.transitionTo(KeyguardState.OCCLUDED, KeyguardState.AOD)
-            runCurrent()
-
-            sceneInteractor.snapToScene(Scenes.Lockscreen, "")
-            runCurrent()
-
-            assertThat(underTest.isContentVisible).isTrue()
+            assertThat(underTest.unfoldTranslations.start).isZero()
+            assertThat(underTest.unfoldTranslations.end).isZero()
         }
 
     private fun Kosmos.setupState(
