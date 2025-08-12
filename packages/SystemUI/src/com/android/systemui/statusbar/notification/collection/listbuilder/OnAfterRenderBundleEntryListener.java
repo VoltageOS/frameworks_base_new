@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,20 +18,21 @@ package com.android.systemui.statusbar.notification.collection.listbuilder;
 
 import androidx.annotation.NonNull;
 
+import com.android.systemui.statusbar.notification.collection.BundleEntry;
 import com.android.systemui.statusbar.notification.collection.NotifPipeline;
-import com.android.systemui.statusbar.notification.collection.NotificationEntry;
 import com.android.systemui.statusbar.notification.collection.render.NotifRowController;
 
-/** See {@link NotifPipeline#addOnAfterRenderEntryListener(OnAfterRenderEntryListener)} */
-public interface OnAfterRenderEntryListener {
+/**
+ * See {@link NotifPipeline#addOnAfterRenderBundleEntryListener(OnAfterRenderBundleEntryListener)}
+ */
+public interface OnAfterRenderBundleEntryListener {
     /**
      * Called at the end of the pipeline after an entry has been handed off to the view layer.
-     * This will be called for every top level entry, every group summary, and every group child.
      *
      * @param entry      the entry to read from.
      * @param controller the object to which data can be pushed.
      */
     void onAfterRenderEntry(
-            @NonNull NotificationEntry entry,
+            @NonNull BundleEntry entry,
             @NonNull NotifRowController controller);
 }
