@@ -618,7 +618,14 @@ public class InternetDialogDelegateLegacy implements
                 mMobileSummaryText.setVisibility(View.GONE);
             }
             mBackgroundExecutor.execute(() -> {
-                Drawable drawable = getSignalStrengthDrawable(mDefaultDataSubId).mutate();
+                Drawable originalDrawable = getSignalStrengthDrawable(mDefaultDataSubId);
+                final Drawable drawable;
+                Drawable.ConstantState cs = originalDrawable.getConstantState();
+                if (cs != null) {
+                    drawable = cs.newDrawable().mutate();
+                } else {
+                    drawable = originalDrawable.mutate();
+                }
                 mHandler.post(() -> {
                     mSignalIcon.setImageDrawable(drawable);
                 });
