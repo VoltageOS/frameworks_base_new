@@ -1049,8 +1049,50 @@ public final class GameManagerService extends IGameManagerService.Stub {
         try {
             final ApplicationInfo applicationInfo = mPackageManager
                     .getApplicationInfoAsUser(packageName, PackageManager.MATCH_ALL, userId);
-            return applicationInfo.category == ApplicationInfo.CATEGORY_GAME;
+            // Check standard game category
+            if (applicationInfo.category == ApplicationInfo.CATEGORY_GAME) {
+                return true;
+            }
+            // Check if app is added to Game Space
+            if (isPackageInGameSpace(packageName, userId)) {
+                return true;
+            }
+            return false;
         } catch (PackageManager.NameNotFoundException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Checks if the package is added to Game Space
+     */
+    private boolean isPackageInGameSpace(String packageName, @UserIdInt int userId) {
+        try {
+            final String gameSpaceList = Settings.System.getStringForUser(
+                    mContext.getContentResolver(),
+                    Settings.System.GAMESPACE_GAME_LIST,
+                    userId);
+            
+            if (gameSpaceList == null || gameSpaceList.isEmpty()) {
+                return false;
+            }
+            
+            // Game Space stores list in format: "package1=mode1;package2=mode2;..."
+            final String[] games = gameSpaceList.split(";");
+            for (String game : games) {
+                if (game.isEmpty()) continue;
+                
+                // Extract package name (before = sign)
+                final int equalIndex = game.indexOf('=');
+                final String gamePackage = equalIndex > 0 ? game.substring(0, equalIndex) : game;
+                
+                if (packageName.equals(gamePackage)) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            Slog.w(TAG, "Error checking Game Space list for package " + packageName, e);
             return false;
         }
     }
@@ -2344,11 +2386,50 @@ public final class GameManagerService extends IGameManagerService.Stub {
                     }
                     return;
                 }
-                if (mGameForegroundUids.isEmpty() && (!disableGameModeWhenAppTop()
-                        || mNonGameForegroundUids.isEmpty())) {
-                    Slog.v(TAG, "Game power mode ON (first game in foreground)");
-                    mPowerManagerInternal.setPowerMode(Mode.GAME, true);
+                
+                // Check if there's a game that should activate GAME hint
+                boolean shouldActivateGameHint = false;
+                for (String packageName : packages) {
+                    if (isPackageGame(packageName, userId)) {
+                        // For standard games (CATEGORY_GAME), activate GAME hint regardless of mode
+                        try {
+                            final ApplicationInfo applicationInfo = mPackageManager
+                                    .getApplicationInfoAsUser(packageName, PackageManager.MATCH_ALL, userId);
+                            if (applicationInfo.category == ApplicationInfo.CATEGORY_GAME) {
+                                shouldActivateGameHint = true;
+                                break;
+                            }
+                        } catch (PackageManager.NameNotFoundException e) {
+                            // Ignore
+                        }
+                        
+                        // For Game Space apps, activate GAME hint only in performance mode
+                        if (isPackageInGameSpace(packageName, userId)) {
+                            int gameMode = getGameMode(packageName, userId);
+                            if (gameMode == GameManager.GAME_MODE_PERFORMANCE) {
+                                shouldActivateGameHint = true;
+                                break;
+                            }
+                        }
+                    }
                 }
+                
+                // Activate GAME hint based on the check above
+                if (shouldActivateGameHint) {
+                    if (mGameForegroundUids.isEmpty() && (!disableGameModeWhenAppTop()
+                            || mNonGameForegroundUids.isEmpty())) {
+                        Slog.v(TAG, "Game power mode ON (game in foreground)");
+                        mPowerManagerInternal.setPowerMode(Mode.GAME, true);
+                    }
+                } else {
+                    // Don't activate GAME hint for non-games or Game Space apps without performance mode
+                    if (mGameForegroundUids.isEmpty() && (!disableGameModeWhenAppTop()
+                            || mNonGameForegroundUids.isEmpty())) {
+                        Slog.v(TAG, "Game power mode OFF (no games in foreground)");
+                        mPowerManagerInternal.setPowerMode(Mode.GAME, false);
+                    }
+                }
+                
                 final boolean isGameDefaultFrameRateDisabled =
                         mSysProps.getBoolean(
                                 PROPERTY_DEBUG_GFX_GAME_DEFAULT_FRAME_RATE_DISABLED, false);
@@ -2362,7 +2443,44 @@ public final class GameManagerService extends IGameManagerService.Stub {
             synchronized (mUidObserverLock) {
                 if (mGameForegroundUids.contains(uid)) {
                     mGameForegroundUids.remove(uid);
-                    if (mGameForegroundUids.isEmpty() && (!disableGameModeWhenAppTop()
+                    
+                    // Check if there are remaining games that should keep GAME hint active
+                    boolean shouldKeepGameHint = false;
+                    final int userId = ActivityManager.getCurrentUser();
+                    
+                    for (int remainingUid : mGameForegroundUids) {
+                        final String[] packages = mPackageManager.getPackagesForUid(remainingUid);
+                        if (packages != null) {
+                            for (String packageName : packages) {
+                                if (isPackageGame(packageName, userId)) {
+                                    // For standard games (CATEGORY_GAME), keep GAME hint active regardless of mode
+                                    try {
+                                        final ApplicationInfo applicationInfo = mPackageManager
+                                                .getApplicationInfoAsUser(packageName, PackageManager.MATCH_ALL, userId);
+                                        if (applicationInfo.category == ApplicationInfo.CATEGORY_GAME) {
+                                            shouldKeepGameHint = true;
+                                            break;
+                                        }
+                                    } catch (PackageManager.NameNotFoundException e) {
+                                        // Ignore
+                                    }
+                                    
+                                    // For Game Space apps, keep GAME hint active only in performance mode
+                                    if (isPackageInGameSpace(packageName, userId)) {
+                                        int gameMode = getGameMode(packageName, userId);
+                                        if (gameMode == GameManager.GAME_MODE_PERFORMANCE) {
+                                            shouldKeepGameHint = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (shouldKeepGameHint) break;
+                    }
+                    
+                    // Deactivate GAME hint only if there are no games that should keep it active
+                    if (!shouldKeepGameHint && (!disableGameModeWhenAppTop()
                             || mNonGameForegroundUids.isEmpty())) {
                         Slog.v(TAG, "Game power mode OFF (no games in foreground)");
                         mPowerManagerInternal.setPowerMode(Mode.GAME, false);
