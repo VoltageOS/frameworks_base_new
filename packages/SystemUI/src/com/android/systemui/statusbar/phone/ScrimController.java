@@ -1656,7 +1656,11 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
     private void updateThemeColors() {
         boolean useDualTone = System.getIntForUser(mContext.getContentResolver(),
                 System.QS_DUAL_TONE, 1, UserHandle.USER_CURRENT) == 1;
-        if (mScrimBehind == null) return;
+
+        if (mScrimBehind == null || mScrimInFront == null || mNotificationsScrim == null) {
+            return;
+        }
+
         int background = mContext.getColor(
                 com.android.internal.R.color.materialColorSurfaceDim);
         int accent = mContext.getColor(
@@ -1676,7 +1680,7 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
             state.setSurfaceColor(surface);
         }
 
-        if (mState != null) {
+        if (mState != null && mScrimBehind != null) {
             applyState();
             updateScrims();
         }
