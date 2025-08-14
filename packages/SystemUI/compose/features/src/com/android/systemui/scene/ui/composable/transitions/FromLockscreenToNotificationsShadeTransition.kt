@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,18 @@
 package com.android.systemui.scene.ui.composable.transitions
 
 import com.android.compose.animation.scene.TransitionBuilder
+import com.android.compose.animation.scene.reveal.ContainerRevealHaptics
+import com.android.mechanics.behavior.VerticalExpandContainerSpec
 
-fun TransitionBuilder.communalToShadeTransition() {
-    toShadeSceneTransition()
+fun TransitionBuilder.lockscreenToNotificationsShadeTransition(
+    durationScale: Double = 1.0,
+    shadeExpansionMotion: VerticalExpandContainerSpec,
+    revealHaptics: ContainerRevealHaptics,
+) {
+    lockscreenToOverlayTransition(durationScale = durationScale)
+    toNotificationsShadeTransition(
+        durationScale = durationScale,
+        shadeExpansionMotion = shadeExpansionMotion,
+        revealHaptics = revealHaptics,
+    )
 }
