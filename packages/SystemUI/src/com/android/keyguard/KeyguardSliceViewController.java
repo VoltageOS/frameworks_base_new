@@ -87,10 +87,12 @@ public class KeyguardSliceViewController extends ViewController<KeyguardSliceVie
         @Override
         public void onDensityOrFontScaleChanged() {
             mView.onDensityOrFontScaleChanged();
+            refresh();
         }
         @Override
         public void onThemeChanged() {
             mView.onOverlayChanged();
+            refresh();
         }
     };
 

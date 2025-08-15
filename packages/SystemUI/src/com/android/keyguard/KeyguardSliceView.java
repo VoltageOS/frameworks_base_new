@@ -272,6 +272,9 @@ public class KeyguardSliceView extends LinearLayout {
     }
 
     void onOverlayChanged() {
+        mTextColor = Utils.getColorAttrDefaultColor(mContext, R.attr.wallpaperTextColor);
+        updateTextColors();
+
         for (int i = 0; i < mRow.getChildCount(); i++) {
             View child = mRow.getChildAt(i);
             if (child instanceof KeyguardSliceTextView) {
