@@ -336,12 +336,17 @@ public class OmniJawsClient {
         if (mRes == null) {
             loadDefaultIconsPackage(context);
         }
+        int resId = mRes.getIdentifier(mIconPrefix + "_" + conditionCode, "drawable", mPackageName);
+        if (resId == 0) {
+            if (DEBUG) {
+                Log.w(TAG, "getWeatherConditionImage: resource not found for condition code: " + conditionCode);
+            }
+            return getDefaultConditionImage(context);
+        }
         try {
-            int resId = mRes.getIdentifier(mIconPrefix + "_" + conditionCode, "drawable", mPackageName);
             Drawable d = mRes.getDrawable(resId, null);
             return d != null ? d : getDefaultConditionImage(context);
         } catch (Exception e) {
-            Log.e(TAG, "getWeatherConditionImage", e);
             return getDefaultConditionImage(context);
         }
     }
