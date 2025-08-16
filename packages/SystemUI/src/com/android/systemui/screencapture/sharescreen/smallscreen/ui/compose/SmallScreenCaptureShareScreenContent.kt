@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-package com.android.systemui.screencapture.record.domain.interactor
+package com.android.systemui.screencapture.sharescreen.smallscreen.ui.compose
 
-import com.android.systemui.Flags
-import com.android.systemui.dagger.SysUISingleton
+import androidx.compose.runtime.Composable
+import com.android.systemui.screencapture.common.ui.compose.ScreenCaptureContent
+import javax.inject.Inject
 
-@SysUISingleton
-object ScreenCaptureRecordFeaturesInteractor {
+class SmallScreenCaptureShareScreenContent @Inject constructor() : ScreenCaptureContent {
 
-    val isNewScreenRecordToolbarEnabled: Boolean
-        get() = Flags.newScreenRecordToolbar()
-
-    val isLargeScreenScreencaptureEnabled: Boolean
-        get() = Flags.largeScreenScreencapture()
-
-    val shouldShowNewToolbar: Boolean
-        get() = isNewScreenRecordToolbarEnabled || isLargeScreenScreencaptureEnabled
+    @Composable
+    override fun Content() {
+        TODO("NOT_IMPLEMENTED")
+    }
 }
