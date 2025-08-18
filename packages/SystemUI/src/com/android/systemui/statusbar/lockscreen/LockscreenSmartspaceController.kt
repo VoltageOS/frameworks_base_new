@@ -328,7 +328,7 @@ constructor(
             return showWeather
         }
 
-    val isCustomWeatherEnabled: Boolean
+    val isOmniWeatherEnabled: Boolean
         get() {
             val showCustomWeather =
                 systemSettings.getIntForUser(
@@ -339,7 +339,8 @@ constructor(
             return showCustomWeather && !isWeatherEnabled
         }
 
-    val isEnabled: Boolean = plugin != null && isWeatherEnabled
+    val isEnabled: Boolean
+        get() = plugin != null && isWeatherEnabled
 
     private fun updateBypassEnabled() {
         val bypassEnabled = bypassController.bypassEnabled
