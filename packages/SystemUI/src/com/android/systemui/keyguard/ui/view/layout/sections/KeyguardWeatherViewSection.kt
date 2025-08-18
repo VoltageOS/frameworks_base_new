@@ -19,6 +19,8 @@ package com.android.systemui.keyguard.ui.view.layout.sections
 
 import android.content.Context
 import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import androidx.constraintlayout.widget.Barrier
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
@@ -26,39 +28,35 @@ import com.android.systemui.customization.R as custR
 import com.android.systemui.keyguard.shared.model.KeyguardSection
 import com.android.systemui.res.R
 import com.android.systemui.statusbar.lockscreen.LockscreenSmartspaceController
+import javax.inject.Inject
 
 import com.android.systemui.weather.WeatherInfoView
-import javax.inject.Inject
 
 class KeyguardWeatherViewSection
 @Inject
 constructor(
     private val context: Context,
+    val layoutInflater: LayoutInflater,
     val smartspaceController: LockscreenSmartspaceController,
-    // Add LayoutInflater to the constructor
-    private val layoutInflater: LayoutInflater,
 ) : KeyguardSection() {
-
-    private var weatherArea: WeatherInfoView? = null
+    private lateinit var weatherView: WeatherInfoView
 
     override fun addViews(constraintLayout: ConstraintLayout) {
-        if (!smartspaceController.isCustomWeatherEnabled) return
-        // Inflate the view here instead of finding it
-        weatherArea = layoutInflater.inflate(R.layout.keyguard_weather_area, constraintLayout, false)
-            as WeatherInfoView
+        if (!smartspaceController.isOmniWeatherEnabled || smartspaceController.isEnabled) return
 
-        constraintLayout.addView(weatherArea)
-        weatherArea?.init()
+        weatherView =
+            layoutInflater.inflate(R.layout.keyguard_weather_area, null, false) as WeatherInfoView
+        constraintLayout.addView(weatherView)
     }
 
     override fun bindData(constraintLayout: ConstraintLayout) {
-        // Data binding logic can go here if needed, but your init() call in addViews is fine.
+        if (!smartspaceController.isOmniWeatherEnabled || smartspaceController.isEnabled) return
+
+        weatherView.init()
     }
 
     override fun applyConstraints(constraintSet: ConstraintSet) {
-        // Your existing constraint logic is correct and should work without changes.
-        // It positions the weather view below the slice view.
-        if (!smartspaceController.isCustomWeatherEnabled) return
+        if (!smartspaceController.isOmniWeatherEnabled || smartspaceController.isEnabled) return
 
         constraintSet.apply {
             connect(
@@ -84,11 +82,6 @@ constructor(
                 ConstraintSet.BOTTOM
             )
 
-            // This seems incorrect, as it re-defines the barrier. 
-            // The smartspace section already creates this barrier.
-            // You may need to add to the existing barrier instead.
-            // However, for now, let's see if this works. A better approach might be:
-            // addToHorizontalChain(R.id.smart_space_barrier_bottom, R.id.keyguard_weather_area, ConstraintSet.GONE)
             createBarrier(
                 R.id.smart_space_barrier_bottom,
                 Barrier.BOTTOM,
@@ -99,10 +92,11 @@ constructor(
     }
 
     override fun removeViews(constraintLayout: ConstraintLayout) {
-        // Clean up the view and controller
-        if (smartspaceController.isCustomWeatherEnabled) return
-        constraintLayout.removeView(weatherArea)
-        weatherArea?.cleanup()
-        weatherArea = null
+        if (!smartspaceController.isOmniWeatherEnabled || smartspaceController.isEnabled) return
+
+        constraintLayout.findViewById<WeatherInfoView?>(R.id.keyguard_weather_area)?.let { weatherArea ->
+            weatherArea.cleanup()
+            constraintLayout.removeView(weatherArea)
+        }
     }
 }
