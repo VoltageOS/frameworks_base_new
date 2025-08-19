@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.systemui.scene.ui.composable
+package com.android.systemui.occluded.ui.composable
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,28 +38,26 @@ import com.android.systemui.notifications.ui.composable.headsUpTopInset
 import com.android.systemui.qs.shared.ui.QuickSettings
 import com.android.systemui.scene.shared.model.Overlays
 import com.android.systemui.scene.shared.model.Scenes
-import com.android.systemui.scene.ui.viewmodel.GoneUserActionsViewModel
+import com.android.systemui.scene.ui.composable.Scene
+import com.android.systemui.scene.ui.viewmodel.OccludedUserActionsViewModel
 import com.android.systemui.statusbar.notification.stack.ui.view.NotificationScrollView
 import com.android.systemui.statusbar.notification.stack.ui.viewmodel.NotificationsPlaceholderViewModel
 import dagger.Lazy
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 
-/**
- * "Gone" is not a real scene but rather the absence of scenes when we want to skip showing any
- * content from the scene framework.
- */
+/** The occluded scene shows when a non-dream activity is showing over keyguard */
 @SysUISingleton
-class GoneScene
+class OccludedScene
 @Inject
 constructor(
-    private val notificationStackScrolLView: Lazy<NotificationScrollView>,
+    private val notificationStackScrollView: Lazy<NotificationScrollView>,
     private val notificationsPlaceholderViewModelFactory: NotificationsPlaceholderViewModel.Factory,
-    private val viewModelFactory: GoneUserActionsViewModel.Factory,
+    private val viewModelFactory: OccludedUserActionsViewModel.Factory,
 ) : ExclusiveActivatable(), Scene {
-    override val key = Scenes.Gone
+    override val key = Scenes.Occluded
 
-    private val actionsViewModel: GoneUserActionsViewModel by lazy { viewModelFactory.create() }
+    private val actionsViewModel: OccludedUserActionsViewModel by lazy { viewModelFactory.create() }
 
     override val userActions: Flow<Map<UserAction, UserActionResult>> = actionsViewModel.actions
 
@@ -72,7 +70,7 @@ constructor(
     @Composable
     override fun ContentScope.Content(modifier: Modifier) {
 
-        val isIdleAndNotOccluded =
+        val isIdleAndNotShadeExpanded =
             with(layoutState.transitionState) {
                 isIdle(key) &&
                     !isIdle(Overlays.NotificationsShade) &&
@@ -81,13 +79,13 @@ constructor(
 
         val headsUpInset = with(LocalDensity.current) { headsUpTopInset().toPx() }
 
-        LaunchedEffect(isIdleAndNotOccluded) {
+        LaunchedEffect(isIdleAndNotShadeExpanded) {
             // Wait for being Idle on this Scene, otherwise LaunchedEffect would fire too soon,
             // and another transition could override the NSSL stack bounds.
-            if (isIdleAndNotOccluded) {
+            if (isIdleAndNotShadeExpanded) {
                 // Reset the stack bounds to avoid caching these values from the previous Scenes,
-                // and not to confuse the StackScrollAlgorithm when it displays a HUN over GONE.
-                notificationStackScrolLView.get().apply {
+                // and not to confuse the StackScrollAlgorithm when it displays a HUN over OCCLUDED.
+                notificationStackScrollView.get().apply {
                     // use -headsUpInset to allow HUN translation outside bounds for snoozing
                     setStackTop(-headsUpInset)
                 }
@@ -95,7 +93,7 @@ constructor(
         }
 
         animateContentFloatAsState(
-            value = QuickSettings.SharedValues.SquishinessValues.GoneSceneStarting,
+            value = QuickSettings.SharedValues.SquishinessValues.OccludedSceneStarting,
             key = QuickSettings.SharedValues.TilesSquishiness,
         )
         Spacer(modifier.fillMaxSize())
@@ -104,8 +102,8 @@ constructor(
                 Modifier.onGloballyPositioned {
                     // Once we are on the non-occluded Lockscreen, the regular stack is not setting
                     // draw bounds anymore, but HUNs can still appear.
-                    if (isIdleAndNotOccluded) {
-                        notificationStackScrolLView
+                    if (isIdleAndNotShadeExpanded) {
+                        notificationStackScrollView
                             .get()
                             .updateDrawBounds(
                                 it.boundsInWindow().toAndroidRectF().apply {
@@ -116,9 +114,11 @@ constructor(
                             )
                     }
                 },
-            stackScrollView = notificationStackScrolLView.get(),
+            stackScrollView = notificationStackScrollView.get(),
             viewModel =
-                rememberViewModel("GoneScene") { notificationsPlaceholderViewModelFactory.create() },
+                rememberViewModel("OccludedScene") {
+                    notificationsPlaceholderViewModelFactory.create()
+                },
         )
     }
 }
