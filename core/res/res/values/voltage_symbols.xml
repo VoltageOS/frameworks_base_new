@@ -195,4 +195,8 @@
     <!-- USB -->
     <java-symbol type="string" name="config_usbFunctionActivity" />
 
+    <!-- Charging speed -->
+    <java-symbol type="string" name="charging_speed" />
+    <java-symbol type="array" name="charging_speed_entries" />
+    <java-symbol type="array" name="charging_speed_values" />
 </resources>
