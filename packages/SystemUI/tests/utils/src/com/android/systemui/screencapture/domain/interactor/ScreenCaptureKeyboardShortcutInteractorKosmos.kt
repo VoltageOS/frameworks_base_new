@@ -14,17 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.systemui.screencapture.common.shared.model
+package com.android.systemui.screencapture.domain.interactor
 
-import android.os.IBinder
-import android.os.ResultReceiver
-import android.os.UserHandle
+import com.android.systemui.kosmos.Kosmos
 
-data class ScreenCaptureUiParameters(
-    val screenCaptureType: ScreenCaptureType,
-    val isUserConsentRequired: Boolean = false,
-    val resultReceiver: ResultReceiver? = null,
-    val mediaProjection: IBinder? = null,
-    val hostAppUserHandle: UserHandle = UserHandle.CURRENT,
-    val hostAppUid: Int = 0,
-)
+val Kosmos.screenCaptureKeyboardShortcutInteractor: ScreenCaptureKeyboardShortcutInteractor by
+    Kosmos.Fixture { ScreenCaptureKeyboardShortcutInteractor(screenCaptureUiInteractor) }
