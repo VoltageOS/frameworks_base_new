@@ -69,7 +69,7 @@ class FooterActionsDataUsageViewModel @Inject constructor(
         override fun onTuningChanged(key: String?, newValue: String?) {
             when (key) {
                 "qs_show_data_usage" -> {
-                    hideDataUsage = !TunerService.parseIntegerSwitch(newValue, true)
+                    hideDataUsage = !TunerService.parseIntegerSwitch(newValue, false)
                     updateDataUsage()
                 }
                 "qs_data_usage_cycle_type" -> {

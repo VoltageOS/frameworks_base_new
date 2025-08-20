@@ -184,7 +184,7 @@ public class QSFooterViewController extends ViewController<QSFooterView>
                                        .limit(rows * cols)
                                        .anyMatch(INTERNET_TILE::equals));
          } else if (key.equals(QS_SHOW_DATA_USAGE)) {
-            mView.setHideDataUsage(!TunerService.parseIntegerSwitch(newValue, true));
+            mView.setHideDataUsage(!TunerService.parseIntegerSwitch(newValue, false));
          }
     }
 
