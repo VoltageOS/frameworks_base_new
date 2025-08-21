@@ -311,5 +311,7 @@ public class SecureSettings {
         Settings.Secure.DOZE_DOUBLE_TAP_GESTURE_AMBIENT,
         Settings.Secure.DOZE_PICK_UP_GESTURE_AMBIENT,
         Settings.Secure.DOZE_SINGLE_TAP_GESTURE_AMBIENT,
+        Settings.Secure.QS_SHOW_DATA_USAGE,
+        Settings.Secure.QS_DATA_USAGE_CYCLE_TYPE,
     };
 }

@@ -62,6 +62,8 @@ class FooterActionsDataUsageViewModel @Inject constructor(
     private var subId = 0
     private var currentDataSubId = 0
     private var hideDataUsage = false
+    private var cycleType = 0 // 0 = Daily, 1 = Weekly
+
 
     private val tunerCallback = object : TunerService.Tunable {
         override fun onTuningChanged(key: String?, newValue: String?) {
@@ -70,6 +72,11 @@ class FooterActionsDataUsageViewModel @Inject constructor(
                     hideDataUsage = !TunerService.parseIntegerSwitch(newValue, true)
                     updateDataUsage()
                 }
+                "qs_data_usage_cycle_type" -> {
+                    cycleType = TunerService.parseInteger(newValue, 0)
+                    updateDataUsage()
+                }
+
             }
         }
     }
@@ -97,7 +104,7 @@ class FooterActionsDataUsageViewModel @Inject constructor(
     
     init {
         // Listen for tuner changes
-        tunerService.addTunable(tunerCallback, "qs_show_data_usage")
+        tunerService.addTunable(tunerCallback, "qs_show_data_usage", "qs_data_usage_cycle_type")
         
         // Listen for data subscription changes
         globalSettings.registerContentObserverSync(
@@ -117,6 +124,20 @@ class FooterActionsDataUsageViewModel @Inject constructor(
             isWifiConnected = true
             wifiSsid = wifiInfo.ssid
         }
+        
+        // Initialize settings from tuner
+        hideDataUsage = !TunerService.parseIntegerSwitch(tunerService.getValue("qs_show_data_usage"), true)
+        cycleType = TunerService.parseInteger(tunerService.getValue("qs_data_usage_cycle_type"), 0)
+
+        
+        // Set default values if they don't exist
+        if (tunerService.getValue("qs_data_usage_cycle_type") == null) {
+            tunerService.setValue("qs_data_usage_cycle_type", "0")
+        }
+
+        
+        // Update data usage with initial settings
+        updateDataUsage()
     }
 
     private fun onWifiStatusUpdated() {
@@ -144,15 +165,31 @@ class FooterActionsDataUsageViewModel @Inject constructor(
 
         val info = when {
             isWifiConnected -> {
-                var wifiInfo = dataController.getWifiDailyDataUsageInfo(true)
-                if (wifiInfo == null) {
-                    wifiInfo = dataController.getWifiDailyDataUsageInfo(false)
+                if (cycleType == 1) {
+                    // Weekly WiFi data usage
+                    var wifiInfo = dataController.getWifiDataUsageInfo(true)
+                    if (wifiInfo == null) {
+                        wifiInfo = dataController.getWifiDataUsageInfo(false)
+                    }
+                    wifiInfo
+                } else {
+                    // Daily WiFi data usage
+                    var wifiInfo = dataController.getWifiDailyDataUsageInfo(true)
+                    if (wifiInfo == null) {
+                        wifiInfo = dataController.getWifiDailyDataUsageInfo(false)
+                    }
+                    wifiInfo
                 }
-                wifiInfo
             }
             !hasNoSims && subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID -> {
                 dataController.setSubscriptionId(subId)
-                dataController.getDailyDataUsageInfo()
+                if (cycleType == 1) {
+                    // Weekly mobile data usage
+                    dataController.getDataUsageInfo()
+                } else {
+                    // Daily mobile data usage
+                    dataController.getDailyDataUsageInfo()
+                }
             }
             else -> null
         }
@@ -185,7 +222,11 @@ class FooterActionsDataUsageViewModel @Inject constructor(
     private fun formatDataUsage(byteValue: Long, suffix: String): String {
         val usage = StringBuilder(Formatter.formatFileSize(context, byteValue, Formatter.FLAG_IEC_UNITS))
             .append(" ")
-            .append(context.getString(R.string.usage_data))
+            .append(if (cycleType == 1) {
+                context.getString(R.string.usage_data_weekly)
+            } else {
+                context.getString(R.string.usage_data)
+            })
         
         if (_showSuffix.value == true) {
             usage.append(" (")
