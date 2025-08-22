@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package com.android.systemui.bluetooth.devicesettings.data.repository
+package com.android.systemui.volume.panel.component.anc.ui.viewmodel
 
-import com.android.settingslib.bluetooth.devicesettings.data.repository.DeviceSettingRepository
 import com.android.systemui.kosmos.Kosmos
+import com.android.systemui.volume.panel.component.anc.domain.interactor.ancDeviceSettingInteractor
 
-val Kosmos.fakeDeviceSettingRepository: FakeDeviceSettingRepository by
-    Kosmos.Fixture { FakeDeviceSettingRepository() }
-var Kosmos.deviceSettingRepository: DeviceSettingRepository by
-    Kosmos.Fixture { fakeDeviceSettingRepository }
+val Kosmos.ancSettingViewModelFactory by
+    Kosmos.Fixture {
+        object : AncSettingViewModel.Factory {
+            override fun create(): AncSettingViewModel =
+                AncSettingViewModel(interactor = ancDeviceSettingInteractor)
+        }
+    }
