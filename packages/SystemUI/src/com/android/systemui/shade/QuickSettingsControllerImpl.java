@@ -46,6 +46,7 @@ import android.util.Log;
 import android.util.MathUtils;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
+import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
@@ -90,6 +91,7 @@ import com.android.systemui.statusbar.PulseExpansionHandler;
 import com.android.systemui.statusbar.QsFrameTranslateController;
 import com.android.systemui.statusbar.StatusBarState;
 import com.android.systemui.statusbar.notification.domain.interactor.ActiveNotificationsInteractor;
+import com.android.systemui.statusbar.notification.row.ExpandableNotificationRow;
 import com.android.systemui.statusbar.notification.stack.AmbientState;
 import com.android.systemui.statusbar.notification.stack.NotificationStackScrollLayout;
 import com.android.systemui.statusbar.notification.stack.NotificationStackScrollLayoutController;
@@ -290,6 +292,8 @@ public class QuickSettingsControllerImpl implements QuickSettingsController, Dum
     /** The duration of the notification bounds animation. */
     private long mNotificationBoundsAnimationDuration;
 
+    private final ContentObserver mTranslucentObserver;
+    
     private final Region mInterceptRegion = new Region();
     /** The end bounds of a clipping animation. */
     private final Rect mClippingAnimationEndBounds = new Rect();
@@ -420,6 +424,13 @@ public class QuickSettingsControllerImpl implements QuickSettingsController, Dum
         mBrightnessObserver.onChange(true);
 
         mWindowManagerProvider = windowManagerProvider;
+
+        mTranslucentObserver = new ContentObserver(null) {
+            @Override
+            public void onChange(boolean selfChange) {
+                onTransparencyUpdated();
+            }
+        };
     }
 
     @VisibleForTesting
@@ -2280,15 +2291,23 @@ public class QuickSettingsControllerImpl implements QuickSettingsController, Dum
                     Settings.Secure.getUriFor("qs_brightness_slider_enabled"),
                     false,
                     mBrightnessObserver,
-                    UserHandle.USER_ALL
-            );
+                    UserHandle.USER_ALL);
+            mPanelView.getContext().getContentResolver().registerContentObserver(
+                    Settings.Secure.getUriFor(
+                            "notification_row_transparency"),
+                    true, mTranslucentObserver,
+                    UserHandle.USER_ALL);
+
             mQs.setScrollListener(mQsScrollListener);
+            mTranslucentObserver.onChange(true);
             updateExpansion();
         }
 
         /** */
         @Override
         public void onFragmentViewDestroyed(String tag, Fragment fragment) {
+            mPanelView.getContext().getContentResolver().unregisterContentObserver(
+                    mTranslucentObserver);
             // Manual handling of fragment lifecycle is only required because this bridges
             // non-fragment and fragment code. Once we are using a fragment for the notification
             // panel, mQs will not need to be null cause it will be tied to the same lifecycle.
@@ -2476,5 +2495,21 @@ public class QuickSettingsControllerImpl implements QuickSettingsController, Dum
     interface FlingQsWithoutClickListener {
         void onFlingQsWithoutClick(ValueAnimator animator, float qsExpansionHeight,
                 float target, float vel);
+    }
+
+    public final void onTransparencyUpdated() {
+        NotificationStackScrollLayoutController controller = mNotificationStackScrollLayoutController;
+        if (controller == null || controller.getView() == null) {
+            return;
+        }
+        NotificationStackScrollLayout view = controller.getView();
+        int childCount = view.getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            View child = view.getChildAt(i);
+            if (child instanceof ExpandableNotificationRow) {
+                final ExpandableNotificationRow row = (ExpandableNotificationRow) child;
+                child.post(row::updateIfNeeded);
+            }
+        }
     }
 }
