@@ -164,14 +164,14 @@ public final class PixelPropsUtils {
         propsToChangeGeneric.put("TAGS", "release-keys");
         propsToChangeRecentPixel = new HashMap<>();
         propsToChangeRecentPixel.put("BRAND", "google");
-        propsToChangeRecentPixel.put("BOARD", "komodo");
+        propsToChangeRecentPixel.put("BOARD", "mustang");
         propsToChangeRecentPixel.put("MANUFACTURER", "Google");
-        propsToChangeRecentPixel.put("DEVICE", "komodo");
-        propsToChangeRecentPixel.put("PRODUCT", "komodo");
-        propsToChangeRecentPixel.put("HARDWARE", "komodo");
-        propsToChangeRecentPixel.put("MODEL", "Pixel 9 Pro XL");
-        propsToChangeRecentPixel.put("ID", "BP2A.250805.005");
-        propsToChangeRecentPixel.put("FINGERPRINT", "google/komodo/komodo:16/BP2A.250805.005/13691446:user/release-keys");
+        propsToChangeRecentPixel.put("DEVICE", "mustang");
+        propsToChangeRecentPixel.put("PRODUCT", "mustang");
+        propsToChangeRecentPixel.put("HARDWARE", "mustang");
+        propsToChangeRecentPixel.put("MODEL", "Pixel 10 Pro XL");
+        propsToChangeRecentPixel.put("ID", "BD3A.250721.001");
+        propsToChangeRecentPixel.put("FINGERPRINT", "google/mustang/mustang:16/BD3A.250721.001/13808258:user/release-keys");
         propsToChangePixelTablet = new HashMap<>();
         propsToChangePixelTablet.put("BRAND", "google");
         propsToChangePixelTablet.put("BOARD", "tangorpro");
@@ -275,8 +275,8 @@ public final class PixelPropsUtils {
         sIsExcluded = isGoogleCameraPackage(packageName);
         String model = SystemProperties.get("ro.product.model");
         boolean isPixelDevice = SystemProperties.get("ro.soc.manufacturer").equalsIgnoreCase("Google");
-        boolean isMainlineDevice = isPixelDevice && model.matches("Pixel [8-9][a-zA-Z ]*");
-        boolean isTensorDevice = isPixelDevice && model.matches("Pixel [6-9][a-zA-Z ]*");
+        boolean isMainlineDevice = isPixelDevice && model.matches("Pixel (8|9|10)[a-zA-Z ]*");
+        boolean isTensorDevice = isPixelDevice && model.matches("Pixel (6|7|8|9|10)[a-zA-Z ]*");
         boolean isPixelGmsEnabled = SystemProperties.getBoolean(SPOOF_PIXEL_GMS, true);
         propsToChangeGeneric.forEach((k, v) -> setPropValue(k, v));
         if (packageName == null || processName == null || packageName.isEmpty()) {
