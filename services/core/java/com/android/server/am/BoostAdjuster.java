@@ -175,5 +175,6 @@ public class BoostAdjuster {
     public void onWakefulnessChanged(boolean awake) {
         boostDisplay(awake);
         boostRestricted(awake);
+        setPerformanceMode(awake, "wakefulness");
     }
 }
