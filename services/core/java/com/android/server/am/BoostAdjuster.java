@@ -26,10 +26,15 @@ import android.util.Slog;
 
 import com.android.server.UiThread;
 
+import java.util.ArrayList;
 import java.io.IOException;
 
 public class BoostAdjuster {
-    private static final String BOOSTER_TAG = "BoostAdjuster";
+    private static final String TAG = "BoostAdjuster";
+    private static final boolean DEBUG = false;
+
+    public static final int THREAD_GROUP_RESTRICTED = 7;
+    public static final int THREAD_GROUP_NT_FOREGROUND = 10;
 
     private static final String CPU_BG = "/dev/cpuset/background/cpus";
     private static final String CPU_FG = "/dev/cpuset/nt_foreground/cpus";
@@ -53,12 +58,23 @@ public class BoostAdjuster {
 
     private static final int SF_UC_MIN_BOOST =
             Math.round(SystemProperties.getInt("ro.surface_flinger.uclamp.min", 165) * 100f / 1024f);
+            
+    private static ArrayList<String> sAppWhiteList = new ArrayList<>();
+    private static ArrayList<String> sAppPerfList = new ArrayList<>();
 
     private String currentReason = "none";
 
     private Handler mBoostHandler;
     private final Runnable mDisableRunnable = this::disableBoostHint;
     private ActivityManagerService mAm;
+
+    static {
+        sAppWhiteList.add("com.google.android.providers.media.module");
+        sAppWhiteList.add("android.process.media");
+        sAppWhiteList.add("android.os.cts");
+        sAppPerfList.add("com.android.systemui");
+        sAppPerfList.add("com.android.launcher3");
+    }
 
     public BoostAdjuster(ActivityManagerService am) {
         mAm = am;
@@ -74,7 +90,7 @@ public class BoostAdjuster {
         try {
             FileUtils.stringToFile(path, value);
         } catch (IOException e) {
-            Slog.e(BOOSTER_TAG, "Failed to write to " + path + ": " + e.getMessage());
+            Slog.e(TAG, "Failed to write to " + path + ": " + e.getMessage());
         }
     }
 
@@ -125,9 +141,9 @@ public class BoostAdjuster {
 
     public void setThreadAffinity(int pid, int affinity) {
         if (affinity == 0) {
-            Process.setThreadGroupAndCpuset(pid, 5);
+            Process.setThreadGroupAndCpuset(pid, Process.THREAD_GROUP_TOP_APP);
         } else {
-            Process.setThreadGroupAndCpuset(pid, 0);
+            Process.setThreadGroupAndCpuset(pid, THREAD_GROUP_RESTRICTED);
         }
         Process.setThreadAffinity(pid, affinity);
     }
@@ -176,5 +192,52 @@ public class BoostAdjuster {
         boostDisplay(awake);
         boostRestricted(awake);
         setPerformanceMode(awake, "wakefulness");
+    }
+    
+    public static boolean isForegroundNeedSelfControll(int oldScheduleGroup, ProcessRecord app) {
+        if (oldScheduleGroup == ProcessList.SCHED_GROUP_TOP_APP && app.hasActivities()) {
+            if (DEBUG) Slog.d(TAG, "previous schedule group is top, not need limit!");
+            return false;
+        }
+        if (app.uid % 100000 < 10000 || isInPerfList(app.processName)|| isInWhiteList(app.processName)) {
+            if (DEBUG) Slog.d(TAG, "system app not need limit!");
+            return false;
+        }
+        if (app.getHostingRecord() == null || app.getHostingRecord().isTopApp()) {
+            return false;
+        }
+        if (DEBUG) Slog.d(TAG, "process : " + app.processName + " is not top!");
+        return true;
+    }
+
+    public static boolean isInWhiteList(String processName) {
+        if (processName != null) {
+            return sAppWhiteList.contains(processName);
+        }
+        return false;
+    }
+
+    public static boolean isInPerfList(String processName) {
+        if (processName != null) {
+            return sAppPerfList.contains(processName) 
+                || isCamera(processName);
+        }
+        return false;
+    }
+
+    public static boolean isRestrictedNeedSelfControll(ProcessRecord app) {
+        if (isInPerfList(app.processName) || isInWhiteList(app.processName)) {
+            if (DEBUG) Slog.d(TAG, "system app not need limit!");
+            return false;
+        }
+        if (app.getHostingRecord() == null || app.getHostingRecord().isTopApp()) {
+            return false;
+        }
+        if (DEBUG) Slog.d(TAG, "process : " + app.processName + " is not top!");
+        return true;
+    }
+
+    public static boolean isCamera(String processName) {
+        return processName != null && processName.toLowerCase().contains("camera");
     }
 }

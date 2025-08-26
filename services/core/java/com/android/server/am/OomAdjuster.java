@@ -395,7 +395,6 @@ public class OomAdjuster {
     protected final ArraySet<ProcessRecord> mTmpProcessSet = new ArraySet<>();
     protected final ArraySet<ProcessRecord> mPendingProcessSet = new ArraySet<>();
     protected final ArraySet<ProcessRecord> mProcessesInCycle = new ArraySet<>();
-    private static ArrayList<String> sAppWhiteList = new ArrayList<>();
 
     /**
      * List of processes that we want to batch for LMKD to adjust their respective
@@ -448,12 +447,6 @@ public class OomAdjuster {
             Flags.raiseBoundUiServiceThreshold() ? SERVICE_ADJ : PERCEPTIBLE_APP_ADJ;
 
     static final long PERCEPTIBLE_TASK_TIMEOUT_MILLIS = 5 * 60 * 1000;
-
-    static {
-        sAppWhiteList.add("com.google.android.providers.media.module");
-        sAppWhiteList.add("android.process.media");
-        sAppWhiteList.add("android.os.cts");
-    }
 
     @VisibleForTesting
     public static class Injector {
@@ -552,14 +545,13 @@ public class OomAdjuster {
                     + processName + " to " + group);
         }
         try {
-            if (isNtCustomizeApp(processName)) {
+            if (BoostAdjuster.isInPerfList(processName)) {
                 Slog.d(TAG, "set group = " + group);
             }
-            if (isCamera(processName) && (group == THREAD_GROUP_TOP_APP || group == THREAD_GROUP_RESTRICTED)) {
-                Slog.d(TAG, "set cpuset: " + group);
-                Process.setProcessGroup(pid, THREAD_GROUP_RESTRICTED);
-            } else if (isSystemui(processName) || isLauncher(processName)) {
-                Slog.d(TAG, "set cpuset: " + group);
+            if (BoostAdjuster.isInPerfList(processName) && !BoostAdjuster.isCamera(processName) 
+                || BoostAdjuster.isCamera(processName) && (group == THREAD_GROUP_TOP_APP 
+                    || group == THREAD_GROUP_RESTRICTED)) {
+                Slog.d(TAG, pid + ": target set cpuset: " + group);
                 Process.setProcessGroup(pid, THREAD_GROUP_RESTRICTED);
             } else {
                 Process.setProcessGroup(pid, group);
@@ -573,22 +565,6 @@ public class OomAdjuster {
                 Trace.traceEnd(Trace.TRACE_TAG_ACTIVITY_MANAGER);
             }
         }
-    }
-
-    private boolean isSystemui(String processName) {
-        return processName != null && processName.equals("com.android.systemui");
-    }
-
-    private boolean isCamera(String processName) {
-        return processName != null && processName.toLowerCase().contains("camera");
-    }
-
-    private boolean isLauncher(String processName) {
-        return processName != null && processName.equals("com.android.launcher3");
-    }
-
-    private boolean isNtCustomizeApp(String processName) {
-        return isSystemui(processName) || isCamera(processName) || isLauncher(processName);
     }
 
     void setAppAndChildProcessGroup(ProcessRecord app, int group) {
@@ -3686,31 +3662,33 @@ public class OomAdjuster {
             int processGroup;
             switch (curSchedGroup) {
                 case SCHED_GROUP_BACKGROUND:
-                    processGroup = THREAD_GROUP_BACKGROUND;
+                    if (BoostAdjuster.isInPerfList(app.processName)) {
+                        processGroup = THREAD_GROUP_RESTRICTED;
+                    } else {
+                        processGroup = THREAD_GROUP_BACKGROUND;
+                    }
                     break;
                 case SCHED_GROUP_TOP_APP:
                 case SCHED_GROUP_TOP_APP_BOUND:
                     processGroup = THREAD_GROUP_TOP_APP;
                     break;
                 case SCHED_GROUP_RESTRICTED:
-                    if (isRestrictedNeedSelfControll(app)) {
-                        processGroup = 10;
-                        break;
+                    if (BoostAdjuster.isRestrictedNeedSelfControll(app)) {
+                        processGroup = BoostAdjuster.THREAD_GROUP_NT_FOREGROUND;
                     } else {
                         processGroup = THREAD_GROUP_RESTRICTED;
-                        break;
                     }
+                    break;
                 case SCHED_GROUP_FOREGROUND_WINDOW:
                     processGroup = THREAD_GROUP_FOREGROUND_WINDOW;
                     break;
                 default:
-                    if (isForegroundNeedSelfControll(oldSchedGroup, app)) {
-                        processGroup = 10;
-                        break;
+                    if (BoostAdjuster.isForegroundNeedSelfControll(oldSchedGroup, app)) {
+                        processGroup = BoostAdjuster.THREAD_GROUP_NT_FOREGROUND;
                     } else {
                         processGroup = THREAD_GROUP_DEFAULT;
-                        break;
                     }
+                    break;
             }
             setAppAndChildProcessGroup(app, processGroup);
             try {
@@ -3916,41 +3894,6 @@ public class OomAdjuster {
         }
 
         return success;
-    }
-
-    private boolean isForegroundNeedSelfControll(int oldScheduleGroup, ProcessRecord app) {
-        if (oldScheduleGroup == SCHED_GROUP_TOP_APP && app.hasActivities()) {
-            Slog.d(TAG, "previous schedule group is top, not need limit!");
-            return false;
-        }
-        if (app.uid % 100000 < 10000 || isNtCustomizeApp(app.processName)|| isInWhiteList(app.processName)) {
-            Slog.d(TAG, "system app not need limit!");
-            return false;
-        }
-        if (app.getHostingRecord() == null || app.getHostingRecord().isTopApp()) {
-            return false;
-        }
-        Slog.d(TAG, "process : " + app.processName + " is not top!");
-        return true;
-    }
-
-    private boolean isInWhiteList(String processName) {
-        if (processName != null) {
-            return sAppWhiteList.contains(processName);
-        }
-        return false;
-    }
-
-    private boolean isRestrictedNeedSelfControll(ProcessRecord app) {
-        if (isNtCustomizeApp(app.processName) || isInWhiteList(app.processName)) {
-            Slog.d(TAG, "system app not need limit!");
-            return false;
-        }
-        if (app.getHostingRecord() == null || app.getHostingRecord().isTopApp()) {
-            return false;
-        }
-        Slog.d(TAG, "process : " + app.processName + " is not top!");
-        return true;
     }
 
     @GuardedBy({"mService", "mProcLock"})

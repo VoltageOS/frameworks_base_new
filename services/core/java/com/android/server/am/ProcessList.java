@@ -401,8 +401,6 @@ public final class ProcessList {
     // To kill process groups asynchronously
     static KillHandler sKillHandler = null;
     static ServiceThread sKillThread = null;
-    
-    private static ArrayList<String> sAppWhiteList = new ArrayList<>();
 
     static Handler sHandler = null;
     static HandlerThread sHandlerThread = null;
@@ -826,14 +824,6 @@ public final class ProcessList {
      */
     @CompositeRWLock({"mService", "mProcLock"})
     private final MyProcessMap mProcessNames = new MyProcessMap();
-
-    static {
-        sAppWhiteList.add("com.google.android.providers.media.module");
-        sAppWhiteList.add("android.process.media");
-        sAppWhiteList.add("android.os.cts");
-        sAppWhiteList.add("com.android.systemui");
-        sAppWhiteList.add("com.android.launcher3");
-    }
 
     final class MyProcessMap extends ProcessMap<ProcessRecord> {
         @Override
@@ -2604,8 +2594,11 @@ public final class ProcessList {
                 if (startResult.pid > 0 && app.getHostingRecord() != null && !app.getHostingRecord().isTopApp()) {
                     sHandler.postDelayed(() -> {
                         try {
-                            if (app.uid % 100000 > 10000 && !app.getHostingRecord().isTopApp() && !isInWhiteList(app.processName)) {
-                                Process.setProcessGroup(startResult.pid, 10);
+                            if (app.uid % 100000 > 10000 && !BoostAdjuster.isInWhiteList(app.processName) 
+                                    && !BoostAdjuster.isInPerfList(app.processName)) {
+                                Process.setProcessGroup(startResult.pid, BoostAdjuster.THREAD_GROUP_NT_FOREGROUND);
+                            } else if (BoostAdjuster.isInPerfList(app.processName)) {
+                                Process.setProcessGroup(startResult.pid, BoostAdjuster.THREAD_GROUP_RESTRICTED);
                             }
                         } catch (Exception e) {
                         }
@@ -6088,11 +6081,4 @@ public final class ProcessList {
             mHandler.obtainMessage(H.MSG_UID_STATE_CHANGED, uid, procState).sendToTarget();
         }
     };
-    
-    public boolean isInWhiteList(String processName) {
-        if (processName != null) {
-            return sAppWhiteList.contains(processName) || processName.toLowerCase().contains("camera");
-        }
-        return false;
-    }
 }
