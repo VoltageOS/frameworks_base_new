@@ -115,7 +115,7 @@ public class BoostAdjuster {
             curProc = mAm.mPidsSelfLocked.get(pid);
         }
         if (curProc == null) return;
-        mAm.setFifoPriority(curProc, enabled, 1);
+        mAm.setFifoPriority(curProc, enabled, 99);
         boostPid(pid, curProc.getRenderThreadTid(), enabled);
     }
 
@@ -239,5 +239,11 @@ public class BoostAdjuster {
 
     public static boolean isCamera(String processName) {
         return processName != null && processName.toLowerCase().contains("camera");
+    }
+    
+    public void boostHomeProcess(ProcessRecord proc) {
+        if (!"com.android.launcher3".equals(proc.processName)) return;
+        mAm.scheduleAsFifoPriority(proc.getPid(), true , 1);
+        mAm.scheduleAsFifoPriority(proc.getRenderThreadTid(), true, 10);
     }
 }
