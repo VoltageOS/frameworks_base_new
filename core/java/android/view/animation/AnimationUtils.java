@@ -30,10 +30,14 @@ import android.content.res.Resources.NotFoundException;
 import android.content.res.Resources.Theme;
 import android.content.res.XmlResourceParser;
 import android.os.SystemClock;
+import android.os.SystemProperties;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
 import android.util.TimeUtils;
 import android.util.Xml;
 import android.view.InflateException;
+
+import com.android.internal.R;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -215,6 +219,20 @@ public class AnimationUtils {
      */
     public static Animation loadAnimation(Context context, @AnimRes int id)
             throws NotFoundException {
+
+        if (SystemProperties.getBoolean("persist.sys.activity_anim_perf_override", false)) {
+            ActivityAnimations.maybeInit(context);
+            switch (id) {
+                case R.anim.activity_open_enter:
+                    return ActivityAnimations.getOpenEnter();
+                case R.anim.activity_open_exit:
+                    return ActivityAnimations.getOpenExit();
+                case R.anim.activity_close_enter:
+                    return ActivityAnimations.getCloseEnter();
+                case R.anim.activity_close_exit:
+                    return ActivityAnimations.getCloseExit();
+            }
+        }
 
         XmlResourceParser parser = null;
         try {
@@ -495,5 +513,124 @@ public class AnimationUtils {
             }
         }
         return interpolator;
+    }
+
+    /** @hide */
+    public final class ActivityAnimations {
+
+        private static Animation sOpenEnter;
+        private static Animation sOpenExit;
+        private static Animation sCloseEnter;
+        private static Animation sCloseExit;
+
+        private static Interpolator sLinearOutSlowInInterpolator;
+        private static float sScaleRatio;
+        private static float sDensity;
+
+        private static final long DEFAULT_DURATION = 133L;
+
+        private ActivityAnimations() {}
+
+        /** @hide */
+        public static void maybeInit(Context context) {
+            if (sLinearOutSlowInInterpolator == null) {
+                sLinearOutSlowInInterpolator = AnimationUtils.loadInterpolator(
+                        context, R.interpolator.linear_out_slow_in);
+            }
+            if (sDensity == 0f) {
+                DisplayMetrics dm = context.getResources().getDisplayMetrics();
+                float sw = Math.min(dm.widthPixels, dm.heightPixels) / dm.density;
+                sScaleRatio = sw / 420f;
+                sDensity = dm.density;
+            }
+        }
+
+        private static float scaledDp(float dp) {
+            return dp * sDensity * sScaleRatio;
+        }
+
+        private static class ActivityAnimFactory {
+            private float fromX, toX, fromY, toY;
+            private long duration = DEFAULT_DURATION;
+            private Interpolator interpolator = sLinearOutSlowInInterpolator;
+
+            public ActivityAnimFactory fromX(float dp) {
+                this.fromX = scaledDp(dp);
+                return this;
+            }
+
+            public ActivityAnimFactory toX(float dp) {
+                this.toX = scaledDp(dp);
+                return this;
+            }
+
+            public ActivityAnimFactory duration(long duration) {
+                this.duration = duration;
+                return this;
+            }
+
+            public ActivityAnimFactory interpolator(Interpolator interpolator) {
+                this.interpolator = interpolator;
+                return this;
+            }
+
+            public Animation build() {
+                TranslateAnimation slide = new TranslateAnimation(
+                        Animation.ABSOLUTE, fromX,
+                        Animation.ABSOLUTE, toX,
+                        Animation.ABSOLUTE, 0f,
+                        Animation.ABSOLUTE, 0f
+                );
+                slide.setDuration(duration);
+                slide.setInterpolator(interpolator);
+                AnimationSet set = new AnimationSet(false);
+                set.addAnimation(slide);
+                return set;
+            }
+        }
+
+        /** @hide */
+        public static Animation getOpenEnter() {
+            if (sOpenEnter == null) {
+                sOpenEnter = new ActivityAnimFactory()
+                        .fromX(48)
+                        .toX(0)
+                        .build();
+            }
+            return sOpenEnter;
+        }
+
+        /** @hide */
+        public static Animation getOpenExit() {
+            if (sOpenExit == null) {
+                sOpenExit = new ActivityAnimFactory()
+                        .fromX(0)
+                        .toX(-48)
+                        .build();
+            }
+            return sOpenExit;
+        }
+
+        /** @hide */
+        public static Animation getCloseEnter() {
+            if (sCloseEnter == null) {
+                sCloseEnter = new ActivityAnimFactory()
+                        .fromX(-48)
+                        .toX(0)
+                        .build();
+            }
+            return sCloseEnter;
+        }
+
+        /** @hide */
+        public static Animation getCloseExit() {
+            if (sCloseExit == null) {
+                sCloseExit = new ActivityAnimFactory()
+                        .fromX(0)
+                        .toX(48)
+                        .build();
+            }
+            return sCloseExit;
+        }
     }
 }
