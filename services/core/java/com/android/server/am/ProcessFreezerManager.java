@@ -659,7 +659,7 @@ public class ProcessFreezerManager {
         try {
             int rc = mFreezer.freezeBinder(pid, true, 2 /* timeout_ms */);
             if (rc != 0){
-                Slog.w(TAG, " *unable to freeze binder for " + pid + ": " + rc);
+                //Slog.w(TAG, " *unable to freeze binder for " + pid + ": " + rc);
             } else {
                 freezeBinderSuccess = true;
                 if (mUseDebug) {
@@ -694,7 +694,7 @@ public class ProcessFreezerManager {
             Trace.traceBegin(Trace.TRACE_TAG_ACTIVITY_MANAGER,
                     "unable to freeze process: " + logInfo);
             Trace.traceEnd(Trace.TRACE_TAG_ACTIVITY_MANAGER);
-            Slog.w(TAG, "  unbale to freeze process: " + logInfo);
+            //Slog.w(TAG, "  unbale to freeze process: " + logInfo);
         }
 
         if (mUseDebug) {
