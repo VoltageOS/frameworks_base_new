@@ -775,6 +775,8 @@ public class ActivityManagerService extends IActivityManager.Stub
     private AccessCheckDelegateHelper mAccessCheckDelegateHelper;
     
     private final BoostAdjuster mBoostAdjuster;
+    private final MemoryManager mMemoryManager;
+    private final TaskProfiler mTaskProfiler = new TaskProfiler();
 
     /**
      * Uids of apps with current active camera sessions.  Access synchronized on
@@ -2486,6 +2488,7 @@ public class ActivityManagerService extends IActivityManager.Stub
         sCreatorTokenCacheCleaner = new Handler(mHandlerThread.getLooper());
         mSwipeToScreenshotObserver = null;
         mBoostAdjuster = new BoostAdjuster(this);
+        mMemoryManager = new MemoryManager(this);
     }
 
     // Note: This method is invoked on the main thread but may need to attach various
@@ -2615,6 +2618,7 @@ public class ActivityManagerService extends IActivityManager.Stub
         }
         
         mBoostAdjuster = new BoostAdjuster(this);
+        mMemoryManager = new MemoryManager(this);
     }
 
     void setBroadcastQueueForTest(BroadcastQueue broadcastQueue) {
@@ -5290,8 +5294,7 @@ public class ActivityManagerService extends IActivityManager.Stub
 
             // Start PSI monitoring in LMKD if it was skipped earlier.
             ProcessList.startPsiMonitoringAfterBoot();
-            initTaskProfiles();
-
+            mTaskProfiler.initTaskProfiles();
             mHandler.postDelayed(() -> {
                 SystemProperties.set("persist.sys.voltage_boot_completed", "1");
             }, 5000);
@@ -19674,34 +19677,7 @@ public class ActivityManagerService extends IActivityManager.Stub
 
     @Override
     public void releaseMemory(int minAdj, int maxKillCount, boolean includeUIProcesses, boolean skipCamera) {
-        if (minAdj == 0) return;
-
-        try {
-            ArrayList<ProcessRecord> processList = 
-                (ArrayList<ProcessRecord>) mProcessList.getLruProcessesLOSP().clone();
-
-            ArrayList<ProcessToKill> toKill = new ArrayList<>();
-
-            for (ProcessRecord record : processList) {
-                if (record != null && record.getSetAdj() >= minAdj) {
-                    boolean hasUI = record.hasActivities();
-                    if (!hasUI || includeUIProcesses) {
-                        toKill.add(new ProcessToKill(record));
-                    }
-                }
-            }
-
-            Collections.sort(toKill, new ProcessComparator());
-
-            int killedCount = 0;
-            for (ProcessToKill info : toKill) {
-                Process.killProcess(info.pid);
-                killedCount++;
-                if (killedCount >= maxKillCount) return;
-            }
-
-        } catch (Exception e) {
-        }
+        mMemoryManager.releaseMemory(minAdj, maxKillCount, includeUIProcesses, skipCamera);
     }
 
     @Override
@@ -19732,73 +19708,5 @@ public class ActivityManagerService extends IActivityManager.Stub
     @Override
     public void boostHint(final String reason, final long duration) {
         mBoostAdjuster.boostHint(reason, duration);
-    }
-
-    public class ProcessComparator implements Comparator<ProcessToKill> {
-        @Override
-        public int compare(ProcessToKill p1, ProcessToKill p2) {
-            return Integer.compare(p2.adj, p1.adj);
-        }
-    }
-
-    public static final class ProcessToKill {
-        public int adj;
-        public String name; 
-        public int pid;
-        public int uid;
-        public ProcessRecord record;
-
-        public ProcessToKill(ProcessRecord record) {
-            this.pid = record.getPid();
-            this.uid = record.uid;
-            this.adj = record.getSetAdj();
-            this.name = record.processName;
-            this.record = record;
-        }
-    }
-    
-    private void initTaskProfiles() {
-        String[] bgProfiles = { "ProcessCapacityLow" };
-        String[] bgProcs = { "kswapd", "kcompactd" };
-        setTaskProfilesForProcs(bgProcs, bgProfiles);
-    }
-    
-    public static void setTaskProfilesForProcs(String[] procGroups, String[] profiles) {
-        File procDir = new File("/proc");
-        File[] entries = procDir.listFiles(file -> file.isDirectory() && file.getName().matches("\\d+"));
-        if (entries == null) {
-            Slog.w("setTaskProfilesForProcs", "/proc not accessible or empty.");
-            return;
-        }
-
-        for (File pidDir : entries) {
-            File commFile = new File(pidDir, "comm");
-            String processName = null;
-
-            try (BufferedReader reader = new BufferedReader(new FileReader(commFile))) {
-                processName = reader.readLine();
-            } catch (IOException e) {
-                Slog.w("setTaskProfilesForProcs", "Could not read " + commFile.getPath() + ": " + e);
-                continue;
-            }
-
-            if (processName == null) continue;
-
-            for (String proc : procGroups) {
-                if (processName.contains(proc)) {
-                    try {
-                        int pid = Integer.parseInt(pidDir.getName());
-                        Process.setTaskProfiles(pid, profiles);
-                        Slog.i("setTaskProfilesForProcs", "Applied profiles " + Arrays.toString(profiles) +
-                                " to process " + processName + " (PID " + pid + ")");
-                    } catch (NumberFormatException e) {
-                        Slog.w("setTaskProfilesForProcs", "Invalid PID: " + pidDir.getName());
-                    } catch (Exception e) {
-                        Slog.w("setTaskProfilesForProcs", "Failed to set profiles for PID " + pidDir.getName() + ": " + e);
-                    }
-                    break;
-                }
-            }
-        }
     }
 }
