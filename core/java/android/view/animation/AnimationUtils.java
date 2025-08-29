@@ -523,69 +523,46 @@ public class AnimationUtils {
         private static Animation sCloseEnter;
         private static Animation sCloseExit;
 
-        private static Interpolator sLinearOutSlowInInterpolator;
-        private static float sScaleRatio;
-        private static float sDensity;
+        private static Interpolator sFastOutExtraSlowInInterpolator;
 
-        private static final long DEFAULT_DURATION = 133L;
+        private static final float DISTANCE = 0.1f;
 
         private ActivityAnimations() {}
 
         /** @hide */
         public static void maybeInit(Context context) {
-            if (sLinearOutSlowInInterpolator == null) {
-                sLinearOutSlowInInterpolator = AnimationUtils.loadInterpolator(
-                        context, R.interpolator.linear_out_slow_in);
+            if (sFastOutExtraSlowInInterpolator == null) {
+                sFastOutExtraSlowInInterpolator = AnimationUtils.loadInterpolator(
+                        context, R.interpolator.fast_out_extra_slow_in);
             }
-            if (sDensity == 0f) {
-                DisplayMetrics dm = context.getResources().getDisplayMetrics();
-                float sw = Math.min(dm.widthPixels, dm.heightPixels) / dm.density;
-                sScaleRatio = sw / 420f;
-                sDensity = dm.density;
-            }
-        }
-
-        private static float scaledDp(float dp) {
-            return dp * sDensity * sScaleRatio;
         }
 
         private static class ActivityAnimFactory {
-            private float fromX, toX, fromY, toY;
-            private long duration = DEFAULT_DURATION;
-            private Interpolator interpolator = sLinearOutSlowInInterpolator;
+            private float fromX = 0f, toX = 0f;
+            private long duration = 200L;
 
-            public ActivityAnimFactory fromX(float dp) {
-                this.fromX = scaledDp(dp);
+            public ActivityAnimFactory fromX(float ratio) {
+                this.fromX = ratio;
                 return this;
             }
 
-            public ActivityAnimFactory toX(float dp) {
-                this.toX = scaledDp(dp);
-                return this;
-            }
-
-            public ActivityAnimFactory duration(long duration) {
-                this.duration = duration;
-                return this;
-            }
-
-            public ActivityAnimFactory interpolator(Interpolator interpolator) {
-                this.interpolator = interpolator;
+            public ActivityAnimFactory toX(float ratio) {
+                this.toX = ratio;
                 return this;
             }
 
             public Animation build() {
+                AnimationSet animationSet = new AnimationSet(false);
                 TranslateAnimation slide = new TranslateAnimation(
-                        Animation.ABSOLUTE, fromX,
-                        Animation.ABSOLUTE, toX,
-                        Animation.ABSOLUTE, 0f,
-                        Animation.ABSOLUTE, 0f
+                        Animation.RELATIVE_TO_SELF, fromX,
+                        Animation.RELATIVE_TO_SELF, toX,
+                        Animation.RELATIVE_TO_SELF, 0f,
+                        Animation.RELATIVE_TO_SELF, 0f
                 );
                 slide.setDuration(duration);
-                slide.setInterpolator(interpolator);
-                AnimationSet set = new AnimationSet(false);
-                set.addAnimation(slide);
-                return set;
+                slide.setInterpolator(sFastOutExtraSlowInInterpolator);
+                animationSet.addAnimation(slide);
+                return animationSet;
             }
         }
 
@@ -593,8 +570,8 @@ public class AnimationUtils {
         public static Animation getOpenEnter() {
             if (sOpenEnter == null) {
                 sOpenEnter = new ActivityAnimFactory()
-                        .fromX(48)
-                        .toX(0)
+                        .fromX(1.0f)
+                        .toX(0.0f)
                         .build();
             }
             return sOpenEnter;
@@ -604,8 +581,8 @@ public class AnimationUtils {
         public static Animation getOpenExit() {
             if (sOpenExit == null) {
                 sOpenExit = new ActivityAnimFactory()
-                        .fromX(0)
-                        .toX(-48)
+                        .fromX(0.0f)
+                        .toX(-DISTANCE)
                         .build();
             }
             return sOpenExit;
@@ -615,8 +592,8 @@ public class AnimationUtils {
         public static Animation getCloseEnter() {
             if (sCloseEnter == null) {
                 sCloseEnter = new ActivityAnimFactory()
-                        .fromX(-48)
-                        .toX(0)
+                        .fromX(-DISTANCE)
+                        .toX(0.0f)
                         .build();
             }
             return sCloseEnter;
@@ -626,8 +603,8 @@ public class AnimationUtils {
         public static Animation getCloseExit() {
             if (sCloseExit == null) {
                 sCloseExit = new ActivityAnimFactory()
-                        .fromX(0)
-                        .toX(48)
+                        .fromX(0.0f)
+                        .toX(1.0f)
                         .build();
             }
             return sCloseExit;
