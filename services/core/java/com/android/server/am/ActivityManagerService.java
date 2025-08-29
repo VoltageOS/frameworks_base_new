@@ -19687,7 +19687,7 @@ public class ActivityManagerService extends IActivityManager.Stub
 
     @Override
     public void adjustCpusetCpus(String cgroup, long durationMillis) {
-        mBoostAdjuster.adjustCpusetCpus(cgroup, durationMillis, mHandler);
+        mBoostAdjuster.adjustCpusetCpus(cgroup, durationMillis);
     }
 
     @Override

@@ -2156,13 +2156,6 @@ public class ActivityTaskSupervisor implements RecentTasks.Callbacks {
 
     boolean reportResumedActivityLocked(ActivityRecord r) {
         this.mStoppingActivities.remove(r);
-        BoostHelper.adjustCpusetCpus("bg", 500L);
-        BoostHelper.adjustCpusetCpus("sys-bg", 500L);
-        if (!r.packageName.toLowerCase().contains("camera") && 
-            !r.packageName.equals("com.google.android.apps.photos")) {
-            BoostHelper.adjustCpusetCpus("cam", 500L);
-        }
-        BoostHelper.adjustCpusetCpus("fg", 500L);
         BoostHelper.boostHint("Resume Activity", 500);
         Task rootTask = r.getRootTask();
         if (rootTask.getDisplayArea().allResumedActivitiesComplete()) {

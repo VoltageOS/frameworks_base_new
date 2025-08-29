@@ -3662,11 +3662,7 @@ public class OomAdjuster {
             int processGroup;
             switch (curSchedGroup) {
                 case SCHED_GROUP_BACKGROUND:
-                    if (BoostAdjuster.isInPerfList(app.processName)) {
-                        processGroup = THREAD_GROUP_RESTRICTED;
-                    } else {
-                        processGroup = THREAD_GROUP_BACKGROUND;
-                    }
+                    processGroup = THREAD_GROUP_BACKGROUND;
                     break;
                 case SCHED_GROUP_TOP_APP:
                 case SCHED_GROUP_TOP_APP_BOUND:
