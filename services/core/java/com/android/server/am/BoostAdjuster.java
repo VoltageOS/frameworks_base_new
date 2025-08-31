@@ -295,8 +295,6 @@ public class BoostAdjuster {
         String bgCpuset = limit ? BG_LIMIT : BG_CPU;
         writeInternal(CPU_BG, bgCpuset);
         writeInternal(CPU_SYS_BG, bgCpuset);
-        writeInternal(CPU_FG, limit ? DISPLAY_CPU : ALL_CORES);
-        writeInternal(CPU_RESTRICTED, limit ? BG_LIMIT : ALL_CORES);
     }
 
     private static boolean needsControl(ProcessRecord app, boolean verifyGroup, int oldScheduleGroup) {
