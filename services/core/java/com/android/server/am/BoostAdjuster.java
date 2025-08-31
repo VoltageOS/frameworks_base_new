@@ -285,10 +285,8 @@ public class BoostAdjuster {
 
     private void boostDisplay(boolean enable) {
         String boostVal = enable ? String.valueOf(BoostConfig.SF_UC_MIN_BOOST) : "0";
-        String cpuset = enable ? BIG_CORES : DISPLAY_CPU;
         writeInternal(DISPLAY_UC_MIN, boostVal);
         writeInternal(DISPLAY_UC_MAX, boostVal);
-        writeInternal(DISPLAY_CPU, cpuset);
     }
 
     private void restrictBackground(boolean limit) {
