@@ -40,7 +40,7 @@ public class BoostAdjuster {
 
     private static final String CPU_BG = BoostConfig.cpuPath("background");
     private static final String CPU_DISPLAY = BoostConfig.cpuPath("display");
-    private static final String CPU_FG = BoostConfig.cpuPath("foreground");
+    private static final String CPU_NT_FG = BoostConfig.cpuPath("nt_foreground");
     private static final String CPU_RESTRICTED = BoostConfig.cpuPath("restricted");
     private static final String CPU_SYS_BG = BoostConfig.cpuPath("system-background");
 
@@ -291,7 +291,9 @@ public class BoostAdjuster {
 
     private void restrictBackground(boolean limit) {
         String bgCpuset = limit ? BG_LIMIT : BG_CPU;
+        String ntFgCpuset = limit ? BG_LIMIT : ALL_CORES;
         writeInternal(CPU_BG, bgCpuset);
+        writeInternal(CPU_NT_FG, ntFgCpuset);
     }
 
     private static boolean needsControl(ProcessRecord app, boolean verifyGroup, int oldScheduleGroup) {
