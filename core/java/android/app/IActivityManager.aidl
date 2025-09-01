@@ -1059,5 +1059,6 @@ interface IActivityManager {
     void setThreadAffinity(int pid, int affinity);
     void setPerformanceMode(boolean enabled, String reason);
     void boostHint(String reason, long duration);
+    void inputBoost(long duration);
 
 }

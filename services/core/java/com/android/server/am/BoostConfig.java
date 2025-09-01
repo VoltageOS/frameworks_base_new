@@ -46,7 +46,7 @@ public final class BoostConfig {
     public static final String BIG_CORES = getCpuRange(getCpuProp("cpu_big", "4,5,6,7"));
     public static final String SMALL_CORES = getCpuRange(getCpuProp("cpu_small", "0,1,2,3"));
     public static final String LITTLE_CLUSTER_INDEX = SMALL_CORES.split("[-,]")[0];
-    public static final String INPUT_BOOST_PATH = CPU_SYS_PATH + "cpu" + LITTLE_CLUSTER_INDEX + CPU_FREQ_PATH + SCALING_MIN_FREQ_FILE;
+    public static final String CPU_BOOST_PATH = CPU_SYS_PATH + "cpu" + LITTLE_CLUSTER_INDEX + CPU_FREQ_PATH + SCALING_MIN_FREQ_FILE;
 
     public static final int SF_UC_MIN_BOOST =
             Math.round(SystemProperties.getInt("ro.surface_flinger.uclamp.min", 100) * 100f / 1024f);

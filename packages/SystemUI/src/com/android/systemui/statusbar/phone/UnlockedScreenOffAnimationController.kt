@@ -36,6 +36,7 @@ import com.android.systemui.statusbar.notification.PropertyAnimator
 import com.android.systemui.statusbar.notification.stack.AnimationProperties
 import com.android.systemui.statusbar.notification.stack.StackStateAnimator
 import com.android.systemui.statusbar.policy.KeyguardStateController
+import com.android.systemui.util.NTBoosterController
 import com.android.systemui.util.settings.GlobalSettings
 import dagger.Lazy
 import javax.inject.Inject
@@ -120,11 +121,13 @@ constructor(
                         if (lightRevealScrim.revealEffect !is CircleReveal) {
                             lightRevealScrim.revealAmount = 1f
                         }
+                        NTBoosterController.get().releaseUnlockedScreenAnimationOffBoost()
                     }
 
                     override fun onAnimationEnd(animation: Animator) {
                         lightRevealAnimationPlaying = false
                         interactionJankMonitor.end(CUJ_SCREEN_OFF)
+                        NTBoosterController.get().releaseUnlockedScreenAnimationOffBoost()
                     }
 
                     override fun onAnimationStart(animation: Animator) {
@@ -142,6 +145,7 @@ constructor(
         namedRunnable("startLightReveal") {
             lightRevealAnimationPlaying = true
             lightRevealAnimator.start()
+            NTBoosterController.get().acquireUnlockedScreenAnimationOffBoost()
         }
 
     private val animatorDurationScaleObserver =

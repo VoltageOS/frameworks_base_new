@@ -39,7 +39,7 @@ public class PointerEventDispatcher extends InputEventReceiver {
     @Override
     public void onInputEvent(InputEvent event) {
         try {
-            BoostHelper.boostHint("inputBoost", 800L);
+            BoostHelper.inputBoost(800L);
             if (event instanceof MotionEvent
                     && (event.getSource() & InputDevice.SOURCE_CLASS_POINTER) != 0) {
                 MotionEvent motionEvent = (MotionEvent) event;

@@ -58,6 +58,14 @@ public class BoostHelper {
         }
     }
 
+    public static void inputBoost(long durationMillis) {
+        try {
+            ActivityManager.getService().inputBoost(durationMillis);
+        } catch (Exception e) {
+            logException("inputBoost", e);
+        }
+    }
+
     private static void logException(String method, Exception e) {
         if (DEBUG) {
             Log.w(TAG, method + " failed", e);

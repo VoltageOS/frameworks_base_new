@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class BoostAdjuster {
+
     private static final String TAG = "BoostAdjuster";
     private static final boolean DEBUG = false;
 
@@ -37,12 +38,10 @@ public class BoostAdjuster {
     public static final int THREAD_GROUP_RESTRICTED = Process.THREAD_GROUP_RESTRICTED;
 
     private static final String CPU_BG = BoostConfig.cpuPath("background");
-    private static final String CPU_DISPLAY = BoostConfig.cpuPath("display");
     private static final String CPU_NT_FG = BoostConfig.cpuPath("nt_foreground");
     private static final String CPU_RESTRICTED = BoostConfig.cpuPath("restricted");
-    private static final String CPU_SYS_BG = BoostConfig.cpuPath("system-background");
 
-    private static final String ROOT_PROCS = BoostConfig.cpuCtlPath("cgroup", "/cgroup.procs");
+    private static final String ROOT_PROCS = BoostConfig.cpuCtlPath("", "cgroup.procs");
     private static final String RESTRICTED_PROCS = BoostConfig.cpuCtlPath("restricted", "/cgroup.procs");
     private static final String RESTRICTED_UC_MAX = BoostConfig.cpuCtlPath("restricted", "/cpu.uclamp.max");
     private static final String RESTRICTED_UC_MIN = BoostConfig.cpuCtlPath("restricted", "/cpu.uclamp.min");
@@ -50,20 +49,11 @@ public class BoostAdjuster {
     private static final String DISPLAY_UC_MIN = BoostConfig.cpuCtlPath("display", "/cpu.uclamp.min");
 
     private static final String BG_CPU = BoostConfig.BG_CPU;
-    private static final String DISPLAY_CPU = BoostConfig.DISPLAY_CPU;
     private static final String ALL_CORES = BoostConfig.ALL_CORES;
     private static final String BG_LIMIT = BoostConfig.BG_LIMIT;
-    private static final String FG_LIMIT = BoostConfig.FG_LIMIT;
-    private static final String BIG_CORES = BoostConfig.BIG_CORES;
 
-    private static ArrayList<String> sAppWhiteList = new ArrayList<>();
-    private static ArrayList<String> sAppPerfList = new ArrayList<>();
-
-    private String currentReason = "none";
-
-    private final ActivityManagerService mAm;
-    private final HandlerThread mHandlerThread;
-    private final BoostHandler mHandler;
+    private static final ArrayList<String> sAppWhiteList = new ArrayList<>();
+    private static final ArrayList<String> sAppPerfList = new ArrayList<>();
 
     private static final int MSG_WRITE = 1;
     private static final int MSG_ADJUST_CPUSET = 2;
@@ -74,6 +64,15 @@ public class BoostAdjuster {
     private static final int MSG_BOOST_HINT = 7;
     private static final int MSG_BOOST_HOME_PROCESS = 8;
     private static final int MSG_ON_WAKEFULNESS_CHANGED = 9;
+    private static final int MSG_INPUT_BOOST = 10;
+    private static final int MSG_DISABLE_INPUT_BOOST = 11;
+
+    private final ActivityManagerService mAm;
+    private final HandlerThread mHandlerThread;
+    private final BoostHandler mHandler;
+    private final UiHandler mUiHandler;
+
+    private volatile String currentReason = "none";
 
     static {
         sAppWhiteList.add("com.google.android.providers.media.module");
@@ -88,53 +87,7 @@ public class BoostAdjuster {
         mHandlerThread = new HandlerThread("BoostAdjusterThread");
         mHandlerThread.start();
         mHandler = new BoostHandler(mHandlerThread.getLooper(), this);
-    }
-
-    private static class BoostHandler extends Handler {
-        private final BoostAdjuster mAdjuster;
-
-        BoostHandler(Looper looper, BoostAdjuster adjuster) {
-            super(looper);
-            mAdjuster = adjuster;
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case MSG_WRITE:
-                    WriteParams writeParams = (WriteParams) msg.obj;
-                    mAdjuster.writeInternal(writeParams.path, writeParams.value);
-                    break;
-                case MSG_ADJUST_CPUSET:
-                    AdjustCpusetParams cpusetParams = (AdjustCpusetParams) msg.obj;
-                    mAdjuster.adjustCpusetCpusInternal(cpusetParams);
-                    break;
-                case MSG_DISABLE_BOOST_HINT:
-                    mAdjuster.hintBoost(false);
-                    break;
-                case MSG_ANIMATION_BOOST:
-                    mAdjuster.animationBoostInternal(msg.arg2, msg.arg1 == 1);
-                    break;
-                case MSG_SET_THREAD_AFFINITY:
-                    mAdjuster.setThreadAffinityInternal(msg.arg2, msg.arg1);
-                    break;
-                case MSG_SET_PERFORMANCE_MODE:
-                    mAdjuster.setPerformanceModeInternal(msg.arg1 == 1, (String) msg.obj);
-                    break;
-                case MSG_BOOST_HINT:
-                    BoostHintParams hintParams = (BoostHintParams) msg.obj;
-                    mAdjuster.boostHintInternal(hintParams.reason, hintParams.duration);
-                    break;
-                case MSG_BOOST_HOME_PROCESS:
-                    mAdjuster.boostHomeProcessInternal((ProcessRecord) msg.obj);
-                    break;
-                case MSG_ON_WAKEFULNESS_CHANGED:
-                    mAdjuster.onWakefulnessChangedInternal(msg.arg1 == 1);
-                    break;
-                default:
-                    if (DEBUG) Slog.w(TAG, "Unknown message: " + msg.what);
-            }
-        }
+        mUiHandler = new UiHandler(UiThread.getHandler().getLooper(), this);
     }
 
     public void write(String path, String value) {
@@ -159,9 +112,15 @@ public class BoostAdjuster {
     }
 
     public void boostHint(final String reason, final long duration) {
-        UiThread.getHandler().post(() ->
-            mHandler.sendMessage(mHandler.obtainMessage(MSG_BOOST_HINT,
-                    new BoostHintParams(reason, duration)))
+        mHandler.sendMessage(mHandler.obtainMessage(MSG_BOOST_HINT, new BoostHintParams(reason, duration)));
+    }
+
+    public void inputBoost(long durationMillis) {
+        mUiHandler.removeMessages(MSG_DISABLE_INPUT_BOOST);
+        mUiHandler.sendMessage(mUiHandler.obtainMessage(MSG_INPUT_BOOST, (int) durationMillis, 0));
+        mUiHandler.sendMessageDelayed(
+            mUiHandler.obtainMessage(MSG_DISABLE_INPUT_BOOST), 
+            durationMillis
         );
     }
 
@@ -177,71 +136,81 @@ public class BoostAdjuster {
         try {
             FileUtils.stringToFile(path, value);
         } catch (IOException e) {
-            if (DEBUG) Slog.e(TAG, "Failed to write to " + path + ": " + e.getMessage());
+            Slog.w(TAG, "Failed to write " + path + ": " + e.getMessage());
         }
     }
 
-    private void adjustCpusetCpusInternal(AdjustCpusetParams params) {
-        String cgroup = params.cgroup;
-        long durationMillis = params.durationMillis;
-        if (DEBUG) Slog.d(TAG, "adjustCpusetCpusInternal: group=" + cgroup + ", duration=" + durationMillis);
-        if (cgroup == null) {
-            if (DEBUG) Slog.w(TAG, "Invalid cgroup (null), ignoring!");
-            return;
-        }
+    private void adjustCpusetInternal(String cgroup, long durationMillis) {
+        if (cgroup == null) return;
         adjustCpuset(cgroup, true);
         mHandler.postDelayed(() -> adjustCpuset(cgroup, false), durationMillis);
     }
 
-    private void animationBoostInternal(int pid, boolean enabled) {
-        ProcessRecord curProc;
-        synchronized (mAm.mPidsSelfLocked) {
-            curProc = mAm.mPidsSelfLocked.get(pid);
+    private void adjustCpuset(String cgroup, boolean limit) {
+        String cpuset;
+        switch (cgroup) {
+            case "nt_foreground": cpuset = limit ? BoostConfig.FG_LIMIT : ALL_CORES; break;
+            case "background": cpuset = limit ? BG_LIMIT : BG_CPU; break;
+            default: return;
         }
-        if (curProc == null) return;
-        final int renderTid = curProc.getRenderThreadTid();
+        writeInternal("/dev/cpuset/" + cgroup + "/cpus", cpuset);
+    }
+
+    private void animationBoostInternal(int pid, boolean enabled) {
+        ProcessRecord proc;
+        synchronized (mAm.mPidsSelfLocked) {
+            proc = mAm.mPidsSelfLocked.get(pid);
+        }
+        if (proc == null) return;
+        final int renderTid = proc.getRenderThreadTid();
         final int prio = Process.getThreadPriority(pid);
         try {
             if (enabled) {
-                final int policy = Process.SCHED_RR | Process.SCHED_RESET_ON_FORK;
-                Process.setThreadScheduler(pid, policy, 1);
-                if (renderTid > 0) Process.setThreadScheduler(renderTid, policy, 10);
+                Process.setThreadScheduler(pid, Process.SCHED_RR | Process.SCHED_RESET_ON_FORK, 1);
+                Process.setThreadScheduler(renderTid, Process.SCHED_RR | Process.SCHED_RESET_ON_FORK, 1);
             } else {
                 Process.setThreadScheduler(pid, 0, 0);
                 Process.setThreadPriority(prio);
-                if (renderTid > 0) Process.setThreadScheduler(renderTid, 0, 0);
+                Process.setThreadScheduler(renderTid, 0, 0);
             }
         } catch (Exception ignored) {}
-        boostRestricted(pid, renderTid, enabled);
+        boostRestricted(pid, enabled);
+        boostDisplay(enabled);
     }
 
-    private void setThreadAffinityInternal(int pid, int affinity) {
-        Process.setThreadGroupAndCpuset(pid, Process.THREAD_GROUP_RESTRICTED);
+    public void setThreadAffinityInternal(int pid, int affinity) {
+        if (affinity == 0) {
+            Process.setThreadGroupAndCpuset(pid, Process.THREAD_GROUP_TOP_APP);
+        } else {
+            Process.setThreadGroupAndCpuset(pid, Process.THREAD_GROUP_FOREGROUND);
+        }
         Process.setThreadAffinity(pid, affinity);
     }
 
     private void setPerformanceModeInternal(boolean enabled, String reason) {
-        final boolean sysuiBoosting = !enabled && !"sysui".equals(reason) && "sysui".equals(currentReason);
-        if (sysuiBoosting) return;
-        if (!enabled && !reason.equals(currentReason)) return;
-        String freq = enabled ? BoostConfig.MIN_CPU_FREQ_BOOST : "0";
-        writeInternal(BoostConfig.INPUT_BOOST_PATH, freq);
+        boolean sysuiBoosting = "sysui".equals(currentReason) && !"sysui".equals(reason) && !enabled;
+        if (!enabled && (!reason.equals(currentReason) || sysuiBoosting)) return;
+        String freq;
+        if (enabled) {
+            freq = "sysui".equals(reason) ? "99999999" : BoostConfig.MIN_CPU_FREQ_BOOST;
+        } else {
+            freq = "0";
+        }
+        writeInternal(BoostConfig.CPU_BOOST_PATH, freq);
         currentReason = enabled ? reason : "none";
     }
 
-    private void boostHintInternal(final String reason, final long duration) {
+    private void boostHintInternal(String reason, long duration) {
         currentReason = reason;
-        hintBoost(true);
+        setPerformanceModeInternal(true, reason);
         mHandler.removeMessages(MSG_DISABLE_BOOST_HINT);
-        mHandler.sendEmptyMessageDelayed(MSG_DISABLE_BOOST_HINT, duration);
+        mHandler.sendEmptyMessageDelayed(MSG_DISABLE_BOOST_HINT, (int) duration);
     }
 
-    private void hintBoost(boolean enabled) {
-        boostDisplay(enabled);
-        adjustCpuset("background", enabled);
-        adjustCpuset("nt_foreground", enabled);
-        SystemProperties.set("dalvik.vm.dex2oat-threads", enabled ? "1" : "2");
-        setPerformanceModeInternal(enabled, currentReason);
+    private void inputBoostInternal(boolean enable) {
+        adjustCpuset("background", enable);
+        adjustCpuset("nt_foreground", enable);
+        SystemProperties.set("dalvik.vm.dex2oat-threads", enable ? "1" : "2");
     }
 
     private void boostHomeProcessInternal(ProcessRecord proc) {
@@ -255,41 +224,23 @@ public class BoostAdjuster {
         restrictBackground(!awake);
     }
 
-    private void adjustCpuset(String cgroup, boolean limit) {
-        String cpuset;
-        switch (cgroup) {
-            case "nt_foreground":
-                cpuset = limit ? FG_LIMIT : ALL_CORES;
-                break;
-            case "background":
-                cpuset = limit ? BG_LIMIT : BG_CPU;
-                break;
-            default:
-                return;
-        }
-        writeInternal("/dev/cpuset/" + cgroup + "/cpus", cpuset);
-    }
-
-    private void boostRestricted(int pid, int rTid, boolean enable) {
+    private void boostRestricted(int pid, boolean enable) {
         String boostVal = enable ? "100" : "0";
         writeInternal(RESTRICTED_UC_MIN, boostVal);
-        writeInternal(RESTRICTED_UC_MAX, boostVal);
-        writeInternal(CPU_RESTRICTED, enable ? BIG_CORES : ALL_CORES);
+        writeInternal(RESTRICTED_UC_MAX, "100");
+        writeInternal(CPU_RESTRICTED, enable ? BoostConfig.BIG_CORES : ALL_CORES);
         writeInternal(enable ? RESTRICTED_PROCS : ROOT_PROCS, String.valueOf(pid));
-        if (rTid == 0) writeInternal(enable ? RESTRICTED_PROCS : ROOT_PROCS, String.valueOf(rTid));
     }
 
     private void boostDisplay(boolean enable) {
-        String boostVal = enable ? String.valueOf(BoostConfig.SF_UC_MIN_BOOST) : "0";
-        writeInternal(DISPLAY_UC_MIN, boostVal);
-        writeInternal(DISPLAY_UC_MAX, boostVal);
+        String val = enable ? String.valueOf(BoostConfig.SF_UC_MIN_BOOST) : "0";
+        writeInternal(DISPLAY_UC_MIN, val);
+        writeInternal(DISPLAY_UC_MAX, val);
     }
 
     private void restrictBackground(boolean limit) {
-        String bgCpuset = limit ? BG_LIMIT : BG_CPU;
-        String ntFgCpuset = limit ? BG_LIMIT : ALL_CORES;
-        writeInternal(CPU_BG, bgCpuset);
-        writeInternal(CPU_NT_FG, ntFgCpuset);
+        writeInternal(CPU_BG, limit ? BG_LIMIT : BG_CPU);
+        writeInternal(CPU_NT_FG, limit ? BG_LIMIT : ALL_CORES);
     }
 
     private static boolean needsControl(ProcessRecord app, boolean verifyGroup, int oldScheduleGroup) {
@@ -321,14 +272,13 @@ public class BoostAdjuster {
     }
 
     public static boolean isInPerfList(String processName) {
-        return processName != null &&
-               (sAppPerfList.contains(processName) || isCamera(processName));
+        return processName != null && (sAppPerfList.contains(processName) || isCamera(processName));
     }
 
     public static boolean isCamera(String processName) {
         return processName != null && processName.toLowerCase().contains("camera");
     }
-    
+
     private static class WriteParams {
         final String path;
         final String value;
@@ -353,6 +303,76 @@ public class BoostAdjuster {
         BoostHintParams(String reason, long duration) { 
             this.reason = reason; 
             this.duration = duration; 
+        }
+    }
+    
+    private static class BoostHandler extends Handler {
+        private final BoostAdjuster mAdjuster;
+
+        BoostHandler(Looper looper, BoostAdjuster adjuster) {
+            super(looper);
+            mAdjuster = adjuster;
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case MSG_WRITE:
+                    WriteParams wp = (WriteParams) msg.obj;
+                    mAdjuster.writeInternal(wp.path, wp.value);
+                    break;
+                case MSG_ADJUST_CPUSET:
+                    AdjustCpusetParams cp = (AdjustCpusetParams) msg.obj;
+                    mAdjuster.adjustCpusetInternal(cp.cgroup, cp.durationMillis);
+                    break;
+                case MSG_DISABLE_BOOST_HINT:
+                    mAdjuster.setPerformanceModeInternal(false, mAdjuster.currentReason);
+                    break;
+                case MSG_ANIMATION_BOOST:
+                    mAdjuster.animationBoostInternal(msg.arg2, msg.arg1 == 1);
+                    break;
+                case MSG_SET_THREAD_AFFINITY:
+                    mAdjuster.setThreadAffinityInternal(msg.arg2, msg.arg1);
+                    break;
+                case MSG_SET_PERFORMANCE_MODE:
+                    mAdjuster.setPerformanceModeInternal(msg.arg1 == 1, (String) msg.obj);
+                    break;
+                case MSG_BOOST_HINT:
+                    BoostHintParams bh = (BoostHintParams) msg.obj;
+                    mAdjuster.boostHintInternal(bh.reason, bh.duration);
+                    break;
+                case MSG_BOOST_HOME_PROCESS:
+                    mAdjuster.boostHomeProcessInternal((ProcessRecord) msg.obj);
+                    break;
+                case MSG_ON_WAKEFULNESS_CHANGED:
+                    mAdjuster.onWakefulnessChangedInternal(msg.arg1 == 1);
+                    break;
+                default:
+                    if (DEBUG) Slog.w(TAG, "Unknown message: " + msg.what);
+            }
+        }
+    }
+    
+    private static class UiHandler extends Handler {
+        private final BoostAdjuster mAdjuster;
+
+        UiHandler(Looper looper, BoostAdjuster adjuster) {
+            super(looper);
+            mAdjuster = adjuster;
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case MSG_INPUT_BOOST:
+                    mAdjuster.inputBoostInternal(true);
+                    break;
+                case MSG_DISABLE_INPUT_BOOST:
+                    mAdjuster.inputBoostInternal(false);
+                    break;
+                default:
+                    if (DEBUG) Slog.w(TAG, "Unknown UI message: " + msg.what);
+            }
         }
     }
 }

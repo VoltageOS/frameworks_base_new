@@ -19709,4 +19709,9 @@ public class ActivityManagerService extends IActivityManager.Stub
     public void boostHint(final String reason, final long duration) {
         mBoostAdjuster.boostHint(reason, duration);
     }
+
+    @Override
+    public void inputBoost(long durationMillis) {
+        mBoostAdjuster.inputBoost(durationMillis);
+    }
 }
