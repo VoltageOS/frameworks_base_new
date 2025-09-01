@@ -15,13 +15,11 @@
  */
 package com.android.server.am;
 
-import android.hardware.power.Mode;
 import android.os.FileUtils;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
-import android.os.PowerManagerInternal;
 import android.os.Process;
 import android.os.SystemProperties;
 import android.util.Slog;
@@ -224,12 +222,10 @@ public class BoostAdjuster {
 
     private void setPerformanceModeInternal(boolean enabled, String reason) {
         final boolean sysuiBoosting = !enabled && !"sysui".equals(reason) && "sysui".equals(currentReason);
-        PowerManagerInternal pm = mAm.mLocalPowerManager;
-        if (pm == null || sysuiBoosting) return;
-        if (enabled) pm.setPowerMode(Mode.LAUNCH, false);
+        if (sysuiBoosting) return;
         if (!enabled && !reason.equals(currentReason)) return;
-        pm.setPowerMode(Mode.LAUNCH, enabled);
-        pm.setPowerMode(PowerManagerInternal.MODE_FIXED_PERFORMANCE, enabled);
+        String freq = enabled ? BoostConfig.MIN_CPU_FREQ_BOOST : "0";
+        writeInternal(BoostConfig.INPUT_BOOST_PATH, freq);
         currentReason = enabled ? reason : "none";
     }
 

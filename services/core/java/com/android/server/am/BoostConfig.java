@@ -25,6 +25,10 @@ public final class BoostConfig {
     private static final String UCLAMP_MAX = "/cpu.uclamp.max";
     private static final String UCLAMP_MIN = "/cpu.uclamp.min";
 
+    private static final String CPU_SYS_PATH = "/sys/devices/system/cpu/";
+    private static final String CPU_FREQ_PATH = "/cpufreq/";
+    private static final String SCALING_MIN_FREQ_FILE = "scaling_min_freq";
+
     private static final String RESTRICTED = "restricted";
     private static final String BACKGROUND = "background";
     private static final String SYSTEM_BG = "system-background";
@@ -32,12 +36,17 @@ public final class BoostConfig {
 
     private static final String VOLTAGE_PROP = "persist.sys.voltage_";
 
+    public static final String MIN_CPU_FREQ_BOOST = getCpuProp("min_freq_boost", "1100000");
+
     public static final String BG_CPU = getCpuProp("cpu_bg", "0-3");
     public static final String DISPLAY_CPU = getCpuProp("cpu_display", "0-5");
     public static final String ALL_CORES = getCpuProp("cpu_unlimit_ui", "0-7");
     public static final String BG_LIMIT = getCpuProp("cpu_limit_bg", "0-1");
     public static final String FG_LIMIT = getCpuProp("cpu_limit_ui", "0-2");
     public static final String BIG_CORES = getCpuRange(getCpuProp("cpu_big", "4,5,6,7"));
+    public static final String SMALL_CORES = getCpuRange(getCpuProp("cpu_small", "0,1,2,3"));
+    public static final String LITTLE_CLUSTER_INDEX = SMALL_CORES.split("[-,]")[0];
+    public static final String INPUT_BOOST_PATH = CPU_SYS_PATH + "cpu" + LITTLE_CLUSTER_INDEX + CPU_FREQ_PATH + SCALING_MIN_FREQ_FILE;
 
     public static final int SF_UC_MIN_BOOST =
             Math.round(SystemProperties.getInt("ro.surface_flinger.uclamp.min", 100) * 100f / 1024f);
