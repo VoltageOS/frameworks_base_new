@@ -21,8 +21,6 @@ import static com.android.systemui.util.ColorUtilKt.hexColorString;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
-import android.os.UserHandle;
-import android.provider.Settings;
 import android.graphics.Canvas;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
@@ -87,13 +85,8 @@ public class NotificationBackgroundView extends View implements Dumpable,
                 R.color.notification_state_color_light);
         mDarkColoredStatefulColors = getResources().getColorStateList(
                 R.color.notification_state_color_dark);
-
-        final boolean isTransparent = Settings.System.getIntForUser(
-                context.getContentResolver(), "notification_row_transparency", 0, UserHandle.USER_CURRENT) == 1;
-
         if (notificationRowTransparency()) {
-            mNormalColor = isTransparent ? SurfaceEffectColors.surfaceEffect1(getContext())
-                    : mContext.getColor(com.android.internal.R.color.materialColorSurfaceContainerHigh);
+            mNormalColor = SurfaceEffectColors.surfaceEffect1(getContext());
         } else  {
             mNormalColor = mContext.getColor(
                     com.android.internal.R.color.materialColorSurfaceContainerHigh);
@@ -304,11 +297,7 @@ public class NotificationBackgroundView extends View implements Dumpable,
 
     public void setTint(int tintColor) {
         Drawable baseLayer = getBaseBackgroundLayer();
-
-        final boolean isTransparent = Settings.System.getIntForUser(
-                mContext.getContentResolver(), "notification_row_transparency", 0, UserHandle.USER_CURRENT) == 1;
-
-        if (isTransparent) {
+        if (notificationRowTransparency()) {
             // BG base layer being a drawable, there isn't a method like setColor() to color it.
             // Instead, we set a color filter that essentially replaces every pixel of the drawable.
             baseLayer.setColorFilter(

@@ -49,7 +49,6 @@ import android.graphics.Rect;
 import android.graphics.drawable.AnimatedVectorDrawable;
 import android.graphics.drawable.AnimationDrawable;
 import android.graphics.drawable.Drawable;
-import android.os.Handler;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -57,7 +56,6 @@ import android.os.SystemProperties;
 import android.os.Trace;
 import android.os.UserHandle;
 import android.text.TextUtils;
-import android.provider.Settings;
 import android.util.AttributeSet;
 import android.util.FloatProperty;
 import android.util.IndentingPrintWriter;
@@ -1714,11 +1712,8 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
 
     @Override
     protected void setBackgroundTintColor(int color) {
-        final boolean isTransparent = Settings.System.getIntForUser(
-                mContext.getContentResolver(), "notification_row_transparency", 0, UserHandle.USER_CURRENT) == 1;
-
-        if (isTransparent) {
-	    boolean isColorized = false;
+        if (notificationRowTransparency()) {
+            boolean isColorized = false;
             if (NotificationBundleUi.isEnabled()) {
                 if (mEntryAdapter != null) {
                     isColorized = mEntryAdapter.isColorized();
@@ -1728,7 +1723,7 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
                     isColorized = mEntry.getSbn().getNotification().isColorized();
                 }
             }
-
+            boolean isTransparent = usesTransparentBackground();
             if (isColorized) {
                 // For colorized notifications, use a color that matches the tint color at 90% alpha
                 // when the row is transparent.
@@ -1737,7 +1732,7 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
             } else {
                 // For non-colorized notifications, use the semi-transparent normal color token
                 // when the row is transparent, and the opaque color token otherwise.
-                if (!usesTransparentBackground() && mBgTint == NO_COLOR) {
+                if (!isTransparent && mBgTint == NO_COLOR) {
                     color = mOpaqueColor;
                 }
             }
