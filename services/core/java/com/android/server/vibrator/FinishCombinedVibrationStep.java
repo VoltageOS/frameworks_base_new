@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,25 +18,19 @@ package com.android.server.vibrator;
 
 import android.annotation.NonNull;
 import android.os.Trace;
-import android.util.Slog;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
- * Finish a sync vibration started by a {@link StartSequentialEffectStep}.
+ * Finish a synced vibration started by a {@link StartCombinedVibrationStep}.
  *
- * <p>This only plays after all active vibrators steps have finished, and adds a {@link
- * StartSequentialEffectStep} to the queue if the sequential effect isn't finished yet.
+ * <p>This only plays after all active vibrators steps have finished.
  */
-// TODO(b/421857859): remove this class once flag remove_sequential_combination is removed
-final class FinishSequentialEffectStep extends Step {
-    public final StartSequentialEffectStep startedStep;
+final class FinishCombinedVibrationStep extends Step {
 
-    FinishSequentialEffectStep(StartSequentialEffectStep startedStep) {
+    FinishCombinedVibrationStep(VibrationStepConductor conductor) {
         // No predefined startTime, just wait for all steps in the queue.
-        super(startedStep.conductor, Long.MAX_VALUE);
-        this.startedStep = startedStep;
+        super(conductor, Long.MAX_VALUE);
     }
 
     @Override
@@ -48,17 +42,11 @@ final class FinishSequentialEffectStep extends Step {
     @NonNull
     @Override
     public List<Step> play() {
-        Trace.traceBegin(Trace.TRACE_TAG_VIBRATOR, "FinishSequentialEffectStep");
+        Trace.traceBegin(Trace.TRACE_TAG_VIBRATOR, "FinishCombinedVibrationStep");
         try {
-            if (VibrationThread.DEBUG) {
-                Slog.d(VibrationThread.TAG,
-                        "FinishSequentialEffectStep for effect #" + startedStep.currentIndex);
-            }
             conductor.vibratorManagerHooks.noteVibratorOff(
                     conductor.getVibration().callerInfo.uid);
-            Step nextStep = startedStep.nextStep();
-            return nextStep == null ? VibrationStepConductor.EMPTY_STEP_LIST
-                    : Arrays.asList(nextStep);
+            return VibrationStepConductor.EMPTY_STEP_LIST;
         } finally {
             Trace.traceEnd(Trace.TRACE_TAG_VIBRATOR);
         }
@@ -73,7 +61,6 @@ final class FinishSequentialEffectStep extends Step {
 
     @Override
     public void cancelImmediately() {
-        conductor.vibratorManagerHooks.noteVibratorOff(
-                conductor.getVibration().callerInfo.uid);
+        conductor.vibratorManagerHooks.noteVibratorOff(conductor.getVibration().callerInfo.uid);
     }
 }

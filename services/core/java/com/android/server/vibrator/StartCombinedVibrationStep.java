@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,41 +34,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Starts a sync vibration.
+ * Starts a synced vibration on one or more vibrators.
  *
  * <p>If this step has successfully started playing a vibration on any vibrator, it will always
- * add a {@link FinishSequentialEffectStep} to the queue, to be played after all vibrators
+ * add a {@link FinishCombinedVibrationStep} to the queue, to be played after all vibrators
  * have finished all their individual steps.
  *
- * <p>If this step does not start any vibrator, it will add a {@link StartSequentialEffectStep} if
- * the sequential effect isn't finished yet.
- *
- * <p>TODO: this step actually does several things: multiple HAL calls to sync the vibrators,
- * as well as dispatching the underlying vibrator instruction calls (which need to be done before
- * triggering the synced effects). This role/encapsulation could probably be improved to split up
- * the grouped HAL calls here, as well as to clarify the role of dispatching VibratorSteps between
- * this class and the HAL.
+ * <p>If this step does not start any vibrator, it will return an empty queue of next steps.
  */
-// TODO(b/421857859): remove this class once flag remove_sequential_combination is removed
-final class StartSequentialEffectStep extends Step {
-    public final CombinedVibration.Sequential sequentialEffect;
-    public final int currentIndex;
+final class StartCombinedVibrationStep extends Step {
+    public final CombinedVibration vibration;
 
     private long mVibratorsOnMaxDuration;
 
-    /** Start a sequential effect at the beginning. */
-    StartSequentialEffectStep(VibrationStepConductor conductor,
-            CombinedVibration.Sequential effect) {
-        this(conductor, SystemClock.uptimeMillis() + effect.getDelays().get(0), effect,
-                /* index= */ 0);
-    }
-
-    /** Continue a SequentialEffect from the specified index. */
-    private StartSequentialEffectStep(VibrationStepConductor conductor, long startTime,
-            CombinedVibration.Sequential effect, int index) {
-        super(conductor, startTime);
-        sequentialEffect = effect;
-        currentIndex = index;
+    StartCombinedVibrationStep(VibrationStepConductor conductor, CombinedVibration vibration) {
+        super(conductor, SystemClock.uptimeMillis());
+        this.vibration = vibration;
     }
 
     @Override
@@ -79,35 +60,24 @@ final class StartSequentialEffectStep extends Step {
     @NonNull
     @Override
     public List<Step> play() {
-        Trace.traceBegin(Trace.TRACE_TAG_VIBRATOR, "StartSequentialEffectStep");
+        Trace.traceBegin(Trace.TRACE_TAG_VIBRATOR, "StartCombinedVibrationStep");
         List<Step> nextSteps = new ArrayList<>();
         mVibratorsOnMaxDuration = -1;
         try {
-            if (VibrationThread.DEBUG) {
-                Slog.d(VibrationThread.TAG,
-                        "StartSequentialEffectStep for effect #" + currentIndex);
-            }
-            CombinedVibration effect = sequentialEffect.getEffects().get(currentIndex);
-            DeviceEffectMap effectMapping = createEffectToVibratorMapping(effect);
+            DeviceEffectMap effectMapping = createEffectToVibratorMapping(vibration);
             if (effectMapping == null) {
                 // Unable to map effects to vibrators, ignore this step.
                 return nextSteps;
             }
 
             mVibratorsOnMaxDuration = startVibrating(effectMapping, nextSteps);
-            conductor.vibratorManagerHooks.noteVibratorOn(
-                    conductor.getVibration().callerInfo.uid, mVibratorsOnMaxDuration);
         } finally {
-            if (mVibratorsOnMaxDuration >= 0) {
+            if (mVibratorsOnMaxDuration > 0) {
+                conductor.vibratorManagerHooks.noteVibratorOn(
+                        conductor.getVibration().callerInfo.uid, mVibratorsOnMaxDuration);
                 // It least one vibrator was started then add a finish step to wait for all
-                // active vibrators to finish their individual steps before going to the next.
-                // Otherwise this step was ignored so just go to the next one.
-                Step nextStep =
-                        mVibratorsOnMaxDuration > 0 ? new FinishSequentialEffectStep(this)
-                                : nextStep();
-                if (nextStep != null) {
-                    nextSteps.add(nextStep);
-                }
+                // active vibrators to finish their individual steps before finishing.
+                nextSteps.add(new FinishCombinedVibrationStep(conductor));
             }
             Trace.traceEnd(Trace.TRACE_TAG_VIBRATOR);
         }
@@ -124,26 +94,9 @@ final class StartSequentialEffectStep extends Step {
     public void cancelImmediately() {
     }
 
-    /**
-     * Create the next {@link StartSequentialEffectStep} to play this sequential effect, starting at
-     * the time this method is called, or null if sequence is complete.
-     */
-    @Nullable
-    Step nextStep() {
-        int nextIndex = currentIndex + 1;
-        if (nextIndex >= sequentialEffect.getEffects().size()) {
-            return null;
-        }
-        long nextEffectDelay = sequentialEffect.getDelays().get(nextIndex);
-        long nextStartTime = SystemClock.uptimeMillis() + nextEffectDelay;
-        return new StartSequentialEffectStep(conductor, nextStartTime, sequentialEffect,
-                nextIndex);
-    }
-
     /** Create a mapping of individual {@link VibrationEffect} to available vibrators. */
     @Nullable
-    private DeviceEffectMap createEffectToVibratorMapping(
-            CombinedVibration effect) {
+    private DeviceEffectMap createEffectToVibratorMapping(CombinedVibration effect) {
         if (effect instanceof CombinedVibration.Mono) {
             return new DeviceEffectMap((CombinedVibration.Mono) effect);
         }
@@ -191,13 +144,12 @@ final class StartSequentialEffectStep extends Step {
         // This property is guaranteed by there only being one thread (VibrationThread) executing
         // one Step at a time, so there's no need to hold the state lock. Callbacks will be
         // delivered asynchronously but enqueued until the step processing is finished.
-        boolean hasPrepared = false;
+        boolean hasPrepared = conductor.vibratorManagerHooks.prepareSyncedVibration(
+                effectMapping.getRequiredSyncCapabilities(),
+                effectMapping.getVibratorIds());
         boolean hasTriggered = false;
         boolean hasFailed = false;
         long maxDuration = 0;
-        hasPrepared = conductor.vibratorManagerHooks.prepareSyncedVibration(
-                effectMapping.getRequiredSyncCapabilities(),
-                effectMapping.getVibratorIds());
 
         for (int i = 0; i < vibratorCount; i++) {
             long duration = startVibrating(steps[i], effectMapping.effectAt(i), nextSteps);
@@ -214,7 +166,6 @@ final class StartSequentialEffectStep extends Step {
         if (hasPrepared && !hasFailed && maxDuration > 0) {
             hasTriggered = conductor.vibratorManagerHooks.triggerSyncedVibration(
                     getVibration().id);
-            hasFailed &= hasTriggered;
         }
 
         if (hasFailed) {
@@ -335,22 +286,7 @@ final class StartSequentialEffectStep extends Step {
                 SparseArray<VibrationEffect> effects) {
             long prepareCap = 0;
             for (int i = 0; i < effects.size(); i++) {
-                VibrationEffect effect = effects.valueAt(i);
-                if (effect instanceof VibrationEffect.VendorEffect) {
-                    prepareCap |= IVibratorManager.CAP_PREPARE_PERFORM;
-                } else if (effect instanceof VibrationEffect.Composed composed) {
-                    VibrationEffectSegment firstSegment = composed.getSegments().get(0);
-                    if (firstSegment instanceof StepSegment) {
-                        prepareCap |= IVibratorManager.CAP_PREPARE_ON;
-                    } else if (firstSegment instanceof PrebakedSegment) {
-                        prepareCap |= IVibratorManager.CAP_PREPARE_PERFORM;
-                    } else if (firstSegment instanceof PrimitiveSegment) {
-                        prepareCap |= IVibratorManager.CAP_PREPARE_COMPOSE;
-                    }
-                } else {
-                    Slog.wtf(VibrationThread.TAG,
-                            "Unable to check sync capabilities to unexpected effect: " + effect);
-                }
+                prepareCap |= calculateRequiredSyncCapabilities(effects.valueAt(i));
             }
             int triggerCap = 0;
             if (requireMixedTriggerCapability(prepareCap, IVibratorManager.CAP_PREPARE_ON)) {
@@ -363,6 +299,26 @@ final class StartSequentialEffectStep extends Step {
                 triggerCap |= IVibratorManager.CAP_MIXED_TRIGGER_COMPOSE;
             }
             return IVibratorManager.CAP_SYNC | prepareCap | triggerCap;
+        }
+
+        private long calculateRequiredSyncCapabilities(VibrationEffect effect) {
+            if (effect instanceof VibrationEffect.VendorEffect) {
+                return IVibratorManager.CAP_PREPARE_PERFORM;
+            }
+            if (effect instanceof VibrationEffect.Composed composed) {
+                VibrationEffectSegment firstSegment = composed.getSegments().get(0);
+                if (firstSegment instanceof StepSegment) {
+                    return IVibratorManager.CAP_PREPARE_ON;
+                } else if (firstSegment instanceof PrebakedSegment) {
+                    return IVibratorManager.CAP_PREPARE_PERFORM;
+                } else if (firstSegment instanceof PrimitiveSegment) {
+                    return IVibratorManager.CAP_PREPARE_COMPOSE;
+                }
+            } else {
+                Slog.wtf(VibrationThread.TAG,
+                        "Unable to check sync capabilities to unexpected effect: " + effect);
+            }
+            return 0;
         }
 
         /**
