@@ -16,10 +16,6 @@
 
 package com.android.systemui.statusbar.notification.footer.ui.view;
 
-import static android.graphics.PorterDuff.Mode.SRC_ATOP;
-
-import static com.android.systemui.Flags.notificationFooterBackgroundTintOptimization;
-import static com.android.systemui.Flags.notificationShadeBlur;
 import static com.android.systemui.util.ColorUtilKt.hexColorString;
 
 import android.annotation.ColorInt;
@@ -33,6 +29,7 @@ import android.content.res.Resources;
 import android.database.ContentObserver;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
+import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
@@ -45,7 +42,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
-import com.android.internal.graphics.ColorUtils;
 import com.android.systemui.common.shared.colors.SurfaceEffectColors;
 import com.android.systemui.res.R;
 import com.android.systemui.scene.shared.flag.SceneContainerFlag;
@@ -421,29 +417,31 @@ public class FooterView extends StackScrollerDecorView {
                 "notification_row_transparency", 0, UserHandle.USER_CURRENT) == 1;
 
         if (isNotificationTransparencyOn) {
-            clearAllBg.setAlpha(0);
-            settingsBg.setAlpha(0);
+            int semiTransparentColor;
+            if (mIsBlurSupported) {
+                semiTransparentColor = SurfaceEffectColors.surfaceEffect1(getContext());
+            } else {
+                semiTransparentColor = mContext.getColor(
+                        com.android.internal.R.color.materialColorSurfaceContainer);
+            }
+
+            final ColorFilter colorFilter =
+                    new PorterDuffColorFilter(semiTransparentColor, PorterDuff.Mode.SRC);
+            clearAllBg.setColorFilter(colorFilter);
+            settingsBg.setColorFilter(colorFilter);
             if (historyBg != null) {
-                historyBg.setAlpha(0);
+                historyBg.setColorFilter(colorFilter);
             }
         } else {
-            final @ColorInt int scHigh;
-            if (!notificationFooterBackgroundTintOptimization()) {
-                if (notificationShadeBlur()) {
-                    scHigh = mContext.getColor(
-                            com.android.internal.R.color.materialColorSurfaceContainer);
-                } else {
-                    scHigh = mContext.getColor(
-                            com.android.internal.R.color.materialColorSurfaceContainerHigh);
-                }
-                if (scHigh != 0) {
-                    final ColorFilter bgColorFilter = new PorterDuffColorFilter(scHigh, SRC_ATOP);
-                    clearAllBg.setColorFilter(bgColorFilter);
-                    settingsBg.setColorFilter(bgColorFilter);
-                    if (NotifRedesignFooter.isEnabled() && historyBg != null) {
-                        historyBg.setColorFilter(bgColorFilter);
-                    }
-                }
+            int opaqueColor = mContext.getColor(
+                    com.android.internal.R.color.materialColorSurfaceContainerHigh);
+
+            final ColorFilter colorFilter =
+                    new PorterDuffColorFilter(opaqueColor, PorterDuff.Mode.SRC);
+            clearAllBg.setColorFilter(colorFilter);
+            settingsBg.setColorFilter(colorFilter);
+            if (historyBg != null) {
+                historyBg.setColorFilter(colorFilter);
             }
         }
 
@@ -469,13 +467,11 @@ public class FooterView extends StackScrollerDecorView {
     }
 
     public void setIsBlurSupported(boolean isBlurSupported) {
-        if (notificationShadeBlur()) {
-            if (mIsBlurSupported == isBlurSupported) {
-                return;
-            }
-            mIsBlurSupported = isBlurSupported;
-            updateColors();
+        if (mIsBlurSupported == isBlurSupported) {
+            return;
         }
+        mIsBlurSupported = isBlurSupported;
+        updateColors();
     }
 
     @Override
