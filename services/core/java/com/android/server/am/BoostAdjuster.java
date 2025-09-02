@@ -18,9 +18,12 @@ package com.android.server.am;
 import android.os.FileUtils;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.os.Parcel;
 import android.os.Process;
+import android.os.ServiceManager;
 import android.os.SystemProperties;
 import android.util.Slog;
 
@@ -40,6 +43,7 @@ public class BoostAdjuster {
     private static final String CPU_BG = BoostConfig.cpuPath("background");
     private static final String CPU_NT_FG = BoostConfig.cpuPath("nt_foreground");
     private static final String CPU_RESTRICTED = BoostConfig.cpuPath("restricted");
+    private static final String CPU_DISPLAY = BoostConfig.cpuPath("display");
 
     private static final String ROOT_PROCS = BoostConfig.cpuCtlPath("", "cgroup.procs");
     private static final String RESTRICTED_PROCS = BoostConfig.cpuCtlPath("restricted", "/cgroup.procs");
@@ -175,7 +179,7 @@ public class BoostAdjuster {
             }
         } catch (Exception ignored) {}
         boostRestricted(pid, enabled);
-        boostDisplay(enabled);
+        boostSF(enabled);
     }
 
     public void setThreadAffinityInternal(int pid, int affinity) {
@@ -195,6 +199,9 @@ public class BoostAdjuster {
             freq = "sysui".equals(reason) ? "99999999" : BoostConfig.MIN_CPU_FREQ_BOOST;
         } else {
             freq = "0";
+        }
+        if ("fling".equals(reason)) {
+            boostSF(enabled);
         }
         writeInternal(BoostConfig.CPU_BOOST_PATH, freq);
         currentReason = enabled ? reason : "none";
@@ -230,12 +237,6 @@ public class BoostAdjuster {
         writeInternal(RESTRICTED_UC_MAX, "100");
         writeInternal(CPU_RESTRICTED, enable ? BoostConfig.BIG_CORES : ALL_CORES);
         writeInternal(enable ? RESTRICTED_PROCS : ROOT_PROCS, String.valueOf(pid));
-    }
-
-    private void boostDisplay(boolean enable) {
-        String val = enable ? String.valueOf(BoostConfig.SF_UC_MIN_BOOST) : "0";
-        writeInternal(DISPLAY_UC_MIN, val);
-        writeInternal(DISPLAY_UC_MAX, val);
     }
 
     private void restrictBackground(boolean limit) {
@@ -277,6 +278,26 @@ public class BoostAdjuster {
 
     public static boolean isCamera(String processName) {
         return processName != null && processName.toLowerCase().contains("camera");
+    }
+
+    private void boostSF(boolean enable) {
+        IBinder sfBinder = ServiceManager.getService("SurfaceFlinger");
+        if (sfBinder != null) {
+            Parcel data = Parcel.obtain();
+            try {
+                data.writeInterfaceToken("android.ui.ISurfaceComposer");
+                data.writeInt(enable ? 1 : 0);
+                sfBinder.transact(1048, data, null, 0);
+            } catch (Exception e) {
+                Slog.w(TAG, "boostSF transact failed", e);
+            } finally {
+                data.recycle();
+            }
+        }
+        writeInternal(CPU_DISPLAY, enable ? ALL_CORES : BoostConfig.DISPLAY_CPU);
+        String val = enable ? String.valueOf(BoostConfig.SF_UC_MIN_BOOST) : "0";
+        writeInternal(DISPLAY_UC_MIN, val);
+        writeInternal(DISPLAY_UC_MAX, "100");
     }
 
     private static class WriteParams {
