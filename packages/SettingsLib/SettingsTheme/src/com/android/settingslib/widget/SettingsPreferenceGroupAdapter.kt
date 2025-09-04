@@ -227,7 +227,7 @@ open class SettingsPreferenceGroupAdapter(preferenceGroup: PreferenceGroup) :
         val item = getItem(position)
         return when {
             // This item handles edge to edge itself
-            item is NormalPaddingMixin && item is GroupSectionDividerMixin -> 0 to 0
+            item is GroupSectionDividerMixin -> 0 to 0
 
             // According to mappingPreferenceGroup(), backgroundRes == 0 means this item is
             // GroupSectionDividerMixin or PreferenceCategory, which is design to have normal
