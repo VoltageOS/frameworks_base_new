@@ -35,6 +35,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.res.dimensionResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.android.systemui.communal.ui.compose.extensions.detectLongPressGesture
 import com.android.systemui.development.ui.viewmodel.BuildNumberViewModel
@@ -66,7 +67,7 @@ fun BuildNumber(
                     modifier
                         .focusable()
                         .wrapContentWidth()
-                        .padding(start = 8.dp)
+                        .padding(start = dimensionResource(R.dimen.qs_status_bar_margin_start))
                         .combinedClickable(
                             onClick = { dataUsageViewModel.onDataUsageClick() },
                             onLongClick = {
