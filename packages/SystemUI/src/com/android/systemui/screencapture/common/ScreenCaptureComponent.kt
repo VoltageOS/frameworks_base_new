@@ -16,27 +16,26 @@
 
 package com.android.systemui.screencapture.common
 
-import android.view.Display
-import android.view.Window
-import com.android.systemui.screencapture.common.ui.compose.ScreenCaptureContent
+import com.android.systemui.screencapture.common.shared.model.ScreenCaptureUiParameters
+import com.android.systemui.screencapture.ui.ScreenCaptureUi
 import dagger.BindsInstance
 import dagger.Subcomponent
 import kotlinx.coroutines.CoroutineScope
 
 /**
- * Dagger Subcomponent interface for Screen Capture UI.
- *
- * Actual Subcomponents should extend this interface and be listed as a subcomponent in
- * [ScreenCaptureUiModule].
+ * Dagger Subcomponent interface for Screen Capture. It's alive while there is an ongoing Screen
+ * Capture or the UI is visible.
  */
-@ScreenCaptureUiScope
-@Subcomponent(modules = [CommonModule::class, FallbackModule::class])
-interface ScreenCaptureUiComponent {
+@ScreenCaptureScope
+@Subcomponent(modules = [ScreenCaptureUiModule::class])
+interface ScreenCaptureComponent {
 
-    val screenCaptureContent: ScreenCaptureContent
+    @ScreenCapture fun coroutineScope(): CoroutineScope
+
+    fun screenCaptureUiFactory(): ScreenCaptureUi.Factory
 
     /**
-     * Dagger Subcomponent Builder for [ScreenCaptureUiComponent].
+     * Dagger Subcomponent Builder for [ScreenCaptureComponent].
      *
      * Actual Subcomponent Builders should extend this interface and override [build] to return the
      * actual subcomponent type.
@@ -45,18 +44,16 @@ interface ScreenCaptureUiComponent {
     interface Builder {
 
         /** The [CoroutineScope] to use coroutines limited to Screen Capture sessions. */
-        @BindsInstance fun setScope(@ScreenCaptureUi scope: CoroutineScope): Builder
+        @BindsInstance fun setScope(@ScreenCapture scope: CoroutineScope): Builder
 
-        /** [Display] that hosts the Screen Capture UI. */
-        @BindsInstance fun setDisplay(@ScreenCaptureUi display: Display): Builder
-
-        /** [Window] that hosts the Screen Capture UI. */
-        @BindsInstance fun setWindow(@ScreenCaptureUi window: Window?): Builder
+        /** [ScreenCaptureUiParameters] that has been used to start capture flow. */
+        @BindsInstance
+        fun setParameters(@ScreenCapture parameters: ScreenCaptureUiParameters): Builder
 
         /**
-         * Builds this [ScreenCaptureUiComponent]. Actual Subcomponent Builders should override this
+         * Builds this [ScreenCaptureComponent]. Actual Subcomponent Builders should override this
          * method with their own version that returns the actual subcomponent type.
          */
-        fun build(): ScreenCaptureUiComponent
+        fun build(): ScreenCaptureComponent
     }
 }
