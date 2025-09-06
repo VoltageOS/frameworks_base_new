@@ -76,8 +76,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
 
-import com.android.server.biometrics.sensors.face.sense.SenseUtils;
-
 /**
  * Class that defines the states of an authentication session invoked via
  * {@link android.hardware.biometrics.BiometricPrompt}, as well as all of the necessary
@@ -402,9 +400,6 @@ public final class AuthSession implements IBinder.DeathRecipient {
     }
 
     private boolean isConfirmationRequired(BiometricSensor sensor) {
-        if (sensor.modality == TYPE_FACE && SenseUtils.canUseProvider()) {
-            return true;
-        }
         return sensor.confirmationSupported()
                 && (sensor.confirmationAlwaysRequired(mUserId)
                 || mPreAuthInfo.confirmationRequested);
