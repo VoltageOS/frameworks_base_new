@@ -51,6 +51,10 @@ public final class BoostConfig {
     public static final int SF_UC_MIN_BOOST =
             Math.round(SystemProperties.getInt("ro.surface_flinger.uclamp.min", 100) * 100f / 1024f);
 
+    public static final String SCALING_GOV = "persist.sys.scaling_governor";
+    public static final String DEFAULT_GOV = SystemProperties.get("persist.sys.default_scaling_gov", "schedutil");
+    public static final String PERF_GOV = "performance";
+
     public static String cpuPath(String type) {
         switch (type) {
             case "restricted": return CPUSET + RESTRICTED + CPUS;
@@ -79,6 +83,10 @@ public final class BoostConfig {
         if (cores == null || cores.isEmpty()) return "";
         String[] parts = cores.split(",");
         return parts.length == 1 ? parts[0] : parts[0] + "-" + parts[parts.length - 1];
+    }
+    
+    public static String scalingGov() {
+        return SystemProperties.get(SCALING_GOV, "schedutil");
     }
 
     private BoostConfig() {}

@@ -190,7 +190,6 @@ import android.os.Message;
 import android.os.PowerManager;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
-import android.os.SystemProperties;
 import android.os.Trace;
 import android.os.UserHandle;
 import android.os.UserManager;
@@ -255,6 +254,7 @@ import com.android.internal.util.function.pooled.PooledLambda;
 import com.android.internal.util.function.pooled.PooledPredicate;
 import com.android.server.inputmethod.InputMethodManagerInternal;
 import com.android.server.policy.WindowManagerPolicy;
+import com.android.server.am.BoostAdjuster;
 import com.android.server.wm.utils.RegionUtils;
 import com.android.server.wm.utils.RotationCache;
 import com.android.server.wm.utils.WmDisplayCutout;
@@ -590,7 +590,7 @@ class DisplayContent extends RootDisplayArea implements WindowManagerPolicy.Disp
     ActivityRecord mFocusedApp = null;
     
     boolean mBoostingCamera = false;
-
+    
     /**
      * We only respect the orientation request from apps below this {@link TaskDisplayArea}.
      * It is the last focused {@link TaskDisplayArea} on this display that handles orientation
@@ -4055,19 +4055,16 @@ class DisplayContent extends RootDisplayArea implements WindowManagerPolicy.Disp
                 newFocus, getDisplayId(), Debug.getCallers(4));
         final Task oldTask = mFocusedApp != null ? mFocusedApp.getTask() : null;
         final Task newTask = newFocus != null ? newFocus.getTask() : null;
-        
+
         boolean isCamera = newFocus != null
                 && newFocus.packageName != null
-                && (newFocus.packageName.toLowerCase().contains("camera")
-                    || newFocus.packageName.equals("com.google.android.apps.photos"));
+                && BoostAdjuster.CAMERA_APPS.contains(newFocus.packageName);
 
-        boolean isBoosted = "1".equals(SystemProperties.get("persist.sys.power_mode_perf"));
-
-        if (isCamera && !mBoostingCamera && !isBoosted) {
-            SystemProperties.set("persist.sys.power_mode_perf", "1");
+        if (isCamera && !mBoostingCamera && !BoostAdjuster.isBoosted()) {
+            BoostAdjuster.boostCamera(true);
             mBoostingCamera = true;
         } else if (!isCamera && mBoostingCamera) {
-            SystemProperties.set("persist.sys.power_mode_perf", "0");
+            BoostAdjuster.boostCamera(false);
             mBoostingCamera = false;
         }
 

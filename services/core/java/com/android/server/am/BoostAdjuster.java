@@ -58,6 +58,7 @@ public class BoostAdjuster {
 
     private static final ArrayList<String> sAppWhiteList = new ArrayList<>();
     private static final ArrayList<String> sAppPerfList = new ArrayList<>();
+    public static final ArrayList<String> CAMERA_APPS = new ArrayList<>();
 
     private static final int MSG_WRITE = 1;
     private static final int MSG_ADJUST_CPUSET = 2;
@@ -84,6 +85,9 @@ public class BoostAdjuster {
         sAppWhiteList.add("android.os.cts");
         sAppPerfList.add("com.android.systemui");
         sAppPerfList.add("com.android.launcher3");
+        CAMERA_APPS.add("com.google.android.GoogleCamera");
+        CAMERA_APPS.add("org.lineageos.aperture");
+        CAMERA_APPS.add("com.oplus.camera");
     }
 
     public BoostAdjuster(ActivityManagerService am) {
@@ -277,7 +281,7 @@ public class BoostAdjuster {
     }
 
     public static boolean isCamera(String processName) {
-        return processName != null && processName.toLowerCase().contains("camera");
+        return processName != null && CAMERA_APPS.contains(processName);
     }
 
     private void boostSF(boolean enable) {
@@ -298,6 +302,14 @@ public class BoostAdjuster {
         String val = enable ? String.valueOf(BoostConfig.SF_UC_MIN_BOOST) : "0";
         writeInternal(DISPLAY_UC_MIN, val);
         writeInternal(DISPLAY_UC_MAX, "100");
+    }
+
+    public static void boostCamera(boolean boost) {
+        SystemProperties.set(BoostConfig.SCALING_GOV, boost ? BoostConfig.PERF_GOV : BoostConfig.DEFAULT_GOV);
+    }
+
+    public static boolean isBoosted() {
+        return BoostConfig.PERF_GOV.equals(BoostConfig.scalingGov());
     }
 
     private static class WriteParams {
