@@ -78,6 +78,8 @@ public class BoostAdjuster {
     private final UiHandler mUiHandler;
 
     private volatile String currentReason = "none";
+    private volatile int mLauncherPid = 0;
+    private volatile int mRenderTid = 0;
 
     static {
         sAppWhiteList.add("com.google.android.providers.media.module");
@@ -144,7 +146,7 @@ public class BoostAdjuster {
         try {
             FileUtils.stringToFile(path, value);
         } catch (IOException e) {
-            Slog.w(TAG, "Failed to write " + path + ": " + e.getMessage());
+            logger("Failed to write " + path + ": " + e.getMessage());
         }
     }
 
@@ -174,8 +176,15 @@ public class BoostAdjuster {
         final int prio = Process.getThreadPriority(pid);
         try {
             if (enabled) {
-                Process.setThreadScheduler(pid, Process.SCHED_RR | Process.SCHED_RESET_ON_FORK, 1);
-                Process.setThreadScheduler(renderTid, Process.SCHED_RR | Process.SCHED_RESET_ON_FORK, 1);
+                if (mLauncherPid != pid) {
+                    Process.setThreadScheduler(pid, Process.SCHED_RR | Process.SCHED_RESET_ON_FORK, 1);
+                    Process.setThreadScheduler(renderTid, Process.SCHED_RR | Process.SCHED_RESET_ON_FORK, 10);
+                    logger("animation boost: sysui pid: " + pid + " renderthread id: " + renderTid);
+                } else {
+                    if (mLauncherPid > 0) mAm.scheduleAsFifoPriority(mLauncherPid, true, 1);
+                    if (mRenderTid > 0) mAm.scheduleAsFifoPriority(mRenderTid, true, 10);
+                    logger("animation boost: launcher pid: " + mLauncherPid + " renderthread id: " + mRenderTid);
+                }
             } else {
                 Process.setThreadScheduler(pid, 0, 0);
                 Process.setThreadPriority(prio);
@@ -190,17 +199,21 @@ public class BoostAdjuster {
         if (affinity == 0) {
             Process.setThreadGroupAndCpuset(pid, Process.THREAD_GROUP_TOP_APP);
         } else {
-            Process.setThreadGroupAndCpuset(pid, Process.THREAD_GROUP_FOREGROUND);
+            Process.setThreadGroupAndCpuset(pid, 
+                mLauncherPid != pid 
+                    ? Process.THREAD_GROUP_FOREGROUND 
+                    : Process.THREAD_GROUP_RESTRICTED);
         }
         Process.setThreadAffinity(pid, affinity);
     }
 
     private void setPerformanceModeInternal(boolean enabled, String reason) {
-        boolean sysuiBoosting = "sysui".equals(currentReason) && !"sysui".equals(reason) && !enabled;
+        boolean sysuiBoosting = isCore(currentReason) && !isCore(reason) && !enabled;
         if (!enabled && (!reason.equals(currentReason) || sysuiBoosting)) return;
+        currentReason = enabled ? reason : "none";
         String freq;
         if (enabled) {
-            freq = "sysui".equals(reason) ? "99999999" : BoostConfig.MIN_CPU_FREQ_BOOST;
+            freq = BoostConfig.MIN_CPU_FREQ_BOOST;
         } else {
             freq = "0";
         }
@@ -208,7 +221,10 @@ public class BoostAdjuster {
             boostSF(enabled);
         }
         writeInternal(BoostConfig.CPU_BOOST_PATH, freq);
-        currentReason = enabled ? reason : "none";
+    }
+    
+    private boolean isCore(String reason) {
+        return "sysui".equals(reason) || "launcher".equals(reason);
     }
 
     private void boostHintInternal(String reason, long duration) {
@@ -226,8 +242,9 @@ public class BoostAdjuster {
 
     private void boostHomeProcessInternal(ProcessRecord proc) {
         if (!"com.android.launcher3".equals(proc.processName)) return;
-        mAm.scheduleAsFifoPriority(proc.getPid(), true, 1);
-        mAm.scheduleAsFifoPriority(proc.getRenderThreadTid(), true, 10);
+        mLauncherPid = proc.getPid();
+        mRenderTid = proc.getRenderThreadTid();
+        logger("Boosting Launcher pid: " + mLauncherPid + "renderthread id: " + mRenderTid);
     }
 
     private void onWakefulnessChangedInternal(boolean awake) {
@@ -250,17 +267,17 @@ public class BoostAdjuster {
 
     private static boolean needsControl(ProcessRecord app, boolean verifyGroup, int oldScheduleGroup) {
         if (verifyGroup && oldScheduleGroup == ProcessList.SCHED_GROUP_TOP_APP && app.hasActivities()) {
-            if (DEBUG) Slog.d(TAG, "previous schedule group is top, not need limit!");
+            logger("previous schedule group is top, not need limit!");
             return false;
         }
         if (app.uid % 100000 < 10000 || isInPerfList(app.processName) || isInWhiteList(app.processName)) {
-            if (DEBUG) Slog.d(TAG, "system app not need limit!");
+            logger("system app not need limit!");
             return false;
         }
         if (app.getHostingRecord() == null || app.getHostingRecord().isTopApp()) {
             return false;
         }
-        if (DEBUG) Slog.d(TAG, "process : " + app.processName + " is not top!");
+        logger("process : " + app.processName + " is not top!");
         return true;
     }
 
@@ -293,7 +310,7 @@ public class BoostAdjuster {
                 data.writeInt(enable ? 1 : 0);
                 sfBinder.transact(1048, data, null, 0);
             } catch (Exception e) {
-                Slog.w(TAG, "boostSF transact failed", e);
+                logger("boostSF transact failed: " + e);
             } finally {
                 data.recycle();
             }
@@ -381,7 +398,7 @@ public class BoostAdjuster {
                     mAdjuster.onWakefulnessChangedInternal(msg.arg1 == 1);
                     break;
                 default:
-                    if (DEBUG) Slog.w(TAG, "Unknown message: " + msg.what);
+                    logger("Unknown message: " + msg.what);
             }
         }
     }
@@ -404,8 +421,12 @@ public class BoostAdjuster {
                     mAdjuster.inputBoostInternal(false);
                     break;
                 default:
-                    if (DEBUG) Slog.w(TAG, "Unknown UI message: " + msg.what);
+                    logger("Unknown UI message: " + msg.what);
             }
         }
+    }
+    
+    private static void logger(String msg) {
+        if (SystemProperties.getBoolean("persist.sys.ax_boost_debug", false)) Slog.d(TAG, msg);
     }
 }
