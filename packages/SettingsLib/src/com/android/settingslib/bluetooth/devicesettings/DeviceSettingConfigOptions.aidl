@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,4 @@
 
 package com.android.settingslib.bluetooth.devicesettings;
 
-import com.android.settingslib.bluetooth.devicesettings.DeviceInfo;
-import com.android.settingslib.bluetooth.devicesettings.DeviceSettingConfigOptions;
-import com.android.settingslib.bluetooth.devicesettings.IGetDeviceSettingsConfigCallback;
-
-interface IDeviceSettingsConfigProviderService {
-   void getDeviceSettingsConfig(in DeviceInfo device, in IGetDeviceSettingsConfigCallback callback);
-   void getDeviceSettingsConfigWithOptions(in DeviceInfo device, in IGetDeviceSettingsConfigCallback callback, in DeviceSettingConfigOptions options);
-}
+parcelable DeviceSettingConfigOptions;
