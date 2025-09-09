@@ -31,27 +31,34 @@ import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.FixMethodOrder
 import org.junit.Rule
+import org.junit.Test
 import org.junit.rules.TestRule
 import org.junit.runner.RunWith
 import org.junit.runners.MethodSorters
 import org.junit.runners.Parameterized
 
 /**
- * Test entering bubble via dragging the [testApp] icon from task bar to bubble bar location.
+ * Test entering bubble for an app that launches via trampoline task. Bubble is launched via
+ * dragging the [testApp] icon from task bar to bubble bar location.
  *
- * To run this test: `atest WMShellExplicitFlickerTestsBubbles:EnterBubbleViaDragToBubbleBarTest`
+ * To run this test:
+ * ```
+ *     atest WMShellExplicitFlickerTestsBubbles:EnterBubbleViaDragToBubbleBarTrampolineTest
+ * ```
  *
  * Pre-steps:
  * ```
- *     Drag [testApp] icon to hotseat
+ *     Drag [TrampolineStartActivity] icon to hotseat
  * ```
+ *
  * Actions:
  * ```
  *     Switch to overview to show task bar.
- *     Drag the [testApp] icon from task bar to bubble bar location.
+ *     Drag the [TrampolineStartActivity] icon from task bar to bubble bar location.
  * ```
+ *
  * Verified tests:
- * - [BubbleFlickerTestBase]
+ * - [BubbleFlickerTrampolineTestBase]
  * - [EnterBubbleViaDragToBubbleBarTestCases]
  */
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CREATE_ANY_BUBBLE, Flags.FLAG_ENABLE_BUBBLE_BAR)
@@ -59,17 +66,18 @@ import org.junit.runners.Parameterized
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Presubmit
 @RunWith(Parameterized::class)
-class EnterBubbleViaDragToBubbleBarTest(navBar: NavBar) : BubbleFlickerTestBase(),
-    EnterBubbleViaDragToBubbleBarTestCases {
+class EnterBubbleViaDragToBubbleBarTrampolineTest(navBar: NavBar) :
+    BubbleFlickerTrampolineTestBase(), EnterBubbleViaDragToBubbleBarTestCases {
 
     companion object {
-        private val recordTraceWithTransitionRule = RecordTraceWithTransitionRule(
-            setUpBeforeTransition = {
-                SplitScreenUtils.createShortcutOnHotseatIfNotExist(tapl, testApp.appName)
-            },
-            transition = { launchBubbleViaDragToBubbleBar(testApp, tapl, wmHelper) },
-            tearDownAfterTransition = { testApp.exit(wmHelper) }
-        )
+        private val recordTraceWithTransitionRule =
+            RecordTraceWithTransitionRule(
+                setUpBeforeTransition = {
+                    SplitScreenUtils.createShortcutOnHotseatIfNotExist(tapl, trampolineApp.appName)
+                },
+                transition = { launchBubbleViaDragToBubbleBar(trampolineApp, tapl, wmHelper) },
+                tearDownAfterTransition = { runningApp.exit(wmHelper) },
+            )
 
         @Parameterized.Parameters(name = "{0}")
         @JvmStatic
@@ -77,10 +85,11 @@ class EnterBubbleViaDragToBubbleBarTest(navBar: NavBar) : BubbleFlickerTestBase(
     }
 
     @get:Rule
-    val setUpRule: TestRule = ApplyPerParameterRule(
-        Utils.testSetupRule(navBar).around(recordTraceWithTransitionRule),
-        params = arrayOf(navBar),
-    )
+    val setUpRule: TestRule =
+        ApplyPerParameterRule(
+            Utils.testSetupRule(navBar).around(recordTraceWithTransitionRule),
+            params = arrayOf(navBar),
+        )
 
     override val traceDataReader
         get() = recordTraceWithTransitionRule.reader
