@@ -16,13 +16,9 @@
 -->
 
 <resources>
-    <style name="SettingslibPopupMenuStyle" parent="Widget.AppCompat.PopupMenu">
-        <item name="android:popupBackground">@drawable/settingslib_spinner_dropdown_background</item>
+    <style name="SettingslibPopupMenuStyle" parent="Theme.AppCompat.DayNight">
+        <item name="android:popupBackground">@drawable/settingslib_expressive_spinner_dropdown_background</item>
         <item name="android:textAppearance">@style/TextAppearance.SettingsLib.LabelLarge</item>
         <item name="android:dropDownListViewStyle">@style/SettingslibMenuItemStyle</item>
-    </style>
-
-    <style name="SettingslibMenuItemStyle" parent="Widget.AppCompat.ListView.DropDown">
-        <item name="android:textAppearance">@style/TextAppearance.SettingsLib.LabelLarge</item>
     </style>
 </resources>
