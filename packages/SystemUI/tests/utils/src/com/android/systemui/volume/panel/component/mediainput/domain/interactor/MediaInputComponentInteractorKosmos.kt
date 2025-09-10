@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.android.systemui.volume.panel.component.mediainput.ui.viewmodel
+package com.android.systemui.volume.panel.component.mediainput.domain.interactor
 
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.volume.panel.component.mediainput.domain.interactor.mediaInputComponentInteractor
+import com.android.systemui.media.dialog.mediaSwitchingControllerFactory
 
-var Kosmos.mediaInputViewModel by
-    Kosmos.Fixture { MediaInputViewModel(mediaInputComponentInteractor) }
+var Kosmos.mediaInputComponentInteractor by
+    Kosmos.Fixture { MediaInputComponentInteractor(mediaSwitchingControllerFactory) }
