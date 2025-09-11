@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package android.companion;
 
-import android.companion.AssociationInfo;
-import android.companion.ActionRequest;
 import android.companion.DevicePresenceEvent;
-import android.os.ParcelUuid;
 
-/** @hide */
-oneway interface ICompanionDeviceService {
-    void onDeviceAppeared(in AssociationInfo associationInfo);
-    void onDeviceDisappeared(in AssociationInfo associationInfo);
-    void onDevicePresenceEvent(in DevicePresenceEvent event);
-    void onActionRequested(in AssociationInfo associationInfo, in ActionRequest request);
+/**
+ * Callback for observing device presence events.
+ * @hide
+ */
+oneway interface IOnDevicePresenceEventListener {
+    void onDevicePresence(in DevicePresenceEvent event);
 }
