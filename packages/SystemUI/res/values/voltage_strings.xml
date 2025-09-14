@@ -291,4 +291,9 @@
     <string name="screenrecord_delete_label">Delete</string>
     <!-- A toast message shown after successfully deleting a screen recording [CHAR LIMIT=NONE] -->
     <string name="screenrecord_delete_description">Screen recording deleted</string>
+
+    <!-- Privacy Indicator -->
+    <string name="mic_camera_privacy_indicator_title">Mic and camera privacy indicator</string>
+    <string name="location_privacy_indicator_title">Location privacy indicator</string>
+    <string name="projection_privacy_indicator_title">Media projection privacy indicator</string>
 </resources>
