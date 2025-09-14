@@ -21,6 +21,7 @@ import android.content.Context
 import android.database.ContentObserver
 import android.os.UserHandle
 import android.provider.Settings
+import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import androidx.annotation.VisibleForTesting
 import androidx.compose.animation.animateColorAsState
@@ -81,6 +82,7 @@ import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -416,6 +418,7 @@ private fun AutoBrightnessButton(
     onIconClick: suspend () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val view = LocalView.current
     val coroutineScope = rememberCoroutineScope()
     val backgroundColor by
         animateColorAsState(
@@ -441,9 +444,18 @@ private fun AutoBrightnessButton(
         } else {
             R.drawable.ic_qs_brightness_auto_off
         }
+    val hapticConstant =
+        if (autoMode) {
+            HapticFeedbackConstants.TOGGLE_OFF
+        } else {
+            HapticFeedbackConstants.TOGGLE_ON
+        }
 
     IconButton(
-        onClick = { coroutineScope.launch { onIconClick() } },
+        onClick = {
+            view.performHapticFeedback(hapticConstant)
+            coroutineScope.launch { onIconClick() }
+        },
         modifier = modifier.size(52.dp).clip(CircleShape).background(backgroundColor),
     ) {
         androidx.compose.material3.Icon(
