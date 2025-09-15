@@ -36,6 +36,7 @@ constructor(
     private val qsTileConfigProvider: QSTileConfigProvider,
     private val iconAndNameCustomRepository: IconAndNameCustomRepository,
 ) {
+
     /**
      * Provides a list of the tiles to edit, with their UI information (icon, labels).
      *
