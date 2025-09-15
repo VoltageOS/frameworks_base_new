@@ -38,6 +38,7 @@ import com.android.systemui.qs.tiles.CompassTile
 import com.android.systemui.qs.tiles.ScreenshotTile
 import com.android.systemui.qs.tiles.SleepModeTile
 import com.android.systemui.qs.tiles.SoundTile
+import com.android.systemui.qs.tiles.VolumeQSTile
 import com.android.systemui.qs.tiles.UsbTetherTile
 import com.android.systemui.qs.tiles.VPNTetheringTile
 import com.android.systemui.qs.tiles.VolumeTile
@@ -139,6 +140,12 @@ interface VoltageModule {
     @IntoMap
     @StringKey(SoundTile.TILE_SPEC)
     fun bindSoundTile(soundTile: SoundTile): QSTileImpl<*>
+
+    /** Inject VolumeQSTile into tileMap in QSModule */
+    @Binds
+    @IntoMap
+    @StringKey(VolumeQSTile.TILE_SPEC)
+    fun bindVolumeQSTile(volumeQSTile: VolumeQSTile): QSTileImpl<*>
 
     /** Inject UsbTetherTile into tileMap in QSModule */
     @Binds
@@ -344,6 +351,21 @@ interface VoltageModule {
                 uiConfig = QSTileUIConfig.Resource(
                     iconRes = R.drawable.ic_qs_ringer_audible,
                     labelRes = R.string.quick_settings_sound_label
+                ),
+                instanceId = uiEventLogger.getNewInstanceId(),
+                category = TileCategory.UTILITIES
+            )
+        }
+
+       @Provides
+        @IntoMap
+        @StringKey(VolumeQSTile.TILE_SPEC)
+        fun provideVolumeQSConfig(uiEventLogger: QsEventLogger): QSTileConfig {
+            return QSTileConfig(
+                tileSpec = TileSpec.create(VolumeQSTile.TILE_SPEC),
+                uiConfig = QSTileUIConfig.Resource(
+                    iconRes = R.drawable.ic_volume_media,
+                    labelRes = R.string.quick_settings_volume_label
                 ),
                 instanceId = uiEventLogger.getNewInstanceId(),
                 category = TileCategory.UTILITIES
