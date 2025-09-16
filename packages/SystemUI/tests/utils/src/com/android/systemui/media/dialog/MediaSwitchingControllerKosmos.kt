@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.systemui.volume.panel.component.mediainput.ui.viewmodel
+package com.android.systemui.media.dialog
 
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.volume.panel.component.mediainput.domain.interactor.mediaInputComponentInteractor
+import org.mockito.kotlin.mock
 
-var Kosmos.mediaInputViewModel by Kosmos.Fixture { mediaInputViewModelFactory.create() }
+val Kosmos.mediaSwitchingController by Kosmos.Fixture { mock<MediaSwitchingController>() }
 
-val Kosmos.mediaInputViewModelFactory by
-    Kosmos.Fixture {
-        object : MediaInputViewModel.Factory {
-            override fun create() = MediaInputViewModel(mediaInputComponentInteractor)
-        }
-    }
+val Kosmos.mediaSwitchingControllerFactory by
+    Kosmos.Fixture { MediaSwitchingController.Factory { _, _, _ -> mediaSwitchingController } }
