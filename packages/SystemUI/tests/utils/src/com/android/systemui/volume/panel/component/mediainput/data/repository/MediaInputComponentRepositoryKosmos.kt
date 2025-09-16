@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-package com.android.systemui.volume.panel.component.mediainput.domain.interactor
+package com.android.systemui.volume.panel.component.mediainput.data.repository
 
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.volume.panel.component.mediainput.data.repository.mediaInputComponentRepository
 
-var Kosmos.mediaInputComponentInteractor by
-    Kosmos.Fixture { MediaInputComponentInteractor(mediaInputComponentRepository) }
+var Kosmos.mediaInputComponentRepository by Kosmos.Fixture { FakeMediaInputComponentRepository() }
