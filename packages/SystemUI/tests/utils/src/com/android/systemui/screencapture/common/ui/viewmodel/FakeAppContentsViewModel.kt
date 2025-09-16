@@ -18,21 +18,21 @@ package com.android.systemui.screencapture.common.ui.viewmodel
 
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
-import com.android.systemui.screencapture.common.domain.model.ScreenCaptureRecentTask
+import com.android.systemui.screencapture.common.domain.model.ScreenCaptureAppContent
 import kotlinx.coroutines.awaitCancellation
 
-class FakeRecentTasksViewModel : RecentTasksViewModel {
+class FakeAppContentsViewModel : AppContentsViewModel {
 
-    private val _targets = mutableStateOf<List<ScreenCaptureRecentTask>?>(null)
+    private val fakeAppContents = mutableStateOf<List<ScreenCaptureAppContent>?>(null)
 
-    override val targets: State<List<ScreenCaptureRecentTask>?> = _targets
+    override val targets: State<List<ScreenCaptureAppContent>?> = fakeAppContents
 
-    fun setTargets(tasks: List<ScreenCaptureRecentTask>?) {
-        _targets.value = tasks
+    fun setAppContents(appContents: List<ScreenCaptureAppContent>?) {
+        fakeAppContents.value = appContents
     }
 
-    fun setTargets(vararg tasks: ScreenCaptureRecentTask) {
-        _targets.value = tasks.toList()
+    fun setAppContents(vararg appContents: ScreenCaptureAppContent) {
+        setAppContents(appContents.toList())
     }
 
     var activateCallCount = 0

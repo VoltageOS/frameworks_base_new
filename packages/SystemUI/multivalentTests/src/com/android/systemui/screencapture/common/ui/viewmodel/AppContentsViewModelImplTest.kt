@@ -17,6 +17,9 @@
 package com.android.systemui.screencapture.common.ui.viewmodel
 
 import android.content.ComponentName
+import android.media.projection.MediaProjectionAppContent
+import android.os.UserHandle
+import androidx.core.graphics.createBitmap
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import com.android.systemui.SysuiTestCase
@@ -24,10 +27,11 @@ import com.android.systemui.kosmos.runTest
 import com.android.systemui.kosmos.testScope
 import com.android.systemui.lifecycle.activateIn
 import com.android.systemui.mediaprojection.appselector.data.RecentTask
-import com.android.systemui.mediaprojection.appselector.data.RecentTask.UserType
+import com.android.systemui.screencapture.common.data.repository.fakeScreenCaptureAppContentRepository
 import com.android.systemui.screencapture.common.data.repository.fakeScreenCaptureRecentTaskRepository
+import com.android.systemui.screencapture.common.domain.interactor.screenCaptureAppContentInteractor
 import com.android.systemui.screencapture.common.domain.interactor.screenCaptureRecentTaskInteractor
-import com.android.systemui.screencapture.common.domain.model.ScreenCaptureRecentTask
+import com.android.systemui.screencapture.common.domain.model.ScreenCaptureAppContent
 import com.android.systemui.testKosmosNew
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
@@ -35,18 +39,27 @@ import org.junit.runner.RunWith
 
 @SmallTest
 @RunWith(AndroidJUnit4::class)
-class RecentTasksViewModelImplTest : SysuiTestCase() {
+class AppContentsViewModelImplTest : SysuiTestCase() {
 
     private val kosmos = testKosmosNew()
 
     @Test
-    fun recentTasks_returnsRecentTasksFromRepository() =
+    fun getAppContents_returnsAppContentsFromRepository() =
         kosmos.runTest {
             // Arrange
-            val viewModel = RecentTasksViewModelImpl(screenCaptureRecentTaskInteractor)
+            val viewModel =
+                AppContentsViewModelImpl(
+                    appContentInteractor = screenCaptureAppContentInteractor,
+                    recentTaskInteractor = screenCaptureRecentTaskInteractor,
+                    thumbnailWidthPx = 200,
+                    thumbnailHeightPx = 100,
+                )
             viewModel.activateIn(testScope)
+            val fakeAppContent = MediaProjectionAppContent(createBitmap(200, 100), "TestLabel", 456)
 
-            val fakeRecentTask =
+            // Act
+            val result = viewModel.targets
+            fakeScreenCaptureRecentTaskRepository.setRecentTasks(
                 RecentTask(
                     taskId = 1,
                     displayId = 2,
@@ -55,15 +68,23 @@ class RecentTasksViewModelImplTest : SysuiTestCase() {
                     baseIntentComponent = ComponentName("FakeBasePackage", "FakeBaseClass"),
                     colorBackground = 0x12345699,
                     isForegroundTask = true,
-                    userType = UserType.STANDARD,
+                    userType = RecentTask.UserType.STANDARD,
                     splitBounds = null,
                 )
-
-            // Act
-            val result = viewModel.targets
-            fakeScreenCaptureRecentTaskRepository.setRecentTasks(fakeRecentTask)
+            )
+            fakeScreenCaptureAppContentRepository.setAppContentSuccess(
+                packageName = "FakeBasePackage",
+                user = UserHandle.CURRENT,
+                fakeAppContent,
+            )
 
             // Assert
-            assertThat(result.value).containsExactly(ScreenCaptureRecentTask(fakeRecentTask))
+            assertThat(result.value)
+                .containsExactly(
+                    ScreenCaptureAppContent(
+                        packageName = "FakeBasePackage",
+                        appContent = fakeAppContent,
+                    )
+                )
         }
 }
