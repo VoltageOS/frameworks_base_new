@@ -67,7 +67,7 @@ object ShadeColors {
             true // fallback to default when context is null
         }
 
-        val topLayerAlpha = 0.75f
+        val topLayerAlpha = 0.15f
 
         val layerAbove = ColorUtils.setAlphaComponent(
             getColor(R.color.shade_panel_base, null),
@@ -75,7 +75,7 @@ object ShadeColors {
         )
 
         val layerBelow = if (useDualTone) {
-            ColorUtils.setAlphaComponent(Color.WHITE, (0.1f * 255).toInt())
+            ColorUtils.setAlphaComponent(Color.BLACK, (0.1f * 255).toInt())
         } else {
             val colorBase = getColor(R.color.shade_panel_base_color, null)
             ColorUtils.setAlphaComponent(colorBase, (0.1f * 255).toInt())
@@ -95,7 +95,7 @@ object ShadeColors {
             true // fallback to default when context is null
         }
 
-        val topLayerAlpha = 0.8f
+        val topLayerAlpha = 0.15f
 
         val layerAbove = ColorUtils.setAlphaComponent(
             getColor(R.color.shade_panel_base, null),
@@ -103,7 +103,7 @@ object ShadeColors {
         )
 
         val layerBelow = if (useDualTone) {
-            ColorUtils.setAlphaComponent(Color.WHITE, (0.05f * 255).toInt())
+            ColorUtils.setAlphaComponent(Color.WHITE, (0.1f * 255).toInt())
         } else {
             val colorBase = getColor(R.color.shade_panel_base_color, null)
             ColorUtils.setAlphaComponent(colorBase, (0.1f * 255).toInt())
@@ -114,7 +114,7 @@ object ShadeColors {
 
     @JvmStatic
     private fun Resources.shadePanelFallback(): Int {
-        return ColorUtils.blendARGB(getColor(R.color.nt_scrim_behind_1), getColor(R.color.nt_scrim_behind_2), 0.5f)
+        return getColor(R.color.shade_panel_fallback, null)
     }
 
     @JvmStatic
@@ -129,14 +129,14 @@ object ShadeColors {
     private fun Resources.notificationScrimStandardLight(): Int {
         return ColorUtils.setAlphaComponent(
             getColor(R.color.notification_scrim_base, null),
-            (0.6f * 255).toInt(),
+            (0.35f * 255).toInt(),
         )
     }
 
     private fun Resources.notificationScrimStandardDark(): Int {
         return ColorUtils.setAlphaComponent(
             getColor(R.color.notification_scrim_base, null),
-            (0.65f * 255).toInt(),
+            (0.35f * 255).toInt(),
         )
     }
 

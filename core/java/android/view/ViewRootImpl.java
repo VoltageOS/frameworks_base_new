@@ -12682,6 +12682,17 @@ public final class ViewRootImpl implements ViewParent,
             return;
         }
 
+        if ("StatusBar".equals(mWindowAttributes.getTitle())) {
+            Point size = new Point();
+            mDisplay.getRealSize(size);
+            for (int i = 0; i < regionCopy.length; i++) {
+                regionCopy[i][0] = 0;
+                regionCopy[i][1] = 0;
+                regionCopy[i][2] = size.x;
+                regionCopy[i][3] = size.y;
+            }
+        }
+
         SurfaceControl.Transaction transaction = new SurfaceControl.Transaction();
         transaction.setBlurRegions(surfaceControl, regionCopy);
 
