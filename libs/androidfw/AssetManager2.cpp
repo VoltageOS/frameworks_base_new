@@ -483,8 +483,8 @@ void AssetManager2::SetConfigurations(std::span<const ResTable_config> configura
     auto oldstr = ConfigVecToString(configurations_);
     auto newstr = ConfigVecToString(configurations);
     if (oldstr != newstr) {
-      LOG(INFO) << "AssetManager2(" << this << ") locale list changing from "
-                << oldstr << " to " << newstr;
+      //LOG(INFO) << "AssetManager2(" << this << ") locale list changing from "
+      //          << oldstr << " to " << newstr;
     }
   }
 
