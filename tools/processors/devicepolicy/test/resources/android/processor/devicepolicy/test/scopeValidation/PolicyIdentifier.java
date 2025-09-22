@@ -24,14 +24,31 @@ public final class PolicyIdentifier<T> {
     public PolicyIdentifier(String id) {
     }
 
-    private static final String TEST_POLICY_1_KEY = "test_policy_1_key";
+    private static final String EMPTY_SCOPE_KEY = "empty_scope_key";
 
+    /**
+     * Empty scope should fail.
+     */
     @BooleanPolicyDefinition(
             base = @PolicyDefinition(
-                    allowedScopes = {2, 3},
-                    affectedResource = 1
+                    allowedScopes = {},
+                    affectedResource = 2
             )
     )
-    public static final PolicyIdentifier<Boolean> TEST_POLICY_1 = new PolicyIdentifier<>(
-            TEST_POLICY_1_KEY);
+    public static final PolicyIdentifier<Boolean> EMPTY_SCOPE_POLICY = new PolicyIdentifier<>(
+            EMPTY_SCOPE_KEY);
+
+    private static final String INVALID_SCOPE_KEY = "invalid_scope_key";
+
+    /**
+     * Invalid scope should fail.
+     */
+    @BooleanPolicyDefinition(
+            base = @PolicyDefinition(
+                    allowedScopes = {100},
+                    affectedResource = 2
+            )
+    )
+    public static final PolicyIdentifier<Integer> INVALID_SCOPE_POLICY = new PolicyIdentifier<>(
+            INVALID_SCOPE_KEY);
 }
