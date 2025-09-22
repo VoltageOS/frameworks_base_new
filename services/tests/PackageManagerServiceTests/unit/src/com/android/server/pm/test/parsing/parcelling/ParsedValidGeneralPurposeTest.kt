@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,30 +16,24 @@
 
 package com.android.server.pm.test.parsing.parcelling
 
-import com.android.internal.pm.pkg.component.ParsedUsesPermission
-import com.android.internal.pm.pkg.component.ParsedUsesPermissionImpl
+import com.android.internal.pm.pkg.component.ParsedValidGeneralPurpose
+import com.android.internal.pm.pkg.component.ParsedValidGeneralPurposeImpl
 import kotlin.contracts.ExperimentalContracts
 
 @ExperimentalContracts
-class ParsedUsesPermissionTest : ParcelableComponentTest(
-    ParsedUsesPermission::class,
-    ParsedUsesPermissionImpl::class
+class ParsedValidGeneralPurposeTest : ParcelableComponentTest(
+    ParsedValidGeneralPurpose::class,
+    ParsedValidGeneralPurposeImpl::class
 ) {
-
     override val defaultImpl =
-        ParsedUsesPermissionImpl("", 0, setOf(), setOf())
-    override val creator = ParsedUsesPermissionImpl.CREATOR
+        ParsedValidGeneralPurposeImpl("purpose", 20)
+    override val creator = ParsedValidGeneralPurposeImpl.CREATOR
 
     override val baseParams = listOf(
-        ParsedUsesPermission::getName,
-        ParsedUsesPermission::getUsesPermissionFlags,
-    )
-
-    override fun extraParams() = listOf(
-        getter(ParsedUsesPermission::getPurposes, setOf("purpose")),
-        getter(ParsedUsesPermission::getGeneralPurposes, setOf("generalPurpose")),
+        ParsedValidGeneralPurpose::getName,
+        ParsedValidGeneralPurpose::getMaxTargetSdkVersion,
     )
 
     override fun initialObject() =
-        ParsedUsesPermissionImpl("", 0, setOf(), setOf())
+        ParsedValidGeneralPurposeImpl("purpose", 20)
 }
