@@ -16,10 +16,11 @@
 
 package com.android.systemui.screencapture.common.ui.viewmodel
 
-import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.screencapture.common.domain.interactor.screenCaptureRecentTaskInteractor
+import androidx.compose.runtime.State
+import com.android.systemui.lifecycle.Activatable
 
-var Kosmos.recentTasksViewModel: RecentTasksViewModel by
-    Kosmos.Fixture { RecentTasksViewModelImpl(screenCaptureRecentTaskInteractor) }
-
-val Kosmos.fakeRecentTasksViewModel by Kosmos.Fixture { FakeRecentTasksViewModel() }
+/** Interface for view models that provide capture targets. */
+interface TargetsViewModel<T : Any> : Activatable {
+    /** The currently available targets. */
+    val targets: State<List<T>?>
+}

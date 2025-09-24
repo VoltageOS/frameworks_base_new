@@ -17,9 +17,12 @@
 package com.android.systemui.screencapture.common.ui.viewmodel
 
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.screencapture.common.domain.interactor.screenCaptureRecentTaskInteractor
+import com.android.systemui.screencapture.common.domain.model.ScreenCaptureAppContent
 
-var Kosmos.recentTasksViewModel: RecentTasksViewModel by
-    Kosmos.Fixture { RecentTasksViewModelImpl(screenCaptureRecentTaskInteractor) }
-
-val Kosmos.fakeRecentTasksViewModel by Kosmos.Fixture { FakeRecentTasksViewModel() }
+var Kosmos.appContentViewModelFactory: AppContentViewModel.Factory by
+    Kosmos.Fixture {
+        object : AppContentViewModel.Factory {
+            override fun create(model: ScreenCaptureAppContent): AppContentViewModel =
+                AppContentViewModel(model)
+        }
+    }
