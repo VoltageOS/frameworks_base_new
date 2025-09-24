@@ -17,13 +17,13 @@
 package com.android.wm.shell.flicker.bubbles.testcase
 
 /**
- * Test cases to verify bubble expansion from a collapsed state.
+ * Test cases to verify bubble expansion specifically from the home screen.
  *
- * This set of test cases covers the following:
- * - [BubbleAlwaysVisibleTestCases]: Verifies the behavior of bubbles that are always visible.
- * - [BubbleAppBecomesExpandedTestCases]: Ensures that app bubble expands properly when triggered.
+ * This set of test cases includes the following:
+ * - [ExpandBubbleTestCases]: General test cases for expanding bubbles.
+ * - [LauncherAlwaysVisibleTestCases]: Verifies that Launcher (home screen) is always visible
+ * in the background throughout the expansion.
  *
- * This interface is used in scenarios where the bubble may be expanded from various contexts
- * (home screen, other apps, etc.).
+ * This interface is used when the bubble expansion is specifically tested from the home screen.
  */
-interface ExpandBubbleTestCases : BubbleAlwaysVisibleTestCases, BubbleAppBecomesExpandedTestCases
+interface ExpandBubbleFromHomeTestCases : ExpandBubbleTestCases, LauncherAlwaysVisibleTestCases
