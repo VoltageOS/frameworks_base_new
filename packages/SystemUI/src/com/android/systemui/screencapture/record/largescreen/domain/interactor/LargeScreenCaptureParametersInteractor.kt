@@ -16,15 +16,19 @@
 
 package com.android.systemui.screencapture.record.largescreen.domain.interactor
 
-import com.android.systemui.Flags
-import com.android.systemui.dagger.SysUISingleton
+import com.android.systemui.screencapture.common.ScreenCaptureUiScope
+import com.android.systemui.screencapture.record.largescreen.data.repository.LargeScreenCaptureParametersRepository
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
 
-@SysUISingleton
-class LargeScreenCaptureFeaturesInteractor @Inject constructor() {
-    val appWindowRegionSupported = Flags.largeScreenScreenshotAppWindow()
+@ScreenCaptureUiScope
+class LargeScreenCaptureParametersInteractor
+@Inject
+constructor(private val largeScreenSettingsRepository: LargeScreenCaptureParametersRepository) {
+    val customSaveLocationUriString: Flow<String> =
+        largeScreenSettingsRepository.customSaveLocationUriString
 
-    val screenRecordingSupported = Flags.largeScreenRecording()
-
-    val customSaveLocationSupported = Flags.largeScreenScreenshotSaveLocation()
+    suspend fun setCustomSaveLocation(uriString: String) {
+        largeScreenSettingsRepository.updateCustomSaveLocationUriString(uriString)
+    }
 }
