@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The Android Open Source Project
+ * Copyright 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.android.internal.widget.remotecompose.player.platform;
 
 import android.annotation.NonNull;
-import android.content.Context;
-import android.provider.Settings;
 
-/** Class to retrieve values from {@link Settings}. */
-public class SettingsRetriever {
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 
-    private SettingsRetriever() {}
-
-    /** Determines whether the Remove Animations accessibility setting is enabled. */
-    public static boolean animationsEnabled(@NonNull Context context) {
-        return Settings.Global.getFloat(
-                        context.getContentResolver(), Settings.Global.ANIMATOR_DURATION_SCALE, 1.0f)
-                != 0f;
+/** Implementation of BitmapLoader for Android, only supporting URL fetching. */
+public class AndroidBitmapLoader implements BitmapLoader {
+    /**
+     * Load a bitmap from a URL
+     *
+     * @param url the url to fetch
+     * @return an InputStream with data.
+     */
+    @Override
+    public @NonNull InputStream loadBitmap(@NonNull String url) throws IOException {
+        return new URL(url).openStream();
     }
 }

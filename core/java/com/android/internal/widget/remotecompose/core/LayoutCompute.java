@@ -13,15 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.internal.widget.remotecompose.player.action;
-
+package com.android.internal.widget.remotecompose.core;
 import android.annotation.NonNull;
-import android.annotation.Nullable;
 
-import com.android.internal.widget.remotecompose.player.state.StateUpdater;
+/**
+ * Interface for operations that can participate in the layout computations
+ */
+public interface LayoutCompute {
 
-/** An interface for handling named actions. */
-public interface NamedActionHandler {
-    /** Execute a named action */
-    void execute(@NonNull String name, @Nullable Object value, @NonNull StateUpdater stateUpdater);
+    /**
+     * evaluate the operation before the component layout pass
+     *
+     * @param context
+     */
+    boolean evaluateInLayout(@NonNull RemoteContext context);
 }
