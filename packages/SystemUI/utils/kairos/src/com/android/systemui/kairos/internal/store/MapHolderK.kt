@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,20 @@
  * limitations under the License.
  */
 
-package com.android.systemui.kairos.internal.util
+package com.android.systemui.kairos.internal.store
 
-inline fun <T> List<T>.fastForEach(block: (T) -> Unit) {
-    for (idx in indices) {
-        block(get(idx))
-    }
-}
+@Suppress("NOTHING_TO_INLINE")
+internal inline fun <K, V> MapK<MapHolderK.W, K, V>.asMapHolderK(): HashMapK<K, V> =
+    this as HashMapK<K, V>
 
-inline fun <T> List<T>.fastForEachIndexed(block: (Int, T) -> Unit) {
-    for (idx in indices) {
-        block(idx, get(idx))
+@JvmInline
+internal value class MapHolderK<K, out V>(val storage: Map<K, V>) :
+    MapK<MapHolderK.W, K, V>, Map<K, V> by storage {
+    object W
+
+    override fun forEach(yield: (K, V) -> Unit) {
+        storage.forEach { k, v -> yield(k, v) }
     }
+
+    override fun getValue(key: K): V = storage.getValue(key)
 }
