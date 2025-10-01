@@ -14,30 +14,24 @@
  * limitations under the License.
  */
 
-package com.android.systemui.statusbar.data.repository
+package com.android.systemui.statusbar.window
 
 import com.android.systemui.display.data.repository.displayRepository
 import com.android.systemui.display.data.repository.displaySubcomponentPerDisplayRepository
 import com.android.systemui.display.data.repository.displayWindowPropertiesRepository
 import com.android.systemui.kosmos.Kosmos
 import com.android.systemui.kosmos.applicationCoroutineScope
-import com.android.systemui.statusbar.window.statusBarWindowControllerStore
+import com.android.systemui.statusbar.data.repository.statusBarConfigurationControllerStore
 import org.mockito.kotlin.mock
 
-val Kosmos.fakeSystemEventChipAnimationControllerStore by
-    Kosmos.Fixture { FakeSystemEventChipAnimationControllerStore() }
-
-val Kosmos.systemEventChipAnimationControllerStoreImpl by
+val Kosmos.multiDisplayStatusBarWindowControllerStore by
     Kosmos.Fixture {
-        SystemEventChipAnimationControllerStoreImpl(
+        MultiDisplayStatusBarWindowControllerStore(
             backgroundApplicationScope = applicationCoroutineScope,
-            displayRepository = displayRepository,
-            factory = { _, _, _ -> mock() },
+            controllerFactory = { _, _, _, _, _ -> mock() },
             displayWindowPropertiesRepository = displayWindowPropertiesRepository,
-            statusBarWindowControllerStore = statusBarWindowControllerStore,
+            statusBarConfigurationControllerStore = statusBarConfigurationControllerStore,
             perDisplaySubcomponentRepo = displaySubcomponentPerDisplayRepository,
+            displayRepository = displayRepository,
         )
     }
-
-var Kosmos.systemEventChipAnimationControllerStore by
-    Kosmos.Fixture { fakeSystemEventChipAnimationControllerStore }
