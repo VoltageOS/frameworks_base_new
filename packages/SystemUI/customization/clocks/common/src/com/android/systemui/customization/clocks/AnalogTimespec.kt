@@ -16,14 +16,21 @@
 
 package com.android.systemui.customization.clocks
 
-import com.android.systemui.plugins.keyguard.ui.clocks.ClockViewIds
+/** Timspec options for Analog Hands. Named for tick interval. */
+enum class AnalogTimespec {
+    SECONDS,
+    MINUTES,
+    HOURS,
+    HOURS_OF_DAY,
+    DAY_OF_WEEK,
+    DAY_OF_MONTH,
+    DAY_OF_YEAR,
+    WEEK,
+    MONTH,
+}
 
-enum class DigitalTimespec(private val hourViewId: Int, private val minuteViewId: Int) {
-    TIME_FULL_FORMAT(ClockViewIds.TIME_FULL_FORMAT, ClockViewIds.TIME_FULL_FORMAT),
-    DATE_FORMAT(ClockViewIds.DATE_FORMAT, ClockViewIds.DATE_FORMAT),
-    DIGIT_PAIR(ClockViewIds.HOUR_DIGIT_PAIR, ClockViewIds.MINUTE_DIGIT_PAIR),
-    FIRST_DIGIT(ClockViewIds.HOUR_FIRST_DIGIT, ClockViewIds.MINUTE_FIRST_DIGIT),
-    SECOND_DIGIT(ClockViewIds.HOUR_SECOND_DIGIT, ClockViewIds.MINUTE_SECOND_DIGIT);
-
-    fun getViewId(isHour: Boolean): Int = if (isHour) hourViewId else minuteViewId
+/** Ticking mode for analog hands. */
+enum class AnalogTickMode {
+    SWEEP,
+    TICK,
 }
