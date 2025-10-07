@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
-package android.app.admin;
+package android.processor.devicepolicy;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Internal IPC to send a policy value over the wire.
- * Currently only supports a limited set of built-in types.
- *
- * @hide
+ * Metadata for a string list policy.
  */
-union PolicyValueTransport {
-    int integerField;
-    boolean booleanField;
-    String stringField;
-    List<String> listOfStringField;
+@Retention(RetentionPolicy.SOURCE)
+@Target({ElementType.FIELD})
+public @interface ListOfStringPolicyDefinition {
+    /**
+     * Base data for all policies.
+     */
+    StringPolicyDefinition base();
 }
