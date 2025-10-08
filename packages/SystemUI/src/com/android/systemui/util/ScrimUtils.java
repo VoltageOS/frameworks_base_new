@@ -19,13 +19,29 @@ import static com.android.systemui.statusbar.StatusBarState.KEYGUARD;
 
 import android.content.Context;
 import android.os.Handler;
+import android.service.notification.StatusBarNotification;
 
 import com.android.systemui.Dependency;
 import com.android.systemui.plugins.statusbar.StatusBarStateController;
 import com.android.systemui.statusbar.phone.ScrimController;
 import com.android.systemui.statusbar.policy.KeyguardStateController;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ScrimUtils {
+
+    /**
+     * Listener for scrim-related utility events. This mirrors the interface from the patch.
+     */
+    public interface ScrimEventListener {
+        default void onStartedWakingUp() {}
+        default void onScreenTurnedOff() {}
+        default void setPulsing(boolean pulsing) {}
+        default void onNotificationPosted(StatusBarNotification sbn) {}
+    }
+
+    private final List<ScrimEventListener> mListeners = new ArrayList<>();
 
     public enum ExpansionState {
         QS_NOT_EXPANDED,
@@ -86,6 +102,27 @@ public class ScrimUtils {
             instance = new ScrimUtils(context);
         }
         return instance;
+    }
+
+    public void addListener(ScrimEventListener listener) {
+        if (listener != null && !mListeners.contains(listener)) {
+            mListeners.add(listener);
+        }
+    }
+
+    public void removeListener(ScrimEventListener listener) {
+        mListeners.remove(listener);
+    }
+
+    /**
+     * Called when a notification is posted. Notifies listeners on the main thread.
+     */
+    public void onNotificationPosted(StatusBarNotification sbn) {
+        mHandler.post(() -> {
+            for (ScrimEventListener listener : new ArrayList<>(mListeners)) {
+                listener.onNotificationPosted(sbn);
+            }
+        });
     }
 
     public void setViewAlpha(float subjectAlpha) {
