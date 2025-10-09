@@ -121,6 +121,10 @@ import com.android.systemui.res.R
 import com.android.systemui.util.policy.PolicyRestriction
 import platform.test.motion.compose.values.MotionTestValueKey
 import platform.test.motion.compose.values.motionTestValues
+import com.android.compose.theme.colorAttr
+import com.android.systemui.shade.ui.VibrantShadeHelper
+import com.android.systemui.shade.ui.isVibrantShadeEnabled
+import com.android.systemui.shade.ui.boost
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -162,7 +166,13 @@ fun BrightnessSlider(
                 SeekableSliderTrackerConfig(),
             )
         }
-    val colors = SystemUISliderColors.Defaults
+    val colors =
+        if (isVibrantShadeEnabled()) {
+            val accent = colorAttr(com.android.internal.R.attr.colorAccent).boost()
+            SystemUISliderColors.Defaults.copy(thumbColor = accent, activeTrackColor = accent)
+        } else {
+            SystemUISliderColors.Defaults
+        }
 
     // The value state is recreated every time gammaValue changes, so we recreate this derivedState
     // We have to use value as that's the value that changes when the user is dragging (gammaValue
@@ -420,6 +430,12 @@ private fun AutoBrightnessButton(
 ) {
     val view = LocalView.current
     val coroutineScope = rememberCoroutineScope()
+    val useVibrant = isVibrantShadeEnabled()
+    val activeColor = if (useVibrant) {
+        colorAttr(com.android.internal.R.attr.colorAccent).boost()
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
     val animatedCornerRadius by
         animateDpAsState(
             targetValue =
@@ -433,7 +449,7 @@ private fun AutoBrightnessButton(
         animateColorAsState(
             targetValue =
                 if (autoMode) {
-                    MaterialTheme.colorScheme.primary
+                    activeColor
                 } else {
                     MaterialTheme.colorScheme.surfaceVariant
                 }
