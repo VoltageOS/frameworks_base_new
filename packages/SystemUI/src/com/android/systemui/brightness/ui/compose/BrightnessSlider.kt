@@ -130,6 +130,10 @@ import com.android.systemui.res.R
 import com.android.systemui.utils.PolicyRestriction
 import platform.test.motion.compose.values.MotionTestValueKey
 import platform.test.motion.compose.values.motionTestValues
+import com.android.compose.theme.colorAttr
+import com.android.systemui.shade.ui.VibrantShadeHelper
+import com.android.systemui.shade.ui.isVibrantShadeEnabled
+import com.android.systemui.shade.ui.boost
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -426,6 +430,13 @@ private fun drawAutoBrightnessButton(
 ) {
     val view = LocalView.current
     val coroutineScope = rememberCoroutineScope()
+    val useVibrant = isVibrantShadeEnabled()
+    val activeColor = if (useVibrant) {
+        colorAttr(com.android.internal.R.attr.colorAccent).boost()
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
+
     val animatedCornerRadius by animateDpAsState(
         targetValue = if (autoMode) {
             SliderTrackRoundedCorner
@@ -435,7 +446,7 @@ private fun drawAutoBrightnessButton(
     )
     val backgroundColor by animateColorAsState(
         targetValue = if (autoMode) {
-            MaterialTheme.colorScheme.primary
+            activeColor
         } else {
             LocalAndroidColorScheme.current.surfaceEffect1
         }
@@ -620,8 +631,16 @@ object BrightnessSliderMotionTestKeys {
 
 @Composable
 private fun colors(): SliderColors {
+    val useVibrantColors = isVibrantShadeEnabled()
+    val indicatorColor = if (useVibrantColors) {
+        colorAttr(com.android.internal.R.attr.colorAccent).boost()
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
     return SliderDefaults.colors()
         .copy(
+            thumbColor = indicatorColor,
+            activeTrackColor = indicatorColor,
             inactiveTrackColor = LocalAndroidColorScheme.current.surfaceEffect1,
             activeTickColor = MaterialTheme.colorScheme.onPrimary,
             inactiveTickColor = MaterialTheme.colorScheme.onSurface,
