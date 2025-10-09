@@ -107,6 +107,11 @@ import com.android.systemui.qs.panels.ui.viewmodel.toUiState
 import com.android.systemui.qs.tileimpl.QSTileImpl
 import com.android.systemui.qs.ui.compose.borderOnFocus
 import com.android.systemui.util.CustomAndroidColorScheme
+import com.android.compose.theme.colorAttr
+import com.android.settingslib.Utils
+import com.android.systemui.shade.ui.VibrantShadeHelper
+import com.android.systemui.shade.ui.isVibrantShadeEnabled
+import com.android.systemui.shade.ui.boost
 import com.android.systemui.res.R
 import kotlinx.coroutines.CoroutineScope
 
@@ -397,27 +402,37 @@ private object TileDefaults {
 
     /** An active icon tile uses the active color as background */
     @Composable
-    @ReadOnlyComposable
-    fun activeIconTileColors(): TileColors =
-        TileColors(
-            background = MaterialTheme.colorScheme.primary,
+    fun activeIconTileColors(vibrant: Boolean = false): TileColors {
+        val backgroundColor = if (vibrant) {
+            colorAttr(com.android.internal.R.attr.colorAccent).boost()
+         } else {
+            MaterialTheme.colorScheme.primary
+         }
+        return TileColors(
+            background = backgroundColor,
             iconBackground = Color.Transparent,
             label = MaterialTheme.colorScheme.onPrimary,
             secondaryLabel = MaterialTheme.colorScheme.onPrimary,
             icon = MaterialTheme.colorScheme.onPrimary,
         )
+    }
 
     /** An active tile with dual target only show the active color on the icon */
     @Composable
-    @ReadOnlyComposable
-    fun activeDualTargetTileColors(): TileColors =
-        TileColors(
-            background = MaterialTheme.colorScheme.primary,
+    fun activeDualTargetTileColors(vibrant: Boolean = false): TileColors {
+        val backgroundColor = if (vibrant) {
+            colorAttr(com.android.internal.R.attr.colorAccent).boost()
+         } else {
+            MaterialTheme.colorScheme.primary
+         }
+        return TileColors(
+            background = backgroundColor,
             iconBackground = Color.Transparent,
             label = MaterialTheme.colorScheme.onPrimary,
             secondaryLabel = MaterialTheme.colorScheme.onPrimary,
             icon = MaterialTheme.colorScheme.onPrimary,
         )
+    }
 
     @Composable
     @ReadOnlyComposable
@@ -455,14 +470,14 @@ private object TileDefaults {
     }
 
     @Composable
-    @ReadOnlyComposable
     fun getColorForState(uiState: TileUiState, iconOnly: Boolean): TileColors {
+        val useVibrantColors = isVibrantShadeEnabled()
         return when (uiState.state) {
             STATE_ACTIVE -> {
                 if (!iconOnly) {
-                    activeDualTargetTileColors()
+                    activeDualTargetTileColors(useVibrantColors)
                 } else {
-                    activeIconTileColors()
+                    activeIconTileColors(useVibrantColors)
                 }
             }
 

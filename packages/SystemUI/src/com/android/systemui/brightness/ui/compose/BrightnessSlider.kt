@@ -113,6 +113,11 @@ import com.android.systemui.lifecycle.rememberViewModel
 import com.android.systemui.qs.ui.compose.borderOnFocus
 import com.android.systemui.res.R
 import com.android.systemui.util.CustomAndroidColorScheme
+import com.android.compose.theme.colorAttr
+import com.android.settingslib.Utils
+import com.android.systemui.shade.ui.VibrantShadeHelper
+import com.android.systemui.shade.ui.isVibrantShadeEnabled
+import com.android.systemui.shade.ui.boost
 import com.android.systemui.utils.PolicyRestriction
 import platform.test.motion.compose.values.MotionTestValueKey
 import platform.test.motion.compose.values.motionTestValues
@@ -420,9 +425,17 @@ object BrightnessSliderMotionTestKeys {
 
 @Composable
 private fun sliderColors(): PlatformSliderColors {
+    val useVibrantColors = isVibrantShadeEnabled()
+    
+    val indicatorColor = if (useVibrantColors) {
+        colorAttr(com.android.internal.R.attr.colorAccent).boost()
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
+    
     return PlatformSliderColors(
             trackColor = CustomAndroidColorScheme.current.shadeTileColor,
-            indicatorColor = MaterialTheme.colorScheme.primary,
+            indicatorColor = indicatorColor,
             iconColor = MaterialTheme.colorScheme.onPrimary,
             labelColorOnIndicator = MaterialTheme.colorScheme.onPrimary,
             labelColorOnTrack = MaterialTheme.colorScheme.onSecondaryContainer,
