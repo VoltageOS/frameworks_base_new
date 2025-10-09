@@ -14,21 +14,15 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
-    default_team: "trendy_team_framework_android_multiuser",
 }
 
-android_test {
-    name: "InteractiveHsumIntegrationTests",
+tradefed_java_library_host {
+    name: "MultiUserTestsTradefedLibrary",
     srcs: [
         "src/**/*.java",
     ],
-    static_libs: [
-        "androidx.test.core",
-        "androidx.test.runner",
-        "flag-junit",
-        "truth",
-    ],
-    host_required: [
-        "MultiUserTestsTradefedLibrary",
+    libs: [
+        "tradefed",
+        "loganalysis",
     ],
 }
