@@ -174,7 +174,8 @@ class PermissionService(private val service: AccessCheckingService) :
         // Disable the package info and package permission caches locally but leave the
         // checkPermission cache active.
         PackageManagerService.invalidatePackageInfoCache(
-                PackageMetrics.INVALIDATION_REASON_PERMISSION_SERVICE_INIT)
+            PackageMetrics.INVALIDATION_REASON_PERMISSION_SERVICE_INIT
+        )
         PermissionManager.disablePackageNamePermissionCache()
 
         handlerThread =
@@ -1982,9 +1983,15 @@ class PermissionService(private val service: AccessCheckingService) :
         }
     }
 
-    override fun resetRuntimePermissions(androidPackage: AndroidPackage, userId: Int) {
+    override fun resetRuntimePermissions(
+        androidPackage: AndroidPackage,
+        userId: Int,
+        restorePregrants: Boolean,
+    ) {
         service.mutateState {
-            with(policy) { resetRuntimePermissions(androidPackage.packageName, userId) }
+            with(policy) {
+                resetRuntimePermissions(androidPackage.packageName, userId, restorePregrants)
+            }
             with(devicePolicy) { resetRuntimePermissions(androidPackage.packageName, userId) }
         }
     }
@@ -1996,7 +2003,7 @@ class PermissionService(private val service: AccessCheckingService) :
                     if (packageState.isApex) {
                         return@forEach
                     }
-                    with(policy) { resetRuntimePermissions(packageState.packageName, userId) }
+                    with(policy) { resetRuntimePermissions(packageState.packageName, userId, true) }
                     with(devicePolicy) { resetRuntimePermissions(packageState.packageName, userId) }
                 }
             }
@@ -2737,7 +2744,8 @@ class PermissionService(private val service: AccessCheckingService) :
         override fun onStateMutated() {
             if (isPermissionFlagsChanged) {
                 PackageManagerService.invalidatePackageInfoCache(
-                        PackageMetrics.INVALIDATION_REASON_PERMISSION_FLAG_CHANGED)
+                    PackageMetrics.INVALIDATION_REASON_PERMISSION_FLAG_CHANGED
+                )
                 isPermissionFlagsChanged = false
             }
 
