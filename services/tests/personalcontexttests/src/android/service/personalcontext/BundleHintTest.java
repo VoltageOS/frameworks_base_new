@@ -20,6 +20,7 @@ import static android.service.personalcontext.ContextHintTestUtils.assertParcelU
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.os.Bundle;
 import android.service.personalcontext.hint.BundleHint;
 import android.service.personalcontext.hint.ContextHint;
 
@@ -29,34 +30,24 @@ import androidx.test.filters.SmallTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-
 @SmallTest
 @RunWith(AndroidJUnit4.class)
-public class ContextHintTest {
+public class BundleHintTest {
 
-    // Tests parceling and unparceling fields on the base ContextHint.
     @Test
-    public void testContextHintParcelUnparcel() {
+    public void testBundleHintParcelUnparcel() {
+        final int inputValue = 1234;
+        final String dataKey = "test-key";
+        final Bundle data = new Bundle();
+        data.putInt(dataKey, inputValue);
+
         final BundleHint hint = new BundleHint();
-        RenderToken renderToken =
-                new RenderToken.RenderTokenBuilder()
-                        .setRendererComponentId(UUID.randomUUID())
-                        .build();
-        hint.setRenderToken(renderToken);
-        hint.setAttributionHints(new ArrayList<>(List.of(new BundleHint())));
+        hint.getDataBundle().putAll(data);
 
         final ContextHint outputHint = assertParcelUnparcel(hint);
+        assertThat(outputHint).isInstanceOf(BundleHint.class);
+        final int outputValue = ((BundleHint) outputHint).getDataBundle().getInt(dataKey);
 
-        assertThat(hint.getHintType()).isEqualTo(outputHint.getHintType());
-        assertThat(hint.getHintId()).isEqualTo(outputHint.getHintId());
-        assertThat(hint.getAttributionHints().size())
-                .isEqualTo(outputHint.getAttributionHints().size());
-
-        RenderToken out = outputHint.getRenderToken();
-        assertThat(out.getTokenId()).isEqualTo(renderToken.getTokenId());
-        assertThat(out.getRendererComponentId()).isEqualTo(renderToken.getRendererComponentId());
+        assertThat(outputValue).isEqualTo(inputValue);
     }
 }
