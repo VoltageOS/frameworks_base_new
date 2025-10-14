@@ -1,5 +1,6 @@
 /**
  * Copyright (c) 2025, The LineageOS Project
+ * Copyright (c) 2025, VoltageOS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +17,16 @@
 
 package com.android.systemui.statusbar;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.app.Notification;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
+import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -38,6 +44,8 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.PathInterpolator;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.PopupWindow;
@@ -48,6 +56,7 @@ import androidx.annotation.Nullable;
 
 import com.android.systemui.statusbar.notification.headsup.HeadsUpManager;
 import com.android.systemui.statusbar.notification.headsup.OnHeadsUpChangedListener;
+import android.content.res.Configuration;
 import com.android.systemui.res.R;
 import com.android.systemui.util.IconFetcher;
 import com.android.systemui.statusbar.OnGoingActionProgressGroup;
@@ -75,6 +84,12 @@ public class OnGoingActionProgressController implements NotificationListener.Not
     private static final int DEBOUNCE_DELAY_MS = 150;
     private static final int STALE_PROGRESS_CHECK_INTERVAL_MS = 5000;
     private static final int PROGRESS_TIMEOUT_MS = 30000;
+    
+    private static final int PROGRESS_ANIMATION_DURATION = 300;
+    private static final int ENTRY_ANIMATION_DURATION = 400;
+    private static final int EXIT_ANIMATION_DURATION = 300;
+    private static final int EXPAND_ANIMATION_DURATION = 350;
+    private static final float ENTRY_TRANSLATION_Y = 50f;
 
     private final Context mContext;
     private final ContentResolver mContentResolver;
@@ -95,6 +110,16 @@ public class OnGoingActionProgressController implements NotificationListener.Not
     private final ImageView mCompactIconView;
 
     private final HashMap<String, IconFetcher.AdaptiveDrawableResult> mIconCache = new HashMap<>();
+    
+    private ObjectAnimator mProgressAnimator;
+    private ObjectAnimator mCircularProgressAnimator;
+    private ObjectAnimator mEntryAnimator;
+    private ObjectAnimator mExitAnimator;
+    private ObjectAnimator mCompactEntryAnimator;
+    private ObjectAnimator mCompactExitAnimator;
+    private int mAccentColor;
+    private boolean mIsAnimatingEntry = false;
+    private boolean mIsAnimatingExit = false;
     
     private boolean mShowMediaProgress = true;
     private boolean mIsTrackingProgress = false;
@@ -191,6 +216,17 @@ public class OnGoingActionProgressController implements NotificationListener.Not
 
         mGestureDetector = new GestureDetector(mContext, new MediaGestureListener());
 
+        updateAccentColor();
+        applySystemTheming();
+
+        mProgressRootView.setAlpha(0f);
+        mProgressRootView.setTranslationY(ENTRY_TRANSLATION_Y);
+        mProgressRootView.setVisibility(View.GONE);
+        
+        mCompactRootView.setAlpha(0f);
+        mCompactRootView.setTranslationY(ENTRY_TRANSLATION_Y);
+        mCompactRootView.setVisibility(View.GONE);
+
         mKeyguardStateController.addCallback(this);
         mHeadsUpManager.addListener(this);
         mNotificationListener.addNotificationHandler(this);
@@ -218,10 +254,22 @@ public class OnGoingActionProgressController implements NotificationListener.Not
         mHandler.postDelayed(mStaleProgressChecker, STALE_PROGRESS_CHECK_INTERVAL_MS);
     }
 
+    private void updateAccentColor() {
+        mAccentColor = getThemeColor(mContext, android.R.attr.colorAccent);
+    }
+
+    private void applySystemTheming() {
+        if (mProgressBar != null) {
+            mProgressBar.setProgressTintList(ColorStateList.valueOf(mAccentColor));
+        }
+        if (mCircularProgressBar != null) {
+            mCircularProgressBar.setProgressTintList(ColorStateList.valueOf(mAccentColor));
+        }
+    }
+
     private void expandCompactView() {
         mIsExpanded = true;
-        mCompactRootView.setVisibility(View.GONE);
-        mProgressRootView.setVisibility(View.VISIBLE);
+        animateViewTransition(mCompactRootView, mProgressRootView, true);
         
         mHandler.postDelayed(() -> {
             if (mIsCompactModeEnabled && mIsExpanded) {
@@ -229,6 +277,26 @@ public class OnGoingActionProgressController implements NotificationListener.Not
                 requestUiUpdate();
             }
         }, 5000);
+    }
+
+    private void animateViewTransition(View fromView, View toView, boolean isExpanding) {
+        fromView.animate()
+                .alpha(0f)
+                .translationY(isExpanding ? -ENTRY_TRANSLATION_Y : ENTRY_TRANSLATION_Y)
+                .setDuration(EXPAND_ANIMATION_DURATION)
+                .setInterpolator(new PathInterpolator(0.4f, 0f, 0.2f, 1f))
+                .withEndAction(() -> fromView.setVisibility(View.GONE))
+                .start();
+
+        toView.setVisibility(View.VISIBLE);
+        toView.setAlpha(0f);
+        toView.setTranslationY(isExpanding ? ENTRY_TRANSLATION_Y : -ENTRY_TRANSLATION_Y);
+        toView.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(EXPAND_ANIMATION_DURATION)
+                .setInterpolator(new PathInterpolator(0.4f, 0f, 0.2f, 1f))
+                .start();
     }
 
     private class MediaGestureListener extends GestureDetector.SimpleOnGestureListener {
@@ -304,37 +372,44 @@ public class OnGoingActionProgressController implements NotificationListener.Not
         if (!mIsViewAttached) return;
         
         float opacity = mProgressBarOpacity / 255f;
-        mProgressRootView.setAlpha(opacity);
-        mCompactRootView.setAlpha(opacity);
         
         if (mIsForceHidden || mHeadsUpPinned) {
-            mProgressRootView.setVisibility(View.GONE);
-            mCompactRootView.setVisibility(View.GONE);
+            animateExit(mProgressRootView);
+            animateExit(mCompactRootView);
             return;
         }
 
         boolean isMediaPlaying = mShowMediaProgress && mMediaSessionHelper.isMediaPlaying();
+        boolean shouldShowProgress = mIsEnabled && (mIsTrackingProgress || isMediaPlaying);
         
-        if (mIsCompactModeEnabled && !mIsExpanded) {
-            mProgressRootView.setVisibility(View.GONE);
-            
-            if (!mIsEnabled && !isMediaPlaying) {
-                mCompactRootView.setVisibility(View.GONE);
-                return;
+        if (!shouldShowProgress) {
+            animateExit(mProgressRootView);
+            animateExit(mCompactRootView);
+            return;
+        }
+        
+        boolean shouldShowCompact = mIsCompactModeEnabled && !mIsExpanded;
+        boolean shouldShowNormal = !shouldShowCompact;
+        
+        if (shouldShowCompact) {
+            if (mProgressRootView.getVisibility() == View.VISIBLE) {
+                animateExit(mProgressRootView);
             }
             
-            mCompactRootView.setVisibility(View.VISIBLE);
+            animateEntry(mCompactRootView, opacity);
             
             if (isMediaPlaying) {
                 updateMediaProgressCompact();
             } else {
                 updateNotificationProgressCompact();
             }
-        } else {
-            mCompactRootView.setVisibility(View.GONE);
+        } else if (shouldShowNormal) {
+            if (mCompactRootView.getVisibility() == View.VISIBLE) {
+                animateExit(mCompactRootView);
+            }
             
             if (isMediaPlaying) {
-                mProgressRootView.setVisibility(View.VISIBLE);
+                animateEntry(mProgressRootView, opacity);
 
                 if (mNeedsFullUiUpdate) {
                     updateMediaProgressFull();
@@ -343,8 +418,103 @@ public class OnGoingActionProgressController implements NotificationListener.Not
                     updateMediaProgressOnly();
                 }
             } else {
-                updateNotificationProgress();
+                updateNotificationProgress(opacity);
             }
+        }
+    }
+
+    private void animateEntry(View view, float targetAlpha) {
+        if (view.getVisibility() == View.VISIBLE && !mIsAnimatingEntry) {
+            return;
+        }
+
+        cancelAnimations(view);
+        
+        if (view.getVisibility() != View.VISIBLE) {
+            view.setVisibility(View.VISIBLE);
+            view.setAlpha(0f);
+            view.setTranslationY(ENTRY_TRANSLATION_Y);
+        }
+
+        mIsAnimatingEntry = true;
+
+        view.animate()
+                .alpha(targetAlpha)
+                .translationY(0f)
+                .setDuration(ENTRY_ANIMATION_DURATION)
+                .setInterpolator(new PathInterpolator(0f, 0f, 0.2f, 1f))
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        mIsAnimatingEntry = false;
+                    }
+                })
+                .start();
+    }
+
+    private void animateExit(View view) {
+        if (view.getVisibility() == View.GONE || mIsAnimatingExit) {
+            return;
+        }
+
+        cancelAnimations(view);
+        
+        mIsAnimatingExit = true;
+
+        view.animate()
+                .alpha(0f)
+                .translationY(-ENTRY_TRANSLATION_Y)
+                .setDuration(EXIT_ANIMATION_DURATION)
+                .setInterpolator(new PathInterpolator(0.4f, 0f, 1f, 1f))
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        view.setVisibility(View.GONE);
+                        view.setTranslationY(ENTRY_TRANSLATION_Y);
+                        mIsAnimatingExit = false;
+                    }
+                })
+                .start();
+    }
+
+    private void cancelAnimations(View view) {
+        view.animate().cancel();
+        if (view == mProgressRootView) {
+            if (mProgressAnimator != null && mProgressAnimator.isRunning()) {
+                mProgressAnimator.cancel();
+            }
+        } else if (view == mCompactRootView) {
+            if (mCircularProgressAnimator != null && mCircularProgressAnimator.isRunning()) {
+                mCircularProgressAnimator.cancel();
+            }
+        }
+    }
+
+    private void animateProgress(ProgressBar progressBar, int targetProgress) {
+        if (progressBar == null) return;
+
+        int currentProgress = progressBar.getProgress();
+        
+        if (Math.abs(targetProgress - currentProgress) < 2) {
+            progressBar.setProgress(targetProgress);
+            return;
+        }
+
+        ObjectAnimator animator = progressBar == mProgressBar ? mProgressAnimator : mCircularProgressAnimator;
+        
+        if (animator != null && animator.isRunning()) {
+            animator.cancel();
+        }
+
+        animator = ObjectAnimator.ofInt(progressBar, "progress", currentProgress, targetProgress);
+        animator.setDuration(PROGRESS_ANIMATION_DURATION);
+        animator.setInterpolator(new DecelerateInterpolator());
+        animator.start();
+
+        if (progressBar == mProgressBar) {
+            mProgressAnimator = animator;
+        } else {
+            mCircularProgressAnimator = animator;
         }
     }
 
@@ -360,23 +530,20 @@ private void updateMediaProgressOnly() {
         currentProgress = playbackState.getPosition();
     }
             
-    // Update the standard progress bar if visible
     if (mProgressRootView.getVisibility() == View.VISIBLE && mProgressBar != null && totalDuration > 0) {
         mProgressBar.setMax((int) totalDuration);
-        mProgressBar.setProgress((int) currentProgress);
+        animateProgress(mProgressBar, (int) currentProgress);
     }
     
-    // Also update the circular progress bar for compact mode
     if (mCompactRootView.getVisibility() == View.VISIBLE && mCircularProgressBar != null && totalDuration > 0) {
         mCircularProgressBar.setMax((int) totalDuration);
-        mCircularProgressBar.setProgress((int) currentProgress);
+        animateProgress(mCircularProgressBar, (int) currentProgress);
     }
 }
 
 private void updateMediaProgressFull() {
     if (!mIsViewAttached) return;
     
-    mProgressRootView.setVisibility(View.VISIBLE);
     mMediaProgressHandler.removeCallbacks(mMediaProgressRunnable);
     mMediaProgressHandler.post(mMediaProgressRunnable);
 
@@ -387,7 +554,6 @@ private void updateMediaProgressFull() {
     } else {
         String packageName = null;
         
-        // Add null check for playback state before accessing extras
         android.media.session.PlaybackState playbackState = mMediaSessionHelper.getMediaControllerPlaybackState();
         if (playbackState != null && playbackState.getExtras() != null) {
             packageName = playbackState.getExtras().getString("package");
@@ -412,13 +578,11 @@ private void updateMediaProgressFull() {
 private void updateMediaProgressCompact() {
     if (!mIsViewAttached) return;
     
-    mCompactRootView.setVisibility(View.VISIBLE);
     mMediaProgressHandler.removeCallbacks(mMediaProgressRunnable);
     mMediaProgressHandler.post(mMediaProgressRunnable);
 
     long totalDuration = mMediaSessionHelper.getTotalDuration();
     
-    // Add null check for playback state before accessing position
     android.media.session.PlaybackState playbackState = mMediaSessionHelper.getMediaControllerPlaybackState();
     long currentProgress = 0;
     
@@ -428,7 +592,7 @@ private void updateMediaProgressCompact() {
             
     if (totalDuration > 0 && mCircularProgressBar != null) {
         mCircularProgressBar.setMax((int) totalDuration);
-        mCircularProgressBar.setProgress((int) currentProgress);
+        animateProgress(mCircularProgressBar, (int) currentProgress);
     }
 
     Drawable mediaAppIcon = mMediaSessionHelper.getMediaAppIcon();
@@ -455,16 +619,17 @@ private void updateMediaProgressCompact() {
     }
 }
 
-    private void updateNotificationProgress() {
+    private void updateNotificationProgress(float opacity) {
         if (!mIsViewAttached) return;
         
         if (!mIsEnabled || !mIsTrackingProgress) {
-            mProgressRootView.setVisibility(View.GONE);
+            animateExit(mProgressRootView);
             mMediaProgressHandler.removeCallbacks(mMediaProgressRunnable);
             return;
         }
 
-        mProgressRootView.setVisibility(View.VISIBLE);
+        animateEntry(mProgressRootView, opacity);
+        
         if (mCurrentProgressMax <= 0) {
             Log.w(TAG, "updateViews: invalid max progress " + mCurrentProgressMax + ", using 100");
             mCurrentProgressMax = 100;
@@ -472,7 +637,7 @@ private void updateMediaProgressCompact() {
 
         if (mProgressBar != null) {
             mProgressBar.setMax(mCurrentProgressMax);
-            mProgressBar.setProgress(mCurrentProgress);
+            animateProgress(mProgressBar, mCurrentProgress);
         }
 
         if (mTrackedPackageName != null) {
@@ -488,12 +653,10 @@ private void updateMediaProgressCompact() {
         if (!mIsViewAttached) return;
         
         if (!mIsEnabled || !mIsTrackingProgress) {
-            mCompactRootView.setVisibility(View.GONE);
             mMediaProgressHandler.removeCallbacks(mMediaProgressRunnable);
             return;
         }
 
-        mCompactRootView.setVisibility(View.VISIBLE);
         if (mCurrentProgressMax <= 0) {
             Log.w(TAG, "updateViews: invalid max progress " + mCurrentProgressMax + ", using 100");
             mCurrentProgressMax = 100;
@@ -501,7 +664,7 @@ private void updateMediaProgressCompact() {
 
         if (mCircularProgressBar != null) {
             mCircularProgressBar.setMax(mCurrentProgressMax);
-            mCircularProgressBar.setProgress(mCurrentProgress);
+            animateProgress(mCircularProgressBar, mCurrentProgress);
         }
 
         if (mTrackedPackageName != null) {
@@ -512,6 +675,22 @@ private void updateMediaProgressCompact() {
             });
         }
     }
+
+public void onConfigurationChanged(Configuration newConfig) {
+    Log.d(TAG, "onConfigurationChanged called");
+    
+    int oldAccentColor = mAccentColor;
+    updateAccentColor();
+    
+    if (oldAccentColor != mAccentColor) {
+        Log.d(TAG, "Accent color changed from configuration: " + 
+              Integer.toHexString(oldAccentColor) + " -> " + Integer.toHexString(mAccentColor));
+        applySystemTheming();
+        
+        mNeedsFullUiUpdate = true;
+        requestUiUpdate();
+    }
+}
 
     private void loadIconInBackground(String packageName, IconCallback callback) {
         if (packageName == null) return;
@@ -848,6 +1027,9 @@ private void updateMediaProgressCompact() {
         
         mProgressBarOpacity = (int)(opacityPercentage * 2.55f);
         
+        updateAccentColor();
+        applySystemTheming();
+        
         if (wasEnabled != mIsEnabled || wasShowingMedia != mShowMediaProgress || wasCompactMode != mIsCompactModeEnabled) {
             mNeedsFullUiUpdate = true;
             mIsExpanded = false;
@@ -860,6 +1042,19 @@ private void updateMediaProgressCompact() {
         mIsViewAttached = false;
 
         mHandler.removeCallbacks(mStaleProgressChecker);
+
+        cancelAnimations(mProgressRootView);
+        cancelAnimations(mCompactRootView);
+        
+        if (mProgressAnimator != null) {
+            mProgressAnimator.cancel();
+            mProgressAnimator = null;
+        }
+        
+        if (mCircularProgressAnimator != null) {
+            mCircularProgressAnimator.cancel();
+            mCircularProgressAnimator = null;
+        }
 
         mSettingsObserver.unregister();
         mKeyguardStateController.removeCallback(this);
