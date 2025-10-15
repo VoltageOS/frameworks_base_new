@@ -226,7 +226,7 @@ constructor(
                         context.resources.getDimensionPixelSize(
                             clocksR.dimen.enhanced_smartspace_height
                         )
-                } else {
+                } else if (smartspaceViewModel.isSmartspaceEnabled) {
                     keyguardClockViewModel.getLargeClockTopMargin() +
                         context.resources.getDimensionPixelSize(
                             clocksR.dimen.date_weather_view_height
@@ -234,6 +234,8 @@ constructor(
                         context.resources.getDimensionPixelSize(
                             clocksR.dimen.enhanced_smartspace_height
                         )
+                } else {
+                    keyguardClockViewModel.getLargeClockTopMargin()
                 }
             connect(
                 ClockViewIds.LOCKSCREEN_CLOCK_VIEW_LARGE,
