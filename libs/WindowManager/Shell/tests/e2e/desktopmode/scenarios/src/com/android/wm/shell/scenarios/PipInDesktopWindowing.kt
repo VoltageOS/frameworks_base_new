@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,11 @@ package com.android.wm.shell.scenarios
 import android.app.Instrumentation
 import android.tools.Rotation
 import android.tools.traces.parsers.WindowManagerStateHelper
-import androidx.test.platform.app.InstrumentationRegistry
+import android.view.KeyEvent
+import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import androidx.test.uiautomator.UiDevice
 import com.android.server.wm.flicker.helpers.DesktopModeAppHelper
+import com.android.server.wm.flicker.helpers.KeyEventHelper
 import com.android.server.wm.flicker.helpers.PipAppHelper
 import com.android.server.wm.flicker.helpers.SimpleAppHelper
 import com.android.window.flags.Flags
@@ -31,40 +33,55 @@ import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
 
-/** Base scenario test for minimizing the app entering pip on leave automatically */
+/** Base scenario tests for PiP in Desktop Windowing */
 @Ignore("Test Base Class")
-abstract class MinimizeAutoPipAppWindow(
+abstract class PipInDesktopWindowing(
     val rotation: Rotation = Rotation.ROTATION_0
 ) : TestScenarioBase(rotation) {
-    private val instrumentation: Instrumentation = InstrumentationRegistry.getInstrumentation()
+    private val instrumentation: Instrumentation = getInstrumentation()
     private val wmHelper = WindowManagerStateHelper(instrumentation)
     private val device = UiDevice.getInstance(instrumentation)
-    private val testApp = DesktopModeAppHelper(SimpleAppHelper(instrumentation))
+    private val simpleApp = DesktopModeAppHelper(SimpleAppHelper(instrumentation))
     private val pipApp = PipAppHelper(instrumentation)
-    val pipAppDesktopMode = DesktopModeAppHelper(pipApp)
-
-    val appInDesktop: ArrayList<DesktopModeAppHelper> = ArrayList()
+    private val keyEventHelper = KeyEventHelper(getInstrumentation())
+    private val pipAppDesktopMode = DesktopModeAppHelper(pipApp)
 
     @Before
     fun setup() {
         Assume.assumeTrue(Flags.enableMinimizeButton())
         Assume.assumeTrue(Flags.enableDesktopWindowingPip())
         Assume.assumeTrue(com.android.wm.shell.Flags.enablePip2())
-        testApp.enterDesktopMode(wmHelper, device)
-        appInDesktop.add(testApp)
-        pipApp.launchViaIntent(wmHelper)
+
+        simpleApp.enterDesktopMode(wmHelper, device)
+        pipAppDesktopMode.enterDesktopMode(wmHelper, device)
         pipApp.enableAutoEnterForPipActivity()
-        appInDesktop.add(pipAppDesktopMode)
+        pipAppDesktopMode.minimizeDesktopApp(wmHelper, device, isPip = true)
     }
 
     @Test
-    open fun minimizePipAppWindow() {
-        pipAppDesktopMode.minimizeDesktopApp(wmHelper, device, isPip = true)
+    open fun switchBetweenDesktopAndFullscreen() {
+        // Desktop -> Fullscreen.
+        keyEventHelper.press(KeyEvent.KEYCODE_FULLSCREEN)
+        simpleApp.waitForTransitionToFullscreen(wmHelper)
+        wmHelper.StateSyncBuilder().withAppTransitionIdle().withPipShown().waitForAndVerify()
+
+        // Fullscreen -> Desktop.
+        keyEventHelper.press(KeyEvent.KEYCODE_FULLSCREEN)
+        simpleApp.waitForTransitionToFreeform(wmHelper)
+        wmHelper.StateSyncBuilder().withAppTransitionIdle().withPipShown().waitForAndVerify()
+    }
+
+    @Test
+    open fun expandPip() {
+        // verify simpleApp is still in freeform
+        simpleApp.waitForTransitionToFreeform(wmHelper)
+        // expand the PiP and verify it goes to freeform
+        pipApp.expandPipWindowToFreeformApp(wmHelper)
     }
 
     @After
     fun teardown() {
         pipApp.exit(wmHelper)
-        testApp.exit(wmHelper)
+        simpleApp.exit(wmHelper)
     }
 }
