@@ -16,25 +16,12 @@
 
 package com.android.systemui.screencapture.common.domain.model
 
-import android.graphics.Bitmap
-import android.media.projection.MediaProjectionAppContent
-
-/** Collection of information about currently available app content. */
-data class ScreenCaptureAppContent(
-    val packageName: String,
-    val contentId: Int,
-    val label: CharSequence,
-    val thumbnail: Bitmap,
-) : TargetModel {
-    constructor(
-        packageName: String,
-        appContent: MediaProjectionAppContent,
-    ) : this(
-        packageName = packageName,
-        contentId = appContent.id,
-        label = appContent.title,
-        thumbnail = appContent.thumbnail,
-    )
-
-    override val traceTag: String = "AppContent($packageName, $contentId)"
+/**
+ * Model that is the basis for
+ * [TargetsViewModel][com.android.systemui.screencapture.common.ui.viewmodel.TargetsViewModel] and
+ * [TargetViewModel][com.android.systemui.screencapture.common.ui.viewmodel.TargetViewModel].
+ */
+sealed interface TargetModel {
+    /** Identifying string to use in traces. */
+    val traceTag: String
 }
