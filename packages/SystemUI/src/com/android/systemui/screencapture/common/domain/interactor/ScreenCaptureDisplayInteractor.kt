@@ -16,16 +16,17 @@
 
 package com.android.systemui.screencapture.common.domain.interactor
 
-import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.kosmos.testDispatcher
-import com.android.systemui.screencapture.common.data.repository.fakeScreenCaptureThumbnailRepository
-import com.android.systemui.screenshot.mockImageCapture
+import com.android.systemui.display.data.repository.DisplayRepository
+import com.android.systemui.screencapture.common.ScreenCaptureUiScope
+import com.android.systemui.screencapture.common.domain.model.ScreenCaptureDisplay
+import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
-var Kosmos.screenCaptureThumbnailInteractor by
-    Kosmos.Fixture {
-        ScreenCaptureThumbnailInteractor(
-            bgContext = testDispatcher,
-            repository = fakeScreenCaptureThumbnailRepository,
-            imageCapture = mockImageCapture,
-        )
-    }
+@ScreenCaptureUiScope
+class ScreenCaptureDisplayInteractor @Inject constructor(displayRepository: DisplayRepository) {
+    val displays: Flow<List<ScreenCaptureDisplay>> =
+        displayRepository.displays.map { displays ->
+            displays.map { display -> ScreenCaptureDisplay(display) }
+        }
+}

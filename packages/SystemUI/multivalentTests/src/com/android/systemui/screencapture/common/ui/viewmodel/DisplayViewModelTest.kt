@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.systemui.screencapture.common.domain.interactor
+package com.android.systemui.screencapture.common.ui.viewmodel
 
 import androidx.core.graphics.createBitmap
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -22,10 +22,10 @@ import androidx.test.filters.SmallTest
 import com.android.systemui.SysuiTestCase
 import com.android.systemui.kosmos.Kosmos
 import com.android.systemui.kosmos.runTest
-import com.android.systemui.kosmos.testDispatcher
-import com.android.systemui.screencapture.common.data.repository.fakeScreenCaptureThumbnailRepository
+import com.android.systemui.kosmos.testScope
+import com.android.systemui.lifecycle.activateIn
+import com.android.systemui.screencapture.common.domain.interactor.screenCaptureThumbnailInteractor
 import com.android.systemui.screencapture.common.domain.model.ScreenCaptureDisplay
-import com.android.systemui.screencapture.common.domain.model.ScreenCaptureRecentTask
 import com.android.systemui.screenshot.mockImageCapture
 import com.android.systemui.testKosmosNew
 import com.google.common.truth.Truth.assertThat
@@ -34,63 +34,65 @@ import org.junit.runner.RunWith
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
 import org.mockito.kotlin.stub
-import org.mockito.kotlin.verify
 
 @SmallTest
 @RunWith(AndroidJUnit4::class)
-class ScreenCaptureThumbnailInteractorTest : SysuiTestCase() {
+class DisplayViewModelTest : SysuiTestCase() {
 
     private val kosmos = testKosmosNew()
 
-    private val Kosmos.interactor by
+    private val Kosmos.fakeDisplay by
+        Kosmos.Fixture { ScreenCaptureDisplay(displayId = 123, label = "FakeLabel") }
+    private val Kosmos.viewModel by
         Kosmos.Fixture {
-            ScreenCaptureThumbnailInteractor(
-                bgContext = testDispatcher,
-                repository = fakeScreenCaptureThumbnailRepository,
-                imageCapture = mockImageCapture,
+            DisplayViewModel(
+                model = fakeDisplay,
+                thumbnailInteractor = screenCaptureThumbnailInteractor,
             )
         }
 
     @Test
-    fun loadThumbnail_recentTask_returnsThumbnailFromRepository() =
+    fun constructor_initializesFields() =
         kosmos.runTest {
             // Arrange
-            val fakeTask =
-                ScreenCaptureRecentTask(
-                    taskId = 1,
-                    displayId = 2,
-                    userId = 3,
-                    component = null,
-                    backgroundColor = null,
-                    splitBounds = null,
-                )
 
             // Act
-            val result = interactor.loadThumbnail(fakeTask)
+            val viewModel = viewModel
 
             // Assert
-            assertThat(fakeScreenCaptureThumbnailRepository.loadThumbnailCalls).containsExactly(1)
-            assertThat(result).isEqualTo(fakeScreenCaptureThumbnailRepository.fakeThumbnail)
+            with(viewModel) {
+                assertThat(model).isEqualTo(fakeDisplay)
+                assertThat(icon?.isFailure).isTrue()
+                assertThat(label?.getOrNull()).isEqualTo("FakeLabel")
+                assertThat(thumbnail).isNull()
+            }
         }
 
     @Test
-    fun loadThumbnail_display_returnsCapturedThumbnail() =
+    fun onActivated_loadsThumbnail() =
         kosmos.runTest {
             // Arrange
             val fakeThumbnail = createBitmap(200, 100)
             mockImageCapture.stub {
                 on { captureDisplay(any(), anyOrNull()) } doReturn fakeThumbnail
             }
-            val fakeDisplay = ScreenCaptureDisplay(displayId = 1, label = "FakeLabel")
+            with(viewModel) {
+                assertThat(model).isEqualTo(fakeDisplay)
+                assertThat(icon?.isFailure).isTrue()
+                assertThat(label?.getOrNull()).isEqualTo("FakeLabel")
+                assertThat(thumbnail).isNull()
+            }
 
             // Act
-            val result = interactor.loadThumbnail(fakeDisplay)
+            viewModel.activateIn(testScope)
 
             // Assert
-            verify(mockImageCapture).captureDisplay(eq(1), isNull())
-            assertThat(result.getOrNull()?.sameAs(fakeThumbnail))
+            with(viewModel) {
+                assertThat(model).isEqualTo(fakeDisplay)
+                assertThat(icon?.isFailure).isTrue()
+                assertThat(label?.getOrNull()).isEqualTo("FakeLabel")
+                assertThat(thumbnail?.getOrNull()?.sameAs(fakeThumbnail)).isTrue()
+            }
         }
 }

@@ -14,18 +14,13 @@
  * limitations under the License.
  */
 
-package com.android.systemui.screencapture.common.domain.interactor
+package com.android.systemui.screencapture.common.domain.model
 
-import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.kosmos.testDispatcher
-import com.android.systemui.screencapture.common.data.repository.fakeScreenCaptureThumbnailRepository
-import com.android.systemui.screenshot.mockImageCapture
+import android.view.Display
 
-var Kosmos.screenCaptureThumbnailInteractor by
-    Kosmos.Fixture {
-        ScreenCaptureThumbnailInteractor(
-            bgContext = testDispatcher,
-            repository = fakeScreenCaptureThumbnailRepository,
-            imageCapture = mockImageCapture,
-        )
-    }
+/** Collection of information about a currently available display. */
+data class ScreenCaptureDisplay(val displayId: Int, val label: CharSequence) : TargetModel {
+    constructor(display: Display) : this(display.displayId, display.name)
+
+    override val traceTag: String = "Display($displayId)"
+}

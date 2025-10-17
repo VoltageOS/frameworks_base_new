@@ -16,16 +16,8 @@
 
 package com.android.systemui.screencapture.common.domain.interactor
 
+import com.android.systemui.display.data.repository.displayRepository
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.kosmos.testDispatcher
-import com.android.systemui.screencapture.common.data.repository.fakeScreenCaptureThumbnailRepository
-import com.android.systemui.screenshot.mockImageCapture
 
-var Kosmos.screenCaptureThumbnailInteractor by
-    Kosmos.Fixture {
-        ScreenCaptureThumbnailInteractor(
-            bgContext = testDispatcher,
-            repository = fakeScreenCaptureThumbnailRepository,
-            imageCapture = mockImageCapture,
-        )
-    }
+var Kosmos.screenCaptureDisplayInteractor by
+    Kosmos.Fixture { ScreenCaptureDisplayInteractor(displayRepository) }
