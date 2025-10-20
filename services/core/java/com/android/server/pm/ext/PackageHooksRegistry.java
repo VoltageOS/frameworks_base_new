@@ -28,6 +28,7 @@ public class PackageHooksRegistry {
             case PackageId.G_EUICC_LPA -> new EuiccGoogleHooks();
             case PackageId.ANDROID_AUTO -> new AndroidAutoHooks();
             case PackageId.PIXEL_HEALTH -> new PixelHealthHooks();
+            case PackageId.GMS_CORE -> new GmsCoreHooks();
             default -> PackageHooks.DEFAULT;
         };
     }
