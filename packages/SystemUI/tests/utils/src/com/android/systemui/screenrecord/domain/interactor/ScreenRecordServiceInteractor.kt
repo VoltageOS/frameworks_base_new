@@ -14,16 +14,10 @@
  * limitations under the License.
  */
 
-package com.android.systemui.screencapture.record.domain.interactor
+package com.android.systemui.screenrecord.domain.interactor
 
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.screencapture.record.data.repository.screenCaptureRecordParametersRepository
-import com.android.systemui.screenrecord.domain.interactor.screenRecordingServiceInteractor
+import com.android.systemui.screenrecord.data.repository.screenRecordingServiceRepository
 
-val Kosmos.screenCaptureRecordParametersInteractor by
-    Kosmos.Fixture {
-        ScreenCaptureRecordParametersInteractor(
-            serviceInteractor = screenRecordingServiceInteractor,
-            repository = screenCaptureRecordParametersRepository,
-        )
-    }
+val Kosmos.screenRecordingServiceInteractor: ScreenRecordingServiceInteractor by
+    Kosmos.Fixture { ScreenRecordingServiceInteractor(screenRecordingServiceRepository) }
