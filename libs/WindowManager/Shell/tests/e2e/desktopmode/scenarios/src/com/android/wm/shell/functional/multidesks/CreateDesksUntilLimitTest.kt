@@ -13,10 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.wm.shell.desktopmode.multidesks
 
-/** A listener for removals of desks. */
-fun interface OnDeskRemovedListener {
-    /** Called when a desk has been removed from the system. */
-    fun onDeskRemoved(lastDisplayId: Int, deskId: Int, userId: Int, onlyDeskInDisplay: Boolean)
-}
+package com.android.wm.shell.functional.multidesks
+
+import android.platform.test.annotations.Presubmit
+import android.platform.test.annotations.RequiresDesktopDevice
+import android.platform.test.rule.ScreenRecordRule
+import com.android.wm.shell.scenarios.CreateDesksUntilLimit
+import org.junit.runner.RunWith
+import org.junit.runners.BlockJUnit4ClassRunner
+
+
+/* Functional test for [CreateDesksUntilLimit]. */
+@RunWith(BlockJUnit4ClassRunner::class)
+@RequiresDesktopDevice
+@Presubmit
+@ScreenRecordRule.ScreenRecord
+class CreateDesksUntilLimitTest : CreateDesksUntilLimit()
