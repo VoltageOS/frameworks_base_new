@@ -109,9 +109,13 @@ constructor(
 
     suspend fun loadImage(@DrawableRes resId: Int, context: Context): Icon.Loaded? {
         return withTimeoutOrNull(500L) {
-        val d = ResourcesCompat.getDrawable(context.resources, resId, context.theme)
-            ?: error("Drawable $resId not found")
-        d.asIcon(null, resId)
+            val drawable = ResourcesCompat.getDrawable(
+                context.resources,
+                resId,
+                context.theme
+            ) ?: return@withTimeoutOrNull null
+
+            drawable.asIcon(null, resId)
         }
     }
 
