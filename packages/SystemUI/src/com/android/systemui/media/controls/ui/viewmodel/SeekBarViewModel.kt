@@ -309,7 +309,7 @@ constructor(
 
     /** Call to clean up any resources. */
     @AnyThread
-    fun onDestroy() =
+    fun onDestroy() {
         bgExecutor.execute {
             controller = null
             playbackState = null
@@ -318,6 +318,11 @@ constructor(
             scrubbingChangeListener = null
             enabledChangeListener = null
         }
+        firstMotionEvent?.recycle()
+        lastMotionEvent?.recycle()
+        firstMotionEvent = null
+        lastMotionEvent = null
+    }
 
     @WorkerThread
     private fun checkPlaybackPosition() {
@@ -532,6 +537,8 @@ constructor(
         // Indicates if the gesture should go to the seek bar or if it should be intercepted.
         private var shouldGoToSeekBar = false
 
+        private fun MotionEvent.safeCopy(): MotionEvent = MotionEvent.obtain(this)
+
         /**
          * Decide which touch events to intercept before they reach the seek bar.
          *
@@ -553,7 +560,8 @@ constructor(
             }
             detector.onTouchEvent(event)
             // Store the last motion event done on seekbar.
-            viewModel.lastMotionEvent = event.copy()
+            viewModel.lastMotionEvent?.recycle()
+            viewModel.lastMotionEvent = event.safeCopy()
             return !shouldGoToSeekBar
         }
 
@@ -599,7 +607,8 @@ constructor(
                 bar.parent?.requestDisallowInterceptTouchEvent(true)
             }
             // Store the first motion event done on seekbar.
-            viewModel.firstMotionEvent = event.copy()
+            viewModel.firstMotionEvent?.recycle()
+            viewModel.firstMotionEvent = event.safeCopy()
             return shouldGoToSeekBar
         }
 
