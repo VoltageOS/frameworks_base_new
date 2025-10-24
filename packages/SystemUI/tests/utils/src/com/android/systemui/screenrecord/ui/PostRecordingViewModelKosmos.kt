@@ -14,30 +14,29 @@
  * limitations under the License.
  */
 
-package com.android.systemui.screencapture
+package com.android.systemui.screenrecord.ui
 
 import android.content.applicationContext
-import com.android.systemui.display.data.repository.displayRepository
+import android.net.Uri
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.kosmos.applicationCoroutineScope
 import com.android.systemui.plugins.activityStarter
-import com.android.systemui.screencapture.domain.interactor.screenCaptureComponentInteractor
+import com.android.systemui.screencapture.common.ui.viewmodel.drawableLoaderViewModel
 import com.android.systemui.screencapture.domain.interactor.screenCaptureUiInteractor
-import com.android.systemui.screencapture.ui.postRecordingShelfFactory
+import com.android.systemui.screencapture.record.smallscreen.ui.viewmodel.PostRecordingViewModel
 import com.android.systemui.screenrecord.domain.interactor.screenRecordingServiceInteractor
-import com.android.systemui.shade.data.repository.fakeFocusedDisplayRepository
 
-val Kosmos.screenCaptureStartable: ScreenCaptureStartable by
+val Kosmos.postRecordingViewModelFactory by
     Kosmos.Fixture {
-        ScreenCaptureStartable(
-            applicationCoroutineScope,
-            applicationContext,
-            screenCaptureComponentInteractor,
-            screenCaptureUiInteractor,
-            fakeFocusedDisplayRepository,
-            displayRepository,
-            screenRecordingServiceInteractor,
-            postRecordingShelfFactory,
-            activityStarter,
-        )
+        object : PostRecordingViewModel.Factory {
+            override fun create(videoUri: Uri): PostRecordingViewModel {
+                return PostRecordingViewModel(
+                    videoUri = videoUri,
+                    context = applicationContext,
+                    activityStarter = activityStarter,
+                    drawableLoaderViewModel = drawableLoaderViewModel,
+                    screenCaptureUiInteractor = screenCaptureUiInteractor,
+                    screenRecordingServiceInteractor = screenRecordingServiceInteractor,
+                )
+            }
+        }
     }
