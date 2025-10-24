@@ -18,18 +18,28 @@ package com.android.systemui.util.policy
 
 import android.content.Context
 import com.android.settingslib.RestrictedLockUtils
+import com.android.settingslib.RestrictedLockUtilsInternal
+import javax.inject.Inject
 
-/** Proxy to call [RestrictedLockUtils] */
-public interface UserRestrictionChecker {
-    public fun checkIfRestrictionEnforced(
+/** Proxy to call [RestrictedLockUtilsInternal] */
+class UserRestrictionCheckerImpl @Inject constructor() : UserRestrictionChecker {
+    override fun checkIfRestrictionEnforced(
         context: Context,
         userRestriction: String,
         userId: Int,
-    ): RestrictedLockUtils.EnforcedAdmin?
+    ): RestrictedLockUtils.EnforcedAdmin? {
+        return RestrictedLockUtilsInternal.checkIfRestrictionEnforced(
+            context,
+            userRestriction,
+            userId,
+        )
+    }
 
-    public fun hasBaseUserRestriction(
+    override fun hasBaseUserRestriction(
         context: Context,
         userRestriction: String,
         userId: Int,
-    ): Boolean
+    ): Boolean {
+        return RestrictedLockUtilsInternal.hasBaseUserRestriction(context, userRestriction, userId)
+    }
 }

@@ -16,6 +16,11 @@
 
 package com.android.systemui.util.policy
 
-import com.android.systemui.kosmos.Kosmos
+import dagger.Binds
+import dagger.Module
 
-val Kosmos.userRestrictionChecker by Kosmos.Fixture { UserRestrictionCheckerImpl() }
+@Module
+public interface PolicyRestrictionModule {
+    @Binds
+    public fun bindUserRestrictionChecker(impl: UserRestrictionCheckerImpl): UserRestrictionChecker
+}
