@@ -14,26 +14,9 @@
  * limitations under the License.
  */
 
-package {
-    default_applicable_licenses: ["Android-Apache-2.0"],
-}
+package android.app.privatecompute;
 
-android_test {
-    name: "PrivateComputeUnitTests",
-    team: "trendy_team_private_compute_core",
-    platform_apis: true,
-    defaults: [
-        "modules-utils-testable-device-config-defaults",
-    ],
-    srcs: ["src/**/*.java"],
-    static_libs: [
-        "androidx.test.ext.junit",
-        "androidx.test.ext.truth",
-        "androidx.test.runner",
-        "frameworks-base-testutils",
-        "flag-junit",
-        "services.core",
-        "android.app.privatecompute.flags-aconfig-java",
-    ],
-    test_suites: ["device-tests"],
+/** @hide */
+oneway interface IPccService {
+
 }
