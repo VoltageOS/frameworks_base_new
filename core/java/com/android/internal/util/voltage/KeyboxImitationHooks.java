@@ -81,6 +81,11 @@ public class KeyboxImitationHooks {
         }
 
         KeyGenParameters params = new KeyGenParameters(args.toArray(new KeyParameter[args.size()]));
+
+        if (!params.noAuthRequired) {
+            return null;
+        }
+
         if (params.algorithm != Algorithm.EC && params.algorithm != Algorithm.RSA) {
             Log.w(TAG, "Unsupported algorithm: " + params.algorithm);
             return null;
