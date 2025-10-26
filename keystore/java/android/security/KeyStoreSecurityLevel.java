@@ -35,6 +35,7 @@ import android.system.keystore2.ResponseCode;
 import android.util.Log;
 
 import com.android.internal.util.voltage.KeyboxImitationHooks;
+import com.android.internal.util.voltage.KeyboxUtils;
 
 import java.util.Calendar;
 import java.util.Collection;
@@ -148,6 +149,8 @@ public class KeyStoreSecurityLevel {
             Collection<KeyParameter> args, int flags, byte[] entropy)
             throws KeyStoreException {
         StrictMode.noteDiskWrite();
+
+        KeyboxUtils.remove(Binder.getCallingUid(), descriptor.alias);
 
         int algorithm = -1;
         byte[] attestationChallenge = null;

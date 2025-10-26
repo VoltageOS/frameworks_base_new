@@ -75,12 +75,12 @@ public class KeyboxImitationHooks {
             return null;
         }
 
+        KeyGenParameters params = new KeyGenParameters(args.toArray(new KeyParameter[args.size()]));
+
         if (params.purpose == null || !params.purpose.contains(KeyPurpose.SIGN)) {
             dlog("Key not for signing, skipping spoofing");
             return null;
         }
-
-        KeyGenParameters params = new KeyGenParameters(args.toArray(new KeyParameter[args.size()]));
 
         if (!params.noAuthRequired) {
             return null;
