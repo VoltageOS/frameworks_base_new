@@ -16,10 +16,11 @@
 
 package android.app.privatecompute;
 
-import android.app.privatecompute.IResultCallback;
-import android.os.Bundle;
+import android.os.ParcelableException;
 
 /** @hide */
-oneway interface IPccService {
-    oneway void sendData(in Bundle data, String packageName, IResultCallback callback);
+oneway interface IResultCallback {
+    void onSuccess();
+
+    void onFailure(in ParcelableException e);
 }
