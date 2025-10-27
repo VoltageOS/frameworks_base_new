@@ -19,17 +19,17 @@ package com.android.systemui.screencapture.common.ui.viewmodel
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import com.android.systemui.lifecycle.HydratedActivatable
-import com.android.systemui.screencapture.common.domain.interactor.ScreenCaptureRecentTaskInteractor
-import com.android.systemui.screencapture.common.domain.model.ScreenCaptureRecentTask
+import com.android.systemui.screencapture.common.domain.interactor.ScreenCaptureDisplayInteractor
+import com.android.systemui.screencapture.common.domain.model.ScreenCaptureDisplay
 import javax.inject.Inject
 
 /**
- * Interface for view models concerned with recent tasks.
+ * Interface for view models concerned with displays.
  *
  * Example usage in a [HydratedActivatable]:
  * ```
  * class FooViewModel(
- *     viewModelProvider: Provider<RecentTasksViewModel>,
+ *     viewModelProvider: Provider<DisplaysViewModel>,
  * ) : HydratedActivatable() {
  *
  *     private val viewModel = viewModelProvider.get()
@@ -46,38 +46,37 @@ import javax.inject.Inject
  *
  * ```
  * @Composable
- * fun Foo(viewModelProvider: Provider<RecentTasksViewModel>) {
+ * fun Foo(viewModelProvider: Provider<DisplaysViewModel>) {
  *     val viewModel = rememberViewModel("FooTraceName") { viewModelProvider.get() }
  * }
  * ```
  */
-interface RecentTasksViewModel : TargetsViewModel<ScreenCaptureRecentTask>
+interface DisplaysViewModel : TargetsViewModel<ScreenCaptureDisplay>
 
-/** The default implementation of [RecentTasksViewModel]. */
-class RecentTasksViewModelImpl
+/** The default implementation of [DisplaysViewModel]. */
+class DisplaysViewModelImpl
 @Inject
 constructor(
-    interactor: ScreenCaptureRecentTaskInteractor,
-    private val recentTaskViewModelFactory: RecentTaskViewModel.Factory,
+    interactor: ScreenCaptureDisplayInteractor,
+    private val displayViewModelFactory: DisplayViewModel.Factory,
     drawableLoaderViewModel: DrawableLoaderViewModel,
     audioSwitchViewModel: AudioSwitchViewModel,
 ) :
-    RecentTasksViewModel,
+    DisplaysViewModel,
     DrawableLoaderViewModel by drawableLoaderViewModel,
     AudioSwitchViewModel by audioSwitchViewModel,
     HydratedActivatable() {
 
-    override val targets: State<List<ScreenCaptureRecentTask>?> =
-        interactor.recentTasks.hydratedStateOf("RecentTasksViewModel#recentTasks", null)
+    override val targets = interactor.displays.hydratedStateOf("DisplaysViewModel#displays", null)
 
-    private val _selectedTarget = mutableStateOf<TargetViewModel<ScreenCaptureRecentTask>?>(null)
-    override val selectedTarget: State<TargetViewModel<ScreenCaptureRecentTask>?> = _selectedTarget
+    private val _selectedTarget = mutableStateOf<TargetViewModel<ScreenCaptureDisplay>?>(null)
+    override val selectedTarget: State<TargetViewModel<ScreenCaptureDisplay>?> = _selectedTarget
 
-    override fun setSelectedTarget(target: TargetViewModel<ScreenCaptureRecentTask>?) {
+    override fun setSelectedTarget(target: TargetViewModel<ScreenCaptureDisplay>?) {
         _selectedTarget.value = target
     }
 
     override fun createViewModelFor(
-        target: ScreenCaptureRecentTask
-    ): TargetViewModel<ScreenCaptureRecentTask> = recentTaskViewModelFactory.create(target)
+        target: ScreenCaptureDisplay
+    ): TargetViewModel<ScreenCaptureDisplay> = displayViewModelFactory.create(target)
 }

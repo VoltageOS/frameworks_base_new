@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-package com.android.systemui.screencapture.common.domain.interactor
+package com.android.systemui.screencapture.common.ui.viewmodel
 
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.kosmos.testDispatcher
-import com.android.systemui.screencapture.common.data.repository.fakeScreenCaptureThumbnailRepository
-import com.android.systemui.screenshot.mockImageCapture
+import com.android.systemui.screencapture.common.domain.interactor.screenCaptureDisplayInteractor
 
-var Kosmos.screenCaptureThumbnailInteractor by
+var Kosmos.displaysViewModel: DisplaysViewModel by
     Kosmos.Fixture {
-        ScreenCaptureThumbnailInteractor(
-            bgContext = testDispatcher,
-            repository = fakeScreenCaptureThumbnailRepository,
-            imageCapture = mockImageCapture,
+        DisplaysViewModelImpl(
+            interactor = screenCaptureDisplayInteractor,
+            displayViewModelFactory = displayViewModelFactory,
+            drawableLoaderViewModel = drawableLoaderViewModel,
+            audioSwitchViewModel = AudioSwitchViewModelImpl(),
         )
     }
+
+val Kosmos.fakeDisplaysViewModel by
+    Kosmos.Fixture { FakeDisplaysViewModel(displayViewModelFactory, drawableLoaderViewModel) }
