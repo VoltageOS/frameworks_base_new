@@ -16,10 +16,14 @@
 
 package com.android.systemui.screencapture.data.repository
 
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-/** Provides information about the current state of the device related to screen capture. */
-interface ScreenCaptureDeviceStateRepository {
-    /** Emits `true` if the device is considered a large screen for screen capture purposes. */
-    val isLargeScreen: StateFlow<Boolean?>
+class FakeScreenCaptureDeviceStateRepository : ScreenCaptureDeviceStateRepository {
+    private val _isLargeScreen: MutableStateFlow<Boolean?> = MutableStateFlow(false)
+    override val isLargeScreen: StateFlow<Boolean?> = _isLargeScreen
+
+    fun setLargeScreen(value: Boolean?) {
+        _isLargeScreen.value = value
+    }
 }

@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.systemui.screencapture.data.repository
+package com.android.systemui.screencapture.record.domain.interactor
 
-import kotlinx.coroutines.flow.StateFlow
+import com.android.systemui.kosmos.Kosmos
+import com.android.systemui.screencapture.data.repository.screenCaptureDeviceStateRepository
 
-/** Provides information about the current state of the device related to screen capture. */
-interface ScreenCaptureDeviceStateRepository {
-    /** Emits `true` if the device is considered a large screen for screen capture purposes. */
-    val isLargeScreen: StateFlow<Boolean?>
-}
+val Kosmos.screenCaptureRecordFeaturesInteractor: ScreenCaptureRecordFeaturesInteractor by
+    Kosmos.Fixture {
+        ScreenCaptureRecordFeaturesInteractor(
+            screenCaptureDeviceStateRepository = screenCaptureDeviceStateRepository
+        )
+    }
