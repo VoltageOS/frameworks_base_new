@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-package com.android.systemui.globalactions.data.repository
+package com.android.systemui.globalactions
 
-import android.content.applicationContext
+import com.android.systemui.globalactions.data.repository.GlobalActionsRepository
 import com.android.systemui.globalactions.data.repository.impl.GlobalActionsRepositoryImpl
-import com.android.systemui.kosmos.Kosmos
+import dagger.Binds
+import dagger.Module
 
-val Kosmos.realGlobalActionsRepository by
-    Kosmos.Fixture { GlobalActionsRepositoryImpl(applicationContext) }
-
-val Kosmos.globalActionsRepository by Kosmos.Fixture { FakeGlobalActionsRepository() }
+@Module
+interface GlobalActionsModule {
+    /**  */
+    @Binds
+    fun provideGlobalActionsRepository(impl: GlobalActionsRepositoryImpl): GlobalActionsRepository
+}

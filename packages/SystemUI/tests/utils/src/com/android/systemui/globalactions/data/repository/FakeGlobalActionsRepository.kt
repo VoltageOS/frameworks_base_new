@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,20 +17,16 @@
 package com.android.systemui.globalactions.data.repository
 
 import com.android.systemui.globalactions.shared.model.GlobalActionType
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 
-/** Encapsulates application state for global actions. */
-interface GlobalActionsRepository {
-    /** Is the global actions dialog visible. */
-    val isVisible: StateFlow<Boolean>
+class FakeGlobalActionsRepository : GlobalActionsRepository {
 
-    /** Sets whether the global actions dialog is visible. */
-    fun setVisible(isVisible: Boolean)
+    override val isVisible = MutableStateFlow(false)
 
-    /**
-     * The list of all possible global actions. This list is used to determine what actions can be
-     * displayed but it does not guarantee that they will be displayed. The actions that are finally
-     * displayed are determined by device state.
-     */
-    val possibleGlobalActions: List<GlobalActionType>
+    override fun setVisible(isVisible: Boolean) {
+        this.isVisible.value = isVisible
+    }
+
+    /** The list of available global actions. */
+    override var possibleGlobalActions: List<GlobalActionType> = emptyList()
 }
