@@ -14,18 +14,25 @@
  * limitations under the License.
  */
 
-package com.android.systemui.screencapture.ui
+package com.android.systemui.screencapture.ui.viewmodel
 
-import android.content.applicationContext
-import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.screencapture.ui.viewmodel.screenCaptureCameraViewModelFactory
-import com.android.systemui.statusbar.phone.systemUIDialogFactory
+import android.view.Surface
+import com.android.systemui.lifecycle.HydratedActivatable
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 
-val Kosmos.screenCaptureOverlayUi: ScreenCaptureOverlayUi by
-    Kosmos.Fixture {
-        ScreenCaptureOverlayUi(
-            applicationContext,
-            systemUIDialogFactory,
-            screenCaptureCameraViewModelFactory,
-        )
+class ScreenCaptureCameraViewModel @AssistedInject constructor() : HydratedActivatable() {
+
+    fun onSurfaceReady(surface: Surface) {
+        // TODO(b/441486122): wire this to camera
     }
+
+    fun onSurfaceDestroyed() {
+        // TODO(b/441486122): wire this to camera
+    }
+
+    @AssistedFactory
+    interface Factory {
+        fun create(): ScreenCaptureCameraViewModel
+    }
+}
