@@ -12,16 +12,26 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.android.wm.shell.pinnedlayer.phone
 
-/** Encapsulates pinned layer flag management utilities. */
-object PinnedLayerFlags {
+import com.android.internal.protolog.ProtoLog
+import com.android.wm.shell.protolog.ShellProtoLogGroup.WM_SHELL_WINDOWING_LAYER
 
-    /** Checks whether pinned layer flag is enabled or not. */
+/**
+ * A utility class that wraps logging into a convenient set of methods targeting pinned layer only.
+ */
+internal object PinnedLayerLogs {
+    private const val TAG = "PinnedLayer"
+
     @JvmStatic
-    fun isPinnedLayerEnabled(): Boolean =
-        com.android.window.flags.Flags.enableInteractivePictureInPicture()
+    internal fun logV(message: String, vararg args: Any?) {
+        ProtoLog.v(WM_SHELL_WINDOWING_LAYER, "%s: $message", TAG, *args)
+    }
+
+    @JvmStatic
+    internal fun logW(message: String, vararg args: Any?) {
+        ProtoLog.w(WM_SHELL_WINDOWING_LAYER, "%s: $message", TAG, *args)
+    }
 }
