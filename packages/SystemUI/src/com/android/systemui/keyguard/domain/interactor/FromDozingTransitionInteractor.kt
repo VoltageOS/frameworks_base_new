@@ -174,11 +174,7 @@ constructor(
                     } else if (canDismissLockscreen() || isKeyguardGoingAway) {
                         if (!SceneContainerFlag.isEnabled) {
                             startTransitionTo(
-                                if (canDismissLockscreen()) {
-                                    KeyguardState.LOCKSCREEN
-                                } else {
-                                    KeyguardState.GONE
-                                },
+                                KeyguardState.GONE,
                                 ownerReason =
                                     if (canDismissLockscreen()) {
                                         "canDismissLockscreen()"
