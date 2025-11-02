@@ -4628,6 +4628,9 @@ public final class Settings {
         /** @hide */
         @UnsupportedAppUsage
         public static int getIntForUser(ContentResolver cr, String name, int def, int userHandle) {
+            if (shouldHideSetting(cr.getPackageName(), name)) {
+                return 0;
+            }
             String v = getStringForUser(cr, name, userHandle);
             return parseIntSettingWithDefault(v, def);
         }
@@ -4659,6 +4662,9 @@ public final class Settings {
         @UnsupportedAppUsage
         public static int getIntForUser(ContentResolver cr, String name, int userHandle)
                 throws SettingNotFoundException {
+            if (shouldHideSetting(cr.getPackageName(), name)) {
+                return 0;
+            }
             String v = getStringForUser(cr, name, userHandle);
             return parseIntSetting(v, name);
         }
@@ -8520,6 +8526,9 @@ public final class Settings {
         /** @hide */
         @UnsupportedAppUsage
         public static int getIntForUser(ContentResolver cr, String name, int def, int userHandle) {
+            if (shouldHideSetting(cr.getPackageName(), name)) {
+                return 0;
+            }
             String v = getStringForUser(cr, name, userHandle);
             return parseIntSettingWithDefault(v, def);
         }
@@ -8550,6 +8559,9 @@ public final class Settings {
         /** @hide */
         public static int getIntForUser(ContentResolver cr, String name, int userHandle)
                 throws SettingNotFoundException {
+            if (shouldHideSetting(cr.getPackageName(), name)) {
+                return 0;
+            }
             String v = getStringForUser(cr, name, userHandle);
             return parseIntSetting(v, name);
         }
@@ -20463,6 +20475,9 @@ public final class Settings {
          * or not a valid integer.
          */
         public static int getInt(ContentResolver cr, String name, int def) {
+            if (shouldHideSetting(cr.getPackageName(), name)) {
+                return 0;
+            }
             if (GmsCompat.isEnabled()) {
                 if ("google_play_store_system_component_update".equals(name)) {
                     // Stop Play Store from attempting to auto-install some system component
@@ -20500,6 +20515,9 @@ public final class Settings {
          */
         public static int getInt(ContentResolver cr, String name)
                 throws SettingNotFoundException {
+            if (shouldHideSetting(cr.getPackageName(), name)) {
+                return 0;
+            }
             String v = getString(cr, name);
             return parseIntSetting(v, name);
         }
@@ -23711,5 +23729,28 @@ public final class Settings {
             return null;
         }
         return packages[0];
+    }
+
+    /**
+     * @hide
+     */
+    public static boolean shouldHideSetting(@NonNull String packageName, @NonNull String name) {
+        switch (name) {
+            case Settings.Global.ADB_ENABLED:
+            case Settings.Global.ADB_WIFI_ENABLED:
+            case Settings.Global.DEVELOPMENT_SETTINGS_ENABLED:
+                return !isCallerSystemApp(packageName);
+           default:
+                return false;
+        }
+    }
+
+    /**
+     * @hide
+     */
+    private static boolean isCallerSystemApp(@NonNull String packageName) {
+        return packageName.equals("android") ||
+               packageName.startsWith("com.android.") ||
+               packageName.equals("com.google.android.settings.intelligence");
     }
 }
