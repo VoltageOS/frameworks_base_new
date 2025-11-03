@@ -14,25 +14,19 @@
  * limitations under the License.
  */
 
-package com.android.systemui.qs.panels.ui.viewmodel.toolbar
+package com.android.systemui.globalactions.ui.viewmodel
 
+import com.android.internal.logging.uiEventLogger
 import com.android.systemui.globalactions.domain.interactor.globalActionsInteractor
-import com.android.systemui.globalactions.ui.viewmodel.lockGlobalActionViewModelFactory
-import com.android.systemui.globalactions.ui.viewmodel.logoutGlobalActionViewModelFactory
-import com.android.systemui.globalactions.ui.viewmodel.shutdownGlobalActionViewModelFactory
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.log.logcatLogBuffer
 
-val Kosmos.powerMenuViewModelFactory by
+val Kosmos.shutdownGlobalActionViewModelFactory by
     Kosmos.Fixture {
-        object : PowerMenuViewModel.Factory {
-            override fun create(): PowerMenuViewModel =
-                PowerMenuViewModel(
+        object : ShutdownGlobalActionViewModel.Factory {
+            override fun create() =
+                ShutdownGlobalActionViewModel(
                     interactor = globalActionsInteractor,
-                    logBuffer = logcatLogBuffer("PowerMenuViewModel"),
-                    lockFactory = lockGlobalActionViewModelFactory,
-                    logoutFactory = logoutGlobalActionViewModelFactory,
-                    shutdownFactory = shutdownGlobalActionViewModelFactory,
+                    uiEventLogger = uiEventLogger,
                 )
         }
     }
