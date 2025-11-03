@@ -20,13 +20,14 @@ import android.content.Context
 import android.content.res.Configuration
 import android.os.SystemProperties
 import android.provider.Settings
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import com.android.internal.graphics.ColorUtils
 import com.android.systemui.res.R
-import com.android.compose.theme.colorAttr
 
 class CustomAndroidColorScheme(private val context: Context) {
 
@@ -43,6 +44,30 @@ class CustomAndroidColorScheme(private val context: Context) {
     private val isNightMode: Boolean
         get() = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                 Configuration.UI_MODE_NIGHT_YES
+
+    // New properties for slider components
+    @get:Composable
+    val primary: Color
+        get() = MaterialTheme.colorScheme.primary
+
+    @get:Composable
+    val primarySurface: Color
+        get() = if (isNightMode) 
+            colorResource(android.R.color.system_accent1_200)
+        else 
+            colorResource(android.R.color.system_accent1_700)
+
+    @get:Composable
+    val secondary: Color
+        get() = shadeTileColor
+
+    @get:Composable
+    val onPrimary: Color
+        get() = MaterialTheme.colorScheme.onPrimary
+
+    @get:Composable
+    val onSurface: Color
+        get() = MaterialTheme.colorScheme.onSurface
 
     companion object {
         val current: CustomAndroidColorScheme
