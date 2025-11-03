@@ -14,9 +14,6 @@
   ~ limitations under the License.
   -->
 
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="oval" >
-    <size android:height="40dp" android:width="40dp" />
-    <solid android:color="@*android:color/surface_effect_1" />
-    <corners android:radius="20dp" />
-</shape>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/system_accent2_800" />
+</selector>
