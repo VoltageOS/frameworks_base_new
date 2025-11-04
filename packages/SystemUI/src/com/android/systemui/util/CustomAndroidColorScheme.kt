@@ -45,17 +45,13 @@ class CustomAndroidColorScheme(private val context: Context) {
         get() = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                 Configuration.UI_MODE_NIGHT_YES
 
-    // New properties for slider components
     @get:Composable
     val primary: Color
         get() = MaterialTheme.colorScheme.primary
 
     @get:Composable
     val primarySurface: Color
-        get() = if (isNightMode) 
-            colorResource(android.R.color.system_accent1_200)
-        else 
-            colorResource(android.R.color.system_accent1_700)
+        get() = primary.copy(alpha = 0.8f)
 
     @get:Composable
     val secondary: Color
