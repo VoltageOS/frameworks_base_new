@@ -39,6 +39,7 @@ import com.android.systemui.qs.tiles.ScreenshotTile
 import com.android.systemui.qs.tiles.SleepModeTile
 import com.android.systemui.qs.tiles.SoundTile
 import com.android.systemui.qs.tiles.VolumeQSTile
+import com.android.systemui.qs.tiles.NotificationSuppressTile
 import com.android.systemui.qs.tiles.UsbTetherTile
 import com.android.systemui.qs.tiles.VPNTetheringTile
 import com.android.systemui.qs.tiles.VolumeTile
@@ -146,6 +147,12 @@ interface VoltageModule {
     @IntoMap
     @StringKey(VolumeQSTile.TILE_SPEC)
     fun bindVolumeQSTile(volumeQSTile: VolumeQSTile): QSTileImpl<*>
+
+    /** Inject NotificationSuppressTile into tileMap in QSModule */
+    @Binds
+    @IntoMap
+    @StringKey(NotificationSuppressTile.TILE_SPEC)
+    fun bindNotificationSuppressTile(tile: NotificationSuppressTile): QSTileImpl<*>
 
     /** Inject UsbTetherTile into tileMap in QSModule */
     @Binds
@@ -366,6 +373,21 @@ interface VoltageModule {
                 uiConfig = QSTileUIConfig.Resource(
                     iconRes = R.drawable.ic_volume_media,
                     labelRes = R.string.quick_settings_volume_label
+                ),
+                instanceId = uiEventLogger.getNewInstanceId(),
+                category = TileCategory.UTILITIES
+            )
+        }
+
+       @Provides
+        @IntoMap
+        @StringKey(NotificationSuppressTile.TILE_SPEC)
+        fun provideNotificationSuppressConfig(uiEventLogger: QsEventLogger): QSTileConfig {
+            return QSTileConfig(
+                tileSpec = TileSpec.create(NotificationSuppressTile.TILE_SPEC),
+                uiConfig = QSTileUIConfig.Resource(
+                    iconRes = R.drawable.ic_qs_notification_suppress,
+                    labelRes = R.string.quick_settings_notif_suppress_label
                 ),
                 instanceId = uiEventLogger.getNewInstanceId(),
                 category = TileCategory.UTILITIES
