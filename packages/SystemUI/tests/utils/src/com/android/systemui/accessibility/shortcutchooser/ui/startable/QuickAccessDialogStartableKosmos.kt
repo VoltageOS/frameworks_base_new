@@ -14,14 +14,18 @@
  * limitations under the License.
  */
 
-package com.android.systemui.accessibility.data.repository
+package com.android.systemui.accessibility.shortcutchooser.ui.startable
 
-import android.content.applicationContext
-import android.os.fakeExecutorHandler
+import com.android.systemui.accessibility.shortcutchooser.ui.viewmodel.quickAccessDialogViewModelFactory
 import com.android.systemui.kosmos.Kosmos
 import com.android.systemui.kosmos.Kosmos.Fixture
+import com.android.systemui.kosmos.backgroundScope
+import com.android.systemui.statusbar.phone.systemUIDialogFactory
 
-val Kosmos.fakeAccessibilityShortcutsRepository by Fixture {
-    FakeAccessibilityShortcutsRepository(applicationContext, fakeExecutorHandler)
+val Kosmos.quickAccessDialogStartable by Fixture {
+    QuickAccessDialogStartable(
+        quickAccessDialogViewModelFactory,
+        systemUIDialogFactory,
+        backgroundScope,
+    )
 }
-var Kosmos.accessibilityShortcutsRepository by Fixture { fakeAccessibilityShortcutsRepository }
