@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package com.android.systemui.screencapture.ui
+package com.android.systemui.screencapture.ui.viewmodel
 
-import android.content.applicationContext
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.screencapture.ui.viewmodel.screenCaptureCameraViewModelFactory
-import com.android.systemui.statusbar.phone.systemUIDialogFactory
 
-val Kosmos.screenCaptureOverlayUi: ScreenCaptureOverlayUi by
+val Kosmos.screenCaptureCameraViewModel by
+    Kosmos.Fixture { screenCaptureCameraViewModelFactory.create() }
+
+val Kosmos.screenCaptureCameraViewModelFactory by
     Kosmos.Fixture {
-        ScreenCaptureOverlayUi(
-            applicationContext,
-            systemUIDialogFactory,
-            screenCaptureCameraViewModelFactory,
-        )
+        object : ScreenCaptureCameraViewModel.Factory {
+
+            override fun create(): ScreenCaptureCameraViewModel = ScreenCaptureCameraViewModel()
+        }
     }
