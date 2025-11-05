@@ -179,10 +179,6 @@ public class ScrimUtils {
         mWallpaperDepthUtils.hideDepthWallpaper();
     }
 
-    public boolean isKeyguardShowing() {
-        return mKeyguardStateController.isShowing();
-    }
-
     public float getScrimBehindAlphaKeyguard() {
         return mScrimController.getScrimBehindAlpha();
     }

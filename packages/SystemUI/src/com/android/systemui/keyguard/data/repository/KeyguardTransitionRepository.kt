@@ -35,15 +35,11 @@ import com.android.systemui.keyguard.shared.model.TransitionModeOnCanceled
 import com.android.systemui.keyguard.shared.model.TransitionState
 import com.android.systemui.keyguard.shared.model.TransitionStep
 import com.android.systemui.keyguard.shared.transition.KeyguardTransitionAnimationCallback
-import com.android.systemui.util.ScrimUtils
-import android.content.Context
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -139,7 +135,6 @@ class KeyguardTransitionRepositoryImpl
 constructor(
     @Main private val mainDispatcher: CoroutineDispatcher,
     private val transitionCallback: KeyguardTransitionAnimationCallback,
-    private val context: Context,
 ) : KeyguardTransitionRepository {
     /**
      * Each transition between [KeyguardState]s will have an associated Flow. In order to collect
@@ -237,14 +232,6 @@ constructor(
                     0f
                 }
 
-            // this indicates that this is transition is a candidate for frequent screen on/off which triggers the race condition
-            // we dont care if its finished or not, we just need to know if its a rapid on/off
-            val isLastToLockscreen = lastStep.to == KeyguardState.LOCKSCREEN
-            // Dozing to Gone checks may fail causing lockscreen permanent disappearance until interaction
-            val isDozeToGone =
-                isLastToLockscreen && ((info.from == KeyguardState.DOZING 
-                || info.from == KeyguardState.AOD) && info.to == KeyguardState.GONE)
-
             lastAnimator?.cancel()
             lastAnimator = info.animator
 
@@ -284,22 +271,6 @@ constructor(
                         override fun onAnimationEnd(animation: Animator) {
                             transitionCallback.onAnimationEnded(info.from, info.to)
                             endAnimation(1f, TransitionState.FINISHED)
-			    if (isDozeToGone && ScrimUtils.getInstance(context).isKeyguardShowing()) {
-                                CoroutineScope(mainDispatcher).launch {
-                                    startTransition(
-                                        TransitionInfo(
-                                            ownerName = "Internal",
-                                            from = KeyguardState.GONE,
-                                            to = KeyguardState.LOCKSCREEN,
-                                            animator = ValueAnimator().apply {
-                                                interpolator = Interpolators.LINEAR
-                                                duration = 500L
-                                            },
-                                        )
-                                    )
-                                    Log.d(TAG, "(Internal) retry for lockscreen bug fix: $info")
-                                }
-                            }
                         }
 
                         private fun endAnimation(value: Float, state: TransitionState) {
