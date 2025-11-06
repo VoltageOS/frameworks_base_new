@@ -35,6 +35,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.android.compose.theme.colorAttr
+import com.android.systemui.shade.ui.boost
+import com.android.systemui.shade.ui.isVibrantShadeEnabled
 import com.android.systemui.util.CustomAndroidColorScheme
 import kotlinx.coroutines.flow.distinctUntilChanged
 
@@ -68,19 +71,24 @@ fun LevelSliderWidget(
 
     val colors = CustomAndroidColorScheme.current
     val activeContentColor = if (isDozing) Color.White else colors.onPrimary
-    val progressFillColor = if (isDozing || !isEnabled) Color.Transparent else colors.primary
-    val trackBgColor = if (isDozing) Color.Transparent else colors.primarySurface
+    val progressFillColor = if (isDozing) Color.Transparent else colors.onPrimary.copy(alpha = 0.2f)
+    val useVibrantColors = isVibrantShadeEnabled()
+    val trackBgColor = if (isDozing) Color.Transparent else if (useVibrantColors) {
+        colorAttr(com.android.internal.R.attr.colorAccent).boost()
+    } else {
+        colors.primary
+    }
     val disabledContentColor = if (isDozing) Color.Transparent else colors.onSurface
     val disabledBgColor = if (isDozing) Color.Transparent else colors.secondary
 
     val animatedTrackColor by animateColorAsState(
-        targetValue = if (level == 0f || !isEnabled) disabledBgColor else trackBgColor,
+        targetValue = if (level == 0f) disabledBgColor else trackBgColor,
         animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
         label = "track_color_animation"
     )
 
     val animatedContentColor by animateColorAsState(
-        targetValue = if (level == 0f || !isEnabled) disabledContentColor else activeContentColor,
+        targetValue = if (level == 0f) disabledContentColor else activeContentColor,
         animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
         label = "content_color_animation"
     )
