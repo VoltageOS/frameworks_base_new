@@ -16,15 +16,11 @@
 
 package android.app.contentrestriction;
 
-import android.app.contentrestriction.Content;
-import android.app.contentrestriction.IContentRestrictionCallback;
-
 /**
- * Internal IPC interface to the content restriction service.
+ * Callback interface for content restriction requests.
  *
  * @hide
  */
-interface IContentRestrictionManager {
-    oneway void isContentAllowed(int userId, in Content content, in IContentRestrictionCallback callback);
-    boolean isContentRestrictionEnabled(int userId);
+oneway interface IContentRestrictionCallback {
+    void onResult(boolean isContentAllowed);
 }
