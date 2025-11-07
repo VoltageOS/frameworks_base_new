@@ -39,6 +39,7 @@ import static com.android.server.wm.DisplayRotationReversionController.REVERSION
 import static com.android.server.wm.WindowManagerDebugConfig.TAG_WITH_CLASS_NAME;
 import static com.android.server.wm.WindowManagerDebugConfig.TAG_WM;
 
+import android.app.IActivityManager;
 import android.annotation.IntDef;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
@@ -55,6 +56,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.RemoteException;
 import android.hardware.power.Boost;
 import android.os.Handler;
 import android.os.SystemClock;
@@ -102,6 +104,14 @@ public class DisplayRotation {
 
     @Nullable
     final FoldController mFoldController;
+
+    private static final int PER_APP_ROTATION_DEFAULT = 0;
+    private static final int PER_APP_ROTATION_PORTRAIT = 1;
+    private static final int PER_APP_ROTATION_LANDSCAPE = 2;
+    private static final int PER_APP_ROTATION_FULL_SENSOR = 3;
+
+    private String mLastRotationPackage = null;
+    private int mLastPerAppRotation = PER_APP_ROTATION_DEFAULT;
 
     private final WindowManagerService mService;
     private final DisplayContent mDisplayContent;
@@ -1053,6 +1063,45 @@ public class DisplayRotation {
     @Surface.Rotation
     int rotationForOrientation(@ScreenOrientation int orientation,
             @Surface.Rotation int lastRotation) {
+
+        final WindowContainer<?> source = mDisplayContent.getLastOrientationSource();
+        if (source != null) {
+            final ActivityRecord activity = source.asActivityRecord();
+            if (activity != null && activity.packageName != null) {
+                final String packageName = activity.packageName;
+
+                if (!packageName.equals(mLastRotationPackage)) {
+                    try {
+			final IActivityManager service = ActivityManager.getService();
+                        if (service != null) {
+                            mLastPerAppRotation = service.getRotationForApp(packageName);
+                            mLastRotationPackage = packageName;
+                        }
+                    } catch (RemoteException e) {
+                        mLastPerAppRotation = PER_APP_ROTATION_DEFAULT;
+                    }
+                }
+
+                final int perAppRotation = mLastPerAppRotation;
+                if (perAppRotation != PER_APP_ROTATION_DEFAULT) {
+                    switch (perAppRotation) {
+                        case PER_APP_ROTATION_PORTRAIT:
+                            orientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+                            break;
+                        case PER_APP_ROTATION_LANDSCAPE:
+                            orientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+                            break;
+                        case PER_APP_ROTATION_FULL_SENSOR:
+                            orientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR;
+                            break;
+                    }
+                }
+            }
+        } else {
+            mLastRotationPackage = null;
+            mLastPerAppRotation = PER_APP_ROTATION_DEFAULT;
+        }
+
         ProtoLog.v(WM_DEBUG_ORIENTATION,
                 "rotationForOrientation(orient=%s (%d), last=%s (%d)); user=%s (%d) %s",
                 ActivityInfo.screenOrientationToString(orientation), orientation,

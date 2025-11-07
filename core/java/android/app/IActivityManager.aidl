@@ -1050,6 +1050,11 @@ interface IActivityManager {
     boolean shouldForceCutoutFullscreen(in String packageName);
 
     /**
+     *  Get per-app rotation setting
+     */
+    int getRotationForApp(in String packageName);
+
+    /**
      * Boost framework
      */
     void releaseMemory(int minAdj, int maxKillCount, boolean includeUIProcesses, boolean skipCamera);
