@@ -39,6 +39,7 @@ import com.android.systemui.common.slider.VolumeInteractor
 import com.android.systemui.common.slider.TorchLevelInteractor
 import com.android.systemui.common.slider.CaffeineInteractor
 import com.android.systemui.common.slider.NotificationSuppressInteractor
+import com.android.systemui.common.slider.AnimationScaleInteractor
 import com.android.systemui.dagger.SysUISingleton
 import com.android.systemui.qs.panels.ui.compose.infinitegrid.CommonTileDefaults.TileHeight
 import com.android.systemui.statusbar.policy.FlashlightStrengthController
@@ -96,6 +97,7 @@ class AxTileProvider @Inject constructor(
     private val flashlightController: FlashlightStrengthController,
     private val caffeineInteractor: CaffeineInteractor,
     private val notificationSuppressInteractor: NotificationSuppressInteractor,
+    private val animationScaleInteractor: AnimationScaleInteractor,
 ) {
 
     companion object {
@@ -133,6 +135,10 @@ class AxTileProvider @Inject constructor(
             }
             "notif_suppress" -> {
                 LevelSliderTile(interactor = notificationSuppressInteractor, border = border)
+                true
+            }
+            "animation_scale" -> {
+                LevelSliderTile(interactor = animationScaleInteractor, border = border)
                 true
             }
             else -> false

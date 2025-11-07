@@ -255,4 +255,8 @@
     <string name="quick_settings_notif_suppress_off">Normal notifications</string>
     <string name="quick_settings_notif_suppress_timer">Silent for %s</string>
 
+    <!-- Animation Scale QS Tile -->
+    <string name="quick_settings_animation_scale_label">Animation speed</string>
+    <string name="quick_settings_animation_scale_off">Animations off</string>
+
 </resources>
