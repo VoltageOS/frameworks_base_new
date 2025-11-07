@@ -14,17 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.systemui.communal.posturing.data.model
+package com.android.systemui.log.dagger
 
-import com.android.systemui.communal.posturing.shared.model.ConfidenceLevel
+import javax.inject.Qualifier
 
-/**
- * Describes the current position and posture of the device.
- *
- * @property stationary confidence level that the device is stationary.
- * @property postured confidence level that the device is in an upright position (eg. on a stand).
- */
-data class PositionState(
-    val stationary: ConfidenceLevel = ConfidenceLevel.Unknown,
-    val postured: ConfidenceLevel = ConfidenceLevel.Unknown,
-)
+/** A [com.android.systemui.log.LogBuffer] for posture detection-related logging. */
+@Qualifier
+@MustBeDocumented
+@Retention(AnnotationRetention.RUNTIME)
+annotation class PostureDetectionLog
