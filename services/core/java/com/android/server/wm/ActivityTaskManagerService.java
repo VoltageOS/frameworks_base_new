@@ -308,6 +308,7 @@ import com.android.server.wm.utils.WindowStyleCache;
 import com.android.wm.shell.Flags;
 
 import com.android.internal.util.voltage.cutout.CutoutFullscreenController;
+import com.android.internal.util.voltage.rotation.RotationController;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -827,6 +828,7 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
     private Set<Integer> mProfileOwnerUids = new ArraySet<Integer>();
 
     private CutoutFullscreenController mCutoutFullscreenController;
+    private RotationController mRotationController;
 
     private final class SettingObserver extends ContentObserver {
         private final Uri mFontScaleUri = Settings.System.getUriFor(FONT_SCALE);
@@ -925,6 +927,9 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
 
         // Force full screen for devices with cutout
         mCutoutFullscreenController = new CutoutFullscreenController(mContext);
+
+        mRotationController = new RotationController(mContext);
+
     }
 
     public void retrieveSettings(ContentResolver resolver) {
@@ -8211,6 +8216,12 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
     public boolean shouldForceCutoutFullscreen(String packageName) {
         synchronized (this) {
             return mCutoutFullscreenController.shouldForceCutoutFullscreen(packageName);
+        }
+    }
+
+    public int getRotationForApp(String packageName) {
+        synchronized (this) {
+            return mRotationController.getRotationForApp(packageName);
         }
     }
 }

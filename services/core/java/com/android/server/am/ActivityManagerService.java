@@ -19742,6 +19742,10 @@ public class ActivityManagerService extends IActivityManager.Stub
         return mActivityTaskManager.shouldForceCutoutFullscreen(packageName);
     }
 
+    public int getRotationForApp(String packageName) {
+        return mActivityTaskManager.getRotationForApp(packageName);
+    }
+
     @GuardedBy("this")
     void enqueuePendingTopAppIfNecessaryLocked() {
         mPendingStartActivityUids.enqueuePendingTopAppIfNecessaryLocked(this);

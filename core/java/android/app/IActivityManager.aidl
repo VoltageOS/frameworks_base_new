@@ -1065,4 +1065,10 @@ interface IActivityManager {
      *  Force full screen for devices with cutout
      */
     boolean shouldForceCutoutFullscreen(in String packageName);
+
+    /**
+     *  Get per-app rotation setting
+     */
+    int getRotationForApp(in String packageName);
+
 }
