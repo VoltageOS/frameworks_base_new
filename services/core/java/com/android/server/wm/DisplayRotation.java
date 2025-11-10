@@ -238,6 +238,8 @@ public class DisplayRotation {
     private boolean mDemoHdmiRotationLock;
     private boolean mDemoRotationLock;
 
+    private boolean mPerAppRotationEnabled;
+
     DisplayRotation(WindowManagerService service, DisplayContent displayContent,
             DisplayAddress displayAddress, @NonNull DeviceStateController deviceStateController,
             @NonNull DisplayRotationCoordinator displayRotationCoordinator) {
@@ -1110,10 +1112,6 @@ public class DisplayRotation {
                 mUserRotationMode == WindowManagerPolicy.USER_ROTATION_LOCKED
                         ? "USER_ROTATION_LOCKED" : "");
 
-        if (isFixedToUserRotation()) {
-            return mUserRotation;
-        }
-
         @Surface.Rotation
         int sensorRotation = mOrientationListener != null
                 ? mOrientationListener.getProposedRotation() // may be -1
@@ -1480,6 +1478,13 @@ public class DisplayRotation {
 
         synchronized (mLock) {
             boolean shouldUpdateOrientationListener = false;
+
+            final boolean perAppRotationEnabled = Settings.System.getIntForUser(resolver,
+                    "per_app_rotation_enabled", 0, UserHandle.USER_CURRENT) == 1;
+            if (mPerAppRotationEnabled != perAppRotationEnabled) {
+                mPerAppRotationEnabled = perAppRotationEnabled;
+                shouldUpdateRotation = true;
+            }
 
             // Configure rotation suggestions.
             final int showRotationSuggestions =
@@ -2066,6 +2071,9 @@ public class DisplayRotation {
                     UserHandle.USER_ALL);
             resolver.registerContentObserver(
                     Settings.Secure.getUriFor(Settings.Secure.CAMERA_AUTOROTATE), false, this,
+                    UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    "per_app_rotation_enabled"), false, this,
                     UserHandle.USER_ALL);
 
             updateSettings();

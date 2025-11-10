@@ -190,6 +190,8 @@ import android.os.Message;
 import android.os.PowerManager;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
+import android.os.UserHandle;
+import android.provider.Settings;
 import android.os.Trace;
 import android.os.UserHandle;
 import android.os.UserManager;
@@ -6685,6 +6687,16 @@ class DisplayContent extends RootDisplayArea implements WindowManagerPolicy.Disp
                 || !com.android.window.flags.Flags.universalResizableByDefault()) {
             return super.getIgnoreOrientationRequest();
         }
+
+        final boolean forceRespectOrientation = Settings.System.getIntForUser(
+                mWmService.mContext.getContentResolver(),
+                "per_app_rotation_enabled", 0,
+                UserHandle.USER_CURRENT) == 1;
+
+        if (forceRespectOrientation) {
+            return false;
+        }
+
         // Large screen (sw >= 600dp) ignores orientation request by default.
         return isLargeScreen() && !mWmService.isIgnoreOrientationRequestDisabled();
     }

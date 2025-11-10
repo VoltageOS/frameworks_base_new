@@ -7127,6 +7127,13 @@ public final class Settings {
         public static final String PER_APP_ROTATION = "per_app_rotation";
 
         /**
+         * Master switch to enable per-app rotation features, which overrides
+         * default large-screen behaviors.
+         * @hide
+         */
+        public static final String PER_APP_ROTATION_ENABLED = "per_app_rotation_enabled";
+
+        /**
          * Whether to show the battery info on the lockscreen while charging
          * @hide
          */
@@ -7717,6 +7724,7 @@ public final class Settings {
             PRIVATE_SETTINGS.add(SWIPE_TO_SCREENSHOT);
             PRIVATE_SETTINGS.add(FORCE_FULLSCREEN_CUTOUT_APPS);
             PRIVATE_SETTINGS.add(PER_APP_ROTATION);
+            PRIVATE_SETTINGS.add(PER_APP_ROTATION_ENABLED);
             PRIVATE_SETTINGS.add(TOUCHSCREEN_GESTURE_HAPTIC_FEEDBACK);
             PRIVATE_SETTINGS.add(HIGH_TOUCH_SENSITIVITY_ENABLE);
             PRIVATE_SETTINGS.add(HIGH_TOUCH_POLLING_RATE_ENABLE);
