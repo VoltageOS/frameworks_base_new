@@ -203,6 +203,8 @@ import android.os.Message;
 import android.os.PowerManager;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
+import android.os.UserHandle;
+import android.provider.Settings;
 import android.os.Trace;
 import android.os.UserHandle;
 import android.os.UserManager;
@@ -2260,7 +2262,8 @@ class DisplayContent extends RootDisplayArea implements WindowManagerPolicy.Disp
         if (mTransitionController.useShellTransitionsRotation()) {
             return ROTATION_UNDEFINED;
         }
-        int activityOrientation = r.getOverrideOrientation();
+        int activityOrientation = mDisplayRotation.peekPerAppRotationAsOrientation(
+                r.packageName, r.getOverrideOrientation());
         if (!WindowManagerService.ENABLE_FIXED_ROTATION_TRANSFORM
                 || shouldIgnoreOrientationRequest(activityOrientation)) {
             return ROTATION_UNDEFINED;
@@ -2269,7 +2272,8 @@ class DisplayContent extends RootDisplayArea implements WindowManagerPolicy.Disp
             final ActivityRecord nextCandidate = getActivityBelowForDefiningOrientation(r);
             if (nextCandidate != null) {
                 r = nextCandidate;
-                activityOrientation = r.getOverrideOrientation();
+                activityOrientation = mDisplayRotation.peekPerAppRotationAsOrientation(
+                        r.packageName, r.getOverrideOrientation());
             }
         }
         if (activityOrientation == SCREEN_ORIENTATION_UNSPECIFIED && !r.providesOrientation()) {
@@ -3311,6 +3315,16 @@ class DisplayContent extends RootDisplayArea implements WindowManagerPolicy.Disp
         }
 
         final int orientation = super.getOrientation();
+
+        final ActivityRecord top = topRunningActivity();
+        if (top != null && top.packageName != null && !top.finishing) {
+            final int perAppOrientation = mDisplayRotation.peekPerAppRotationAsOrientation(
+                    top.packageName, orientation);
+            if (perAppOrientation != orientation) {
+                mLastOrientationSource = top;
+                return perAppOrientation;
+            }
+        }
 
         if (!handlesOrientationChangeFromDescendant(orientation)) {
             ActivityRecord topActivity = topRunningActivity(/* considerKeyguardState= */ true);
@@ -7215,6 +7229,16 @@ class DisplayContent extends RootDisplayArea implements WindowManagerPolicy.Disp
         if (mHasSetIgnoreOrientationRequest) {
             return super.getIgnoreOrientationRequest();
         }
+
+        final boolean forceRespectOrientation = Settings.System.getIntForUser(
+                mWmService.mContext.getContentResolver(),
+                "per_app_rotation_enabled", 0,
+                UserHandle.USER_CURRENT) == 1;
+
+        if (forceRespectOrientation) {
+            return false;
+        }
+
         // Large screen (sw >= 600dp) ignores orientation request by default.
         return isLargeScreen() && !mWmService.isIgnoreOrientationRequestDisabled();
     }
