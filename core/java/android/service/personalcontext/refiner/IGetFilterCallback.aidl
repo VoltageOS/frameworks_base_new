@@ -1,11 +1,11 @@
-/*
- * Copyright (C) 2025 The Android Open Source Project
+/**
+ * Copyright (c) 2025, The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,20 +14,15 @@
  * limitations under the License.
  */
 
-package com.android.server.personalcontext.component.client;
+package android.service.personalcontext.refiner;
 
-import android.content.Context;
-import android.content.pm.ServiceInfo;
-
-import java.util.UUID;
+import android.service.personalcontext.refiner.HintFilter;
 
 /**
- * Client for understander services.
+ * Callback for IRefiner#getFilter.
  *
  * @hide
  */
-public class ServiceClientUnderstander extends ServiceClientRefiner {
-    public ServiceClientUnderstander(Context context, UUID componentId, ServiceInfo serviceInfo) {
-        super(context, componentId, serviceInfo);
-    }
+interface IGetFilterCallback {
+    oneway void updateFilter(in HintFilter filter);
 }
