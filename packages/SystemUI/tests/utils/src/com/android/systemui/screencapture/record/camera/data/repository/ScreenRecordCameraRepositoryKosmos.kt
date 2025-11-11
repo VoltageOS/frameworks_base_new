@@ -14,20 +14,8 @@
  * limitations under the License.
  */
 
-package com.android.systemui.screencapture.ui.viewmodel
+package com.android.systemui.screencapture.record.camera.data.repository
 
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.screencapture.record.camera.domain.interactor.screenRecordCameraInteractor
-import com.android.systemui.screencapture.record.camera.ui.viewmodel.ScreenCaptureCameraViewModel
 
-val Kosmos.screenCaptureCameraViewModel by
-    Kosmos.Fixture { screenCaptureCameraViewModelFactory.create() }
-
-val Kosmos.screenCaptureCameraViewModelFactory by
-    Kosmos.Fixture {
-        object : ScreenCaptureCameraViewModel.Factory {
-
-            override fun create(): ScreenCaptureCameraViewModel =
-                ScreenCaptureCameraViewModel(screenRecordCameraInteractor)
-        }
-    }
+val Kosmos.screenRecordCameraRepository by Kosmos.Fixture { ScreenRecordCameraRepositoryImpl() }

@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-package com.android.systemui.screencapture.domain.interactor
+package com.android.systemui.screencapture.record.camera.domain.interactor
 
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.screencapture.common.domain.interactor.screenCaptureMarkupInteractor
-import com.android.systemui.screencapture.record.camera.domain.interactor.screenRecordCameraInteractor
-import com.android.systemui.screencapture.record.domain.interactor.screenCaptureRecordParametersInteractor
+import com.android.systemui.kosmos.backgroundScope
+import com.android.systemui.screencapture.record.camera.data.repository.screenRecordCameraRepository
 
-val Kosmos.screenCaptureOverlayStateInteractor: ScreenCaptureOverlayStateInteractor by
+val Kosmos.screenRecordCameraInteractor: ScreenRecordCameraInteractor by
     Kosmos.Fixture {
-        ScreenCaptureOverlayStateInteractor(
-            screenCaptureMarkupInteractor,
-            screenCaptureRecordParametersInteractor,
-            screenRecordCameraInteractor,
+        ScreenRecordCameraInteractor(
+            coroutineScope = backgroundScope,
+            repository = screenRecordCameraRepository,
         )
     }
