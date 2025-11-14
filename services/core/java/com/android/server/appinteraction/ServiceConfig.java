@@ -14,16 +14,23 @@
  * limitations under the License.
  */
 
-package com.android.server.appfunctions;
+package com.android.server.appinteraction;
 
-/** This interface is used to expose configs to the AppFunctionManagerService. */
+/** This interface is used to expose configs to the AppInteractionService. */
 public interface ServiceConfig {
-    // TODO(b/357551503): Obtain namespace from DeviceConfig.
-    String NAMESPACE_APP_FUNCTIONS = "appfunctions";
+    String NAMESPACE_APP_INTERACTION = "appinteraction";
 
     /**
-     * Returns the timeout for which the system server waits for the app function service to
-     * successfully cancel the execution of an app function before forcefully unbinding the service.
+     * Returns the maximum age, in milliseconds, for an App Interaction history record.
+     *
+     * <p>Access history records older than this retention period will be removed during the next
+     * maintenance cleanup.
      */
-    long getExecuteAppFunctionCancellationTimeoutMillis();
+    long getAppInteractionHistoryRetentionMillis();
+
+    /**
+     * Returns the interval, in milliseconds, at which the maintenance job runs to delete expired
+     * App Interaction histories.
+     */
+    long getAppInteractionExpiredHistoryDeletionIntervalMillis();
 }
