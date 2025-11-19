@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-package com.android.systemui.screencapture.record.camera.domain.interactor
+package com.android.systemui.screencapture.record.smallscreen.ui.viewmodel
 
-import android.content.applicationContext
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.kosmos.backgroundScope
-import com.android.systemui.screencapture.record.camera.data.repository.screenRecordCameraRepository
+import com.android.systemui.screencapture.common.domain.interactor.screenCaptureMarkupInteractor
+import com.android.systemui.screencapture.common.ui.viewmodel.drawableLoaderViewModel
 
-val Kosmos.screenRecordCameraInteractor: ScreenRecordCameraInteractor by
+val Kosmos.recordDetailsMarkupColorPickerViewModel by
     Kosmos.Fixture {
-        ScreenRecordCameraInteractor(
-            resources = applicationContext.resources,
-            coroutineScope = backgroundScope,
-            repository = screenRecordCameraRepository,
+        RecordDetailsMarkupColorPickerViewModel(
+            drawableLoaderViewModel = drawableLoaderViewModel,
+            interactor = screenCaptureMarkupInteractor,
         )
     }
