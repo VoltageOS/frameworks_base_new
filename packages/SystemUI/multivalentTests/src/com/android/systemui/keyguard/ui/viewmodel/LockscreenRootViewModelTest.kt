@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,11 @@ package com.android.systemui.keyguard.ui.viewmodel
 import android.platform.test.flag.junit.FlagsParameterization
 import androidx.test.filters.SmallTest
 import com.android.systemui.SysuiTestCase
+import com.android.systemui.biometrics.data.repository.fingerprintPropertyRepository
+import com.android.systemui.deviceentry.domain.interactor.deviceEntryUdfpsInteractor
 import com.android.systemui.flags.andSceneContainer
-import com.android.systemui.keyguard.shared.transition.fakeKeyguardTransitionAnimationCallback
-import com.android.systemui.keyguard.shared.transition.keyguardTransitionAnimationCallbackDelegator
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.kosmos.runCurrent
+import com.android.systemui.kosmos.collectLastValue
 import com.android.systemui.kosmos.runTest
 import com.android.systemui.kosmos.testScope
 import com.android.systemui.lifecycle.activateIn
@@ -39,18 +39,11 @@ import platform.test.runner.parameterized.Parameters
 
 @SmallTest
 @RunWith(ParameterizedAndroidJunit4::class)
-class LockscreenContentViewModelTest(flags: FlagsParameterization) : SysuiTestCase() {
+class LockscreenRootViewModelTest(flags: FlagsParameterization) : SysuiTestCase() {
 
     private val kosmos: Kosmos = testKosmos()
     private val activationJob = Job()
-    private val viewState: ViewStateAccessor = ViewStateAccessor({ 0f })
-    private val Kosmos.underTest by
-        Kosmos.Fixture {
-            lockscreenContentViewModelFactory.create(
-                fakeKeyguardTransitionAnimationCallback,
-                viewState,
-            )
-        }
+    private val Kosmos.underTest by Kosmos.Fixture { lockscreenRootViewModelFactory.create() }
 
     companion object {
         @JvmStatic
@@ -73,18 +66,22 @@ class LockscreenContentViewModelTest(flags: FlagsParameterization) : SysuiTestCa
     }
 
     @Test
-    fun activate_setsDelegate_onKeyguardTransitionAnimationCallbackDelegator() =
+    fun isUdfpsSupported_withoutUdfps_false() =
         kosmos.runTest {
-            runCurrent()
-            assertThat(keyguardTransitionAnimationCallbackDelegator.delegate)
-                .isSameInstanceAs(fakeKeyguardTransitionAnimationCallback)
+            val isUdfpsSupported by collectLastValue(deviceEntryUdfpsInteractor.isUdfpsSupported)
+
+            fingerprintPropertyRepository.supportsRearFps()
+            assertThat(isUdfpsSupported).isFalse()
+            assertThat(underTest.isUdfpsSupported).isFalse()
         }
 
     @Test
-    fun deactivate_clearsDelegate_onKeyguardTransitionAnimationCallbackDelegator() =
+    fun isUdfpsSupported_withUdfps_true() =
         kosmos.runTest {
-            activationJob.cancel()
-            runCurrent()
-            assertThat(keyguardTransitionAnimationCallbackDelegator.delegate).isNull()
+            val isUdfpsSupported by collectLastValue(deviceEntryUdfpsInteractor.isUdfpsSupported)
+
+            fingerprintPropertyRepository.supportsUdfps()
+            assertThat(isUdfpsSupported).isTrue()
+            assertThat(underTest.isUdfpsSupported).isTrue()
         }
 }
