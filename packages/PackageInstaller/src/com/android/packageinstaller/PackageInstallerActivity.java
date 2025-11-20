@@ -964,31 +964,6 @@ public class PackageInstallerActivity extends Activity {
         }
     }
 
-    void handleSpecialRuntimePermissionAutoGrants() {
-        if (Build.VERSION.SDK_INT >= 35) {
-            handleSpecialRuntimePermissionAutoGrantsV2();
-            return;
-        }
-
-        var skipPermissionAutoGrants = new ArrayList<String>();
-
-        if (mGrantInternetPermission != null) {
-            if (!mGrantInternetPermission.isChecked()) {
-                skipPermissionAutoGrants.add(Manifest.permission.INTERNET);
-            }
-        }
-
-        var pm = AppGlobals.getPackageManager();
-        var pkgName = mPkgInfo.packageName;
-        int userId = getUserId();
-        try {
-            pm.skipSpecialRuntimePermissionAutoGrantsForPackage(pkgName,
-                    userId, skipPermissionAutoGrants);
-        } catch (RemoteException e) {
-            throw e.rethrowFromSystemServer();
-        }
-    }
-
     private static void maybeAddPermissionState(String perm, @Nullable CheckBox checkBox, ArrayList<Pair<String, Integer>> dst) {
         if (checkBox != null) {
             int state = checkBox.isChecked() ?
@@ -998,7 +973,7 @@ public class PackageInstallerActivity extends Activity {
         }
     }
 
-    void handleSpecialRuntimePermissionAutoGrantsV2() {
+    void handleSpecialRuntimePermissionAutoGrants() {
         int sessionId = mSessionId;
         if (sessionId == -1) {
             sessionId = getIntent().getIntExtra(EXTRA_STAGED_SESSION_ID, -1);

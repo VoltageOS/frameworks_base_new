@@ -6786,12 +6786,6 @@ public class PackageManagerService implements PackageSender, TestUtilityService 
         }
 
         @Override
-        public void skipSpecialRuntimePermissionAutoGrantsForPackage(String packageName, int userId, List<String> permissions) {
-            mContext.enforceCallingPermission(Manifest.permission.INSTALL_PACKAGES, null);
-            SpecialRuntimePermUtils.skipAutoGrantsForPackage(packageName, userId, permissions);
-        }
-
-        @Override
         public GosPackageState getGosPackageState(@NonNull String packageName, int userId) {
             int callingUid = Binder.getCallingUid();
             int callingPid = Binder.getCallingPid();

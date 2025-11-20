@@ -64,7 +64,7 @@ public class SpecialRuntimePermUtils {
             return ExtSettings.AUTO_GRANT_OTHER_SENSORS_PERMISSION.get(ctx, userIdForSettings);
         }
 
-        return !isAutoGrantSkipped(packageName, userId, perm);
+        return true;
     }
 
     public static int getFlags(PackageManagerService pm, AndroidPackage pkg, PackageState pkgState, int userId) {
@@ -108,41 +108,6 @@ public class SpecialRuntimePermUtils {
         return permManager.checkPermission(pkg.getPackageName(),
                 Manifest.permission.INTERNET, VirtualDeviceManager.PERSISTENT_DEVICE_ID_DEFAULT, userId)
                 != PackageManager.PERMISSION_GRANTED;
-    }
-
-    // Maps userIds to map of package names to permissions that should not be auto granted
-    private static SparseArray<LruCache<String, List<String>>> skipAutoGrantsMap = new SparseArray<>();
-
-    public static void skipAutoGrantsForPackage(String packageName, int userId, List<String> perms) {
-        PackageStateInternal psi = LocalServices.getService(PackageManagerInternal.class).getPackageStateInternal(packageName);
-        if (psi != null && psi.isSystem()) {
-            return;
-        }
-
-        synchronized (skipAutoGrantsMap) {
-            LruCache<String, List<String>> userMap = skipAutoGrantsMap.get(userId);
-            if (userMap == null) {
-                // 50 entries should be enough, only 1 is needed in vast majority of cases
-                userMap = new LruCache<>(50);
-                skipAutoGrantsMap.put(userId, userMap);
-            }
-            userMap.put(packageName, perms);
-        }
-    }
-
-    private static boolean isAutoGrantSkipped(String packageName, int userId, String perm) {
-        List<String> permList;
-        synchronized (skipAutoGrantsMap) {
-            LruCache<String, List<String>> userMap = skipAutoGrantsMap.get(userId);
-            if (userMap == null) {
-                return false;
-            }
-            permList = userMap.get(packageName);
-        }
-        if (permList == null) {
-            return false;
-        }
-        return permList.contains(perm);
     }
 
     private SpecialRuntimePermUtils() {}
