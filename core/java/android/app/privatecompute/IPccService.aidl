@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 
-package {
-    default_applicable_licenses: ["Android-Apache-2.0"],
-}
+package android.app.privatecompute;
 
-android_app {
-    name: "PccTestApp",
-    srcs: [
-        "src/**/*.java",
-    ],
-    platform_apis: true,
-    manifest: "AndroidManifest.xml",
+import android.app.privatecompute.IResultCallback;
+import android.os.Bundle;
+
+/** @hide */
+oneway interface IPccService {
+    oneway void sendData(in Bundle data, String packageName, IResultCallback callback);
 }
