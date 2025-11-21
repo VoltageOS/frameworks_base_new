@@ -14,20 +14,25 @@
  * limitations under the License.
  */
 
-package com.android.systemui.screencapture.domain.interactor
+package com.android.systemui.screencapture.record.markup.ui.viewmodel
 
+import android.content.applicationContext
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.kosmos.applicationCoroutineScope
 import com.android.systemui.screencapture.common.domain.interactor.screenCaptureMarkupInteractor
-import com.android.systemui.screencapture.record.camera.domain.interactor.screenRecordCameraInteractor
-import com.android.systemui.screencapture.record.domain.interactor.screenCaptureRecordParametersInteractor
+import com.android.systemui.screencapture.domain.interactor.screenCaptureOverlayStateInteractor
 
-val Kosmos.screenCaptureOverlayStateInteractor: ScreenCaptureOverlayStateInteractor by
+val Kosmos.screenCaptureMarkupOverlayViewModel by
+    Kosmos.Fixture { screenCaptureMarkupOverlayViewModelFactory.create() }
+
+val Kosmos.screenCaptureMarkupOverlayViewModelFactory by
     Kosmos.Fixture {
-        ScreenCaptureOverlayStateInteractor(
-            applicationCoroutineScope,
-            screenCaptureMarkupInteractor,
-            screenCaptureRecordParametersInteractor,
-            screenRecordCameraInteractor,
-        )
+        object : ScreenCaptureMarkupOverlayViewModel.Factory {
+
+            override fun create(): ScreenCaptureMarkupOverlayViewModel =
+                ScreenCaptureMarkupOverlayViewModel(
+                    applicationContext,
+                    screenCaptureMarkupInteractor,
+                    screenCaptureOverlayStateInteractor,
+                )
+        }
     }
