@@ -25,8 +25,9 @@ import androidx.test.filters.FlakyTest
 import androidx.test.filters.RequiresDevice
 import com.android.wm.shell.Flags
 import com.android.wm.shell.Utils.testSetupRule
-import com.android.wm.shell.flicker.bubbles.SwitchBetweenBubblesTest.Companion.previousApp
-import com.android.wm.shell.flicker.bubbles.testcase.MultipleBubbleExpandBubbleAppTestCases
+import com.android.wm.shell.flicker.bubbles.SwitchBetweenBubblesTwiceTest.Companion.previousApp
+import com.android.wm.shell.flicker.bubbles.testcase.BubbleAlwaysVisibleTestCases
+import com.android.wm.shell.flicker.bubbles.testcase.LauncherAlwaysVisibleTestCases
 import com.android.wm.shell.flicker.bubbles.utils.BubbleFlickerTestHelper.collapseBubbleAppViaBackKey
 import com.android.wm.shell.flicker.bubbles.utils.BubbleFlickerTestHelper.launchBubbleViaBubbleMenu
 import com.android.wm.shell.flicker.bubbles.utils.BubbleFlickerTestHelper.switchBubble
@@ -41,9 +42,9 @@ import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 
 /**
- * Test switching between bubbles by clicking on each bubble icon.
+ * Test switching between bubbles by clicking on each bubble icon twice.
  *
- * To run this test: `atest WMShellExplicitFlickerTestsBubbles:SwitchBetweenBubblesTest`
+ * To run this test: `atest WMShellExplicitFlickerTestsBubbles:SwitchBetweenBubblesTwiceTest`
  *
  * Pre-steps:
  * ```
@@ -54,12 +55,15 @@ import org.junit.runners.Parameterized.Parameters
  * Actions:
  * ```
  *     Click on the [testApp] bubble icon to switch to it.
+ *     Click on the [previousApp] bubble icon to switch to it again.
  * ```
  *
  * Verified tests:
  * - [BubbleFlickerTestBase]
- * - [MultipleBubbleExpandBubbleAppTestCases]
- * - [previousApp] becomes invisible.
+ * - [BubbleAlwaysVisibleTestCases]
+ * - [LauncherAlwaysVisibleTestCases]
+ * - [previousApp] becomes invisible, and then becomes visible.
+ * - [testApp] becomes visible, and then becomes invisible.
  */
 @FlakyTest(bugId = 420909828) // The "USB debugging connected" cover the Bubble icon
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CREATE_ANY_BUBBLE)
@@ -67,8 +71,8 @@ import org.junit.runners.Parameterized.Parameters
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Presubmit
 @RunWith(Parameterized::class)
-class SwitchBetweenBubblesTest(navBar: NavBar) :
-    BubbleFlickerTestBase(), MultipleBubbleExpandBubbleAppTestCases {
+class SwitchBetweenBubblesTwiceTest(navBar: NavBar) :
+    BubbleFlickerTestBase(), BubbleAlwaysVisibleTestCases, LauncherAlwaysVisibleTestCases {
     companion object {
         private val previousApp = MessagingAppHelper()
 
@@ -81,6 +85,7 @@ class SwitchBetweenBubblesTest(navBar: NavBar) :
                 },
                 transition = {
                     switchBubble(appSwitchedFrom = previousApp, appSwitchTo = testApp, wmHelper)
+                    switchBubble(appSwitchedFrom = testApp, appSwitchTo = previousApp, wmHelper)
                 },
                 tearDownAfterTransition = {
                     testApp.exit()
@@ -102,28 +107,37 @@ class SwitchBetweenBubblesTest(navBar: NavBar) :
     override val traceDataReader
         get() = recordTraceWithTransitionRule.reader
 
-    override val previousApp = Companion.previousApp
-
     @Test
-    override fun focusChanges() {
+    fun focusChanges() {
         if (tapl.isTablet) {
-            eventLogSubject.focusChanges(previousApp.toWindowName(), testApp.toWindowName())
+            eventLogSubject.focusChanges(
+                previousApp.toWindowName(),
+                testApp.toWindowName(),
+                previousApp.toWindowName(),
+            )
         } else {
             if (Flags.fixBubblesImeFocusFlicker()) {
-                eventLogSubject.focusChanges(previousApp.toWindowName(), testApp.toWindowName())
+                eventLogSubject.focusChanges(
+                    previousApp.toWindowName(),
+                    testApp.toWindowName(),
+                    previousApp.toWindowName(),
+                )
             } else {
                 eventLogSubject.focusChanges(
                     previousApp.toWindowName(),
                     // Launcher may get focus when tapping on bubble icon.
                     LAUNCHER.toWindowName(),
                     testApp.toWindowName(),
+                    // Launcher may get focus when tapping on bubble icon.
+                    LAUNCHER.toWindowName(),
+                    previousApp.toWindowName(),
                 )
             }
         }
     }
 
     @Test
-    override fun appWindowReplacesPreviousAppAsTopWindow() {
+    fun topAppWindowSwitchTwice() {
         wmTraceSubject
             .isAppWindowOnTop(previousApp)
             .then()
@@ -131,12 +145,16 @@ class SwitchBetweenBubblesTest(navBar: NavBar) :
             .isAppWindowOnTop(LAUNCHER, isOptional = true)
             .then()
             .isAppWindowOnTop(testApp)
+            .then()
+            // Launcher may get focus when tapping on bubble icon.
+            .isAppWindowOnTop(LAUNCHER, isOptional = true)
+            .then()
+            .isAppWindowOnTop(previousApp)
             .forAllEntries()
     }
 
-    /** Verifies the [testApp] window replaces [previousApp] as the visible app. */
     @Test
-    fun appWindowReplacesPreviousAppAsVisibleWindow() {
+    fun visibleAppWindowSwitchTwice() {
         wmTraceSubject
             .isAppWindowVisible(previousApp)
             .then()
@@ -144,12 +162,16 @@ class SwitchBetweenBubblesTest(navBar: NavBar) :
             .isAppWindowInvisible(testApp, isOptional = true)
             .then()
             .isAppWindowVisible(testApp)
+            .then()
+            // There may be a timing that the testApp is hidden, but the previousApp hasn't shown.
+            .isAppWindowInvisible(previousApp, isOptional = true)
+            .then()
+            .isAppWindowVisible(previousApp)
             .forAllEntries()
     }
 
-    /** Verifies the [testApp] layer replaces [previousApp] as the visible app. */
     @Test
-    fun appLayerReplacePreviousAppAsVisibleLayer() {
+    fun visibleAppLayerSwitchTwice() {
         layersTraceSubject
             .isVisible(previousApp)
             .then()
@@ -157,18 +179,21 @@ class SwitchBetweenBubblesTest(navBar: NavBar) :
             .isInvisible(testApp, isOptional = true)
             .then()
             .isVisible(testApp)
+            .then()
+            // There may be a timing that the testApp is hidden, but the previousApp hasn't shown.
+            .isInvisible(previousApp, isOptional = true)
+            .then()
+            .isVisible(previousApp)
             .forAllEntries()
     }
 
-    /** Verifies [previousApp] window is invisible at the end of transition. */
     @Test
-    fun previousAppWindowIsInvisibleAtEnd() {
-        wmStateSubjectAtEnd.isAppWindowInvisible(previousApp)
+    fun testAppWindowIsInvisibleAtEnd() {
+        wmStateSubjectAtEnd.isAppWindowInvisible(testApp)
     }
 
-    /** Verifies [previousApp] layer is invisible at the end of transition. */
     @Test
-    fun previousAppLayerIsInvisible() {
-        layerTraceEntrySubjectAtEnd.isInvisible(previousApp)
+    fun testAppLayerIsInvisible() {
+        layerTraceEntrySubjectAtEnd.isInvisible(testApp)
     }
 }
