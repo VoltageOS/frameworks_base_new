@@ -27,9 +27,11 @@ public final class PowerMenuUtils {
         KeyguardManager km = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
         boolean keyguardLocked = km.inKeyguardRestrictedInputMode() && km.isKeyguardSecure();
         boolean advancedRestartEnabled = Settings.Secure.getInt(context.getContentResolver(),
-                Settings.Secure.ADVANCED_REBOOT, 0) == 1;
+                Settings.Secure.ADVANCED_REBOOT, 1) == 1;
+        boolean advancedRestartSecuredEnabled = Settings.Secure.getInt(context.getContentResolver(),
+                Settings.Secure.ADVANCED_REBOOT_SECURED, 1) == 1;
         boolean isPrimaryUser = UserHandle.getCallingUserId() == UserHandle.USER_SYSTEM;
 
-        return advancedRestartEnabled && !keyguardLocked && isPrimaryUser;
+        return advancedRestartEnabled && (!keyguardLocked || advancedRestartSecuredEnabled) && isPrimaryUser;
     }
 }
