@@ -32,6 +32,9 @@ import android.animation.ValueAnimator;
 import android.annotation.IntDef;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.database.ContentObserver;
+import android.os.UserHandle;
+import android.provider.Settings;
 import android.graphics.Color;
 import android.os.Handler;
 import android.util.Log;
@@ -297,6 +300,7 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
     private boolean mKeyguardOccluded;
 
     private final KeyguardTransitionInteractor mKeyguardTransitionInteractor;
+    private boolean mUseDualTone = true;
     private final CoroutineDispatcher mMainDispatcher;
     private boolean mIsBouncerToGoneTransitionRunning = false;
     private final PrimaryBouncerToDreamingTransitionViewModel
@@ -458,6 +462,17 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
         mNotificationsScrim = notificationsScrim;
         mScrimBehind = behindScrim;
         mScrimInFront = scrimInFront;
+        mContext.getContentResolver().registerContentObserver(
+                Settings.System.getUriFor(Settings.System.QS_DUAL_TONE),
+                false,
+                new ContentObserver(mHandler) {
+                    @Override
+                    public void onChange(boolean selfChange) {
+                        updateDualTone();
+                        applyAndDispatchState();
+                    }
+                },
+                UserHandle.USER_ALL);
         updateThemeColors();
         mNotificationsScrim.setScrimName(getScrimName(mNotificationsScrim));
         mScrimBehind.setScrimName(getScrimName(mScrimBehind));
@@ -1152,6 +1167,10 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
                 mBehindTint = behindTint;
             }
 
+            if (!mUseDualTone) {
+                mNotificationsAlpha = 0;
+            }
+
             // At the end of a launch animation over the lockscreen, the state is either KEYGUARD or
             // SHADE_LOCKED and this code is called. We have to set the notification alpha to 0
             // otherwise there is a flicker to its previous value.
@@ -1339,6 +1358,21 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
                 && (mState == ScrimState.KEYGUARD || mState == ScrimState.SHADE_LOCKED)) {
             mBehindAlpha = 0;
             mNotificationsAlpha = 0;
+        }
+
+        if (mNotificationsScrim == null) {
+            return;
+        }
+
+        if (!mUseDualTone) {
+            mNotificationsAlpha = 0;
+            if (mNotificationsScrim.getVisibility() != View.GONE) {
+                mNotificationsScrim.setVisibility(View.GONE);
+            }
+        } else {
+            if (mNotificationsScrim.getVisibility() == View.GONE && mNotificationsAlpha > 0) {
+                mNotificationsScrim.setVisibility(View.VISIBLE);
+            }
         }
 
         setScrimAlpha(mScrimInFront, mInFrontAlpha);
@@ -1662,24 +1696,35 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
         mScrimBehind.postOnAnimationDelayed(callback, 32 /* delayMillis */);
     }
 
+    private void updateDualTone() {
+        mUseDualTone = Settings.System.getIntForUser(
+                mContext.getContentResolver(),
+                Settings.System.QS_DUAL_TONE,
+                1,
+                UserHandle.USER_CURRENT) == 1;
+    }
+
     private void updateThemeColors() {
+        updateDualTone();
+
         if (mScrimBehind == null) return;
         int background = mContext.getColor(
                 com.android.internal.R.color.materialColorSurfaceDim);
         int accent = mContext.getColor(
                 com.android.internal.R.color.materialColorPrimary);
-        mColors.setMainColor(background);
-        mColors.setSecondaryColor(accent);
-        final boolean isBackgroundLight = !ContrastColorUtil.isColorDark(background);
-        mColors.setSupportsDarkText(isBackgroundLight);
-
         int surface;
         if (Flags.bouncerUiRevamp()) {
             surface = BouncerColors.surfaceColor(mContext, isBlurCurrentlySupported());
         } else {
-            surface = mContext.getColor(
-                    com.android.internal.R.color.materialColorSurface);
+            surface = mContext.getColor(com.android.internal.R.color.materialColorSurface);
         }
+
+        mColors.setMainColor(background);
+        mColors.setSecondaryColor(accent);
+
+        final boolean isMainColorLight = !ContrastColorUtil.isColorDark(background);
+        mColors.setSupportsDarkText(isMainColorLight);
+
         for (ScrimState state : ScrimState.values()) {
             state.setBouncerSurfaceColor(surface);
             state.setShadePanelColor(getShadePanelColor());
