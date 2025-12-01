@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,21 @@
 
 package android.media.tv.extension.scan;
 
-import android.os.Bundle;
 
 /**
+ * Interface for a global listener that notifies the client of scan events
+ * that were not initiated by the client.
  * @hide
  */
-oneway interface IFavoriteNetworkListener {
+oneway interface IScanGlobalListener {
     /**
-     * Notify listeners when two or more favorite networks are detected.
-     *
-     * @param detectFavoriteNetworks, bundle should at least contain keys defined in
-     *        @ScanConstants.FavoriteNetworkDetectBundleKey.
+     * Called when a scan has started anywhere in the system for passive monitoring.
      */
-    void onDetectFavoriteNetwork(in Bundle detectFavoriteNetworks);
+    void onScanStarted();
+    /**
+     * Called when a system scan has completed.
+     *
+     * @param ScanResult.SUCCESS/FAILED/CANCEL/BUSY depending on the scan.
+     */
+    void onScanCompleted(int scanResult);
 }
