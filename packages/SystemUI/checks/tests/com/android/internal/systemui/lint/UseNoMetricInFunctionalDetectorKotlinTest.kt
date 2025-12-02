@@ -21,15 +21,50 @@ import com.android.tools.lint.detector.api.Detector
 import com.android.tools.lint.detector.api.Issue
 import org.junit.Test
 
-/** Test [NoMetricInParameterizedDetector] with Kotlin files. */
-class NoMetricInParameterizedDetectorKotlinTest : SystemUILintDetectorTest() {
-    override fun getDetector(): Detector = NoMetricInParameterizedDetector()
+/** Test [UseNoMetricInFunctionalDetector] with Kotlin files. */
+class UseNoMetricInFunctionalDetectorKotlinTest : SystemUILintDetectorTest() {
+    override fun getDetector(): Detector = UseNoMetricInFunctionalDetector()
 
     override fun getIssues(): List<Issue> =
         listOf(
-            NoMetricInParameterizedDetector.ISSUE_BEFORE,
-            NoMetricInParameterizedDetector.ISSUE_AFTER,
+            UseNoMetricInFunctionalDetector.ISSUE_BEFORE,
+            UseNoMetricInFunctionalDetector.ISSUE_AFTER,
         )
+
+    @Test
+    fun before_withFunctionalRunner_error() {
+        lint()
+            .files(
+                kotlin(
+                    """
+                        package test.pkg
+
+                        import org.junit.Before
+                        import org.junit.runner.RunWith
+                        import android.platform.test.microbenchmark.Functional
+
+                        @RunWith(Functional::class)
+                        class TestClass {
+                            @Before
+                            fun setUp() {}
+                        }
+                    """
+                        .trimIndent()
+                ),
+                *stubs,
+            )
+            .issues(UseNoMetricInFunctionalDetector.ISSUE_BEFORE)
+            .run()
+            .expect(
+                """
+                src/test/pkg/TestClass.kt:9: Warning: Consider using @NoMetricBefore for performance tests [UseNoMetricBeforeInFunctional]
+                    @Before
+                    ~~~~~~~
+                0 errors, 1 warnings
+                                """
+                    .trimIndent()
+            )
+    }
 
     @Test
     fun noMetricBefore_withFunctionalRunner_clean() {
@@ -53,9 +88,44 @@ class NoMetricInParameterizedDetectorKotlinTest : SystemUILintDetectorTest() {
                 ),
                 *stubs,
             )
-            .issues(NoMetricInParameterizedDetector.ISSUE_BEFORE)
+            .issues(UseNoMetricInFunctionalDetector.ISSUE_BEFORE)
             .run()
             .expectClean()
+    }
+
+    @Test
+    fun after_withFunctionalRunner_error() {
+        lint()
+            .files(
+                kotlin(
+                    """
+                        package test.pkg
+
+                        import org.junit.After
+                        import org.junit.runner.RunWith
+                        import android.platform.test.microbenchmark.Functional
+
+                        @RunWith(Functional::class)
+                        class TestClass {
+                            @After
+                            fun tearDown() {}
+                        }
+                    """
+                        .trimIndent()
+                ),
+                *stubs,
+            )
+            .issues(UseNoMetricInFunctionalDetector.ISSUE_AFTER)
+            .run()
+            .expect(
+                """
+                src/test/pkg/TestClass.kt:9: Warning: Consider using @NoMetricAfter for performance tests [UseNoMetricAfterInFunctional]
+                    @After
+                    ~~~~~~
+                0 errors, 1 warnings
+                                """
+                    .trimIndent()
+            )
     }
 
     @Test
@@ -80,26 +150,26 @@ class NoMetricInParameterizedDetectorKotlinTest : SystemUILintDetectorTest() {
                 ),
                 *stubs,
             )
-            .issues(NoMetricInParameterizedDetector.ISSUE_AFTER)
+            .issues(UseNoMetricInFunctionalDetector.ISSUE_AFTER)
             .run()
             .expectClean()
     }
 
     @Test
-    fun noMetricBefore_withMicrobenchmarkRunner_clean() {
+    fun before_withParameterizedRunner_clean() {
         lint()
             .files(
                 kotlin(
                     """
                         package test.pkg
 
+                        import org.junit.Before
                         import org.junit.runner.RunWith
-                        import android.platform.test.microbenchmark.Microbenchmark
-                        import android.platform.test.microbenchmark.Microbenchmark.NoMetricBefore
+                        import org.junit.runners.Parameterized
 
-                        @RunWith(Microbenchmark::class)
+                        @RunWith(Parameterized::class)
                         class TestClass {
-                            @NoMetricBefore
+                            @Before
                             fun setUp() {}
                         }
                     """
@@ -107,26 +177,26 @@ class NoMetricInParameterizedDetectorKotlinTest : SystemUILintDetectorTest() {
                 ),
                 *stubs,
             )
-            .issues(NoMetricInParameterizedDetector.ISSUE_BEFORE)
+            .issues(UseNoMetricInFunctionalDetector.ISSUE_BEFORE)
             .run()
             .expectClean()
     }
 
     @Test
-    fun noMetricAfter_withMicrobenchmarkRunner_clean() {
+    fun after_withParameterizedRunner_clean() {
         lint()
             .files(
                 kotlin(
                     """
                         package test.pkg
 
+                        import org.junit.After
                         import org.junit.runner.RunWith
-                        import android.platform.test.microbenchmark.Microbenchmark
-                        import android.platform.test.microbenchmark.Microbenchmark.NoMetricAfter
+                        import org.junit.runners.Parameterized
 
-                        @RunWith(Microbenchmark::class)
+                        @RunWith(Parameterized::class)
                         class TestClass {
-                            @NoMetricAfter
+                            @After
                             fun tearDown() {}
                         }
                     """
@@ -134,119 +204,38 @@ class NoMetricInParameterizedDetectorKotlinTest : SystemUILintDetectorTest() {
                 ),
                 *stubs,
             )
-            .issues(NoMetricInParameterizedDetector.ISSUE_AFTER)
+            .issues(UseNoMetricInFunctionalDetector.ISSUE_AFTER)
             .run()
             .expectClean()
-    }
-
-    @Test
-    fun noMetricBefore_withParameterizedRunner_error() {
-        lint()
-            .files(
-                kotlin(
-                    """
-                        package test.pkg
-
-                        import org.junit.runner.RunWith
-                        import org.junit.runners.Parameterized
-                        import android.platform.test.microbenchmark.Microbenchmark.NoMetricBefore
-
-                        @RunWith(Parameterized::class)
-                        class TestClass {
-                            @NoMetricBefore
-                            fun setUp() {}
-                        }
-                    """
-                        .trimIndent()
-                ),
-                *stubs,
-            )
-            .issues(NoMetricInParameterizedDetector.ISSUE_BEFORE)
-            .run()
-            .expect(
-                """
-src/test/pkg/TestClass.kt:9: Error: @NoMetricBefore can't be used with Parameterized test runner [NoMetricBeforeWithParameterized]
-    @NoMetricBefore
-    ~~~~~~~~~~~~~~~
-1 errors, 0 warnings
-                """
-            )
-    }
-
-    @Test
-    fun noMetricAfter_withParameterizedRunner_error() {
-        lint()
-            .files(
-                kotlin(
-                    """
-                        package test.pkg
-
-                        import org.junit.runner.RunWith
-                        import org.junit.runners.Parameterized
-                        import android.platform.test.microbenchmark.Microbenchmark.NoMetricAfter
-
-                        @RunWith(Parameterized::class)
-                        class TestClass {
-                            @NoMetricAfter
-                            fun tearDown() {}
-                        }
-                    """
-                        .trimIndent()
-                ),
-                *stubs,
-            )
-            .issues(NoMetricInParameterizedDetector.ISSUE_AFTER)
-            .run()
-            .expect(
-                """
-src/test/pkg/TestClass.kt:9: Error: @NoMetricAfter can't be used with Parameterized test runner [NoMetricAfterWithParameterized]
-    @NoMetricAfter
-    ~~~~~~~~~~~~~~
-1 errors, 0 warnings
-                """
-            )
     }
 
     companion object {
-        val runWithStub: TestFile =
+        private val beforeStub: TestFile =
             kotlin(
                 """
-        package org.junit.runner
+        package org.junit
 
-        annotation class RunWith(
-            val value: KClass
-        )
+        annotation class Before
         """
             )
 
-        val microbenchmarkStub: TestFile =
+        private val afterStub: TestFile =
             kotlin(
                 """
-        package android.platform.test.microbenchmark
+        package org.junit
 
-        class Microbenchmark {
-            annotation class NoMetricBefore
-            annotation class NoMetricAfter
-        }
+        annotation class After
         """
-            )
-
-        val functionalStub: TestFile =
-            kotlin(
-                """
-            package android.platform.test.microbenchmark
-            class Functional
-"""
-            )
-
-        val parameterizedStub: TestFile =
-            kotlin(
-                """
-            package org.junit.runners
-            public class Parameterized
-"""
             )
     }
 
-    private val stubs = arrayOf(runWithStub, microbenchmarkStub, functionalStub, parameterizedStub)
+    private val stubs =
+        arrayOf(
+            beforeStub,
+            afterStub,
+            NoMetricInParameterizedDetectorKotlinTest.runWithStub,
+            NoMetricInParameterizedDetectorKotlinTest.microbenchmarkStub,
+            NoMetricInParameterizedDetectorKotlinTest.functionalStub,
+            NoMetricInParameterizedDetectorKotlinTest.parameterizedStub,
+        )
 }
