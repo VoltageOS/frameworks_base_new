@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package android.hardware.display
+package com.android.systemui.screencapture.record.smallscreen.ui.compose
 
-import android.view.Display
 import com.android.systemui.kosmos.Kosmos
-import org.mockito.kotlin.mock
+import com.android.systemui.screencapture.record.smallscreen.ui.viewmodel.smallScreenCaptureRecordViewModelFactory
 
-val Kosmos.displayManager by Kosmos.Fixture { mock<DisplayManager>() }
-
-var Kosmos.defaultDisplay: Display by Kosmos.Fixture { mock<Display>() }
-
-val Kosmos.rearDisplay: Display by Kosmos.Fixture { mock<Display>() }
+val Kosmos.smallScreenCaptureRecordContent by
+    Kosmos.Fixture {
+        SmallScreenCaptureRecordContent(
+            window = null,
+            viewModelFactory = smallScreenCaptureRecordViewModelFactory,
+        )
+    }
