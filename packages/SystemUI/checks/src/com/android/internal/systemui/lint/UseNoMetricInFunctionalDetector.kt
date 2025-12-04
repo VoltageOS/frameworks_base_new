@@ -31,38 +31,38 @@ import org.jetbrains.uast.UElement
 import org.jetbrains.uast.UImportStatement
 
 /**
- * A detector for SysUI e2e test classes that use both `@RunWith(Parameterized)` and
- * `@NoMetricBefore` / `@NoMetricAfter`, which isn't allowed.
+ * A detector for SysUI e2e test classes to encourage the use of `@NoMetricBefore` /
+ * `@NoMetricAfter` in functional tests, as opposed to `@Before` / `@After`.
  *
- * See also: [UseNoMetricInFunctionalDetector].
+ * See also: [NoMetricInParameterizedDetector].
  */
-class NoMetricInParameterizedDetector : Detector(), SourceCodeScanner {
+class UseNoMetricInFunctionalDetector : Detector(), SourceCodeScanner {
     override fun getApplicableUastTypes(): List<Class<out UElement>> {
         return listOf(UAnnotation::class.java, UImportStatement::class.java)
     }
 
     override fun createUastHandler(context: JavaContext): UElementHandler {
         return object : UElementHandler() {
-            private var isParameterized = false
+            private var isFunctional = false
 
             override fun visitImportStatement(node: UImportStatement) {
-                // Ideally we could check that there's a `RunWith` annotation that uses
-                // `Parameterized` as its parameter, but that doesn't work in Kotlin files. So, we
-                // just check if `Parameterized` is imported at all.
-                if (node.asRenderString() == PARAMETERIZED_IMPORT) {
-                    isParameterized = true
+                // Ideally we could check that there's a `RunWith` annotation that uses `Functional`
+                // as its parameter, but that doesn't work in Kotlin files. So, we just check if
+                // `Functional` is imported at all.
+                if (node.asRenderString() == FUNCTIONAL_IMPORT) {
+                    isFunctional = true
                 }
             }
 
             override fun visitAnnotation(node: UAnnotation) {
-                if (isParameterized) {
-                    if (node.qualifiedName == NO_METRIC_BEFORE_ANNOTATION) {
+                if (isFunctional) {
+                    if (node.qualifiedName == BEFORE_ANNOTATION) {
                         val location = context.getLocation(node)
-                        val message = "@NoMetricBefore can't be used with Parameterized test runner"
+                        val message = "Consider using @NoMetricBefore for performance tests"
                         context.report(ISSUE_BEFORE, node, location, message)
-                    } else if (node.qualifiedName == NO_METRIC_AFTER_ANNOTATION) {
+                    } else if (node.qualifiedName == AFTER_ANNOTATION) {
                         val location = context.getLocation(node)
-                        val message = "@NoMetricAfter can't be used with Parameterized test runner"
+                        val message = "Consider using @NoMetricAfter for performance tests"
                         context.report(ISSUE_AFTER, node, location, message)
                     }
                 }
@@ -71,28 +71,28 @@ class NoMetricInParameterizedDetector : Detector(), SourceCodeScanner {
     }
 
     companion object {
-        private const val PARAMETERIZED_IMPORT = "import org.junit.runners.Parameterized"
-        private const val NO_METRIC_BEFORE_ANNOTATION =
-            "android.platform.test.microbenchmark.Microbenchmark.NoMetricBefore"
-        private const val NO_METRIC_AFTER_ANNOTATION =
-            "android.platform.test.microbenchmark.Microbenchmark.NoMetricAfter"
+        private const val FUNCTIONAL_IMPORT =
+            "import android.platform.test.microbenchmark.Functional"
+        private const val BEFORE_ANNOTATION = "org.junit.Before"
+        private const val AFTER_ANNOTATION = "org.junit.After"
 
         @JvmField
         val ISSUE_BEFORE: Issue =
             Issue.create(
-                id = "NoMetricBeforeWithParameterized",
-                briefDescription = "Using NoMetricBefore with Parameterized test runner",
+                id = "UseNoMetricBeforeInFunctional",
+                briefDescription = "Consider using @NoMetricBefore for performance tests",
                 explanation =
                     """
-                    @NoMetricBefore cannot be used when also using @RunWith(Parameterized::class). \
-                    Use @Before instead. See b/463351048 for more information.
+                    Consider using @NoMetricBefore instead of @Before if this test is also used as a
+                    performance test. Otherwise, the content of @Before will appear in the trace and
+                    generate performance metrics. See b/454887380 for more information.
                     """,
                 category = Category.TESTING,
-                priority = 8,
-                severity = Severity.ERROR,
+                priority = 7,
+                severity = Severity.WARNING,
                 implementation =
                     Implementation(
-                        NoMetricInParameterizedDetector::class.java,
+                        UseNoMetricInFunctionalDetector::class.java,
                         EnumSet.of(Scope.JAVA_FILE, Scope.TEST_SOURCES),
                     ),
             )
@@ -100,19 +100,20 @@ class NoMetricInParameterizedDetector : Detector(), SourceCodeScanner {
         @JvmField
         val ISSUE_AFTER: Issue =
             Issue.create(
-                id = "NoMetricAfterWithParameterized",
-                briefDescription = "Using NoMetricAfter with Parameterized test runner",
+                id = "UseNoMetricAfterInFunctional",
+                briefDescription = "Consider using @NoMetricAfter in Functional tests",
                 explanation =
                     """
-                    @NoMetricAfter cannot be used when also using @RunWith(Parameterized::class). \
-                    Use @After instead. See b/463351048 for more information.
+                    Consider using @NoMetricAfter instead of @After if this test is also used as a
+                    performance test. Otherwise, the content of @After will appear in the trace and
+                    generate performance metrics. See b/454887380 for more information.
                     """,
                 category = Category.TESTING,
-                priority = 8,
-                severity = Severity.ERROR,
+                priority = 7,
+                severity = Severity.WARNING,
                 implementation =
                     Implementation(
-                        NoMetricInParameterizedDetector::class.java,
+                        UseNoMetricInFunctionalDetector::class.java,
                         EnumSet.of(Scope.JAVA_FILE, Scope.TEST_SOURCES),
                     ),
             )
