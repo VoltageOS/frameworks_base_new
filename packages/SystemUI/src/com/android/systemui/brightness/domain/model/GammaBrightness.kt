@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-package com.android.systemui.brightness.domain.interactor
+package com.android.systemui.brightness.domain.model
 
-import com.android.systemui.brightness.data.repository.brightnessPolicyRepository
-import com.android.systemui.brightness.domain.interactor.impl.BrightnessPolicyEnforcementInteractorImpl
-import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.plugins.activityStarter
+import androidx.annotation.IntRange
+import com.android.settingslib.display.BrightnessUtils
 
-val Kosmos.brightnessPolicyEnforcementInteractor by
-    Kosmos.Fixture {
-        BrightnessPolicyEnforcementInteractorImpl(brightnessPolicyRepository, activityStarter)
-    }
+@JvmInline
+value class GammaBrightness(
+    @IntRange(
+        from = BrightnessUtils.GAMMA_SPACE_MIN.toLong(),
+        to = BrightnessUtils.GAMMA_SPACE_MAX.toLong(),
+    )
+    val value: Int
+)
