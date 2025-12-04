@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.systemui.statusbar.quickactions.ime.domain.interactor
+package com.android.systemui.statusbar.quickactions.ime.shared.model
 
-import com.android.systemui.inputmethod.data.repository.fakeInputMethodRepository
-import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.kosmos.testScope
-import com.android.systemui.user.data.repository.fakeUserRepository
+import com.android.systemui.inputmethod.data.model.InputMethodModel
 
-val Kosmos.imeIndicatorChipInteractor: ImeIndicatorChipInteractor by
-    Kosmos.Fixture {
-        ImeIndicatorChipInteractor(
-            scope = testScope.backgroundScope,
-            inputMethodRepository = fakeInputMethodRepository,
-            userRepository = fakeUserRepository,
-        )
-    }
+/** Model used to display an IME indicator chip in the status bar. */
+data class ImeIndicatorChipModel(
+    val isVisible: Boolean,
+    val selectedSubtype: InputMethodModel.Subtype?,
+)
