@@ -14,15 +14,23 @@
  * limitations under the License.
  */
 
-package com.android.systemui.brightness.impl
+package com.android.systemui.brightness.domain.interactor.impl
 
-import com.android.systemui.brightness.data.repository.impl.BrightnessDataModule
-import com.android.systemui.brightness.domain.interactor.impl.BrightnessDomainModule
-import com.android.systemui.brightness.shared.impl.BrightnessSharedModule
+import com.android.systemui.brightness.domain.interactor.BrightnessPolicyEnforcementInteractor
+import com.android.systemui.brightness.domain.interactor.ScreenBrightnessInteractor
+import dagger.Binds
 import dagger.Module
 
-@Module(
-    includes =
-        [BrightnessSharedModule::class, BrightnessDataModule::class, BrightnessDomainModule::class]
-)
-public interface BrightnessModule
+@Module
+public interface BrightnessDomainModule {
+
+    @Binds
+    public fun bindBrightnessInteractor(
+        impl: ScreenBrightnessInteractorImpl
+    ): ScreenBrightnessInteractor
+
+    @Binds
+    public fun bindBrightnessPolicyEnforcementInteractor(
+        impl: BrightnessPolicyEnforcementInteractorImpl
+    ): BrightnessPolicyEnforcementInteractor
+}

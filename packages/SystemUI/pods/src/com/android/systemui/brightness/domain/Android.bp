@@ -18,27 +18,35 @@ package {
 }
 
 java_library {
-    name: "com.android.systemui.brightness-api",
-    static_libs: [
-        "com.android.systemui.brightness.shared-api",
-        "com.android.systemui.brightness.data-api",
-        "com.android.systemui.brightness.domain-api",
+    name: "com.android.systemui.brightness.domain-api",
+    srcs: [
+        "model/*.kt",
+        "interactor/*.kt",
     ],
     defaults: [
         "SystemUI_pod_defaults_api",
     ],
+    static_libs: [
+        "kotlinx_coroutines",
+        "androidx.annotation_annotation",
+        "SettingsLibDisplayUtils",
+        "com.android.systemui.brightness.data-api",
+        "com.android.systemui.util.policy-api",
+    ],
 }
 
 java_library {
-    name: "com.android.systemui.brightness-impl",
+    name: "com.android.systemui.brightness.domain-impl",
     srcs: [
-        "impl/*.kt",
+        "model/impl/*.kt",
+        "interactor/impl/*.kt",
     ],
     static_libs: [
-        "com.android.systemui.brightness-api",
-        "com.android.systemui.brightness.shared-impl",
-        "com.android.systemui.brightness.data-impl",
-        "com.android.systemui.brightness.domain-impl",
+        "kotlinx_coroutines",
+        "SystemUISharedLib",
+        "com.android.systemui.brightness.domain-api",
+        "com.android.systemui.brightness.shared-api",
+        "com.android.systemui.util.policy-api",
     ],
     defaults: [
         "SystemUI_pod_defaults_impl",

@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-package com.android.systemui.brightness.impl
+package com.android.systemui.brightness.domain.model
 
-import com.android.systemui.brightness.data.repository.impl.BrightnessDataModule
-import com.android.systemui.brightness.domain.interactor.impl.BrightnessDomainModule
-import com.android.systemui.brightness.shared.impl.BrightnessSharedModule
-import dagger.Module
+import androidx.annotation.IntRange
+import com.android.settingslib.display.BrightnessUtils
 
-@Module(
-    includes =
-        [BrightnessSharedModule::class, BrightnessDataModule::class, BrightnessDomainModule::class]
+@JvmInline
+public value class GammaBrightness(
+    @IntRange(
+        from = BrightnessUtils.GAMMA_SPACE_MIN.toLong(),
+        to = BrightnessUtils.GAMMA_SPACE_MAX.toLong(),
+    )
+    public val value: Int
 )
-public interface BrightnessModule
