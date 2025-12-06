@@ -471,19 +471,17 @@ public class BackupManagerService extends IBackupManager.Stub implements BackupM
     }
 
     /**
-     * Private profiles' activation status is never allowed to be changed by anyone. The system
-     * user and managed profiles can only be acted on by callers in the system or root processes.
+     * The system user, private and managed profiles can only be acted on by callers in the
+     * system or root processes.
      * Other users can be acted on by callers who have both android.permission.BACKUP and
      * android.permission.INTERACT_ACROSS_USERS_FULL permissions.
      */
     private void enforceSetBackupServiceActiveAllowedForUser(@UserIdInt int userId)
             throws SecurityException {
         UserInfo userInfo = mUserManagerInternal.getUserInfo(userId);
-        if (userInfo.isPrivateProfile()) {
-            throw new SecurityException("Changing private profile backup activation not allowed");
-        }
 
-        boolean isRestrictedUser = userId == UserHandle.USER_SYSTEM || userInfo.isManagedProfile();
+        boolean isRestrictedUser = userId == UserHandle.USER_SYSTEM || userInfo.isManagedProfile()
+                || userInfo.isPrivateProfile();
 
         if (isRestrictedUser) {
             int caller = binderGetCallingUid();
