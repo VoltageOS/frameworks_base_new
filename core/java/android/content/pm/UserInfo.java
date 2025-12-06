@@ -546,13 +546,11 @@ public class UserInfo implements Parcelable {
      * @hide
      */
     public boolean canHaveProfile(String userType) {
+        if (UserManager.isUserTypePrivateProfile(userType)) {
+            return isFull();
+        }
         if (!canHaveProfile()) {
             return false;
-        }
-        if (UserManager.isUserTypePrivateProfile(userType)) {
-            // Even if we eventually allow other users to have profiles too, only MainUsers are
-            // eligible to have a Private Space, for some reason.
-            return isMainUnlogged();
         }
         return true;
     }
@@ -668,31 +666,5 @@ public class UserInfo implements Parcelable {
         guestToRemove = source.readBoolean();
         restrictedProfileParentId = source.readInt();
         profileBadge = source.readInt();
-    }
-
-    /**
-     * @param profileType User type string to check, must be a profile
-     * @return true if the particular user info can have a profile with profileType
-     * Use {@link #canHaveProfile()} for general purpose checking if a user info can have profile
-     * @hide
-     **/
-    public boolean canHaveProfileOfType(@NonNull String profileType) {
-        switch (profileType) {
-            case UserManager.USER_TYPE_PROFILE_PRIVATE -> {
-                if (UserManager.USER_TYPE_FULL_SECONDARY.equals(this.userType)) {
-                    return true;
-                }
-            }
-            case UserManager.USER_TYPE_PROFILE_CLONE,
-                 UserManager.USER_TYPE_PROFILE_COMMUNAL,
-                 UserManager.USER_TYPE_PROFILE_MANAGED,
-                 UserManager.USER_TYPE_PROFILE_TEST -> {
-            }
-            default -> {
-                throw new IllegalArgumentException("Not a profile type: " + profileType);
-            }
-        }
-
-        return canHaveProfile();
     }
 }

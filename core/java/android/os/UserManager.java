@@ -7189,6 +7189,6 @@ public class UserManager {
         if (userInfo == null) {
             return false;
         }
-        return userInfo.canHaveProfileOfType(profileType);
+        return userInfo.canHaveProfile(profileType);
     }
 }
