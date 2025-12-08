@@ -45,6 +45,7 @@ import com.android.systemui.statusbar.gesture.StatusBarLongPressGestureDetector
 import com.android.systemui.statusbar.layout.StatusBarContentInsetsProvider
 import com.android.systemui.statusbar.policy.Clock
 import com.android.systemui.statusbar.policy.ConfigurationController
+import com.android.systemui.statusbar.policy.Offset
 import com.android.systemui.statusbar.window.StatusBarWindowControllerStore
 import com.android.systemui.statusbar.window.StatusBarWindowStateController
 import com.android.systemui.unfold.UNFOLD_STATUS_BAR
@@ -443,6 +444,24 @@ private constructor(
         private fun clearCachedEvents() {
             cachedEvents.forEach { it.recycle() }
             cachedEvents.clear()
+        }
+    }
+
+    inner class PhoneStatusBarBurnInProtectionHandler {
+        private val mStatusBarStartSideContent: View? =
+            mView.findViewById(R.id.status_bar_start_side_content)
+
+        private val mStatusBarEndSideContent: View? =
+            mView.findViewById(R.id.status_bar_end_side_content)
+
+        fun offsetStatusBar(startContentOffset: Offset, endContentOffset: Offset) {
+            mStatusBarStartSideContent?.translationX = startContentOffset.x.toFloat()
+            mStatusBarStartSideContent?.translationY = startContentOffset.y.toFloat()
+
+            mStatusBarEndSideContent?.translationX = endContentOffset.x.toFloat()
+            mStatusBarEndSideContent?.translationY = endContentOffset.y.toFloat()
+
+            mView.invalidate()
         }
     }
 
