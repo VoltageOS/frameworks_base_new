@@ -14429,6 +14429,15 @@ public final class Settings {
          * @hide
          */
         public static final String ADVANCED_PROTECTION_MODE = "advanced_protection_mode";
+
+	/**
+         * Whether volume panel should appear on the left (or right).
+         * 0 = false (on the right)
+         * 1 = true (on the left)
+         * @hide
+         */
+        public static final String VOLUME_PANEL_ON_LEFT = "volume_panel_on_left";
+
         /**
          * Whether to include options in power menu for rebooting into recovery or bootloader.
          *
