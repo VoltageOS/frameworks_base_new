@@ -14436,6 +14436,14 @@ public final class Settings {
          */
         public static final String ADVANCED_PROTECTION_MODE = "advanced_protection_mode";
 
+	/**
+         * Whether volume panel should appear on the left (or right).
+         * 0 = false (on the right)
+         * 1 = true (on the left)
+         * @hide
+         */
+        public static final String VOLUME_PANEL_ON_LEFT = "volume_panel_on_left";
+
         /**
          * Integer property which determines whether advanced protection USB data protection
          * feature is on or not.
