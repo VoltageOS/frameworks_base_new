@@ -17,7 +17,6 @@
 #ifndef AAPT_FORMAT_PROTO_PROTOSERIALIZE_H
 #define AAPT_FORMAT_PROTO_PROTOSERIALIZE_H
 
-#include "BriefPackageInfo.pb.h"
 #include "Configuration.pb.h"
 #include "ResourceTable.h"
 #include "ResourceValues.h"
