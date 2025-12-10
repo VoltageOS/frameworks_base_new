@@ -22,8 +22,8 @@ import com.android.systemui.qs.pipeline.shared.TileSpec
 import com.android.systemui.qs.shared.model.TileCategory
 import com.android.systemui.qs.tileimpl.QSTileImpl
 import com.android.systemui.qs.tiles.RefreshRateTile
-import com.android.systemui.qs.tiles.CellularTile
-import com.android.systemui.qs.tiles.WifiTile
+import com.android.systemui.qs.tiles.CellularTileLegacy
+import com.android.systemui.qs.tiles.WifiTileLegacy
 import com.android.systemui.qs.tiles.base.shared.model.QSTileConfig;
 import com.android.systemui.qs.tiles.base.shared.model.QSTilePolicy;
 import com.android.systemui.qs.tiles.base.shared.model.QSTileUIConfig;
@@ -43,18 +43,18 @@ interface VoltageModule {
     @StringKey(RefreshRateTile.TILE_SPEC)
     fun bindRefreshRateTile(refreshRateTile: RefreshRateTile): QSTileImpl<*>
 
-    /** Inject CellularTile into tileMap in QSModule */
+    /** Inject CellularTileLegacy into tileMap in QSModule */
     @Binds
     @IntoMap
-    @StringKey(CellularTile.TILE_SPEC)
-    fun bindCellularTile(cellularTile: CellularTile): QSTileImpl<*>
+    @StringKey(CellularTileLegacy.TILE_SPEC)
+    fun bindCellularTileLegacy(cellularTileLegacy: CellularTileLegacy): QSTileImpl<*>
 
 
-    /** Inject WifiTile into tileMap in QSModule */
+    /** Inject WifiTileLegacy into tileMap in QSModule */
     @Binds
     @IntoMap
-    @StringKey(WifiTile.TILE_SPEC)
-    fun bindWifiTile(wifiTile: WifiTile): QSTileImpl<*>
+    @StringKey(WifiTileLegacy.TILE_SPEC)
+    fun bindWifiTileLegacy(wifiTileLegacy: WifiTileLegacy): QSTileImpl<*>
 
     companion object {
         @Provides
@@ -74,10 +74,10 @@ interface VoltageModule {
 
         @Provides
         @IntoMap
-        @StringKey(CellularTile.TILE_SPEC)
-        fun provideCellularTileConfig(uiEventLogger: QsEventLogger): QSTileConfig {
+        @StringKey(CellularTileLegacy.TILE_SPEC)
+        fun provideCellularTileLegacyConfig(uiEventLogger: QsEventLogger): QSTileConfig {
             return QSTileConfig(
-                tileSpec = TileSpec.create(CellularTile.TILE_SPEC),
+                tileSpec = TileSpec.create(CellularTileLegacy.TILE_SPEC),
                 uiConfig = QSTileUIConfig.Resource(
                     iconRes = R.drawable.ic_swap_vert,
                     labelRes = R.string.quick_settings_cellular_detail_title
@@ -89,10 +89,10 @@ interface VoltageModule {
 
         @Provides
         @IntoMap
-        @StringKey(WifiTile.TILE_SPEC)
-        fun provideWifiTileConfig(uiEventLogger: QsEventLogger, context: Context): QSTileConfig {
+        @StringKey(WifiTileLegacy.TILE_SPEC)
+        fun provideWifiTileLegacyConfig(uiEventLogger: QsEventLogger, context: Context): QSTileConfig {
             return QSTileConfig(
-                tileSpec = TileSpec.create(WifiTile.TILE_SPEC),
+                tileSpec = TileSpec.create(WifiTileLegacy.TILE_SPEC),
 		uiConfig = QSTileUIConfig.Resource(
                     iconRes = context.resources.getIdentifier(
                         "ic_signal_wifi_transient_animation", "drawable", "android"
