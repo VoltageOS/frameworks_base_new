@@ -14,26 +14,16 @@
  * limitations under the License.
  */
 
-package com.android.systemui.statusbar.quickactions.sharescreen.ui.viewmodel
+package com.android.systemui.statusbar.quickactions.media.ui.viewmodel
 
 import com.android.systemui.statusbar.quickactions.popups.ui.viewmodel.StatusBarPopupViewModel
-import com.android.systemui.statusbar.quickactions.sharescreen.domain.interactor.ShareScreenPrivacyIndicatorInteractor
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 
-/** A [StatusBarPopupViewModel] for the screen share privacy indicator popup. */
-class ShareScreenPrivacyIndicatorPopupViewModel
-@AssistedInject
-constructor(private val interactor: ShareScreenPrivacyIndicatorInteractor) :
-    StatusBarPopupViewModel {
+class MediaControlPopupViewModel @AssistedInject constructor() : StatusBarPopupViewModel {
 
-    fun stopShare() {
-        interactor.stopShare()
-    }
-
-    /** A factory for creating a [ShareScreenPrivacyIndicatorPopupViewModel]. */
     @AssistedFactory
-    interface Factory : StatusBarPopupViewModel.Factory.ShareScreen {
-        override fun create(): ShareScreenPrivacyIndicatorPopupViewModel
+    interface Factory : StatusBarPopupViewModel.Factory.MediaControl {
+        override fun create(): MediaControlPopupViewModel
     }
 }
