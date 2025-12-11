@@ -7665,7 +7665,10 @@
 
     <!-- Array containing the notification assistant service adjustments that are not supported by
      default on this device-->
-    <string-array translatable="false" name="config_notificationDefaultUnsupportedAdjustments" />
+    <string-array translatable="false" name="config_notificationDefaultUnsupportedAdjustments">
+        <item>key_summarization</item>
+        <item>key_type</item>
+    </string-array>
 
     <!-- Preference name of bugreport-->
     <string name="prefs_bugreport" translatable="false">bugreports</string>

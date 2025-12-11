@@ -517,9 +517,9 @@ public class NotificationManagerService extends SystemService {
             Adjustment.KEY_IMPORTANCE_PROPOSAL,
             Adjustment.KEY_SENSITIVE_CONTENT,
             Adjustment.KEY_RANKING_SCORE,
-            Adjustment.KEY_NOT_CONVERSATION,
-            Adjustment.KEY_TYPE,
-            Adjustment.KEY_SUMMARIZATION
+            Adjustment.KEY_NOT_CONVERSATION
+            // Adjustment.KEY_TYPE,
+            // Adjustment.KEY_SUMMARIZATION
     };
 
     static final Integer[] DEFAULT_ALLOWED_ADJUSTMENT_KEY_TYPES = new Integer[] {
