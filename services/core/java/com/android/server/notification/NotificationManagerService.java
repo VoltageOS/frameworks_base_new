@@ -538,8 +538,6 @@ public class NotificationManagerService extends SystemService {
             Adjustment.KEY_SENSITIVE_CONTENT,
             Adjustment.KEY_RANKING_SCORE,
             Adjustment.KEY_NOT_CONVERSATION,
-            Adjustment.KEY_TYPE,
-            Adjustment.KEY_SUMMARIZATION,
             KEY_NOTIFICATION_RULES
     };
 
