@@ -13821,7 +13821,11 @@ public class NotificationManagerService extends SystemService {
                     || android.app.Flags.nmSummarization())) {
                 return new HashSet<>();
             }
-            return mNasUnsupported.getOrDefault(userId, new HashSet<>());
+            var result = mNasUnsupported.getOrDefault(userId, new HashSet<>());
+            // Note that mDefaultUnsupportedAdjustments, loaded from
+            // config_notificationDefaultUnsupportedAdjustments, was empty before GrapheneOS change.
+            // For users that have already updated to alpha, empty set could be persisted to disk.
+            return result.isEmpty() ? new HashSet<>(List.of(mDefaultUnsupportedAdjustments)) : result;
         }
 
         void setNasUnsupportedDefaults(@UserIdInt int userId) {
