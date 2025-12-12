@@ -2,7 +2,7 @@
  * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the a License.
+ * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
@@ -16,31 +16,32 @@
 
 package android.hardware.input;
 
-import android.hardware.input.VirtualKeyEvent;
+import android.hardware.input.VirtualTouchEvent;
 
 /**
- * Interface for a virtual keyboard. Provides APIs for the caller to inject keyboard input events to
+ * Interface for a virtual touchscreen. Provides APIs for the caller to inject touch input events to
  * the device, by calling the system server.
  *
  * @hide
  */
-interface IVirtualKeyboard {
+interface IVirtualTouchscreen {
 
     /**
-     * Inject a virtual key event.
-     */
-    @RequiresNoPermission
-    boolean sendKeyEvent(in VirtualKeyEvent event);
-
-    /**
-     * Remove the input device from the system.
+     * Removes the input device from the framework.
      */
     @RequiresNoPermission
     void close();
 
     /**
-     * Returns the ID of the underlying input device.
+     * Returns the ID of the device corresponding to this virtual input device, as registered with
+     * the input framework.
      */
     @RequiresNoPermission
     int getInputDeviceId();
+
+    /**
+     * Injects a virtual touch event.
+     */
+    @RequiresNoPermission
+    boolean sendTouchEvent(in VirtualTouchEvent event);
 }
