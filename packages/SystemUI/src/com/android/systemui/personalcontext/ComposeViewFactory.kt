@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-package com.android.systemui.personalcontext.visualizer.session
+package com.android.systemui.personalcontext
 
+import android.content.Context
 import androidx.compose.ui.platform.ComposeView
 import com.android.systemui.dagger.SysUISingleton
-import java.util.UUID
 import javax.inject.Inject
 
-interface VisualizerSessionFactory {
-    fun createSession(id: UUID, view: ComposeView): VisualizerSession
+interface ComposeViewFactory {
+    fun createComposeView(ctx: Context): ComposeView
 }
 
 @SysUISingleton
-class VisualizerSessionFactoryImpl @Inject constructor() : VisualizerSessionFactory {
-    override fun createSession(id: UUID, view: ComposeView): VisualizerSession {
-        return VisualizerSession(id, view)
-    }
+class ComposeViewFactoryImpl @Inject constructor() : ComposeViewFactory {
+    override fun createComposeView(ctx: Context): ComposeView = ComposeView(ctx)
 }
