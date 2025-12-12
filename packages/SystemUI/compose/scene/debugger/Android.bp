@@ -13,42 +13,58 @@
 // limitations under the License.
 
 package {
-    default_team: "trendy_team_system_ui_please_use_a_more_specific_subteam_if_possible_",
     // See: http://go/android-license-faq
-    // A large-scale-change added 'default_applicable_licenses' to import
-    // all of the 'license_kinds' from "frameworks_base_packages_SystemUI_license"
-    // to get the below license kinds:
-    //   SPDX-license-identifier-Apache-2.0
-    default_applicable_licenses: ["frameworks_base_packages_SystemUI_license"],
+    default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
 android_library {
-    name: "PlatformComposeSceneTransitionLayout",
-    manifest: "AndroidManifest.xml",
+    name: "SceneTransitionLayoutDebuggerLib",
+    manifest: "lib/AndroidManifest.xml",
 
     srcs: [
         "src/**/*.kt",
     ],
 
-    resource_dirs: [
-        "res",
-    ],
     static_libs: [
         "PlatformComposeCore",
-        "compilelib",
+        "PlatformComposeSceneTransitionLayoutDemoLib",
+        "//frameworks/libs/systemui:compilelib",
+        "hierarchysnapshotter",
+        "WindowManager-Shell-shared",
 
-        "//frameworks/libs/systemui/mechanics:mechanics",
         "androidx.activity_activity-compose",
-        "androidx.compose.runtime_runtime",
+        "androidx.appcompat_appcompat",
         "androidx.compose.material3_material3",
-
-        "com_android_systemui_flags_lib",
-
+        "androidx.compose.material_material-icons-core",
+        "androidx.compose.runtime_runtime",
+        "androidx.compose.runtime_runtime-tracing",
+        "androidx.navigation_navigation-compose",
     ],
+
+    libs: ["android.test.mock.stubs.system"],
 
     kotlincflags: [
         "-Xjvm-default=all",
         "-P plugin:androidx.compose.compiler.plugins.kotlin:sourceInformation=true",
     ],
+    use_resource_processor: true,
+}
+
+android_app {
+    name: "SceneTransitionLayoutDebugger",
+    defaults: [
+        "platform_app_defaults",
+        "SystemUI_optimized_defaults",
+    ],
+
+    manifest: "app/AndroidManifest.xml",
+    static_libs: ["SceneTransitionLayoutDebuggerLib"],
+    resource_dirs: [],
+
+    platform_apis: true,
+    certificate: "platform",
+    privileged: true,
+
+    dxflags: ["--multi-dex"],
     use_resource_processor: true,
 }
