@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,20 +19,21 @@ package com.android.wm.shell.flicker.bubbles.utils
 import android.tools.traces.component.IComponentNameMatcher
 import android.tools.traces.surfaceflinger.Layer
 
-/** Matches the Task layer that contains the given child activity. */
-class TaskLayerMatcher(private val childActivityMatcher: IComponentNameMatcher) : LayerMatcher() {
-    override fun layerMatchesAnyOf(layers: Collection<Layer>): Boolean {
-        return layers.any {
-            if (!it.name.contains("Task=")) {
+/**
+ * Matcher for transition snapshot layers.
+ *
+ * @param activityMatcher the activity that involves the transition snapshot.
+ */
+class TransitionSnapshotMatcher(private val activityMatcher: IComponentNameMatcher) :
+    LayerMatcher() {
+
+    override fun layerMatchesAnyOf(layers: Collection<Layer>): Boolean =
+        layers.any {
+            if (!it.name.contains("transition snapshot:")) {
                 return@any false
             }
-            return@any it.children.stream().anyMatch {
-                childActivityMatcher.activityRecordMatchesAnyOf(it)
-            }
+            return@any it.name.contains(activityMatcher.className)
         }
-    }
 
-    override fun toLayerIdentifier(): String {
-        return "Task[${childActivityMatcher.className}]"
-    }
+    override fun toLayerIdentifier(): String = "transition snapshot:[${activityMatcher.className}]"
 }
