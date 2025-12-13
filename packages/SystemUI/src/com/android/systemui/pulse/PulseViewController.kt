@@ -17,7 +17,6 @@ package com.android.systemui.pulse
 
 import android.content.Context
 import android.media.session.PlaybackState
-import com.android.systemui.SystemUIApplication
 import com.android.systemui.dagger.SysUISingleton
 import com.android.systemui.media.MediaSessionManager
 import com.android.systemui.util.ScrimUtils
@@ -69,6 +68,8 @@ class PulseViewController @Inject constructor(
         }
 
     init {
+        INSTANCE = this
+
         view.initialize(settingsRepository)
         settingsRepository.setOnSettingsChangedListener { onSettingsChanged() }
         settingsRepository.startObserving()
@@ -198,10 +199,14 @@ class PulseViewController @Inject constructor(
     companion object {
         private const val TAG = "PulseViewController"
 
+        @Volatile
+        private var INSTANCE: PulseViewController? = null
+
         @JvmStatic
         fun get(context: Context): PulseViewController {
-            val app = context.applicationContext as SystemUIApplication
-            return app.sysUIComponent.pulseViewController()
+            return INSTANCE ?: throw IllegalStateException(
+                "PulseViewController not initialized"
+            )
         }
     }
 }
