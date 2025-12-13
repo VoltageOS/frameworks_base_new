@@ -471,6 +471,8 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
     private final WallpaperManager mWallpaperManager;
     private final UserTracker mUserTracker;
     private final ActivityStarter mActivityStarter;
+    private final MediaViewController mMediaViewController;
+    private final PulseViewController mPulseViewController;
 
     private GameSpaceManager mGameSpaceManager;
 
@@ -734,7 +736,9 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
             EmergencyGestureIntentFactory emergencyGestureIntentFactory,
             QuickAccessWalletController walletController,
             WindowManager windowManager,
-            WindowManagerProvider windowManagerProvider
+            WindowManagerProvider windowManagerProvider,
+            MediaViewController mediaViewController,
+            PulseViewController pulseViewController
     ) {
         mContext = context;
         mNotificationsController = notificationsController;
@@ -881,6 +885,8 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
 
         mWindowManager = windowManager;
         mWindowManagerProvider = windowManagerProvider;
+        mMediaViewController = mediaViewController;
+        mPulseViewController = pulseViewController;
     }
 
     private void initBubbles(Bubbles bubbles) {
@@ -1119,8 +1125,8 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
                 (requestTopUi, componentTag) -> mMainExecutor.execute(
                         () -> mTopUiController.setRequestTopUi(requestTopUi, componentTag)
                 )));
-        getNotifContainerParentView().addView(MediaViewController.get(mContext).getMediaArtScrim(), 0);
-        getNotifContainerParentView().addView(PulseViewController.get(mContext).getPulseView(), 1);
+        getNotifContainerParentView().addView(mMediaViewController.getMediaArtScrim(), 0);
+        getNotifContainerParentView().addView(mPulseViewController.getPulseView(), 1);
     }
 
     private ViewGroup getNotifContainerParentView() {

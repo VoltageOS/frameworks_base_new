@@ -914,7 +914,7 @@ public class MediaControlPanel {
                 } catch (PackageManager.NameNotFoundException e) {
                     Log.w(TAG, "Cannot find icon for package " + data.getPackageName(), e);
                     mutableColorScheme = new ColorScheme(ColorScheme.GOOGLE_BLUE,
-                            darkTheme, Style.CONTENT);
+                            darkTheme, ThemeStyle.CONTENT);
                 }
             }
 
