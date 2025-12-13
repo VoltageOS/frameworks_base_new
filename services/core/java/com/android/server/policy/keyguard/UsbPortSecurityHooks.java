@@ -56,18 +56,22 @@ public class UsbPortSecurityHooks {
         return res;
     }
 
-    private void onBootCompleted() {
+    public static void setInitialMode(Context ctx) {
+        if (!isSupported(ctx)) {
+            return;
+        }
+
         int initialMode = UsbPortSecurity.MODE_SETTING.get();
         Slogf.d(TAG, "initial value of persist.security.usb_mode: %d", initialMode);
 
         switch (initialMode) {
             case UsbPortSecurity.MODE_CHARGING_ONLY:
             case UsbPortSecurity.MODE_CHARGING_ONLY_WHEN_LOCKED:
-                setSecurityStateForAllPorts(PortSecurityState.CHARGING_ONLY_IMMEDIATE);
+                setSecurityStateForAllPorts(ctx, PortSecurityState.CHARGING_ONLY_IMMEDIATE);
                 break;
             case UsbPortSecurity.MODE_CHARGING_ONLY_WHEN_LOCKED_AFU:
             case UsbPortSecurity.MODE_ENABLED:
-                setSecurityStateForAllPorts(PortSecurityState.PORTS_ENABLED);
+                setSecurityStateForAllPorts(ctx, PortSecurityState.PORTS_ENABLED);
                 break;
         }
     }
@@ -78,7 +82,6 @@ public class UsbPortSecurityHooks {
         }
 
         var i = new UsbPortSecurityHooks(ctx);
-        i.onBootCompleted();
 
         synchronized (pendingCallbacks) {
             INSTANCE = i;
@@ -221,18 +224,22 @@ public class UsbPortSecurityHooks {
     }
 
     private void setSecurityStateForAllPorts(String state) {
+        setSecurityStateForAllPorts(context, state);
+    }
+
+    private static void setSecurityStateForAllPorts(Context ctx, String state) {
         Slog.d(TAG, "setSecurityStateForAllPorts: " + state);
 
-        setDenyNewUsb2(!state.equals(PortSecurityState.PORTS_ENABLED));
+        setDenyNewUsb2(ctx, !state.equals(PortSecurityState.PORTS_ENABLED));
 
         try {
             SystemProperties.set("sys.port_security_mode", state);
         } catch (RuntimeException e) {
-            showErrorNotif(Log.getStackTraceString(e));
+            showErrorNotif(ctx, Log.getStackTraceString(e));
         }
     }
 
-    private void setDenyNewUsb2(boolean enabled) {
+    private static void setDenyNewUsb2(Context ctx, boolean enabled) {
         String prop = "security.deny_new_usb2";
         String val = enabled ? "1" : "0";
         try {
@@ -240,7 +247,7 @@ public class UsbPortSecurityHooks {
             Slog.d(TAG, "set " + prop + " to " + val);
         } catch (RuntimeException e) {
             String msg = "unable to set " + prop + " to " + val + ":\n" + Log.getStackTraceString(e);
-            showErrorNotif(msg);
+            showErrorNotif(ctx, msg);
         }
     }
 
@@ -306,7 +313,7 @@ public class UsbPortSecurityHooks {
         }
     }
 
-    private void showErrorNotif(String msg) {
+    private static void showErrorNotif(Context context, String msg) {
         String type = "error in USB-C port security feature";
         String title = context.getString(R.string.usb_port_security_error_title);
         new SystemErrorNotification(type, title, msg).show(context);
