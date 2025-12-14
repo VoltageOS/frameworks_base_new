@@ -19,8 +19,10 @@ package com.android.server.biometrics.sensors.face.sense;
 
 import android.annotation.NonNull;
 import android.content.Context;
+import android.hardware.biometrics.BiometricAuthenticator;
 import android.hardware.face.Face;
 import android.os.IBinder;
+import android.util.Slog;
 
 import com.android.server.biometrics.log.BiometricContext;
 import com.android.server.biometrics.log.BiometricLogger;
@@ -28,6 +30,7 @@ import com.android.server.biometrics.sensors.BiometricUtils;
 import com.android.server.biometrics.sensors.InternalCleanupClient;
 import com.android.server.biometrics.sensors.InternalEnumerateClient;
 import com.android.server.biometrics.sensors.RemovalClient;
+import android.hardware.biometrics.BiometricsProtoEnums;
 
 import java.util.List;
 import java.util.Map;
@@ -36,6 +39,7 @@ import java.util.function.Supplier;
 import vendor.aospa.biometrics.face.ISenseService;
 
 class FaceInternalCleanupClient extends InternalCleanupClient<Face, ISenseService> {
+    private static final String TAG = "FaceInternalCleanupClient";
 
     FaceInternalCleanupClient(@NonNull Context context,
             @NonNull Supplier<ISenseService> lazyDaemon, int userId, @NonNull String owner,
@@ -60,11 +64,24 @@ class FaceInternalCleanupClient extends InternalCleanupClient<Face, ISenseServic
             Supplier<ISenseService> lazyDaemon, IBinder token,
             int biometricId, int userId, String owner, BiometricUtils<Face> utils, int sensorId,
             @NonNull BiometricLogger logger, @NonNull BiometricContext biometricContext,
-            Map<Integer, Long> authenticatorIds) {
+            Map<Integer, Long> authenticatorIds, int reason) {
         // Internal remove does not need to send results to anyone. Cleanup (enumerate + remove)
         // is all done internally.
         return new FaceRemovalClient(context, lazyDaemon, token,
                 null /* ClientMonitorCallbackConverter */, biometricId, userId, owner, utils,
-                sensorId, logger, biometricContext, authenticatorIds);
+                sensorId, logger, biometricContext, authenticatorIds, reason);
+    }
+
+    @Override
+    protected void onAddUnknownTemplate(int userId,
+            @NonNull BiometricAuthenticator.Identifier identifier) {
+        Slog.w(TAG, "Adding unknown template for user: " + userId);
+        mBiometricUtils.addBiometricForUser(getContext(), userId, (Face) identifier);
+    }
+
+    @Override
+    protected int getModality() {
+        return BiometricsProtoEnums.MODALITY_FACE;
+
     }
 }
