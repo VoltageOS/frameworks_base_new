@@ -19,6 +19,7 @@ package com.android.server.biometrics.sensors.face.sense;
 
 import android.annotation.NonNull;
 import android.content.Context;
+import android.hardware.biometrics.BiometricsProtoEnums;
 import android.hardware.face.Face;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -45,9 +46,10 @@ class FaceRemovalClient extends RemovalClient<Face, ISenseService> {
             int biometricId, int userId, @NonNull String owner, @NonNull BiometricUtils<Face> utils,
             int sensorId, @NonNull BiometricLogger logger,
             @NonNull BiometricContext biometricContext,
-            @NonNull Map<Integer, Long> authenticatorIds) {
+            @NonNull Map<Integer, Long> authenticatorIds, int reason) {
         super(context, lazyDaemon, token, listener, userId, owner, utils, sensorId, logger,
-                biometricContext, authenticatorIds);
+                biometricContext, authenticatorIds,
+                reason);
         mBiometricId = biometricId;
     }
 
