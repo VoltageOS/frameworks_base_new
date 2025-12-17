@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,61 +27,36 @@ import javax.inject.Inject
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/** UsbPermissionActivityTest */
+/** UsbConfirmActivityTest */
 @RunWith(AndroidJUnit4::class)
 @SmallTest
 @TestableLooper.RunWithLooper
-class UsbPermissionActivityTest :
-    UsbDialogActivityTest<UsbPermissionActivityTest.UsbPermissionActivityTestable>() {
-
-    class UsbPermissionActivityTestable
+class UsbConfirmActivityTest :
+    UsbDialogActivityTest<UsbConfirmActivityTest.UsbConfirmActivityTestable>() {
+    class UsbConfirmActivityTestable
     @Inject
     constructor(val message: UsbAudioWarningDialogMessage) :
-        UsbPermissionActivity(message), UsbDialogActivityTestable {
+        UsbConfirmActivity(message), UsbDialogActivityTestable {
         override fun getAlertParams(): AlertController.AlertParams {
             return mAlertParams
         }
     }
 
-    override fun createActivity(): UsbPermissionActivityTestable {
-        return UsbPermissionActivityTestable(mMessage)
+    override fun createActivity(): UsbConfirmActivityTestable {
+        return UsbConfirmActivityTestable(mMessage)
     }
 
-    override fun getActivityClass(): Class<UsbPermissionActivityTestable> {
-        return UsbPermissionActivityTestable::class.java
-    }
-
-    @Test
-    fun testUsbAccessoryDialogTitleAndMessage() {
-        deviceConfiguration(isUsbDevice = false)
-
-        val expectedTitle: String =
-            context.getString(
-                R.string.usb_audio_device_permission_prompt_title,
-                mAppName,
-                USB_ACCESSORY_DESCRIPTION,
-            )
-        assertThat(mAlertParams.mTitle).isEqualTo(expectedTitle)
-
-        val expectedMessage: String =
-            context.getString(
-                R.string.usb_accessory_permission_prompt,
-                mAppName,
-                USB_ACCESSORY_DESCRIPTION,
-            )
-        assertThat(mAlertParams.mMessage).isEqualTo(expectedMessage)
-
-        // Dialog shouldn't have a checkbox, if it can't be default.
-        assertThat(mAlertParams.mView).isNull()
+    override fun getActivityClass(): Class<UsbConfirmActivityTestable> {
+        return UsbConfirmActivityTestable::class.java
     }
 
     @Test
     fun testUsbAccessoryDialog() {
-        deviceConfiguration(isUsbDevice = false, canBeDefault = true)
+        deviceConfiguration(isUsbDevice = false)
 
         val expectedTitle: String =
             context.getString(
-                R.string.usb_audio_device_permission_prompt_title,
+                R.string.usb_audio_device_confirm_prompt_title,
                 mAppName,
                 USB_ACCESSORY_DESCRIPTION,
             )
@@ -89,7 +64,7 @@ class UsbPermissionActivityTest :
 
         val expectedMessage: String =
             context.getString(
-                R.string.usb_accessory_permission_prompt,
+                R.string.usb_accessory_confirm_prompt,
                 mAppName,
                 USB_ACCESSORY_DESCRIPTION,
             )
@@ -108,12 +83,36 @@ class UsbPermissionActivityTest :
     }
 
     @Test
-    fun testUsbDeviceDialogTitle() {
+    fun testUsbDeviceDialogTitleAndMessage() {
+        deviceConfiguration(isUsbDevice = true, hasAudioCapture = true)
+
+        val expectedTitle: String =
+            context.getString(
+                R.string.usb_audio_device_confirm_prompt_title,
+                mAppName,
+                USB_DEVICE_PRODUCT_NAME,
+            )
+        assertThat(mAlertParams.mTitle).isEqualTo(expectedTitle)
+
+        val expectedMessage: String =
+            context.getString(
+                R.string.usb_audio_device_prompt_warn,
+                mAppName,
+                USB_DEVICE_PRODUCT_NAME,
+            )
+        assertThat(mAlertParams.mMessage).isEqualTo(expectedMessage)
+
+        // Dialog shouldn't have a checkbox, if there is record warning.
+        assertThat(mAlertParams.mView).isNull()
+    }
+
+    @Test
+    fun testUsbDeviceDialogTitleAndCheckbox() {
         deviceConfiguration(isUsbDevice = true)
 
         val expectedTitle: String =
             context.getString(
-                R.string.usb_audio_device_permission_prompt_title,
+                R.string.usb_audio_device_confirm_prompt_title,
                 mAppName,
                 USB_DEVICE_PRODUCT_NAME,
             )
@@ -121,34 +120,18 @@ class UsbPermissionActivityTest :
 
         // Dialog shouldn't have a message, if it is not an audio device.
         assertThat(mAlertParams.mMessage).isNull()
-        // Dialog shouldn't have a checkbox, if it is not an audio device.
-        assertThat(mAlertParams.mView).isNull()
-    }
 
-    @Test
-    fun testUsbDeviceDialogTitleAndMessage() {
-        deviceConfiguration(isUsbDevice = true, hasAudioPlayback = true)
-
-        val expectedTitle: String =
-            context.getString(
-                R.string.usb_audio_device_permission_prompt_title,
-                mAppName,
-                USB_DEVICE_PRODUCT_NAME,
+        val alwaysUseView: CheckBox? =
+            mAlertParams.mView.findViewById(com.android.internal.R.id.alwaysUse)
+        assertThat(alwaysUseView!!.text)
+            .isEqualTo(
+                context.getString(R.string.always_use_device, mAppName, USB_DEVICE_PRODUCT_NAME)
             )
-        assertThat(mAlertParams.mTitle).isEqualTo(expectedTitle)
-
-        val expectedMessage: String =
-            context.getString(R.string.usb_audio_device_prompt, mAppName, USB_DEVICE_PRODUCT_NAME)
-        assertThat(mAlertParams.mMessage).isEqualTo(expectedMessage)
-
-        // Dialog shouldn't have a checkbox, if it can't be default.
-        assertThat(mAlertParams.mView).isNull()
     }
 
     @Test
     fun testUsbDeviceDialog() {
         deviceConfiguration(
-            canBeDefault = true,
             isUsbDevice = true,
             hasAudioCapture = true,
             audioRecordingPermissionStatus = android.content.pm.PackageManager.PERMISSION_GRANTED,
@@ -156,7 +139,7 @@ class UsbPermissionActivityTest :
 
         val expectedTitle: String =
             context.getString(
-                R.string.usb_audio_device_permission_prompt_title,
+                R.string.usb_audio_device_confirm_prompt_title,
                 mAppName,
                 USB_DEVICE_PRODUCT_NAME,
             )
