@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,14 @@ package com.android.settingslib.metadata.preferencesapi.types
 
 import android.content.Context
 
-/** A boolean value. */
-object AnyBoolean : FiniteOptionsType<Boolean>
-{
-    override fun getOptions(context: Context) = listOf(false to "False", true to "True")
+/**
+ * Specialized type that describes the subset of `ApiType`s which have a finite set of values.
+ */
+interface FiniteOptionsType<V> : ApiType<V> {
+
+    /**
+     * Returns all the values a preference with this type could have, together with their
+     * description.
+     */
+    fun getOptions(context: Context): List<Pair<V, String>>
 }
