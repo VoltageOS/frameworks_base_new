@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,18 @@
  * limitations under the License.
  */
 
-package com.android.systemui.inputmethod
+package com.android.systemui.inputmethod.shared.model
 
-import com.android.systemui.inputmethod.data.repository.InputMethodRepositoryModule
-import dagger.Module
+import android.annotation.UserIdInt
 
-/** Module for providing objects exposed by the input method package. */
-@Module(includes = [InputMethodRepositoryModule::class]) object InputMethodModule
+/** Listener to be notified when the model tied to a user has changed. */
+interface ModelChangeListener {
+
+    /**
+     * Called when the model tied to a user has changed.
+     *
+     * @param userId the ID of user whose model changed.
+     * @param model the new model, or `null` if the model was removed.
+     */
+    fun onChanged(@UserIdInt userId: Int, model: ImeSwitcherMenuModel?)
+}
