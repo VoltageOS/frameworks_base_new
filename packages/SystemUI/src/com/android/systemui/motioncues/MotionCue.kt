@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-syntax = "proto3";
 
-package com.android.systemui.dump;
+package com.android.systemui.motioncues
 
-import "frameworks/base/packages/SystemUI/src/com/android/systemui/qs/proto/tiles.proto";
-import "frameworks/base/packages/SystemUI/src/com/android/systemui/motioncues/proto/motion_cues.proto";
+import androidx.annotation.Keep
 
-option java_multiple_files = true;
-
-message SystemUIProtoDump {
-  repeated com.android.systemui.qs.QsTileState tiles = 1;
-  com.android.systemui.motioncues.MotionCueState motion_cue_state = 2;
-}
-
+/** Represents a single bubble object */
+data class MotionCue(
+    var x: Float,
+    var y: Float,
+    var radius: Float
+)

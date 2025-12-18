@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,23 @@
  */
 syntax = "proto3";
 
-package com.android.systemui.dump;
-
-import "frameworks/base/packages/SystemUI/src/com/android/systemui/qs/proto/tiles.proto";
-import "frameworks/base/packages/SystemUI/src/com/android/systemui/motioncues/proto/motion_cues.proto";
+package com.android.systemui.motioncues;
 
 option java_multiple_files = true;
 
-message SystemUIProtoDump {
-  repeated com.android.systemui.qs.QsTileState tiles = 1;
-  com.android.systemui.motioncues.MotionCueState motion_cue_state = 2;
+message MotionBubble {
+  float x = 1;
+  float y = 2;
 }
 
+message MotionCueState {
+  bool is_started = 1;
+  string paint_color = 2;
+  int32 bubble_shape_res_id = 3;
+  int32 horizontal_spacing_dp = 4;
+  int32 vertical_spacing_dp = 5;
+  int32 margin_size = 6;
+  int32 radius = 7;
+  repeated MotionBubble motion_bubbles = 8;
+  string client_package_name = 9;
+}
