@@ -14,10 +14,15 @@
  * limitations under the License.
  */
 
-package com.android.systemui.statusbar.notification.row
+package com.android.systemui.statusbar.notification.row.icon
 
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.log.logcatLogBuffer
 
-val Kosmos.notificationRowContentBinderLogger: NotificationRowContentBinderLogger by
-    Kosmos.Fixture { NotificationRowContentBinderLogger(logcatLogBuffer("NotifBind")) }
+val Kosmos.notificationRowIconViewInflaterFactory: NotificationRowIconViewInflaterFactory by
+    Kosmos.Fixture {
+        NotificationRowIconViewInflaterFactory(
+            appIconProvider,
+            notificationIconStyleProvider,
+            bridgedIconProvider,
+        )
+    }
