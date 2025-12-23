@@ -22,7 +22,6 @@ import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.widget.FrameLayout
 import android.widget.ImageView
-import android.widget.LinearLayout
 import com.android.keyguard.AlphaOptimizedLinearLayout
 import com.android.systemui.kairos.KairosNetwork
 import com.android.systemui.kairos.buildSpec
@@ -45,7 +44,6 @@ class ModernStatusBarMobileView(context: Context, attrs: AttributeSet?) :
     ModernStatusBarView(context, attrs) {
 
     var subId: Int = -1
-    private lateinit var mobileGroup: LinearLayout
 
     override fun toString(): String {
         return "ModernStatusBarMobileView(" +
@@ -105,17 +103,6 @@ class ModernStatusBarMobileView(context: Context, attrs: AttributeSet?) :
             layoutParams.height =
                 context.resources.getDimensionPixelSize(R.dimen.status_bar_mobile_type_size_updated)
         }
-    }
-
-    override fun onFinishInflate() {
-        super.onFinishInflate()
-        mobileGroup = requireViewById(R.id.mobile_group)
-    }
-
-    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-        mobileGroup.measure(widthMeasureSpec, heightMeasureSpec)
-        setMeasuredDimension(mobileGroup.measuredWidth, mobileGroup.measuredHeight)
     }
 
     override fun initView(slot: String, bindingCreator: () -> ModernStatusBarViewBinding) {
