@@ -16,11 +16,16 @@
 
 package android.app.appfunctions;
 
-import android.app.appfunctions.IAppFunctionSearchResults;
-import android.os.ParcelableException;
+import android.app.appfunctions.IAppFunctionSearchResultCallback;
 
-/** @hide */
-oneway interface ISearchAppFunctionsCallback {
-    void onSuccess(in IAppFunctionSearchResults results);
-    void onError(in ParcelableException exception);
+/**
+ * An interface to iterate over AppFunction search results.
+ *
+ * @hide
+ */
+interface IAppFunctionSearchResults {
+    /** Gets the next page. */
+    void getNextPage(in IAppFunctionSearchResultCallback callback);
+    /** Close the remote search session. */
+    void close();
 }
