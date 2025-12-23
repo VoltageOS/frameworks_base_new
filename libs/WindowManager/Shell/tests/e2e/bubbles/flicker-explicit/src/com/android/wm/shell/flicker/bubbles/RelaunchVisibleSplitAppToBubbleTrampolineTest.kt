@@ -25,26 +25,34 @@ import androidx.test.filters.RequiresDevice
 import com.android.server.wm.flicker.helpers.ShowWhenLockedAppHelper
 import com.android.wm.shell.Flags
 import com.android.wm.shell.Utils.testSetupRule
+import com.android.wm.shell.flicker.bubbles.testcase.RelaunchVisibleAppToBubbleTestCases
 import com.android.wm.shell.flicker.bubbles.testcase.RelaunchVisibleSplitAppToBubbleTestCases
 import com.android.wm.shell.flicker.bubbles.utils.AssumptionRule
+import com.android.wm.shell.flicker.bubbles.utils.FlickerAssertionHelper.moveInSingleDirection
+import com.android.wm.shell.flicker.bubbles.utils.FlickerAssertionHelper.resizeConsistently
 import com.android.wm.shell.flicker.bubbles.utils.RunOncePerParameterRule
+import com.android.wm.shell.flicker.bubbles.utils.TransitionSnapshotMatcher
 import com.android.wm.shell.flicker.bubbles.utils.VisibleSplitToBubbleTestScenario
 import org.junit.FixMethodOrder
 import org.junit.Rule
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.MethodSorters
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 
 /**
- * Test entering bubble for an app that was previously open in split-screen and visible. Bubble is
- * launched via clicking bubble menu from the task bar.
+ * Test entering bubble for an app that was previously open in split-screen and visible via
+ * trampoline task. Bubble is launched via clicking bubble menu from the task bar.
  *
- * To run this test: `atest WMShellExplicitFlickerTestsBubbles:RelaunchVisibleSplitAppToBubbleTest`
+ * To run this test:
+ * ```
+ * atest WMShellExplicitFlickerTestsBubbles:RelaunchVisibleSplitAppToBubbleTrampolineTest
+ * ```
  *
  * Pre-steps:
  * ```
- *     Start the app in split-screen.
+ *     Start the app in split-screen. One starts via trampoline app.
  *     Click one of split apps to grant focus.
  * ```
  *
@@ -54,28 +62,31 @@ import org.junit.runners.Parameterized.Parameters
  * ```
  *
  * Verified tests:
- * - [BubbleFlickerTestBase]
- * - [RelaunchVisibleSplitAppToBubbleTestCases]
+ * - [BubbleFlickerTrampolineTestBase]
+ * - [RelaunchVisibleAppToBubbleTestCases]
  */
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CREATE_ANY_BUBBLE)
 @RequiresDevice
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Presubmit
 @RunWith(Parameterized::class)
-class RelaunchVisibleSplitAppToBubbleTest(
+class RelaunchVisibleSplitAppToBubbleTrampolineTest(
     private val testScenario: VisibleSplitToBubbleTestScenario
-) : BubbleFlickerTestBase(), RelaunchVisibleSplitAppToBubbleTestCases {
+) : BubbleFlickerTrampolineTestBase(), RelaunchVisibleSplitAppToBubbleTestCases {
 
     companion object {
-        private val testApp2: StandardAppHelper = ShowWhenLockedAppHelper(instrumentation)
+        val testApp2: StandardAppHelper = ShowWhenLockedAppHelper(instrumentation)
 
         @Parameters(name = "{0}")
         @JvmStatic
         fun data(): List<VisibleSplitToBubbleTestScenario> =
             VisibleSplitToBubbleTestScenario.generateTestScenarios(
-                toBubbleApp = testApp,
+                toBubbleApp = runningApp,
                 toFullscreenApp = testApp2,
+                trampolineApp = trampolineApp,
             )
+
+        val TRAMPOLINE_SNAPSHOT = TransitionSnapshotMatcher(trampolineApp.packageName)
     }
 
     @get:Rule(order = 1)
@@ -98,4 +109,39 @@ class RelaunchVisibleSplitAppToBubbleTest(
 
     override val toFullscreenApp: IComponentNameMatcher
         get() = testApp2
+
+    /** The trampoline activity is expected to finish itself. */
+    @Test
+    fun trampolineAppWindowIsGoneAtEnd() {
+        wmStateSubjectAtEnd.notContainsAppWindow(trampolineApp)
+    }
+
+    /** The trampoline activity is expected to finish itself. */
+    @Test
+    fun trampolineAppLayerIsInvisibleAtEnd() {
+        layerTraceEntrySubjectAtEnd.isInvisible(trampolineApp)
+    }
+
+    @Test
+    override fun appOrTransitionSnapshotLayerIsAlwaysVisible() {
+        layersTraceSubject.isVisible(testApp.or(TRAMPOLINE_SNAPSHOT)).forAllEntries()
+    }
+
+    @Test
+    override fun appLayerResizeConsistently() {
+        layersTraceSubject.resizeConsistently(
+            TRAMPOLINE_SNAPSHOT,
+            // the value may be changed slightly when starting scaling and shrinking.
+            threshold = 1,
+        )
+    }
+
+    @Test
+    override fun appLayerMoveInSingleDirection() {
+        layersTraceSubject.moveInSingleDirection(
+            TRAMPOLINE_SNAPSHOT,
+            // the value may be changed slightly when starting scaling and shrinking.
+            threshold = 1,
+        )
+    }
 }
