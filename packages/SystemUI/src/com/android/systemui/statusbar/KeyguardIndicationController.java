@@ -853,7 +853,8 @@ public class KeyguardIndicationController {
     }
 
     private void updateLockScreenLogoutView() {
-        if (mUserLogoutInteractor.isLogoutEnabled().getValue()) {
+        // disable lock screen end session button
+        if (false && mUserLogoutInteractor.isLogoutEnabled().getValue()) {
             mRotateTextViewController.updateIndication(
                     INDICATION_TYPE_LOGOUT,
                     new KeyguardIndication.Builder()
