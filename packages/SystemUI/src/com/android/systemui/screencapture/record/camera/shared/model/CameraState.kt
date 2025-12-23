@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.systemui.screencapture.record.camera.domain.interactor
+package com.android.systemui.screencapture.record.camera.shared.model
 
-import android.content.applicationContext
-import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.kosmos.backgroundScope
-import com.android.systemui.screencapture.record.camera.data.repository.screenRecordCameraRepository
-
-val Kosmos.screenRecordCameraInteractor: ScreenRecordCameraInteractor by
-    Kosmos.Fixture {
-        ScreenRecordCameraInteractor(
-            resources = applicationContext.resources,
-            coroutineScope = backgroundScope,
-            repository = screenRecordCameraRepository,
-        )
-    }
+enum class CameraState {
+    Starting,
+    Started,
+    Stopping,
+    Stopped,
+    Unavailable,
+}
