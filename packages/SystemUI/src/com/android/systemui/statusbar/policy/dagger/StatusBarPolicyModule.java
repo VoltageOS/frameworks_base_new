@@ -29,7 +29,6 @@ import com.android.settingslib.devicestate.DeviceStateAutoRotateSettingManagerPr
 import com.android.settingslib.devicestate.PostureDeviceStateConverter;
 import com.android.settingslib.devicestate.SecureSettings;
 import com.android.settingslib.notification.modes.ZenIconLoader;
-import com.android.systemui.animation.DialogTransitionAnimator;
 import com.android.systemui.CoreStartable;
 import com.android.systemui.dagger.SysUISingleton;
 import com.android.systemui.dagger.qualifiers.Application;
@@ -38,7 +37,6 @@ import com.android.systemui.dagger.qualifiers.Main;
 import com.android.systemui.dagger.qualifiers.UiBackground;
 import com.android.systemui.log.LogBuffer;
 import com.android.systemui.log.LogBufferFactory;
-import com.android.systemui.plugins.ActivityStarter;
 import com.android.systemui.settings.UserTracker;
 import com.android.systemui.statusbar.connectivity.AccessPointController;
 import com.android.systemui.statusbar.connectivity.AccessPointControllerImpl;
@@ -62,8 +60,6 @@ import com.android.systemui.statusbar.policy.ExtensionController;
 import com.android.systemui.statusbar.policy.ExtensionControllerImpl;
 import com.android.systemui.statusbar.policy.FlashlightController;
 import com.android.systemui.statusbar.policy.FlashlightControllerImpl;
-import com.android.systemui.statusbar.policy.FlashlightStrengthController;
-import com.android.systemui.statusbar.policy.FlashlightStrengthDialogDelegate;
 import com.android.systemui.statusbar.policy.HotspotController;
 import com.android.systemui.statusbar.policy.HotspotControllerImpl;
 import com.android.systemui.statusbar.policy.KeyguardStateController;
@@ -110,7 +106,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
 import javax.inject.Named;
-import javax.inject.Provider;
 
 /** Dagger Module for code in the statusbar.policy package. */
 @Module(includes = {DeviceProvisioningRepositoryModule.class, SupervisionRepositoryModule.class})
@@ -352,29 +347,6 @@ public interface StatusBarPolicyModule {
     ) {
         return new VolumeController(
                 context,
-                dialogTransitionAnimator,
-                dialogDelegateProvider,
-                keyguardStateController,
-                activityStarter,
-                mainHandler
-        );
-    }
-
-    /** Provides a {@link FlashlightStrengthController} */
-    @Provides
-    @SysUISingleton
-    static FlashlightStrengthController provideFlashlightStrengthController(
-            @Application Context context,
-            @Background Executor bgExecutor,
-            DialogTransitionAnimator dialogTransitionAnimator,
-            Provider<FlashlightStrengthDialogDelegate> dialogDelegateProvider,
-            KeyguardStateController keyguardStateController,
-            ActivityStarter activityStarter,
-            @Main Handler mainHandler
-    ) {
-        return new FlashlightStrengthController(
-                context,
-                bgExecutor,
                 dialogTransitionAnimator,
                 dialogDelegateProvider,
                 keyguardStateController,

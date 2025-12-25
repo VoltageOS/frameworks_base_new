@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License
  */
-package com.android.systemui.qs.tiles;
 
-import static com.android.systemui.statusbar.policy.FlashlightStrengthController.OnTorchLevelChangedListener;
+package com.android.systemui.qs.tiles;
 
 import android.app.ActivityManager;
 import android.content.Intent;
@@ -42,7 +41,6 @@ import com.android.systemui.qs.logging.QSLogger;
 import com.android.systemui.qs.tileimpl.QSTileImpl;
 import com.android.systemui.res.R;
 import com.android.systemui.statusbar.policy.FlashlightController;
-import com.android.systemui.statusbar.policy.FlashlightStrengthController;
 
 import javax.inject.Inject;
 
@@ -53,21 +51,7 @@ public class FlashlightTile extends QSTileImpl<BooleanState> implements
         FlashlightController.FlashlightListener {
 
     public static final String TILE_SPEC = "flashlight";
-
     private final FlashlightController mFlashlightController;
-    private final FlashlightStrengthController mStrengthController;
-    
-    private final OnTorchLevelChangedListener mTorchListener = new OnTorchLevelChangedListener() {
-        @Override
-        public void onLevelChanged(int level) {
-            refreshState();
-        }
-
-        @Override
-        public void onStatusChanged(int enabled) {
-            refreshState();
-        }
-    };
 
     @Inject
     public FlashlightTile(
@@ -80,41 +64,32 @@ public class FlashlightTile extends QSTileImpl<BooleanState> implements
             StatusBarStateController statusBarStateController,
             ActivityStarter activityStarter,
             QSLogger qsLogger,
-            FlashlightController flashlightController,
-            FlashlightStrengthController flashlightStrengthController
+            FlashlightController flashlightController
     ) {
         super(host, uiEventLogger, backgroundLooper, mainHandler, falsingManager, metricsLogger,
                 statusBarStateController, activityStarter, qsLogger);
         mFlashlightController = flashlightController;
         mFlashlightController.observe(getLifecycle(), this);
-        mStrengthController = flashlightStrengthController;
-    }
-    
-    @Override
-    public void handleSetListening(boolean listening) {
-        super.handleSetListening(listening);
-        setListening(listening);
     }
 
     @Override
     protected void handleDestroy() {
         super.handleDestroy();
-        setListening(false);
     }
 
     @Override
     public BooleanState newTileState() {
         BooleanState state = new BooleanState();
-        state.handlesLongClick = true;
-        state.handlesSecondaryClick = true;
+        state.handlesLongClick = false;
         return state;
     }
 
     @Override
+    protected void handleUserSwitch(int newUserId) {
+    }
+
+    @Override
     public Intent getLongClickIntent() {
-        if (mStrengthController.getSupported()) {
-            return null;
-        }
         return new Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA);
     }
 
@@ -129,12 +104,8 @@ public class FlashlightTile extends QSTileImpl<BooleanState> implements
             return;
         }
         boolean newState = !mState.value;
-        if (mStrengthController.getSupported()) {
-            mStrengthController.handleClick();
-        } else {
-            mFlashlightController.setFlashlight(newState);
-        }
         refreshState(newState);
+        mFlashlightController.setFlashlight(newState);
     }
 
     @Override
@@ -144,20 +115,7 @@ public class FlashlightTile extends QSTileImpl<BooleanState> implements
 
     @Override
     protected void handleLongClick(@Nullable Expandable expandable) {
-        if (mStrengthController.getSupported()) {
-            mStrengthController.expandDialog(expandable);
-        } else {
-            handleClick(expandable);
-        }
-    }
-
-    @Override
-    protected void handleSecondaryClick(@Nullable Expandable expandable) {
-        if (mStrengthController.getSupported()) {
-            mStrengthController.handleClick();
-        } else {
-            handleClick(expandable);
-        }
+        handleClick(expandable);
     }
 
     @Override
@@ -173,21 +131,6 @@ public class FlashlightTile extends QSTileImpl<BooleanState> implements
             state.icon = maybeLoadResourceIcon(R.drawable.qs_flashlight_icon_off);
             return;
         }
-        if (mStrengthController.getSupported()) {
-            int torchLvl = mStrengthController.getTorchLevel();
-            boolean enabled = mFlashlightController.isEnabled();
-            int percent = mStrengthController.getLastPercent();
-            boolean showPercent = enabled && torchLvl > 0;
-            state.secondaryLabel = showPercent ? percent + "%" : "";
-            state.stateDescription = showPercent ? state.secondaryLabel : "";
-            state.contentDescription = mContext.getString(R.string.quick_settings_flashlight_label);
-            state.expandedAccessibilityClassName = Switch.class.getName();
-            state.state = enabled ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE;
-            state.icon = maybeLoadResourceIcon(enabled
-                    ? R.drawable.qs_flashlight_icon_on
-                    : R.drawable.qs_flashlight_icon_off);
-            return;
-        }
         if (arg instanceof Boolean) {
             boolean value = (Boolean) arg;
             if (value == state.value) {
@@ -201,8 +144,7 @@ public class FlashlightTile extends QSTileImpl<BooleanState> implements
         state.expandedAccessibilityClassName = Switch.class.getName();
         state.state = state.value ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE;
         state.icon = maybeLoadResourceIcon(state.value
-                ? R.drawable.qs_flashlight_icon_on
-                : R.drawable.qs_flashlight_icon_off);
+                ? R.drawable.qs_flashlight_icon_on : R.drawable.qs_flashlight_icon_off);
     }
 
     @Override
@@ -223,14 +165,5 @@ public class FlashlightTile extends QSTileImpl<BooleanState> implements
     @Override
     public void onFlashlightAvailabilityChanged(boolean available) {
         refreshState();
-    }
-    
-    private void setListening(boolean listening) {
-        if (!mStrengthController.getSupported()) return;
-        if (listening) {
-            mStrengthController.addListener(mTorchListener);
-        } else {
-            mStrengthController.removeListener(mTorchListener);
-        }
     }
 }
