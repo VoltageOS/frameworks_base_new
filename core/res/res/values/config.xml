@@ -7768,6 +7768,6 @@
         and com.android.* namespace. -->
     <string-array name="config_watchFacePermissions" translatable="false"/>
 
-    <string name="config_gnssPsdsType"></string>
+    <string name="config_gnssPsdsType">qualcomm</string>
     <java-symbol type="string" name="config_gnssPsdsType" />
 </resources>
