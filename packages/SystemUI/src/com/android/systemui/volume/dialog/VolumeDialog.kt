@@ -108,15 +108,6 @@ constructor(
                 }
         }
 
-        context.contentResolver.registerContentObserver(
-            Settings.Secure.getUriFor(Settings.Secure.VOLUME_PANEL_ON_LEFT),
-            false,
-            volumePanelOnLeftObserver,
-            UserHandle.USER_ALL
-        )
-        volumePanelOnLeftObserver.onChange(true)
-        applyLayoutAndGravity()
-
         setCancelable(false)
         setCanceledOnTouchOutside(false)
     }
@@ -138,6 +129,26 @@ constructor(
                 awaitCancellation()
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        context.contentResolver.registerContentObserver(
+            Settings.Secure.getUriFor(Settings.Secure.VOLUME_PANEL_ON_LEFT),
+            false,
+            volumePanelOnLeftObserver,
+            UserHandle.USER_ALL
+        )
+        volumePanelOnLeft = Settings.Secure.getIntForUser(
+            context.contentResolver, Settings.Secure.VOLUME_PANEL_ON_LEFT,
+            0, UserHandle.USER_CURRENT
+        ) != 0
+        applyLayoutAndGravity()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        context.contentResolver.unregisterContentObserver(volumePanelOnLeftObserver)
     }
 
     /**
