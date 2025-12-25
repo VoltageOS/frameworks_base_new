@@ -12,7 +12,7 @@ public class GnssSettings {
 
     public static final IntSetting SUPL_SETTING = new IntSetting(
             Setting.Scope.GLOBAL, Settings.Global.GNSS_SUPL,
-            SUPL_SERVER_GRAPHENEOS_PROXY, // default
+            SUPL_SERVER_STANDARD, // default
             SUPL_SERVER_STANDARD, SUPL_DISABLED, SUPL_SERVER_GRAPHENEOS_PROXY // valid values
     );
 
@@ -23,7 +23,7 @@ public class GnssSettings {
 
     public static final IntSetting STANDARD_PSDS_SETTING = new IntSetting(
             Setting.Scope.GLOBAL, Settings.Global.GNSS_PSDS_STANDARD,
-            PSDS_SERVER_GRAPHENEOS, // default
+            PSDS_SERVER_STANDARD, // default
             PSDS_SERVER_GRAPHENEOS, PSDS_SERVER_STANDARD, PSDS_DISABLED // valid values
     );
 
