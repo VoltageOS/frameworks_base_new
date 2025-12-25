@@ -8085,6 +8085,6 @@
     <!-- Whether to explicitly disable the Video capability over IWLAN when Wi-Fi Calling is turned off. -->
     <bool name="config_disable_video_capability_when_wfc_off">false</bool>
 
-    <string name="config_gnssPsdsType"></string>
+    <string name="config_gnssPsdsType">qualcomm</string>
     <java-symbol type="string" name="config_gnssPsdsType" />
 </resources>
