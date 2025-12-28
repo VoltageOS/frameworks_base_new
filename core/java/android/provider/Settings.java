@@ -7014,6 +7014,17 @@ public final class Settings {
         public static final String STATUS_BAR_SHOW_BATTERY_PERCENT = "status_bar_show_battery_percent";
 
         /**
+         * Style of battery to show.
+         * 0 = default
+         * 1 = circle
+         * 2 = text
+         * 3 = circle dotted
+         * @hide
+         */
+        @Readable
+        public static final String STATUS_BAR_BATTERY_STYLE = "status_bar_battery_style";
+
+        /**
          * IMPORTANT: If you add a new public settings you also have to add it to
          * PUBLIC_SETTINGS below. If the new setting is hidden you have to add
          * it to PRIVATE_SETTINGS below. Also add a validator that can validate

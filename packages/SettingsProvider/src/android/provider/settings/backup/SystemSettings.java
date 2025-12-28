@@ -131,7 +131,8 @@ public class SystemSettings {
                 Settings.System.CV_DYNAMIC_ENABLED,
                 Settings.System.CV_PREFERRED_INTENSITY,
                 Settings.System.LOCKSCREEN_ROTATION,
-                Settings.System.STATUS_BAR_SHOW_BATTERY_PERCENT
+                Settings.System.STATUS_BAR_SHOW_BATTERY_PERCENT,
+                Settings.System.STATUS_BAR_BATTERY_STYLE
         ));
         if (Flags.backUpSmoothDisplayAndForcePeakRefreshRate()) {
             settings.add(Settings.System.PEAK_REFRESH_RATE);
