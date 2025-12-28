@@ -6926,6 +6926,17 @@ public final class Settings {
         public static final String SHOW_BATTERY_PERCENT = "status_bar_show_battery_percent";
 
         /**
+         * Style of battery to show.
+         * 0 = default
+         * 1 = circle
+         * 2 = text
+         * 3 = circle dotted
+         * @hide
+         */
+        @Readable
+        public static final String STATUS_BAR_BATTERY_STYLE = "status_bar_battery_style";
+
+        /**
          * Whether or not to enable multiple audio focus.
          * When enabled, requires more management by user over application playback activity,
          * for instance pausing media apps when another starts.
