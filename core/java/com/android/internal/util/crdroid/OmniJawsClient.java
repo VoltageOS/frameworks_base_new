@@ -333,8 +333,14 @@ public class OmniJawsClient {
         if (mRes == null) {
             loadDefaultIconsPackage(context);
         }
+        if (mRes == null) {
+            return getDefaultConditionImage(context);
+        }
         try {
             int resId = mRes.getIdentifier(mIconPrefix + "_" + conditionCode, "drawable", mPackageName);
+            if (resId == 0) {
+                return getDefaultConditionImage(context);
+            }
             Drawable d = mRes.getDrawable(resId, null);
             return d != null ? d : getDefaultConditionImage(context);
         } catch (Exception e) {
