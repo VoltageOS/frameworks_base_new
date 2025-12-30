@@ -16,11 +16,21 @@
 
 package android.app.appfunctions;
 
-import android.app.appfunctions.IAppFunctionSearchResults;
+import android.app.appfunctions.AppFunctionException;
+import android.app.appfunctions.AppFunctionMetadata;
 import android.os.ParcelableException;
 
-/** @hide */
-oneway interface ISearchAppFunctionsCallback {
-    void onSuccess(in IAppFunctionSearchResults results);
+/**
+ * Callback interface for delivering a single page of AppFunction search results.
+ *
+ * @hide
+ */
+oneway interface IAppFunctionSearchResultCallback {
+    /**
+     * Called when a page of search results has been successfully retrieved. If the result is empty,
+     * it indicates that there is no subsequent pages.
+     */
+    void onResult(in List<AppFunctionMetadata> result);
+    /** Called when fail to search the next page. */
     void onError(in ParcelableException exception);
 }
