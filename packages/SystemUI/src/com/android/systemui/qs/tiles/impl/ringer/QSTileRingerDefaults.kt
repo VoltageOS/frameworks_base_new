@@ -23,20 +23,43 @@ import androidx.compose.ui.unit.dp
 import com.android.compose.theme.LocalAndroidColorScheme
 import com.android.systemui.common.ringer.RingerSliderDimens
 import com.android.systemui.common.ringer.RingerSliderTheme
+import com.android.compose.theme.colorAttr
+import com.android.systemui.shade.ui.isVibrantShadeEnabled
+import com.android.systemui.shade.ui.boost
 
 class QSTileRingerTheme(
 ) : RingerSliderTheme {
     override val activeBg: Color
-        @Composable get() = MaterialTheme.colorScheme.primary
+        @Composable get() {
+            val useVibrant = isVibrantShadeEnabled()
+            return if (useVibrant) {
+                colorAttr(com.android.internal.R.attr.colorAccent).boost()
+            } else {
+                MaterialTheme.colorScheme.primary
+            }
+        }
     
     override val neutralBg: Color
-        @Composable get() = LocalAndroidColorScheme.current.surfaceEffect2
+        @Composable get() = LocalAndroidColorScheme.current.surfaceEffect1
     
     override val activeIcon: Color
         @Composable get() = MaterialTheme.colorScheme.onPrimary
     
     override val neutralIcon: Color
         @Composable get() = MaterialTheme.colorScheme.onSurface
+
+    override val dndBg: Color
+        @Composable get() {
+            val useVibrant = isVibrantShadeEnabled()
+            return if (useVibrant) {
+                colorAttr(com.android.internal.R.attr.colorAccent).boost()
+            } else {
+                MaterialTheme.colorScheme.primary
+            }
+        }
+    
+    override val dndIcon: Color
+        @Composable get() = MaterialTheme.colorScheme.onPrimary
     
     override val dozeStroke: Dp = 2.dp
 }
