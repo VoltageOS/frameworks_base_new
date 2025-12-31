@@ -1,11 +1,11 @@
-/*
- * Copyright (C) 2023 The Android Open Source Project
+/**
+ * Copyright 2025, The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,15 +14,18 @@
  * limitations under the License.
  */
 
-package com.android.systemui.smartspace.config
+package android.app.appfunctions;
 
-import com.android.systemui.Flags.smartspaceViewpager2
-import com.android.systemui.flags.FeatureFlags
-import com.android.systemui.plugins.BcSmartspaceConfigPlugin
+import android.app.appfunctions.IAppFunctionSearchResultCallback;
 
-class BcSmartspaceConfigProvider(private val featureFlags: FeatureFlags) :
-    BcSmartspaceConfigPlugin {
-
-    override val isViewPager2Enabled: Boolean
-        get() = smartspaceViewpager2()
+/**
+ * An interface to iterate over AppFunction search results.
+ *
+ * @hide
+ */
+interface IAppFunctionSearchResults {
+    /** Gets the next page. */
+    void getNextPage(in IAppFunctionSearchResultCallback callback);
+    /** Close the remote search session. */
+    void close();
 }
