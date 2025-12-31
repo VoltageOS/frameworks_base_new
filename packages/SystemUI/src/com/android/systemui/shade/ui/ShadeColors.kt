@@ -68,7 +68,8 @@ object ShadeColors {
             context.resources.getColor(com.android.internal.R.color.shade_panel_fg, context.theme)
         val layerBelow =
             context.resources.getColor(com.android.internal.R.color.shade_panel_bg, context.theme)
-        return ColorUtils.compositeColors(layerAbove, layerBelow)
+        val color = ColorUtils.compositeColors(layerAbove, layerBelow)
+        return ColorUtils.setAlphaComponent(color, 100)
     }
 
     @JvmStatic
