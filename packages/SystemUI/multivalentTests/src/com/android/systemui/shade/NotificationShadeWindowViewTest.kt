@@ -151,7 +151,6 @@ class NotificationShadeWindowViewTest : SysuiTestCase() {
     @Mock lateinit var primaryBouncerInteractor: PrimaryBouncerInteractor
     @Mock lateinit var alternateBouncerInteractor: AlternateBouncerInteractor
     @Mock lateinit var configurationForwarder: ConfigurationForwarder
-    @Mock private lateinit var qqsGestureListener: QQSGestureListener
     @Captor
     private lateinit var interactionEventHandlerCaptor: ArgumentCaptor<InteractionEventHandler>
 
@@ -242,7 +241,6 @@ class NotificationShadeWindowViewTest : SysuiTestCase() {
                 kosmos.shadeStatusBarComponentsInteractor,
                 kosmos.dozeTouchInteractor,
                 kosmos.javaAdapter,
-                qqsGestureListener,
             )
 
         controller.setupExpandedStatusBar()

@@ -6927,13 +6927,6 @@ public final class Settings {
           */
          public static final String STATUS_BAR_CLOCK = "status_bar_clock";
 
-        /**
-         * Enable statusbar double tap gesture on to put device to sleep
-         * 0 = 0ff, 1 = on
-         * @hide
-         */
-        public static final String DOUBLE_TAP_SLEEP_GESTURE = "double_tap_sleep_gesture";
-
 	/**
          * Whether or not volume button music controls should be enabled to seek media tracks
          * @hide
