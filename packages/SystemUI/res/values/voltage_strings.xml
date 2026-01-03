@@ -144,8 +144,8 @@
 
     <!-- Caffeine QS tile -->
     <string name="quick_settings_caffeine_label">Caffeine</string>
-    <string name="accessibility_quick_settings_caffeine_off">Caffeine off.</string>
-    <string name="accessibility_quick_settings_caffeine_on">Caffeine on.</string>
+    <string name="accessibility_quick_settings_caffeine_off">Caffeine OFF</string>
+    <string name="accessibility_quick_settings_caffeine_on">Caffeine ON</string>
 
     <!-- CPUInfo tile -->
     <string name="quick_settings_cpuinfo_label">CPU Info</string>
@@ -258,4 +258,15 @@
 
     <!-- Name of the clock in status bar [CHAR LIMIT=30] -->
     <string name="clock">Clock</string>
+
+    <!-- Caffeine QS Tile -->
+    <string name="qs_caffeine_dialog_title">Caffeine Timer</string>
+    <string name="qs_caffeine_infinite">Infinite</string>
+
+    <!-- Notification Suppress QS Tile -->
+    <string name="quick_settings_notif_suppress_label">Silent notifs</string>
+    <string name="quick_settings_notif_suppress_on">Suppressing notifications</string>
+    <string name="quick_settings_notif_suppress_off">Normal notifications</string>
+    <string name="qs_notif_suppress_dialog_title">Suppress Timer</string>
+
 </resources>

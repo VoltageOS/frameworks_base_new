@@ -83,6 +83,10 @@ import com.android.systemui.statusbar.policy.UserInfoController;
 import com.android.systemui.statusbar.policy.UserInfoControllerImpl;
 import com.android.systemui.statusbar.policy.VolumeController;
 import com.android.systemui.statusbar.policy.VolumeDialogDelegate;
+import com.android.systemui.statusbar.policy.CaffeineController;
+import com.android.systemui.statusbar.policy.CaffeineDialogDelegate;
+import com.android.systemui.statusbar.policy.NotificationSuppressController;
+import com.android.systemui.statusbar.policy.NotificationSuppressDialogDelegate;
 import com.android.systemui.statusbar.policy.WalletController;
 import com.android.systemui.statusbar.policy.WalletControllerImpl;
 import com.android.systemui.statusbar.policy.ZenModeController;
@@ -336,6 +340,40 @@ public interface StatusBarPolicyModule {
     @IntoMap
     @ClassKey(SecurityControllerStartable.class)
     CoreStartable bindSecurityControllerCoreStartable(SecurityControllerStartable startable);
+
+    /** Provides a {@link CaffeineController} */
+    @Provides
+    @SysUISingleton
+    static CaffeineController provideCaffeineController(
+            @Application Context context,
+            DialogTransitionAnimator dialogTransitionAnimator,
+            Provider<CaffeineDialogDelegate> dialogDelegateProvider,
+            KeyguardStateController keyguardStateController,
+            ActivityStarter activityStarter,
+            @Main Handler mainHandler
+    ) {
+        return new CaffeineController(
+                context, dialogTransitionAnimator, dialogDelegateProvider,
+                keyguardStateController, activityStarter, mainHandler
+        );
+    }
+
+    /** Provides a {@link NotificationSuppressController} */
+    @Provides
+    @SysUISingleton
+    static NotificationSuppressController provideNotificationSuppressController(
+            @Application Context context,
+            DialogTransitionAnimator dialogTransitionAnimator,
+            Provider<NotificationSuppressDialogDelegate> dialogDelegateProvider,
+            KeyguardStateController keyguardStateController,
+            ActivityStarter activityStarter,
+            @Main Handler mainHandler
+    ) {
+        return new NotificationSuppressController(
+                context, dialogTransitionAnimator, dialogDelegateProvider,
+                keyguardStateController, activityStarter, mainHandler
+        );
+    }
 
     /** Provides a {@link FlashlightStrengthController} */
     @Provides
