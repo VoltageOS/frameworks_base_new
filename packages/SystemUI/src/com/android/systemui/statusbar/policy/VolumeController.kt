@@ -25,6 +25,8 @@ import com.android.systemui.animation.DialogCuj
 import com.android.systemui.animation.DialogTransitionAnimator
 import com.android.systemui.animation.Expandable
 import com.android.systemui.dagger.SysUISingleton
+import com.android.systemui.dagger.qualifiers.Application
+import com.android.systemui.dagger.qualifiers.Main
 import com.android.systemui.plugins.ActivityStarter
 import com.android.systemui.statusbar.phone.SystemUIDialog
 import javax.inject.Inject
@@ -32,12 +34,12 @@ import javax.inject.Provider
 
 @SysUISingleton
 class VolumeController @Inject constructor(
-    private val ctx: Context,
+    @Application private val ctx: Context,
     private val dialogTransitionAnimator: DialogTransitionAnimator,
     private val dialogDelegateProvider: Provider<VolumeDialogDelegate>,
     private val keyguardStateController: KeyguardStateController,
     private val activityStarter: ActivityStarter,
-    private val mainHandler: Handler
+    @Main private val mainHandler: Handler
 ) {
 
     interface VolumeListener {
