@@ -31,6 +31,7 @@ import com.android.systemui.qs.tiles.AmbientDisplayTile
 import com.android.systemui.qs.tiles.AODTile
 import com.android.systemui.qs.tiles.CaffeineTile
 import com.android.systemui.qs.tiles.NotificationSuppressTile
+import com.android.systemui.qs.tiles.AnimationScaleTile
 import com.android.systemui.qs.tiles.CompassTile
 import com.android.systemui.qs.tiles.ScreenshotTile
 import com.android.systemui.qs.tiles.SleepModeTile
@@ -70,6 +71,12 @@ interface VoltageModule {
     @IntoMap
     @StringKey(NotificationSuppressTile.TILE_SPEC)
     fun bindNotificationSuppressTile(tile: NotificationSuppressTile): QSTileImpl<*>
+
+    /** Inject AnimationScaleTile into tileMap in QSModule */
+    @Binds
+    @IntoMap
+    @StringKey(AnimationScaleTile.TILE_SPEC)
+    fun bindAnimationScaleTile(tile: AnimationScaleTile): QSTileImpl<*>
 
     /** Inject CompassTile into tileMap in QSModule */
     @Binds
@@ -288,6 +295,21 @@ interface VoltageModule {
                 uiConfig = QSTileUIConfig.Resource(
                     iconRes = R.drawable.ic_qs_notification_suppress,
                     labelRes = R.string.quick_settings_notif_suppress_label
+                ),
+                instanceId = uiEventLogger.getNewInstanceId(),
+                category = TileCategory.UTILITIES
+            )
+        }
+
+        @Provides
+        @IntoMap
+        @StringKey(AnimationScaleTile.TILE_SPEC)
+        fun provideAnimationScaleConfig(uiEventLogger: QsEventLogger): QSTileConfig {
+            return QSTileConfig(
+                tileSpec = TileSpec.create(AnimationScaleTile.TILE_SPEC),
+                uiConfig = QSTileUIConfig.Resource(
+                    iconRes = R.drawable.ic_qs_animation_scale,
+                    labelRes = R.string.quick_settings_animation_scale_label
                 ),
                 instanceId = uiEventLogger.getNewInstanceId(),
                 category = TileCategory.UTILITIES
