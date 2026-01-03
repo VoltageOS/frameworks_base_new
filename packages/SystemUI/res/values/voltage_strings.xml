@@ -269,4 +269,9 @@
     <string name="quick_settings_notif_suppress_off">Normal notifications</string>
     <string name="qs_notif_suppress_dialog_title">Suppress Timer</string>
 
+    <!-- Animation Scale QS Tile -->
+    <string name="quick_settings_animation_scale_label">Animation speed</string>
+    <string name="quick_settings_animation_scale_off">Animations off</string>
+    <string name="qs_animation_scale_dialog_title">Animation Speed</string>
+
 </resources>

@@ -87,6 +87,8 @@ import com.android.systemui.statusbar.policy.CaffeineController;
 import com.android.systemui.statusbar.policy.CaffeineDialogDelegate;
 import com.android.systemui.statusbar.policy.NotificationSuppressController;
 import com.android.systemui.statusbar.policy.NotificationSuppressDialogDelegate;
+import com.android.systemui.statusbar.policy.AnimationScaleController;
+import com.android.systemui.statusbar.policy.AnimationScaleDialogDelegate;
 import com.android.systemui.statusbar.policy.WalletController;
 import com.android.systemui.statusbar.policy.WalletControllerImpl;
 import com.android.systemui.statusbar.policy.ZenModeController;
@@ -370,6 +372,23 @@ public interface StatusBarPolicyModule {
             @Main Handler mainHandler
     ) {
         return new NotificationSuppressController(
+                context, dialogTransitionAnimator, dialogDelegateProvider,
+                keyguardStateController, activityStarter, mainHandler
+        );
+    }
+
+    /** Provides a {@link AnimationScaleController} */
+    @Provides
+    @SysUISingleton
+    static AnimationScaleController provideAnimationScaleController(
+            @Application Context context,
+            DialogTransitionAnimator dialogTransitionAnimator,
+            Provider<AnimationScaleDialogDelegate> dialogDelegateProvider,
+            KeyguardStateController keyguardStateController,
+            ActivityStarter activityStarter,
+            @Main Handler mainHandler
+    ) {
+        return new AnimationScaleController(
                 context, dialogTransitionAnimator, dialogDelegateProvider,
                 keyguardStateController, activityStarter, mainHandler
         );
