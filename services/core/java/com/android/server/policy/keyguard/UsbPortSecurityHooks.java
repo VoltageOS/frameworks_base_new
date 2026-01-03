@@ -19,6 +19,7 @@ import android.util.Log;
 import android.util.Slog;
 
 import com.android.internal.R;
+import com.android.server.LocalServices;
 import com.android.server.ext.SystemErrorNotification;
 import com.android.server.utils.Slogf;
 
@@ -45,7 +46,7 @@ public class UsbPortSecurityHooks {
 
     private static volatile int isSupportedCached;
 
-    private static boolean isSupported(Context ctx) {
+    public static boolean isSupported(Context ctx) {
         int cache = isSupportedCached;
         if (cache != 0) {
             return cache > 0;

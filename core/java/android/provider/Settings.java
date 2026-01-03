@@ -15182,6 +15182,9 @@ public final class Settings {
          *
          * @hide
          */
+        // The upstream USB data protection feature conflicts with the broader GrapheneOS external
+        // port protection feature
+        @Protected(immutableValue = "0")
         public static final String AAPM_USB_DATA_PROTECTION = "aapm_usb_data_protection";
 
         /**
