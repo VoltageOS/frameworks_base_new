@@ -19,7 +19,6 @@ import android.util.Log;
 import android.util.Slog;
 
 import com.android.internal.R;
-import com.android.server.LocalServices;
 import com.android.server.ext.SystemErrorNotification;
 import com.android.server.utils.Slogf;
 
@@ -102,6 +101,19 @@ public class UsbPortSecurityHooks {
                 if (portStatus.isConnected()) {
                     ++usbConnectEventCount;
                     Slog.d(TAG, "usbConnectEventCount: " + usbConnectEventCount);
+                } else {
+                    if (keyguardDismissedAtLeastOnce && prevKeyguardShowing != null && prevKeyguardShowing.booleanValue()) {
+                        int setting = UsbPortSecurity.MODE_SETTING.get();
+                        if (setting == UsbPortSecurity.MODE_CHARGING_ONLY_WHEN_LOCKED_AFU || setting == UsbPortSecurity.MODE_CHARGING_ONLY_WHEN_LOCKED) {
+                            if (!isAnyUsbPortConnected()) {
+                                Slog.d(TAG, "keyguard is showing and there's no longer any connected USB devices, issuing the CHARGING_ONLY_IMMEDIATE command");
+                                // In some cases, the CHARGING_ONLY_IMMEDIATE command provides extra
+                                // protections compared to the CHARGING_ONLY command that is issued
+                                // when the device becomes locked
+                                setSecurityStateForAllPorts(PortSecurityState.CHARGING_ONLY_IMMEDIATE);
+                            }
+                        }
+                    }
                 }
             }
         };
@@ -298,5 +310,15 @@ public class UsbPortSecurityHooks {
         String type = "error in USB-C port security feature";
         String title = context.getString(R.string.usb_port_security_error_title);
         new SystemErrorNotification(type, title, msg).show(context);
+    }
+
+    private boolean isAnyUsbPortConnected() {
+        for (UsbPort port : usbManager.getPorts()) {
+            UsbPortStatus s = port.getStatus();
+            if (s != null && s.isConnected()) {
+                return true;
+            }
+        }
+        return false;
     }
 }
