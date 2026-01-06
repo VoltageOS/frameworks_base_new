@@ -14,20 +14,8 @@
  * limitations under the License.
  */
 
-package android.security.talisman;
+package com.android.server.security.talisman;
 
-import android.security.talisman.TrustToken;
-import android.security.talisman.TrustTokenIdentitySet;
-
-/**
- * Interface for the TrustTokenManagerService.
- * @hide
- */
-interface ITrustTokenManager {
-    TrustToken acquireVerifiedDeviceToken();
-    TrustTokenIdentitySet acquirePreparedIdentitySet();
-    int verifyTrustTokenAndChallenge(in TrustToken token, in byte[] remoteResponse,
-            in byte[] expectedChallenge);
-    int[] verifyIdentityTokens(in TrustToken verifiedDeviceToken, in TrustToken[] identityTokens);
-    void updatePreparedIdentities(in List<String> identities);
+final class TrustConfigurationUnavailableException extends Exception {
+    TrustConfigurationUnavailableException() {}
 }
