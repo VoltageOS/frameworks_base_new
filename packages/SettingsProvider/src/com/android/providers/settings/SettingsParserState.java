@@ -1,10 +1,13 @@
 package com.android.providers.settings;
 
 import android.ext.settings.ConnChecksSetting;
+import android.os.SystemProperties;
 import android.provider.Settings;
 import android.util.Log;
 
 class SettingsParserState {
+    private static final String TAG = "SettingsParserState";
+
     private final int type;
 
     private String captivePortalHttpsUrl;
@@ -43,6 +46,16 @@ class SettingsParserState {
             }
             case SettingsState.SETTINGS_TYPE_SECURE: {
                 switch (key) {
+                    case Settings.Secure.DEFAULT_DEVICE_INPUT_METHOD:
+                    case Settings.Secure.DEFAULT_INPUT_METHOD:
+                    case Settings.Secure.DISABLED_SYSTEM_INPUT_METHODS:
+                    case Settings.Secure.ENABLED_INPUT_METHODS:
+                        if (isBootingInSafeMode()) {
+                            // discard the IME settings to switch to the system keyboard
+                            Log.d(TAG, "device is booting in safe mode, discarding IME setting \"" + key + " = " + val + '"');
+                            return false;
+                        }
+                        break;
                     default:
                         break;
                 }
@@ -85,5 +98,19 @@ class SettingsParserState {
         }
 
         ConnChecksSetting.put(val);
+    }
+
+    private static Boolean isSafeModeCache;
+
+    private static boolean isBootingInSafeMode() {
+        var cache = isSafeModeCache;
+        if (cache != null) {
+            return cache.booleanValue();
+        }
+
+        boolean isSafeMode = SystemProperties.getInt("persist.sys.safemode", 0) != 0;
+        isSafeModeCache = Boolean.valueOf(isSafeMode);
+        Log.d(TAG, "isSafeMode: " + isSafeMode);
+        return isSafeMode;
     }
 }
