@@ -54,4 +54,6 @@ public interface PackageId {
 
     /** @hide */ String BUGLE_NAME = "com.google.android.apps.messaging";
     /** @hide */ int BUGLE = 14;
+
+    /** @hide */ String SYSTEM_KEYBOARD = "com.android.inputmethod.latin";
 }
