@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,16 @@
 
 package com.android.systemui.brightness.domain.interactor
 
-import com.android.systemui.brightness.data.repository.screenBrightnessRepository
-import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.kosmos.applicationCoroutineScope
-import com.android.systemui.log.table.logcatTableLogBuffer
+import com.android.systemui.util.policy.PolicyRestriction
+import kotlinx.coroutines.flow.Flow
 
-val Kosmos.screenBrightnessInteractor by
-    Kosmos.Fixture {
-        ScreenBrightnessInteractorImpl(
-            screenBrightnessRepository,
-            applicationCoroutineScope,
-            logcatTableLogBuffer(this, "screenBrightness"),
-        )
-    }
+public interface BrightnessPolicyEnforcementInteractor {
+    /** Brightness policy restriction for the current user. */
+    public val brightnessPolicyRestriction: Flow<PolicyRestriction>
+
+    /**
+     * Starts the dialog with details about the current restriction for changing brightness. Should
+     * be triggered when a restricted user tries to change the brightness.
+     */
+    public fun startAdminSupportDetailsDialog(restriction: PolicyRestriction.Restricted)
+}

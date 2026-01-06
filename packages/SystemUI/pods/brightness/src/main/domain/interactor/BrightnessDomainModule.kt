@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,19 @@
 
 package com.android.systemui.brightness.domain.interactor
 
-import com.android.systemui.brightness.data.repository.screenBrightnessRepository
-import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.kosmos.applicationCoroutineScope
-import com.android.systemui.log.table.logcatTableLogBuffer
+import dagger.Binds
+import dagger.Module
 
-val Kosmos.screenBrightnessInteractor by
-    Kosmos.Fixture {
-        ScreenBrightnessInteractorImpl(
-            screenBrightnessRepository,
-            applicationCoroutineScope,
-            logcatTableLogBuffer(this, "screenBrightness"),
-        )
-    }
+@Module
+public interface BrightnessDomainModule {
+
+    @Binds
+    public fun bindBrightnessInteractor(
+        impl: ScreenBrightnessInteractorImpl
+    ): ScreenBrightnessInteractor
+
+    @Binds
+    public fun bindBrightnessPolicyEnforcementInteractor(
+        impl: BrightnessPolicyEnforcementInteractorImpl
+    ): BrightnessPolicyEnforcementInteractor
+}
