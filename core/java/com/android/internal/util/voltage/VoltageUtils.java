@@ -187,11 +187,19 @@ public class VoltageUtils {
                value = readOneLine(context.getResources().getString(
                   com.android.internal.R.string.config_cpu_temp_path));
         } else {
-            value = "Error";
+            value = null;
         }
-        int cpuTempMultiplier = context.getResources().getInteger(
-                com.android.internal.R.integer.config_sysCPUTempMultiplier);
-        return value == "Error" ? "N/A" : String.format("%s", Integer.parseInt(value) / cpuTempMultiplier) + "°C";
+        if (value == null || value.isEmpty()) {
+            return "N/A";
+        }
+
+        try {
+            int cpuTempMultiplier = context.getResources().getInteger(
+                    com.android.internal.R.integer.config_sysCPUTempMultiplier);
+            return String.format("%s", Integer.parseInt(value) / cpuTempMultiplier) + "°C";
+        } catch (NumberFormatException e) {
+            return "N/A";
+        }
     }
     public static boolean fileExists(String filename) {
         if (filename == null) {
