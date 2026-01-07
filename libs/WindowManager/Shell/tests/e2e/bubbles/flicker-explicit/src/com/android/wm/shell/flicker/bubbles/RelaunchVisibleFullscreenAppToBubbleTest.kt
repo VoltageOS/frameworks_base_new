@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,70 +19,67 @@ package com.android.wm.shell.flicker.bubbles
 import android.platform.test.annotations.Presubmit
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.tools.NavBar
+import android.tools.traces.component.ComponentNameMatcher.Companion.LAUNCHER
 import androidx.test.filters.RequiresDevice
 import com.android.wm.shell.Flags
 import com.android.wm.shell.Utils.testSetupRule
-import com.android.wm.shell.flicker.bubbles.testcase.CollapseBubbleAppTestCases
+import com.android.wm.shell.flicker.bubbles.testcase.RelaunchVisibleAppToBubbleTestCases
 import com.android.wm.shell.flicker.bubbles.utils.AssumptionRule
-import com.android.wm.shell.flicker.bubbles.utils.BubbleFlickerTestHelper.BubbleLaunchSource.FROM_OVERVIEW
-import com.android.wm.shell.flicker.bubbles.utils.BubbleFlickerTestHelper.collapseBubbleAppViaTouchOutside
+import com.android.wm.shell.flicker.bubbles.utils.BubbleFlickerTestHelper.BubbleLaunchSource.FROM_TASK_BAR
 import com.android.wm.shell.flicker.bubbles.utils.BubbleFlickerTestHelper.launchBubbleViaBubbleMenu
 import com.android.wm.shell.flicker.bubbles.utils.RecordTraceWithTransitionRule
 import com.android.wm.shell.flicker.bubbles.utils.RunOncePerParameterRule
+import com.android.wm.shell.flicker.utils.SplitScreenUtils
 import org.junit.FixMethodOrder
 import org.junit.Rule
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.MethodSorters
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 
 /**
- * Test collapsing bubble app from overview.
+ * Test entering bubble for an app that was previously open in fullscreen and visible. Bubble is
+ * launched via clicking bubble menu from the task bar.
  *
- * To run this test: `atest WMShellExplicitFlickerTestsBubbles:CollapseBubbleAppFromOverviewTest`
+ * To run this test: `atest
+ * WMShellExplicitFlickerTestsBubbles:RelaunchVisibleFullscreenAppToBubbleTest`
  *
  * Pre-steps:
  * ```
- *     Drag [testApp] icon to hotseat
- *     Swipe up to switch to overview
- *     Launch [testApp] into bubble via bubble menu
+ *     Start the app in fullscreen.
  * ```
  *
  * Actions:
  * ```
- *     Collapse the [testApp] bubble from overview
- *     Now the task bar and bubble bar are both expanded
+ *     Click the bubble menu from task bar to launch the app into a bubble.
  * ```
  *
  * Verified tests:
  * - [BubbleFlickerTestBase]
- * - [CollapseBubbleAppTestCases]
+ * - [RelaunchVisibleAppToBubbleTestCases]
  */
-@RequiresFlagsEnabled(Flags.FLAG_ENABLE_CREATE_ANY_BUBBLE, Flags.FLAG_ENABLE_BUBBLE_BAR)
+@RequiresFlagsEnabled(Flags.FLAG_ENABLE_CREATE_ANY_BUBBLE)
 @RequiresDevice
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Presubmit
 @RunWith(Parameterized::class)
-class CollapseBubbleAppFromOverviewTest(navBar: NavBar) :
-    BubbleFlickerTestBase(), CollapseBubbleAppTestCases {
+class RelaunchVisibleFullscreenAppToBubbleTest(navBar: NavBar) :
+    BubbleFlickerTestBase(), RelaunchVisibleAppToBubbleTestCases {
 
     companion object {
         private val recordTraceWithTransitionRule =
             RecordTraceWithTransitionRule(
                 setUpBeforeTransition = {
-                    launchBubbleViaBubbleMenu(testApp, tapl, wmHelper, fromSource = FROM_OVERVIEW)
+                    // Pin to hotseat to ensure the app icon is on the taskbar, which is used
+                    // to launch the app into a bubble.
+                    SplitScreenUtils.createShortcutOnHotseatIfNotExist(tapl, testApp.appName)
+                    testApp.launchViaIntent(wmHelper)
                 },
                 transition = {
-                    collapseBubbleAppViaTouchOutside(testApp, wmHelper)
-                    // Getting the overview will ensure the task bar is visible.
-                    val overview = tapl.overview
-                    // Calling the bubble bar will ensure the bubble bar is visible.
-                    overview.bubbleBar
+                    launchBubbleViaBubbleMenu(testApp, tapl, wmHelper, fromSource = FROM_TASK_BAR)
                 },
-                tearDownAfterTransition = {
-                    testApp.exit()
-                    tapl.goHome()
-                },
+                tearDownAfterTransition = { testApp.exit(wmHelper) },
             )
 
         @Parameters(name = "{0}") @JvmStatic fun data(): List<NavBar> = NavBar.entries
@@ -92,7 +89,7 @@ class CollapseBubbleAppFromOverviewTest(navBar: NavBar) :
     val assumptionRule =
         AssumptionRule(
             condition = { tapl.isTablet },
-            message = "Bubble bar is enabled on large screen devices",
+            message = "The bubble bar is only available on large screen devices",
         )
 
     @get:Rule(order = 2)
@@ -105,4 +102,25 @@ class CollapseBubbleAppFromOverviewTest(navBar: NavBar) :
 
     override val traceDataReader
         get() = recordTraceWithTransitionRule.reader
+
+
+    /** Verifies that the launcher window becomes visible during the transition. */
+    @Test
+    fun launcherWindowBecomesVisible() {
+        wmTraceSubject
+            .isAppWindowInvisible(LAUNCHER)
+            .then()
+            .isAppWindowVisible(LAUNCHER)
+            .forAllEntries()
+    }
+
+    /** Verifies that the launcher layer becomes visible during the transition. */
+    @Test
+    fun launcherLayerBecomesVisible() {
+        layersTraceSubject
+            .isInvisible(LAUNCHER)
+            .then()
+            .isVisible(LAUNCHER)
+            .forAllEntries()
+    }
 }
