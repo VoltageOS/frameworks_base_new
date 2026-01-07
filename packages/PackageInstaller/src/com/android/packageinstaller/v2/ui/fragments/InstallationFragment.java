@@ -131,6 +131,7 @@ public class InstallationFragment extends DialogFragment {
                 (dialog, which) -> {
                     mInstallActionListener.onNegativeResponse(installStage.getStageCode());
                 });
+        mDialog.setCanceledOnTouchOutside(false);
 
         return mDialog;
     }
