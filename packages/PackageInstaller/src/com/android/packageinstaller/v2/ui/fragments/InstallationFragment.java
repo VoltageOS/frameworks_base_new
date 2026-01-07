@@ -25,6 +25,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageInstaller;
 import android.content.pm.ResolveInfo;
 import android.graphics.Typeface;
@@ -35,6 +36,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -53,9 +55,13 @@ import com.android.packageinstaller.v2.model.InstallSuccess;
 import com.android.packageinstaller.v2.model.InstallUserActionRequired;
 import com.android.packageinstaller.v2.model.InstallVerificationFailure;
 import com.android.packageinstaller.v2.ui.InstallActionListener;
+import com.android.packageinstaller.v2.ui.SpecialPermissionState;
+import com.android.packageinstaller.v2.ui.SpecialRuntimePermUtils;
 import com.android.packageinstaller.v2.ui.UiUtil;
 import com.android.packageinstaller.v2.viewmodel.InstallViewModel;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -72,6 +78,7 @@ public class InstallationFragment extends DialogFragment {
     private ImageView mAppIcon = null;
     private TextView mAppLabelTextView = null;
     private View mAppSnippet = null;
+    private CheckBox mGrantInternetPermission = null;
     private TextView mCustomMessageTextView = null;
     private View mCustomViewPanel = null;
     private ProgressBar mProgressBar = null;
@@ -101,6 +108,7 @@ public class InstallationFragment extends DialogFragment {
         View dialogView = getLayoutInflater().inflate(
                 UiUtil.getInstallationLayoutResId(requireContext()), null);
         mAppSnippet = dialogView.requireViewById(R.id.app_snippet);
+        mGrantInternetPermission = dialogView.requireViewById(R.id.install_allow_INTERNET_permission);
         mAppIcon = dialogView.requireViewById(R.id.app_icon);
         mAppLabelTextView = dialogView.requireViewById(R.id.app_label);
         mCustomViewPanel = dialogView.requireViewById(R.id.custom_view_panel);
@@ -588,7 +596,7 @@ public class InstallationFragment extends DialogFragment {
                 // more than once quickly
                 view.setClickable(false);
                 mInstallActionListener.onPositiveResponse(
-                        InstallUserActionRequired.USER_ACTION_REASON_ANONYMOUS_SOURCE);
+                        InstallUserActionRequired.USER_ACTION_REASON_ANONYMOUS_SOURCE, Collections.emptyList());
             });
         }
 
@@ -614,6 +622,11 @@ public class InstallationFragment extends DialogFragment {
         mProgressBar.setVisibility(View.GONE);
 
         mAppSnippet.setVisibility(View.VISIBLE);
+
+        final PackageInfo pkgInfo = installStage.getPackageInfo();
+        if (!installStage.isAppUpdating() && pkgInfo != null) {
+            SpecialRuntimePermUtils.setInitialCheckboxStates(pkgInfo, mGrantInternetPermission);
+        }
 
         // Set the app icon and label
         mAppIcon.setImageDrawable(installStage.getAppIcon());
@@ -663,8 +676,12 @@ public class InstallationFragment extends DialogFragment {
                 // Set clickable of the button to false to avoid the user clicks it
                 // more than once quickly
                 view.setClickable(false);
+
+                var spStates = new ArrayList<SpecialPermissionState>();
+                SpecialRuntimePermUtils.collectCheckboxState(mGrantInternetPermission, spStates);
+
                 mInstallActionListener.onPositiveResponse(
-                        InstallUserActionRequired.USER_ACTION_REASON_INSTALL_CONFIRMATION);
+                        InstallUserActionRequired.USER_ACTION_REASON_INSTALL_CONFIRMATION, spStates);
             });
         }
 
@@ -839,7 +856,7 @@ public class InstallationFragment extends DialogFragment {
                 // more than once quickly
                 view.setClickable(false);
                 mInstallActionListener.onPositiveResponse(
-                        InstallUserActionRequired.USER_ACTION_REASON_VERIFICATION_CONFIRMATION);
+                        InstallUserActionRequired.USER_ACTION_REASON_VERIFICATION_CONFIRMATION, Collections.emptyList());
             });
 
             if (mIsMoreDetailsExpanded) {

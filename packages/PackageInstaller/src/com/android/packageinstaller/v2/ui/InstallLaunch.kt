@@ -297,7 +297,7 @@ class InstallLaunch : FragmentActivity(), InstallActionListener {
         }
     }
 
-    override fun onPositiveResponse(reasonCode: Int) {
+    override fun onPositiveResponse(reasonCode: Int, specialPermissionStates: List<SpecialPermissionState>) {
         if (localLogv) {
             Log.d(LOG_TAG, "Positive button clicked. ReasonCode: $reasonCode")
         }
@@ -305,7 +305,7 @@ class InstallLaunch : FragmentActivity(), InstallActionListener {
             InstallUserActionRequired.USER_ACTION_REASON_ANONYMOUS_SOURCE ->
                 installViewModel!!.forcedSkipSourceCheck()
             InstallUserActionRequired.USER_ACTION_REASON_INSTALL_CONFIRMATION ->
-                installViewModel!!.initiateInstall()
+                installViewModel!!.initiateInstall(specialPermissionStates)
             InstallUserActionRequired.USER_ACTION_REASON_VERIFICATION_CONFIRMATION ->
                 installViewModel!!.onPositiveVerificationUserResponse()
         }

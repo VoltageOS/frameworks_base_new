@@ -26,6 +26,7 @@ import androidx.lifecycle.distinctUntilChanged
 import com.android.packageinstaller.v2.model.InstallRepository
 import com.android.packageinstaller.v2.model.InstallStage
 import com.android.packageinstaller.v2.model.InstallStaging
+import com.android.packageinstaller.v2.ui.SpecialPermissionState
 
 class InstallViewModel(application: Application, val repository: InstallRepository) :
     AndroidViewModel(application) {
@@ -123,8 +124,8 @@ class InstallViewModel(application: Application, val repository: InstallReposito
         _currentInstallStage.value = stage
     }
 
-    fun initiateInstall() {
-        repository.initiateInstall()
+    fun initiateInstall(specialPermissionStates: List<SpecialPermissionState>) {
+        repository.initiateInstall(specialPermissionStates)
     }
 
     fun abortStaging() {

@@ -19,6 +19,7 @@ package com.android.packageinstaller.v2.model
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageInfo
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
@@ -53,6 +54,7 @@ data class InstallUserActionRequired(
     val requestedUpdateOwnerPackageName: CharSequence? = null,
     val unknownSourcePackageName: String? = null,
     val verificationInfo: PackageInstaller.DeveloperVerificationUserConfirmationInfo? = null,
+    val packageInfo: PackageInfo? = null,
 ) : InstallStage(STAGE_USER_ACTION_REQUIRED) {
 
     val appIcon: Drawable?

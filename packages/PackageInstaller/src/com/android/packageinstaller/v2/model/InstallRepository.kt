@@ -68,6 +68,8 @@ import com.android.packageinstaller.v2.model.PackageUtil.isCallerSessionOwner
 import com.android.packageinstaller.v2.model.PackageUtil.isInstallPermissionGrantedOrRequested
 import com.android.packageinstaller.v2.model.PackageUtil.isPermissionGranted
 import com.android.packageinstaller.v2.model.PackageUtil.localLogv
+import com.android.packageinstaller.v2.ui.SpecialPermissionState
+import com.android.packageinstaller.v2.ui.SpecialRuntimePermUtils
 import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -550,7 +552,7 @@ class InstallRepository(private val context: Context) : EventResultPersister.Eve
             // Since update ownership is being changed, the system will request another
             // user confirmation shortly. Thus, we don't need to ask the user to confirm
             // installation here.
-            initiateInstall()
+            initiateInstall(emptyList())
             null
         } else {
             confirmationSnippet
@@ -731,7 +733,8 @@ class InstallRepository(private val context: Context) : EventResultPersister.Eve
             getUpdateOwners(newPackageInfo, userActionReason, isAppUpdating)
 
         return InstallUserActionRequired(USER_ACTION_REASON_INSTALL_CONFIRMATION, appSnippet,
-            isAppUpdating, existingUpdateOwner, requestedUpdateOwner)
+            isAppUpdating, existingUpdateOwner, requestedUpdateOwner,
+            packageInfo = newPackageInfo)
     }
 
     /**
@@ -1020,8 +1023,10 @@ class InstallRepository(private val context: Context) : EventResultPersister.Eve
      * installation and commit the staged session here. If the installation was session based,
      * signal the PackageInstaller that the user has granted permission to proceed with the install
      */
-    fun initiateInstall() {
+    fun initiateInstall(specialPermissionStates: List<SpecialPermissionState>) {
         if (sessionId > 0) {
+            SpecialRuntimePermUtils.updatePermissionStates(packageInstaller,
+                sessionId, specialPermissionStates)
             packageInstaller.setPermissionsResult(sessionId, true)
             if (localLogv) {
                 Log.i(LOG_TAG, "Install permission granted for session $sessionId")
@@ -1084,6 +1089,8 @@ class InstallRepository(private val context: Context) : EventResultPersister.Eve
         )
         try {
             val session = packageInstaller.openSession(stagedSessionId)
+            SpecialRuntimePermUtils.updatePermissionStates(packageInstaller,
+                stagedSessionId, specialPermissionStates)
             session.commit(pendingIntent.intentSender)
         } catch (e: Exception) {
             Log.e(LOG_TAG, "Session $stagedSessionId could not be opened.", e)

@@ -22,7 +22,7 @@ interface InstallActionListener {
     /**
      * Method to handle a positive response from the user.
      */
-    fun onPositiveResponse(reasonCode: Int)
+    fun onPositiveResponse(reasonCode: Int, specialPermissionStates: List<SpecialPermissionState>)
 
     /**
      * Method to dispatch intent for toggling "install from unknown sources" setting for a package.
