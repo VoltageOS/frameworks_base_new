@@ -32,6 +32,7 @@ import com.android.packageinstaller.stats.StatsUtil.PIA_INSTALL_STAGE_VERIFICATI
 import com.android.packageinstaller.v2.model.InstallRepository
 import com.android.packageinstaller.v2.model.InstallStage
 import com.android.packageinstaller.v2.model.InstallStaging
+import com.android.packageinstaller.v2.ui.SpecialPermissionState
 
 class InstallViewModel(application: Application, val repository: InstallRepository) :
     AndroidViewModel(application) {
@@ -144,8 +145,8 @@ class InstallViewModel(application: Application, val repository: InstallReposito
         updateInstallStage(stage)
     }
 
-    fun initiateInstall() {
-        repository.initiateInstall()
+    fun initiateInstall(specialPermissionStates: List<SpecialPermissionState>) {
+        repository.initiateInstall(specialPermissionStates)
     }
 
     fun abortStaging() {

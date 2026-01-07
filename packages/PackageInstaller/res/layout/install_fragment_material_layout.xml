@@ -30,6 +30,15 @@
 
         <include layout="@layout/app_snippet_layout" />
 
+        <CheckBox
+            android:id="@+id/install_allow_INTERNET_permission"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@android:style/TextAppearance.Material.Subhead"
+            android:text="@string/allow_network_permission_checkbox"
+            android:checked="true"
+            android:visibility="gone" />
+
         <com.google.android.material.progressindicator.LinearProgressIndicator
             android:id="@+id/indeterminate_progress_bar"
             android:indeterminate="true"

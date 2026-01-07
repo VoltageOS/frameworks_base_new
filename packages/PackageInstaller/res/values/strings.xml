@@ -364,4 +364,5 @@
     <!-- Dialog action to close a dialog. [CHAR LIMIT=30] -->
     <string name="close">Close</string>
 
+    <string name="allow_network_permission_checkbox">Allow Network permission</string>
 </resources>
