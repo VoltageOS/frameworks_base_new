@@ -19,6 +19,11 @@ import android.gui.EarlyWakeupInfo
 import android.content.ContentResolver
 import android.provider.Settings
 import android.content.res.Resources
+import android.database.ContentObserver
+import android.os.Handler
+import android.os.Looper
+import android.os.UserHandle
+import android.util.TypedValue
 import android.os.SystemProperties
 import android.util.MathUtils
 import android.view.CrossWindowBlurListeners.CROSS_WINDOW_BLUR_SUPPORTED
@@ -32,8 +37,48 @@ class BlurUtils(
     private val resources: Resources,
     private val contentResolver: ContentResolver
 ) {
+
     val minBlurRadius = resources.getDimensionPixelSize(R.dimen.min_window_blur_radius)
-    val maxBlurRadius = resources.getDimensionPixelSize(R.dimen.max_window_blur_radius)
+    val maxBlurRadius: Int
+
+        get() = if (cachedMaxBlurRadius != -1) cachedMaxBlurRadius else {
+            updateMaxBlurRadius(contentResolver, resources)
+            cachedMaxBlurRadius
+        }
+
+    init {
+        if (settingsObserver == null) {
+            settingsObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+                override fun onChange(selfChange: Boolean) {
+                    updateMaxBlurRadius(contentResolver, resources)
+                }
+            }
+            contentResolver.registerContentObserver(
+                Settings.System.getUriFor("shade_blur_radius"),
+                false,
+                settingsObserver,
+                UserHandle.USER_ALL
+            )
+        }
+        if (cachedMaxBlurRadius == -1) {
+            updateMaxBlurRadius(contentResolver, resources)
+        }
+    }
+
+    companion object {
+        private var cachedMaxBlurRadius: Int = -1
+        private var settingsObserver: ContentObserver? = null
+
+        private fun updateMaxBlurRadius(resolver: ContentResolver, res: Resources) {
+            val radiusDp = Settings.System.getIntForUser(
+                resolver, "shade_blur_radius", 20, UserHandle.USER_CURRENT
+            )
+            cachedMaxBlurRadius = TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP, radiusDp.toFloat(), res.displayMetrics
+            ).toInt()
+        }
+    }
+
     private var lastAppliedBlur = 0
     private var earlyWakeupEnabled = false
     private val earlyWakeupInfo = EarlyWakeupInfo().apply {
@@ -47,7 +92,7 @@ class BlurUtils(
         if (ratio == 0f) {
             return 0f
         }
-        return MathUtils.lerp(minBlurRadius.toFloat(), maxBlurRadius.toFloat(), ratio)
+        return MathUtils.lerp(0f, maxBlurRadius.toFloat(), ratio)
     }
     /**
      * Translates a blur radius in pixels to a ratio between 0 to 1.
@@ -56,7 +101,7 @@ class BlurUtils(
         if (blur == 0f) {
             return 0f
         }
-        return MathUtils.map(minBlurRadius.toFloat(), maxBlurRadius.toFloat(),
+        return MathUtils.map(0f, maxBlurRadius.toFloat(),
                 0f /* maxStart */, 1f /* maxStop */, blur)
     }
     /**
