@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, The Android Open Source Project
+ * Copyright (c) 2026, The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,24 @@
 
 package android.service.personalcontext.embedded;
 
-import android.service.personalcontext.embedded.IInsightSurfaceSession;
+import android.os.ResultReceiver;
+import android.service.personalcontext.embedded.IVisualizationResult;
+import android.service.personalcontext.embedded.InsightSurfaceClientInfo;
 import android.service.personalcontext.insight.ContextInsightWrapper;
 import android.view.SurfaceControlViewHost;
 
 /**
- * An interface implemented by an {@link InisghtSurfaceClient} and called by a visualizer.
+ * An interface implemented by an {@link InsightSurfaceVisualizerService} representing an open
+ * session with an {@link InsightSurfaceClient}.
  * @hide
  */
-interface IInsightSurfaceClient {
-    oneway void onSurfaceCreated(
-        in SurfaceControlViewHost.SurfacePackage surfacePackage, in IInsightSurfaceSession session);
-    oneway void onSurfaceReleased(in SurfaceControlViewHost.SurfacePackage surfacePackage);
-    oneway void onSurfaceUpdated(in SurfaceControlViewHost.SurfacePackage surfacePackage);
-    oneway void onReceiveInsight(in ContextInsightWrapper insight);
-    oneway void onSizeChanged(in int width, in int height);
+interface IInsightSurfaceSession {
+    const int UPDATE_OK = 0;
+    const int UPDATE_DECLINED = 1;
+
+    /** The client has updated its info. */
+    oneway void onClientUpdated(
+        in InsightSurfaceClientInfo oldClientInfo,
+        in InsightSurfaceClientInfo newClientInfo,
+        in ResultReceiver result);
 }
