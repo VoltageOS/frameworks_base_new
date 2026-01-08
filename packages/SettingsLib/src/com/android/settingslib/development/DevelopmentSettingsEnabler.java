@@ -40,13 +40,19 @@ public class DevelopmentSettingsEnabler {
     }
 
     public static boolean isDevelopmentSettingsEnabled(Context context) {
+        return isDevelopmentSettingsEnabled(context, false);
+    }
+
+    public static boolean isDevelopmentSettingsEnabled(Context context, boolean skipAdminCheck) {
         final UserManager um = (UserManager) context.getSystemService(Context.USER_SERVICE);
+        if (!skipAdminCheck && !um.isAdminUser()) {
+            return false;
+        }
         final boolean settingEnabled = Settings.Global.getInt(context.getContentResolver(),
                 Settings.Global.DEVELOPMENT_SETTINGS_ENABLED,
                 Build.TYPE.equals("eng") ? 1 : 0) != 0;
         final boolean hasRestriction = um.hasUserRestriction(
                 UserManager.DISALLOW_DEBUGGING_FEATURES);
-        final boolean isAdmin = um.isAdminUser();
-        return isAdmin && !hasRestriction && settingEnabled;
+        return !hasRestriction && settingEnabled;
     }
 }
