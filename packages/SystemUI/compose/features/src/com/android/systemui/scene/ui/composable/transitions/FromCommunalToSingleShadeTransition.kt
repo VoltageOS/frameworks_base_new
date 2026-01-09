@@ -16,15 +16,16 @@
 
 package com.android.systemui.scene.ui.composable.transitions
 
+import androidx.compose.animation.core.FastOutSlowInEasing
 import com.android.compose.animation.scene.TransitionBuilder
-import com.android.compose.animation.scene.UserActionDistance
+import com.android.systemui.communal.ui.compose.Communal
 
-fun TransitionBuilder.lockscreenToSplitShadeTransition(
-    transitionDistancePx: Float,
-    durationScale: Double = 1.0,
-) {
-    lockscreenFadeOutTransition(durationScale)
-    toSplitShadeTransition(durationScale)
+fun TransitionBuilder.communalToSingleShadeTransition() {
+    toShadeSceneTransition()
 
-    distance = UserActionDistance { _, _, _ -> transitionDistancePx }
+    // Fade out communal
+    timestampRange(easing = FastOutSlowInEasing) {
+        fade(Communal.Elements.Grid)
+        fade(Communal.Elements.Scrim)
+    }
 }
