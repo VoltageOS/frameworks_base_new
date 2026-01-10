@@ -83,7 +83,6 @@ import com.android.server.FgThread;
 import com.android.server.LocalServices;
 import com.android.server.SystemServerInitThreadPool;
 import com.android.server.SystemService;
-import com.android.server.policy.keyguard.UsbPortSecurityHooks;
 
 import dalvik.annotation.optimization.NeverCompile;
 
@@ -1179,14 +1178,9 @@ public class UsbService extends IUsbManager.Stub {
      */
     private boolean shouldUpdateUsbSignaling(String portId, boolean enable,
         int requester, boolean isInternalRequest) {
-
-        // The upstream USB data protection feature conflicts with the broader GrapheneOS external
-        // port protection feature
-        if (isInternalRequest && (UsbPortSecurityHooks.isSupported(mContext) ||
-                !android.hardware.usb.flags.Flags.enableUsbDataSignalStakingInternal())) {
-            return false;
-        }
-
+        if(isInternalRequest &&
+               !android.hardware.usb.flags.Flags.enableUsbDataSignalStakingInternal())
+          return false;
         synchronized (mUsbDisableRequesters) {
             if (!mUsbDisableRequesters.containsKey(portId)) {
                 mUsbDisableRequesters.put(portId, new UsbDataSignalDisableRequesters());

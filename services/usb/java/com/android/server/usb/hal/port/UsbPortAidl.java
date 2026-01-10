@@ -338,6 +338,12 @@ public final class UsbPortAidl implements UsbPortHal {
         long key = operationID;
         synchronized (mLock) {
             try {
+                if (com.android.server.policy.keyguard.UsbPortSecurityHooks
+                        .onHalEnableUsbDataSignal(portName, enable)) {
+                    callback.onOperationComplete(USB_OPERATION_SUCCESS);
+                    return true;
+                }
+
                 if (mProxy == null) {
                     logAndPrint(Log.ERROR, mPw,
                             "enableUsbData: Proxy is null. Retry !opID:"
@@ -422,6 +428,14 @@ public final class UsbPortAidl implements UsbPortHal {
         long key = operationID;
         synchronized (mLock) {
             try {
+                if (com.android.server.policy.keyguard.UsbPortSecurityHooks.isSupported()) {
+                    // enableUsbDataWhileDocked() is not used by AOSP code as of 16 QPR2 and is not
+                    // supported by the GrapheneOS port security API
+                    callback.onOperationComplete(android.hardware.usb
+                            .UsbOperationInternal.USB_OPERATION_ERROR_NOT_SUPPORTED);
+                    return;
+                }
+
                 if (mProxy == null) {
                     logAndPrint(Log.ERROR, mPw,
                             "enableUsbDataWhileDocked: Proxy is null. Retry !opID:"
