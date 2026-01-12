@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.systemui.media.dialog
+package com.android.systemui.media.dialog.ui.model
 
-import com.android.settingslib.media.MediaDevice
+import android.graphics.drawable.Drawable
 
 /**
  * MediaItem represents an item in OutputSwitcher list (could be a MediaDevice, a device group, or a
@@ -25,7 +25,25 @@ import com.android.settingslib.media.MediaDevice
 sealed class MediaItem {
 
     /** Represents a media device. */
-    data class DeviceMediaItem(val mediaDevice: MediaDevice) : MediaItem()
+    data class DeviceMediaItem(
+        /** Text of the title. */
+        val title: String,
+        /** Optional subtitle to be put below the title. */
+        val subtitle: String? = null,
+        /** Optional drawable to show as an icon representing this item. */
+        val icon: Drawable? = null,
+        /** Whether or not the item can be selected. */
+        val isSelectable: Boolean = false,
+        /** Whether or not the item is currently selected by the user. */
+        val isSelected: Boolean = false,
+        /** Whether or not the item is currently connected. */
+        val isConnected: Boolean = false,
+        /**
+         * Click listener to be triggered on user click. If it's null then the device will be
+         * considered a disabled device option.
+         */
+        val onClick: (() -> Unit)? = null,
+    ) : MediaItem()
 
     /**
      * Represents a media device group. This can be either a Cast device group or a Bluetooth
@@ -34,11 +52,11 @@ sealed class MediaItem {
     data object DeviceGroupMediaItem : MediaItem()
 
     /** Represents the section title in the Output Switcher list. */
-    data class GroupDividerMediaItem(
+    data class SectionTitleMediaItem(
         /** Text of the title */
         val title: String,
         /** Whether a group divider has a button that expands group device list */
-        val isExpandable: Boolean = false,
+        val hasGroupExpandButton: Boolean = false,
         /** Whether a group divider has a border at the top */
         val hasTopSeparator: Boolean = false,
     ) : MediaItem()
