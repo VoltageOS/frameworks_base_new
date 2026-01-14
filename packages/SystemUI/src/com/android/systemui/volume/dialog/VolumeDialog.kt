@@ -73,19 +73,22 @@ constructor(
 
     private fun applyLayoutAndGravity() {
         val win = window ?: return
+        val dialogView = win.decorView
+
+        dialogView.layoutDirection = if (volumePanelOnLeft) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
 
         if (isVolumeDialogVertical) {
             win.setLayout(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.MATCH_PARENT,
             )
-            win.setGravity(if (volumePanelOnLeft) Gravity.START else Gravity.END)
+            win.setGravity(if (volumePanelOnLeft) Gravity.LEFT else Gravity.RIGHT)
         } else {
             win.setLayout(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
             )
-            val side = if (volumePanelOnLeft) Gravity.START else Gravity.END
+            val side = if (volumePanelOnLeft) Gravity.LEFT else Gravity.RIGHT
             win.setGravity(Gravity.TOP or side)
         }
     }
