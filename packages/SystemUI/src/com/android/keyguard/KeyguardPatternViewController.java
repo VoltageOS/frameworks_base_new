@@ -112,7 +112,7 @@ public class KeyguardPatternViewController
         }
 
         @Override
-        public void onPatternDetected(List<LockPatternView.Cell> pattern, byte patternSize, LockPatternView.InputMode inputMode) {
+        public void onPatternDetected(final List<LockPatternView.Cell> pattern, byte patternSize) {
             mKeyguardUpdateMonitor.setCredentialAttempted();
             mLockPatternView.disableInput();
             if (mPendingLockCheck != null) {

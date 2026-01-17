@@ -92,7 +92,7 @@ private class OnPatternDetectedListener(
 
     override fun onPatternStart() {}
 
-        override fun onPatternDetected(pattern: List<LockPatternView.Cell>, patternSize: Byte, inputMode: LockPatternView.InputMode) {
+    override fun onPatternDetected(pattern: List<LockPatternView.Cell>, patternSize: Byte) {
         onDetected(pattern, patternSize)
     }
 }

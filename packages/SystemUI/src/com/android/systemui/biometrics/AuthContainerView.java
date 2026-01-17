@@ -487,14 +487,14 @@ public class AuthContainerView extends LinearLayout
             final CredentialViewModel vm = mCredentialViewModelProvider.get();
             ((CredentialView) mCredentialView).init(vm, this, mPanelController, false,
                     mBiometricCallback, mAuthContextPlugins);
+            if (credentialType instanceof PromptKind.Pattern) {
+                LockPatternView lockPatternView = mCredentialView.findViewById(R.id.lockPattern);
+                lockPatternView.setLockPatternSize(
+                        mLockPatternUtils.getLockPatternSize(mConfig.mUserId));
+            }
             credentialView.addView(mCredentialView);
         } else {
             mCredentialView = factory.inflate(layoutResourceId, mLayout, false);
-        if (credentialType instanceof PromptKind.Pattern) {
-            LockPatternView lockPatternView = mCredentialView.findViewById(R.id.lockPattern);
-            lockPatternView.setLockPatternSize(
-                    mLockPatternUtils.getLockPatternSize(mConfig.mUserId));
-        }
             // The background is used for detecting taps / cancelling authentication. Since the
             // credential view is full-screen and should not be canceled from background taps,
             // disable it.

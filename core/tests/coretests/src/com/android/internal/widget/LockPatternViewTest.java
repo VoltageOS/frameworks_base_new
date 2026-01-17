@@ -138,7 +138,8 @@ public class LockPatternViewTest {
                 MotionEvent.obtain(0, 0, MotionEvent.ACTION_DOWN, mDot1x, mDot1y, 1));
         mLockPatternView.onTouchEvent(
                 MotionEvent.obtain(0, 0, MotionEvent.ACTION_UP, mDot1x, mDot1y, 1));
-        verify(mPatternListener).onPatternDetected(any(), any(), LockPatternUtils.PATTERN_SIZE_DEFAULT));
+        verify(mPatternListener).onPatternDetected(any(), any(),
+                LockPatternUtils.PATTERN_SIZE_DEFAULT);
     }
 
     @UiThreadTest

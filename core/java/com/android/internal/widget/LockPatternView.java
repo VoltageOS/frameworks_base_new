@@ -367,19 +367,22 @@ public class LockPatternView extends View {
         /**
          * A pattern was detected from the user.
          * @param pattern The pattern.
+         * @param patternSize The pattern size.
          *
-         * @deprecated use {@link #onPatternDetected(List<Cell>, byte, InputMode)}
+         * @deprecated use {@link #onPatternDetected(List<Cell>, InputMode, byte)}
          */
         @Deprecated
-        default void onPatternDetected(List<Cell> pattern) {}
+        default void onPatternDetected(List<Cell> pattern, byte patternSize) {}
 
         /**
          * A pattern was detected from the user.
          * @param pattern The pattern.
-         * @param patternSize The size of the pattern grid.
          * @param inputMode The input mode that was used to enter the pattern.
+         * @param patternSize The pattern size.
          */
-        void onPatternDetected(List<Cell> pattern, byte patternSize, InputMode inputMode);
+        default void onPatternDetected(List<Cell> pattern, InputMode inputMode, byte patternSize) {
+            onPatternDetected(pattern, patternSize);
+        }
     }
 
     /** An external haptics player for pattern updates. */
@@ -649,6 +652,8 @@ public class LockPatternView extends View {
             mInProgressX = getCenterXForColumn(first.getColumn());
             mInProgressY = getCenterYForRow(first.getRow());
             clearPatternDrawLookup();
+        } else if (displayMode == DisplayMode.Wrong && !mShowErrorPath) {
+            resetPatternCellSize();
         }
         invalidate();
     }
@@ -778,7 +783,7 @@ public class LockPatternView extends View {
     @UnsupportedAppUsage
     private void notifyPatternDetected() {
         if (mOnPatternListener != null) {
-            mOnPatternListener.onPatternDetected(new ArrayList(mPattern), mPatternSize, mInputMode);
+            mOnPatternListener.onPatternDetected(new ArrayList(mPattern), mInputMode, mPatternSize);
         }
     }
 
@@ -1864,12 +1869,8 @@ public class LockPatternView extends View {
         return new SavedState(superState,
                 patternString,
                 mPatternDisplayMode.ordinal(),
-                mPatternSize,
-                mInputEnabled,
-                mInputMode.ordinal(),
-                mInStealthMode,
-                mVisibleDots,
-                mShowErrorPath);
+                mPatternSize, mInputEnabled, mInputMode.ordinal(), mInStealthMode,
+                mVisibleDots, mShowErrorPath);
     }
 
     @Override
@@ -1952,11 +1953,11 @@ public class LockPatternView extends View {
             return mDisplayMode;
         }
 
-        public byte getPatternSize() {
+        byte getPatternSize() {
             return mPatternSize;
         }
 
-        public boolean isInputEnabled() {
+        boolean isInputEnabled() {
             return mInputEnabled;
         }
 
@@ -1968,11 +1969,11 @@ public class LockPatternView extends View {
             return mInStealthMode;
         }
 
-        public boolean isVisibleDots() {
+        boolean isVisibleDots() {
             return mVisibleDots;
         }
 
-        public boolean isShowErrorPath() {
+        boolean isShowErrorPath() {
             return mShowErrorPath;
         }
 
