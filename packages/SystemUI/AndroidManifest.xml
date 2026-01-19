@@ -172,6 +172,7 @@
 
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.CAMERA_OPEN_CLOSE_LISTENER" />
+    <uses-permission android:name="android.permission.BROADCAST_STICKY" />
 
     <!-- Screen Capturing -->
     <uses-permission android:name="android.permission.MANAGE_MEDIA_PROJECTION" />

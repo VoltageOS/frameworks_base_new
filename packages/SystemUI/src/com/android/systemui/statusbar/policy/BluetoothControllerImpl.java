@@ -21,6 +21,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -66,10 +67,14 @@ public class BluetoothControllerImpl implements BluetoothController, BluetoothCa
         CachedBluetoothDevice.Callback, LocalBluetoothProfileManager.ServiceListener {
     private static final String TAG = "BluetoothController";
 
+    public static final String ACTION_BLUETOOTH_BATTERY_UPDATE =
+            "com.android.systemui.action.BLUETOOTH_BATTERY_UPDATE";
+
     private final DumpManager mDumpManager;
     private final BluetoothLogger mLogger;
     private final BluetoothRepository mBluetoothRepository;
     private final LocalBluetoothManager mLocalBluetoothManager;
+    private final Context mContext;
     private final UserManager mUserManager;
     private final int mCurrentUser;
     @GuardedBy("mConnectedDevices")
@@ -107,6 +112,7 @@ public class BluetoothControllerImpl implements BluetoothController, BluetoothCa
         mLocalBluetoothManager = localBluetoothManager;
         mHandler = new H(mainLooper);
         mBackgroundExecutor = executor;
+        mContext = context;
         if (mLocalBluetoothManager != null) {
             mLocalBluetoothManager.getEventManager().registerCallback(this);
             mLocalBluetoothManager.getProfileManager().addServiceListener(this);
@@ -285,6 +291,7 @@ public class BluetoothControllerImpl implements BluetoothController, BluetoothCa
         }
         updateAudioProfile();
         updateBattery();
+        dispatchLauncherUpdate();
     }
 
     private void updateActive() {
@@ -300,6 +307,64 @@ public class BluetoothControllerImpl implements BluetoothController, BluetoothCa
         if (mIsActive != isActive) {
             mIsActive = isActive;
             mHandler.sendEmptyMessage(H.MSG_STATE_CHANGED);
+            dispatchLauncherUpdate();
+        }
+    }
+
+    private void dispatchLauncherUpdate() {
+        ArrayList<String> names = new ArrayList<>();
+        ArrayList<Integer> levels = new ArrayList<>();
+        ArrayList<String> audioFlags = new ArrayList<>();
+        ArrayList<String> addresses = new ArrayList<>();
+
+        if (isBluetoothConnected()) {
+            synchronized (mConnectedDevices) {
+                for (CachedBluetoothDevice device : mConnectedDevices) {
+                    int level = device.getBatteryLevel();
+                    if (level != BluetoothDevice.BATTERY_LEVEL_UNKNOWN) {
+                        boolean isAudio = false;
+                        for (LocalBluetoothProfile profile : device.getProfiles()) {
+                            int id = profile.getProfileId();
+                            if (id == BluetoothProfile.HEADSET || id == BluetoothProfile.A2DP
+                                    || id == BluetoothProfile.LE_AUDIO || id == BluetoothProfile.HEARING_AID) {
+                                isAudio = true; 
+                                break; 
+                            }
+                        }
+
+                        if (isAudio) {
+                            names.add(0, device.getName());
+                            levels.add(0, level);
+                            audioFlags.add(0, "true");
+                            addresses.add(0, device.getAddress());
+                        } else {
+                            names.add(device.getName());
+                            levels.add(level);
+                            audioFlags.add("false");
+                            addresses.add(device.getAddress());
+                        }
+                     }
+                 }
+             }
+         }
+
+        Intent intent = new Intent(ACTION_BLUETOOTH_BATTERY_UPDATE);
+        if (!names.isEmpty()) {
+            intent.putExtra("device_name", names.get(0));
+            intent.putExtra("battery_level", levels.get(0));
+            intent.putExtra("is_audio", Boolean.parseBoolean(audioFlags.get(0)));
+            intent.putExtra("is_connected", true);
+        } else {
+            intent.putExtra("is_connected", false);
+        }
+
+        intent.putStringArrayListExtra("device_list_names", names);
+        intent.putIntegerArrayListExtra("device_list_levels", levels);
+        intent.putStringArrayListExtra("device_list_audio", audioFlags);
+        intent.putStringArrayListExtra("device_list_addresses", addresses);
+        intent.setPackage("com.android.launcher3");
+        if (mContext != null) {
+            mContext.sendStickyBroadcastAsUser(intent, UserHandle.ALL);
         }
     }
 
