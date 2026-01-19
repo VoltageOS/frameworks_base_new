@@ -52,10 +52,18 @@ public class GmcMediaProjectionService extends Service {
 
         Notification n;
         try {
-            // notification icon and text are stored in GmsCompat app
-            n = GmsCompatApp.iGms2Gca().getMediaProjectionNotification();
+            IGms2Gca iGms2Gca = GmsCompatApp.iGms2Gca();
+            if (iGms2Gca != null) {
+                // notification icon and text are stored in GmsCompat app
+                n = iGms2Gca.getMediaProjectionNotification();
+            } else {
+                // GmsCompat app not available, create a basic notification
+                Log.w(TAG, "GmsCompat app not available, using fallback notification");
+                n = createFallbackNotification();
+            }
         } catch (RemoteException e) {
-            throw GmsCompatApp.callFailed(e);
+            Log.e(TAG, "Failed to get notification from GmsCompat app, using fallback", e);
+            n = createFallbackNotification();
         }
 
         startForeground(GmsCoreConst.NOTIF_ID_MEDIA_PROJECTION_SERVICE, n);
@@ -75,6 +83,28 @@ public class GmcMediaProjectionService extends Service {
         }
 
         return START_NOT_STICKY;
+    }
+
+    private Notification createFallbackNotification() {
+        Notification.Builder builder = new Notification.Builder(this)
+                .setContentTitle("Screen sharing active")
+                .setContentText("Your screen is being shared")
+                .setSmallIcon(android.R.drawable.ic_menu_view)
+                .setOngoing(true);
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            android.app.NotificationChannel channel = new android.app.NotificationChannel(
+                    "media_projection",
+                    "Screen Sharing",
+                    android.app.NotificationManager.IMPORTANCE_LOW
+            );
+            android.app.NotificationManager notificationManager = 
+                    getSystemService(android.app.NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+            builder.setChannelId("media_projection");
+        }
+
+        return builder.build();
     }
 
     private static Intent intent() {
