@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package com.android.systemui.scene.shared.model
+package com.android.systemui.communal.shared.model
 
 import com.android.compose.animation.scene.OverlayKey
 import com.android.compose.animation.scene.SceneKey
 import com.android.compose.animation.scene.TransitionKey
 import com.android.compose.animation.scene.content.state.TransitionState
+import com.android.systemui.scene.shared.model.NoOpSceneDataSource
+import com.android.systemui.scene.shared.model.SceneContainerConfig
+import com.android.systemui.scene.shared.model.SceneDataSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,8 +36,10 @@ import kotlinx.coroutines.flow.stateIn
  * delegate isn't set.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class SceneDataSourceDelegator(applicationScope: CoroutineScope, config: SceneContainerConfig) :
-    SceneDataSource {
+class CommunalSceneDataSourceDelegator(
+    applicationScope: CoroutineScope,
+    config: SceneContainerConfig,
+) : SceneDataSource {
     private val noOpDelegate = NoOpSceneDataSource(config.initialSceneKey)
     private val delegateMutable = MutableStateFlow<SceneDataSource>(noOpDelegate)
 
