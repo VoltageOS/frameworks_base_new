@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,24 +16,10 @@
 
 package com.android.systemui.brightness.data.repository
 
-import dagger.Binds
-import dagger.Module
+import kotlinx.coroutines.flow.StateFlow
 
-@Module
-public interface BrightnessDataModule {
+public interface BrightnessMirrorShowingRepository {
+    public val isShowing: StateFlow<Boolean>
 
-    @Binds
-    public fun bindScreenBrightnessRepository(
-        impl: ScreenBrightnessDisplayManagerRepository
-    ): ScreenBrightnessRepository
-
-    @Binds
-    public fun bindPolicyRepository(
-        impl: BrightnessPolicyRepositoryImpl
-    ): BrightnessPolicyRepository
-
-    @Binds
-    public fun bindBrightnessMirrorShowingRepository(
-        impl: BrightnessMirrorShowingRepositoryImpl
-    ): BrightnessMirrorShowingRepository
+    public fun setMirrorShowing(showing: Boolean)
 }
