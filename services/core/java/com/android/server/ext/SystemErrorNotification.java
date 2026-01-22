@@ -5,6 +5,7 @@ import android.annotation.Nullable;
 import android.content.Context;
 import android.content.Intent;
 import android.ext.LogViewerApp;
+import android.os.Binder;
 import android.util.Slog;
 
 public class SystemErrorNotification {
@@ -32,6 +33,11 @@ public class SystemErrorNotification {
         i.putExtra(LogViewerApp.EXTRA_ERROR_TYPE, type);
         i.putExtra(LogViewerApp.EXTRA_SHOW_REPORT_BUTTON, showReportButton);
         Slog.e(TAG, type + ", title: " + title + ", message: " + message);
-        SystemJournalNotif.show(ctx, when, title, i);
+        final long identity = Binder.clearCallingIdentity();
+        try {
+            SystemJournalNotif.show(ctx, when, title, i);
+        } finally {
+            Binder.restoreCallingIdentity(identity);
+        }
     }
 }
