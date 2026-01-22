@@ -505,15 +505,18 @@ public class RecordingService extends Service implements ScreenMediaRecorderList
                         PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE))
                 .build();
 
-        Notification.Action deleteAction = new Notification.Action.Builder(
-                Icon.createWithResource(this, R.drawable.ic_screenrecord),
-                getResources().getString(R.string.screenrecord_delete_label),
-                PendingIntent.getService(
-                        this,
-                        mNotificationId, /* unique request code */
-                        getDeleteIntent(this, uri.toString()),
-                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE))
-                .build();
+        Notification.Action deleteAction = null;
+        if (uri != null) {
+            deleteAction = new Notification.Action.Builder(
+                    Icon.createWithResource(this, R.drawable.ic_screenrecord),
+                    getResources().getString(R.string.screenrecord_delete_label),
+                    PendingIntent.getService(
+                            this,
+                            mNotificationId, /* unique request code */
+                            getDeleteIntent(this, uri.toString()),
+                            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE))
+                    .build();
+        }
 
         Bundle extras = new Bundle();
         extras.putString(Notification.EXTRA_SUBSTITUTE_APP_NAME, strings().getTitle());
@@ -527,9 +530,11 @@ public class RecordingService extends Service implements ScreenMediaRecorderList
                         mNotificationId, /* unique request code */
                         viewIntent,
                         PendingIntent.FLAG_IMMUTABLE))
-                .addAction(shareAction)
-                .addAction(deleteAction)
-                .setAutoCancel(true)
+                .addAction(shareAction);
+        if (deleteAction != null) {
+            builder.addAction(deleteAction);
+        }
+        builder.setAutoCancel(true)
                 .setGroup(GROUP_KEY_SAVED)
                 .addExtras(extras);
 
