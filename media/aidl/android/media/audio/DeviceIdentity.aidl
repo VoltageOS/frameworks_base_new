@@ -16,16 +16,15 @@
 
 package android.media.audio;
 
-import android.content.AttributionSourceState;
-import android.media.audio.IAudioModeSession;
-
 /**
- * {@hide}
+ * Corresponds to the identity (from the perspective of the audio framework) of a audio device,
+ * whose live state is expressed via AudioDeviceInfo.
+ * @hide
  */
-parcelable AudioModeSessionRequest {
-    int mode;
-    boolean isDisplayActiveUseCase;
-    AttributionSourceState attributionSource;
-    AttributionSourceState clientAttribution;
-    int[] noFocusModes;
+@JavaDerive(equals = true, toString = true)
+parcelable DeviceIdentity {
+    // Defaults invalid type/role
+    int role;
+    int type;
+    String address;
 }
