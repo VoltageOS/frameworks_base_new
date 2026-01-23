@@ -14,15 +14,22 @@
  * limitations under the License.
  */
 
-package com.android.wm.shell.desktopai.dagger
+package com.android.wm.shell.desktopai.core
 
 import com.android.wm.shell.dagger.WMSingleton
-import com.android.wm.shell.desktopai.api.ITriggerManager
-import com.android.wm.shell.desktopai.core.CujHandlerRegistry
+import com.android.wm.shell.desktopai.api.CujHandler
+import com.android.wm.shell.desktopai.api.IUserContextService
+import com.android.wm.shell.desktopai.api.TriggerEvent
+import com.android.wm.shell.desktopai.api.config.CujConfiguration
 import javax.inject.Inject
 
-/** Singleton used to initialize all the DesktopAi dependencies in a single place */
 @WMSingleton
-class DesktopAiInitializer
-@Inject
-constructor(triggerManager: ITriggerManager, cujHandlerRegistry: CujHandlerRegistry)
+class ShellCujHandler @Inject constructor(private val contextService: IUserContextService) :
+    CujHandler {
+    override fun handle(cujConfig: CujConfiguration, triggerEvent: TriggerEvent) {
+        // Context collection phase
+        val contextQuery = cujConfig.contextQueryFactory.create(triggerEvent)
+        val contextData = contextService.getContext(contextQuery)
+        // TODO(b/477202336): Use context Data
+    }
+}

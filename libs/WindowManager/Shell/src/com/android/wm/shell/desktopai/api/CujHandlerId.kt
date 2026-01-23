@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.android.wm.shell.desktopai.dagger
+package com.android.wm.shell.desktopai.api
 
-import com.android.wm.shell.dagger.WMSingleton
-import com.android.wm.shell.desktopai.api.ITriggerManager
-import com.android.wm.shell.desktopai.core.CujHandlerRegistry
-import javax.inject.Inject
+/**
+ * Type-safe identifiers for all registered [CujHandler]s. Each object represents a unique handler
+ * that can be registered in the [CujHandlerRegistry].
+ */
+sealed class CujHandlerId(val id: String) {
+    object SendContextHint : CujHandlerId("SEND_CONTEXT_HINT_HANDLER")
 
-/** Singleton used to initialize all the DesktopAi dependencies in a single place */
-@WMSingleton
-class DesktopAiInitializer
-@Inject
-constructor(triggerManager: ITriggerManager, cujHandlerRegistry: CujHandlerRegistry)
+    object ProcessShellContext : CujHandlerId("PROCESS_SHELL_CONTEXT_HANDLER")
+    // Add new handler identifiers here as needed.
+}

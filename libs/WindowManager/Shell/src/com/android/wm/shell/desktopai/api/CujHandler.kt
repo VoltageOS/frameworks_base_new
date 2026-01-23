@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package com.android.wm.shell.desktopai.dagger
+package com.android.wm.shell.desktopai.api
 
-import com.android.wm.shell.dagger.WMSingleton
-import com.android.wm.shell.desktopai.api.ITriggerManager
-import com.android.wm.shell.desktopai.core.CujHandlerRegistry
-import javax.inject.Inject
+import com.android.wm.shell.desktopai.api.config.CujConfiguration
 
-/** Singleton used to initialize all the DesktopAi dependencies in a single place */
-@WMSingleton
-class DesktopAiInitializer
-@Inject
-constructor(triggerManager: ITriggerManager, cujHandlerRegistry: CujHandlerRegistry)
+/** Defines a component that handles a [TriggerEvent] when a CUJ's trigger condition is met. */
+fun interface CujHandler {
+    /**
+     * Handles the incoming trigger event.
+     *
+     * @param cujConfig The CUJ for the event.
+     * @param triggerEvent The event that was received from the trigger layer.
+     */
+    fun handle(cujConfig: CujConfiguration, triggerEvent: TriggerEvent)
+}
