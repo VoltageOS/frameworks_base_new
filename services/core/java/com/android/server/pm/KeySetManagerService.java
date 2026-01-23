@@ -853,14 +853,7 @@ public class KeySetManagerService {
             ArraySet<Long> pubKeys = mKeySetMapping.valueAt(i);
             final int pkSize = pubKeys.size();
             for (int j = 0; j < pkSize; j++) {
-                long pubKeyId = pubKeys.valueAt(j);
-                PublicKeyHandle key = mPublicKeys.get(pubKeyId);
-                if (key == null) {
-                    // match the logic of decrementPublicKeyLPw() above
-                    Slog.wtf(TAG, "addRefCountsFromSavedPackagesLPw: no public key with identifier " + pubKeyId);
-                } else {
-                    key.incrRefCountLPw();
-                }
+                mPublicKeys.get(pubKeys.valueAt(j)).incrRefCountLPw();
             }
         }
         final int numOrphans = orphanedKeySets.size();
