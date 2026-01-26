@@ -62,9 +62,6 @@ public class FusedLocationProvider extends LocationProviderBase {
                 .build();
 
     private static final long MAX_LOCATION_COMPARISON_NS = 11 * 1000000000L; // 11 seconds
-    // Maximum request interval at which we will activate GPS (because GPS sometimes consumes
-    // excessive power with large intervals).
-    private static final long MAX_GPS_INTERVAL_MS = 5 * 1000; // 5 seconds
 
     private final Object mLock = new Object();
 
@@ -171,8 +168,7 @@ public class FusedLocationProvider extends LocationProviderBase {
             mNlpPresent = mLocationManager.hasProvider(NETWORK_PROVIDER);
         }
 
-        boolean requestAllowsGps = mRequest.getQuality() == QUALITY_HIGH_ACCURACY
-                && mRequest.getIntervalMillis() <= MAX_GPS_INTERVAL_MS;
+        boolean requestAllowsGps = !mNlpPresent || mRequest.getQuality() < LocationRequest.QUALITY_LOW_POWER;
         long gpsInterval =
                 mGpsPresent && requestAllowsGps
                         ? mRequest.getIntervalMillis() : INTERVAL_DISABLED;
