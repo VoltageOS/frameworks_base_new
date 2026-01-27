@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-package com.android.wm.shell.desktopai.dagger
+package com.android.wm.shell.desktopai.api
 
-import com.android.wm.shell.dagger.WMSingleton
-import com.android.wm.shell.desktopai.api.ITriggerManager
-import javax.inject.Inject
-
-/** Singleton used to initialize all the DesktopAi dependencies in a single place */
-@WMSingleton class DesktopAiInitializer @Inject constructor(triggerManager: ITriggerManager)
+/**
+ * Represents a request for specific context information.
+ *
+ * This class encapsulates the list of [ContextData] types (by ID) that the client wishes to receive
+ * from the context provider. It allows the server to compute and return only the data explicitly
+ * requested.
+ */
+class ContextQuery
