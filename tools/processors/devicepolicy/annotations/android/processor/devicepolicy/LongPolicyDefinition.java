@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,21 @@
  * limitations under the License.
  */
 
-package android.app.admin;
+package android.processor.devicepolicy;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Internal IPC to send a policy value over the wire.
- * Currently only supports a limited set of built-in types.
- *
- * @hide
+ * Metadata for a long policy.
  */
-union PolicyValueTransport {
-    int integerField;
-    boolean booleanField;
-    long longField;
-    String stringField;
-    List<String> listOfStringField;
+@Retention(RetentionPolicy.SOURCE)
+@Target({ElementType.FIELD})
+public @interface LongPolicyDefinition {
+    /**
+     * Base data for all policies.
+     */
+    PolicyDefinition base();
 }
