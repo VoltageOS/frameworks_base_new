@@ -105,6 +105,10 @@ public interface HistoricalRegistryInterface {
             @AppOpsManager.OpFlags int flags, @Nullable String[] attributionExemptPkgs,
             @NonNull RemoteCallback callback);
 
+    default int[] getOpCodes() {
+        throw new IllegalStateException();
+    }
+
     /**
      * Returns a set of recently used package names based on given op names and other filters.
      */

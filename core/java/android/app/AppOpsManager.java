@@ -10527,6 +10527,16 @@ public class AppOpsManager {
         }
     }
 
+    /** @hide */
+    @SystemApi
+    public void checkHistoricalRegistryConfig(@NonNull String[] extraPermissions) {
+        try {
+            mService.checkHistoricalRegistryConfig(extraPermissions);
+        } catch (RemoteException e) {
+            e.rethrowFromSystemServer();
+        }
+    }
+
     /**
      * @deprecated Use {@link PackageManager#getPackageUid} instead
      */
