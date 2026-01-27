@@ -148,7 +148,7 @@ public class HistoricalRegistry implements HistoricalRegistryInterface {
             "discrete_history_ops_cslist";
 
     // These ops are recorded in short interval ops database for better fidelity.
-    private static final int[] SHORT_INTERVAL_OPS = new int[]{
+    public static final int[] SHORT_INTERVAL_OPS = new int[]{
             OP_PHONE_CALL_MICROPHONE,
             OP_RECEIVE_AMBIENT_TRIGGER_AUDIO,
             OP_RECEIVE_SANDBOX_TRIGGER_AUDIO,
@@ -165,7 +165,7 @@ public class HistoricalRegistry implements HistoricalRegistryInterface {
     };
     // These app ops are deemed important for detecting a malicious app, and are recorded
     // in short interval ops database too for better fidelity.
-    private static final int[] IMPORTANT_OPS_FOR_SECURITY = new int[]{
+    public static final int[] IMPORTANT_OPS_FOR_SECURITY = new int[]{
             OP_GPS,
             OP_ACCESS_NOTIFICATIONS,
             OP_RUN_IN_BACKGROUND,
@@ -354,6 +354,16 @@ public class HistoricalRegistry implements HistoricalRegistryInterface {
         IntArray shortIntervalOps = new IntArray();
         shortIntervalOps.addAll(SHORT_INTERVAL_OPS);
         shortIntervalOps.addAll(IMPORTANT_OPS_FOR_SECURITY);
+
+        int[] standardOps = shortIntervalOps.toArray();
+        Arrays.sort(standardOps);
+
+        for (int op : HistoricalRegistryExt.EXTRA_APP_OPS) {
+            if (Arrays.binarySearch(standardOps, op) < 0) {
+                shortIntervalOps.add(op);
+            }
+        }
+
         return shortIntervalOps.toArray();
     }
 
@@ -633,6 +643,11 @@ public class HistoricalRegistry implements HistoricalRegistryInterface {
         } finally {
             Trace.traceEnd(Trace.TRACE_TAG_SYSTEM_SERVER);
         }
+    }
+
+    @Override
+    public int[] getOpCodes() {
+        return mShortIntervalAppOpsArray;
     }
 
     @Override

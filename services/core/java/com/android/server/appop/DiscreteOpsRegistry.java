@@ -107,14 +107,6 @@ abstract class DiscreteOpsRegistry {
             OP_MONITOR_LOCATION
     };
 
-    // Legacy ops captured in discrete database.
-    private static final String LEGACY_OPS = OP_FINE_LOCATION + "," + OP_COARSE_LOCATION
-            + "," + OP_EMERGENCY_LOCATION + "," + OP_CAMERA + "," + OP_RECORD_AUDIO + ","
-            + OP_PHONE_CALL_MICROPHONE + "," + OP_PHONE_CALL_CAMERA + ","
-            + OP_RECEIVE_AMBIENT_TRIGGER_AUDIO + "," + OP_RECEIVE_SANDBOX_TRIGGER_AUDIO
-            + "," + OP_READ_HEART_RATE + "," + OP_READ_OXYGEN_SATURATION + ","
-            + OP_READ_SKIN_TEMPERATURE + "," + OP_RESERVED_FOR_TESTING;
-
     static final long DEFAULT_DISCRETE_HISTORY_CUTOFF = Duration.ofDays(7).toMillis();
     static final long MAXIMUM_DISCRETE_HISTORY_CUTOFF = Duration.ofDays(30).toMillis();
     // The duration for which the data is kept, default is 7 days and max 30 days enforced.
@@ -245,7 +237,7 @@ abstract class DiscreteOpsRegistry {
     }
 
     private static int[] getDefaultLegacyOps() {
-        return parseOpsList(LEGACY_OPS);
+        throw new IllegalStateException("getDefaultLegacyOps() is expected to never be called");
     }
 
     private static int[] parseOpsList(String opsList) {

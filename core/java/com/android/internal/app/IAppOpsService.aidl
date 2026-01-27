@@ -77,6 +77,7 @@ interface IAppOpsService {
     // Deprecated, use finishProxyOperationWithState instead.
     void finishProxyOperation(IBinder clientId, int code, in AttributionSource attributionSource,
             boolean skipProxyOperation);
+    void checkHistoricalRegistryConfig(in String[] extraPermissions);
     int checkPackage(int uid, String packageName);
     RuntimeAppOpAccessMessage collectRuntimeAppOpAccessMessage();
     MessageSamplingConfig reportRuntimeAppOpAccessMessageAndGetConfig(String packageName,

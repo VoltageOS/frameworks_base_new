@@ -2014,6 +2014,11 @@ public class AppOpsService extends IAppOpsService.Stub {
     }
 
     @Override
+    public void checkHistoricalRegistryConfig(String[] extraPermissions) {
+        HistoricalRegistryExt.checkConfig(mContext, mHistoricalRegistry, extraPermissions);
+    }
+
+    @Override
     public void getHistoricalOpsFromDiskRaw(int uid, String packageName, String attributionTag,
             List<String> opNames, int dataType, int filter, long beginTimeMillis,
             long endTimeMillis, int flags, RemoteCallback callback) {
