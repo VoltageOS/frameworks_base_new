@@ -16,16 +16,19 @@
 
 package android.media.audio;
 
-import android.content.AttributionSourceState;
 import android.media.audio.IAudioModeSession;
 
 /**
- * {@hide}
+ * Callback interface for {@link IAudioModeSession}.
+ * @hide
  */
-parcelable AudioModeSessionRequest {
-    int mode;
-    boolean isDisplayActiveUseCase;
-    AttributionSourceState attributionSource;
-    AttributionSourceState clientAttribution;
-    int[] noFocusModes;
+oneway interface IAudioModeSessionCallback {
+    void onAvailableRoutesChanged(
+            in List<IAudioModeSession.Route> availableRoutes);
+    void onExternalRequestedRouteChanged(in @nullable IAudioModeSession.Route newRoute,
+                                         int requestId);
+    void onPaused();
+    void onResumed(int requestId);
+    void onClosed();
+    void onRoutingResult(int requestId, in @nullable IAudioModeSession.Route route, int status);
 }

@@ -16,16 +16,27 @@
 
 package android.media.audio;
 
-import android.content.AttributionSourceState;
-import android.media.audio.IAudioModeSession;
+import android.media.audio.DeviceIdentity;
 
 /**
- * {@hide}
+ * {@see android.media.AudioModeSession}.
+ * @hide
  */
-parcelable AudioModeSessionRequest {
-    int mode;
-    boolean isDisplayActiveUseCase;
-    AttributionSourceState attributionSource;
-    AttributionSourceState clientAttribution;
-    int[] noFocusModes;
+interface IAudioModeSession {
+    /**
+     * Minimal route identity type.
+     * @hide
+     */
+    @JavaDerive(equals = true, toString = true)
+    parcelable Route {
+        DeviceIdentity output;
+        DeviceIdentity input;
+    }
+
+    void setMode(int mode);
+    void setDisplayActiveUseCase(boolean isDisplayActiveUseCase);
+    int setRequestedRoute(in @nullable Route route);
+    List<Route> getAvailableRoutes();
+    void setClientPaused(boolean isPaused);
+    void close();
 }
