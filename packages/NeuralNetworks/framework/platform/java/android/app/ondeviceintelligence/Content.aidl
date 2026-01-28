@@ -14,17 +14,9 @@
  * limitations under the License.
  */
 
-package android.app.ondeviceintelligence.imagedescription;
-
-import android.app.ondeviceintelligence.imagedescription.ImageDescriptionResponse;
-import android.os.PersistableBundle;
+package android.app.ondeviceintelligence;
 
 /**
- * Interface for receiving image description.
  * @hide
  */
-oneway interface IImageDescriptionCallback {
-    void onSuccess(in ImageDescriptionResponse result) = 1;
-    void onFailure(int errorCode, in String errorMessage, in PersistableBundle errorParams) = 2;
-    void onNewText(in String text) = 3;
-}
+parcelable Content;
