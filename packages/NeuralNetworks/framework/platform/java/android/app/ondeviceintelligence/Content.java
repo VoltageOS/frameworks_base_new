@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.app.ondeviceintelligence.embedding;
+package android.app.ondeviceintelligence;
 
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
@@ -23,38 +23,39 @@ import android.app.ondeviceintelligence.flags.Flags;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import android.app.ondeviceintelligence.Content;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 /**
- * Represents a request to generate embeddings for a specific input.
+ * Container for a multimodal request payload.
+ *
+ * <p>A {@code Content} object represents a single unit of data to be processed, which can contain
+ * multiple parts of different modalities (e.g., text, images).
  *
  * @hide
  */
 @SystemApi
 @FlaggedApi(Flags.FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
-public final class EmbeddingRequest implements Parcelable {
-    private final List<Content> mContent;
+public final class Content implements Parcelable {
+    private final List<Part> mParts;
 
     /**
-     * Constructs a new {@link EmbeddingRequest} with the given payload.
+     * Constructs a new {@link Content} object.
      *
-     * @param content The input list of content to generate embeddings for.
+     * @param parts The list of parts that make up this content.
      */
-    public EmbeddingRequest(@NonNull List<Content> content) {
-        mContent = Collections.unmodifiableList(new ArrayList<>(Objects.requireNonNull(content)));
+    public Content(@NonNull List<Part> parts) {
+        mParts = Collections.unmodifiableList(new ArrayList<>(Objects.requireNonNull(parts)));
     }
 
     /**
-     * Returns the list of content for which embeddings are requested.
+     * Returns the list of {@link android.app.ondeviceintelligence.Part} parts.
      */
     @NonNull
-    public List<Content> getContent() {
-        return mContent;
+    public List<Part> getParts() {
+        return mParts;
     }
 
     @Override
@@ -64,23 +65,23 @@ public final class EmbeddingRequest implements Parcelable {
 
     @Override
     public void writeToParcel(@NonNull Parcel dest, int flags) {
-        dest.writeTypedList(mContent);
+        dest.writeTypedList(mParts);
     }
 
-    public static final @NonNull Creator<EmbeddingRequest> CREATOR =
-            new Creator<EmbeddingRequest>() {
+    public static final @NonNull Creator<Content> CREATOR =
+            new Creator<Content>() {
                 @Override
-                public EmbeddingRequest createFromParcel(Parcel in) {
-                    return new EmbeddingRequest(in);
+                public Content createFromParcel(Parcel in) {
+                    return new Content(in);
                 }
 
                 @Override
-                public EmbeddingRequest[] newArray(int size) {
-                    return new EmbeddingRequest[size];
+                public Content[] newArray(int size) {
+                    return new Content[size];
                 }
             };
 
-    private EmbeddingRequest(Parcel in) {
-        mContent = in.createTypedArrayList(Content.CREATOR);
+    private Content(Parcel in) {
+        mParts = in.createTypedArrayList(Part.CREATOR);
     }
 }
