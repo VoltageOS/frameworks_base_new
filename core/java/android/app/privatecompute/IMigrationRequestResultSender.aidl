@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,11 @@
 
 package android.app.privatecompute;
 
-import android.app.privatecompute.IMigrationRequestResultReceiver;
-import android.os.PersistableBundle;
+import android.app.privatecompute.MigrationRequestResult;
 
 /**
  * @hide
  */
-interface IPccSandboxManager {
-    boolean isPrivateComputeServicesUid(int uid);
-
-    oneway void writeToAuditLog(in PersistableBundle data, in String packageName);
-    oneway void startNonPccProcessForDataMigration(in IMigrationRequestResultReceiver callback);
+oneway interface IMigrationRequestResultSender {
+    void sendResult(in MigrationRequestResult result);
 }
