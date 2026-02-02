@@ -14,15 +14,19 @@
  * limitations under the License.
  */
 
-package com.android.wm.shell.desktopai.api
+package com.android.wm.shell.desktopai.extensions.ace
 
-/**
- * Type-safe identifiers for all registered [CujHandler]s. Each object represents a unique handler
- * that can be registered in the [CujHandlerRegistry].
- */
-sealed class CujHandlerId(val id: String) {
-    object PersonalContextCujHandler : CujHandlerId("CONTEXT_ENGINE_HINT_HANDLER")
+import android.service.personalcontext.hint.ContextHint
+import com.android.wm.shell.desktopai.api.TriggerEvent
 
-    object ShellCujHandler : CujHandlerId("SHELL_CONTEXT_HANDLER")
-    // Add new handler identifiers here as needed.
+/** Interface for a component that can map a [TriggerEvent] to a specific [ContextHint]. */
+interface TriggerEventHintMapper {
+    /**
+     * Maps a TriggerEvent to a ContextHint.
+     *
+     * @param event The TriggerEvent to map.
+     * @return The corresponding ContextHint, or null if the event cannot be mapped or the payload
+     *   is invalid.
+     */
+    fun map(event: TriggerEvent): ContextHint?
 }
