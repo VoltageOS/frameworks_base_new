@@ -630,6 +630,9 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
         if (mEdgeBackPlugin != null) {
             mEdgeBackPlugin.setLongSwipeEnabled(mIsExtendedSwipe);
         }
+        for (DisplayBackGestureHandler handler : mDisplayBackGestureHandlers.values()) {
+            handler.setLongSwipeEnabled(mIsExtendedSwipe);
+        }
 
         final DisplayMetrics dm = res.getDisplayMetrics();
         final float defaultGestureHeight = res.getDimension(
@@ -805,11 +808,13 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
                 displayWindowManager = mDefaultWindowManager;
             }
         }
-        return mDisplayBackGestureHandlerFactory.create(windowContext, displayWindowManager,
+        DisplayBackGestureHandler handler = mDisplayBackGestureHandlerFactory.create(windowContext, displayWindowManager,
                 mBackCallback, (ev) -> {
                     onInputEvent(ev);
                     return Unit.INSTANCE;
                 });
+        handler.setLongSwipeEnabled(mIsExtendedSwipe);
+        return handler;
     }
 
     private void removeAndDisposeDisplayResource(int displayId) {
