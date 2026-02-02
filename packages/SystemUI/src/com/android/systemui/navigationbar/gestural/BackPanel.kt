@@ -293,14 +293,21 @@ class BackPanel(context: Context, private val latencyTracker: LatencyTracker) : 
 
     private fun calculateArrowPath(dx: Float, dy: Float): Path {
         arrowPath.reset()
-        arrowPath.moveTo(dx, -dy)
-        arrowPath.lineTo(0f, 0f)
-        arrowPath.lineTo(dx, dy)
-        arrowPath.moveTo(dx, -dy)
 
         if (drawDoubleArrow) {
-            arrowPath.addPath(arrowPath,
-                    arrowPaint.strokeWidth * 2.0f * (if (isLeftPanel) 1 else -1), 0.0f)
+            val off = arrowPaint.strokeWidth * 5.0f * (if (isLeftPanel) 1 else -1)
+            val shift = -off / 2.0f
+            arrowPath.moveTo(dx + shift, -dy)
+            arrowPath.lineTo(shift, 0f)
+            arrowPath.lineTo(dx + shift, dy)
+            arrowPath.moveTo(dx + shift + off, -dy)
+            arrowPath.lineTo(shift + off, 0f)
+            arrowPath.lineTo(dx + shift + off, dy)
+        } else {
+            arrowPath.moveTo(dx, -dy)
+            arrowPath.lineTo(0f, 0f)
+            arrowPath.lineTo(dx, dy)
+            arrowPath.moveTo(dx, -dy)
         }
 
         return arrowPath
@@ -461,7 +468,10 @@ class BackPanel(context: Context, private val latencyTracker: LatencyTracker) : 
     override fun hasOverlappingRendering() = false
 
     fun setDrawDoubleArrow(enable: Boolean) {
-        drawDoubleArrow = enable
+        if (drawDoubleArrow != enable) {
+            drawDoubleArrow = enable
+            invalidate()
+        }
     }
 
     override fun onDraw(canvas: Canvas) {

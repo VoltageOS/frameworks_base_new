@@ -62,6 +62,8 @@ interface DisplayBackGestureHandler {
 
     fun setEdgeHapticEnabled(enabled: Boolean)
 
+    fun setLongSwipeEnabled(enabled: Boolean)
+
     fun dump(prefix: String, writer: PrintWriter)
 }
 
@@ -141,6 +143,8 @@ constructor(
     override fun setBackArrowVisibility(enabled: Boolean) = edgeBackPlugin.setBackArrowVisibility(enabled)
 
     override fun setEdgeHapticEnabled(enabled: Boolean) = edgeBackPlugin.setEdgeHapticEnabled(enabled)
+
+    override fun setLongSwipeEnabled(enabled: Boolean) = edgeBackPlugin.setLongSwipeEnabled(enabled)
 
     override fun setBatchingEnabled(enabled: Boolean) =
         inputEventReceiver.setBatchingEnabled(enabled)

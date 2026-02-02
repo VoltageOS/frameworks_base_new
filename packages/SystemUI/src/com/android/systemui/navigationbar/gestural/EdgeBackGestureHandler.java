@@ -793,11 +793,13 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
                 displayWindowManager = mDefaultWindowManager;
             }
         }
-        return mDisplayBackGestureHandlerFactory.create(windowContext, displayWindowManager,
+        DisplayBackGestureHandler handler = mDisplayBackGestureHandlerFactory.create(windowContext, displayWindowManager,
                 mBackCallback, (ev) -> {
                     onInputEvent(ev);
                     return Unit.INSTANCE;
                 });
+        handler.setLongSwipeEnabled(mIsExtendedSwipe);
+        return handler;
     }
 
     private void removeAndDisposeDisplayResource(int displayId) {
@@ -1258,6 +1260,7 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
                 mLastDownEventDisplayId = ev.getDisplayId();
                 displayBackGestureHandler.setBackArrowVisibility(mIsBackGestureArrowEnabled);
                 displayBackGestureHandler.setEdgeHapticEnabled(mIsEdgeHapticEnabled);
+                displayBackGestureHandler.setLongSwipeEnabled(mIsExtendedSwipe);
                 dispatchToBackAnimation(ev);
             }
             if (mLogGesture || mIsTrackpadThreeFingerSwipe) {
