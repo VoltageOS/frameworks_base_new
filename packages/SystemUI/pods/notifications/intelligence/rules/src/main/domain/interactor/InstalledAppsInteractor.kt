@@ -14,21 +14,17 @@
  * limitations under the License.
  */
 
-package com.android.systemui.notifications.intelligence.rules.shared.model
+package com.android.systemui.notifications.intelligence.rules.domain.interactor
 
-/** A model for a contact entry. */
-public data class ContactModel(
-    /** The display name for the contact. */
-    val name: String
-)
+import com.android.systemui.dagger.SysUISingleton
+import com.android.systemui.notifications.intelligence.rules.data.repository.InstalledAppsRepository
+import com.android.systemui.notifications.intelligence.rules.shared.model.AppModel
 
-/**
- * Represents the list of contacts inside a rule filter.
- *
- * @param contacts must be non-empty.
- */
-public data class ContactsModel(val contacts: List<ContactModel>) {
-    init {
-        require(contacts.isNotEmpty()) { "Contacts list cannot be empty" }
+/** Interactor for information about installed apps. */
+@SysUISingleton
+class InstalledAppsInteractor(private val repository: InstalledAppsRepository) {
+    /** Fetches all apps installed on the device. */
+    suspend fun fetchInstalledApps(): List<AppModel> {
+        return repository.fetchInstalledApps()
     }
 }
