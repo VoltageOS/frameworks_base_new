@@ -14,20 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.systemui.bundle.phone;
+package com.android.systemui.notifications.intelligence.rules.domain.interactor
 
-import com.android.systemui.brightness.BrightnessModule;
-import com.android.systemui.notifications.intelligence.rules.NotificationRulesModule;
+import com.android.systemui.notifications.intelligence.rules.shared.model.AppModel
 
-import dagger.Module;
-
-// Do not convert this file to kotlin. For build speed purposes it should remain Java so we can
-// skip the slower kotlin compilation process for this module.
-
-@Module(includes = {
-        BrightnessModule.class,
-        NotificationRulesModule.class,
-})
-public interface PodModulePhone {
-    // Leave this empty
+/** Interactor for information about installed apps. */
+public interface InstalledAppsInteractor {
+    /** Fetches all apps installed on the device. */
+    public suspend fun fetchInstalledApps(): List<AppModel>
 }

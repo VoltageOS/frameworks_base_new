@@ -14,20 +14,11 @@
  * limitations under the License.
  */
 
-package com.android.systemui.bundle.phone;
+package com.android.systemui.notifications.intelligence.rules
 
-import com.android.systemui.brightness.BrightnessModule;
-import com.android.systemui.notifications.intelligence.rules.NotificationRulesModule;
+import com.android.systemui.notifications.intelligence.rules.data.NotificationRulesDataModule
+import com.android.systemui.notifications.intelligence.rules.domain.NotificationRulesDomainModule
+import dagger.Module
 
-import dagger.Module;
-
-// Do not convert this file to kotlin. For build speed purposes it should remain Java so we can
-// skip the slower kotlin compilation process for this module.
-
-@Module(includes = {
-        BrightnessModule.class,
-        NotificationRulesModule.class,
-})
-public interface PodModulePhone {
-    // Leave this empty
-}
+@Module(includes = [NotificationRulesDataModule::class, NotificationRulesDomainModule::class])
+public interface NotificationRulesModule
