@@ -14,19 +14,10 @@
  * limitations under the License.
  */
 
-package com.android.systemui.notifications.intelligence.rules.ui.viewmodel
+package com.android.systemui.notifications.intelligence.rules.domain.interactor
 
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.notifications.intelligence.rules.domain.interactor.notificationRulesInteractor
+import com.android.systemui.notifications.intelligence.rules.data.repository.realNotificationRulesRepository
 
-val Kosmos.notificationRulesScreenViewModel by
-    Kosmos.Fixture { NotificationRulesScreenViewModelImpl(notificationRulesInteractor) }
-
-val Kosmos.notificationRulesScreenViewModelFactory by
-    Kosmos.Fixture {
-        object : NotificationRulesScreenViewModel.Factory {
-            override fun create(): NotificationRulesScreenViewModel {
-                return notificationRulesScreenViewModel
-            }
-        }
-    }
+val Kosmos.notificationRulesInteractor by
+    Kosmos.Fixture { NotificationRulesInteractorImpl(realNotificationRulesRepository) }

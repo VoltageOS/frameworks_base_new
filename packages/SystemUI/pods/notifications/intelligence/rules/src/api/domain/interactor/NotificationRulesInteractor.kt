@@ -14,20 +14,15 @@
  * limitations under the License.
  */
 
-package com.android.systemui.notifications.intelligence.rules.ui.viewmodel
+package com.android.systemui.notifications.intelligence.rules.domain.interactor
 
-import com.android.systemui.lifecycle.Activatable
 import com.android.systemui.notifications.intelligence.rules.shared.model.RuleModel
 
-/** A view model for the notification rules screen. */
-public interface NotificationRulesScreenViewModel : Activatable {
-    /** The list of current saved rules for the user. */
+/** An interactor for a user's current notification rules and methods for updating those rules. */
+public interface NotificationRulesInteractor {
+    /** A list of the user's current rules. Backed by snapshot state. */
     public val rules: List<RuleModel>
 
     /** Creates a new rule and adds it to the list of saved rules. */
     public fun createRule(newRule: RuleModel)
-
-    public interface Factory {
-        public fun create(): NotificationRulesScreenViewModel
-    }
 }

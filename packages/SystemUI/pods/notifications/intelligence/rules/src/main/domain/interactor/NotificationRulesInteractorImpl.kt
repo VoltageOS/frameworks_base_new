@@ -14,27 +14,21 @@
  * limitations under the License.
  */
 
-package com.android.systemui.notifications.intelligence.rules.ui.viewmodel
+package com.android.systemui.notifications.intelligence.rules.domain.interactor
 
-import com.android.systemui.lifecycle.HydratedActivatable
-import com.android.systemui.notifications.intelligence.rules.domain.interactor.NotificationRulesInteractor
+import com.android.systemui.dagger.SysUISingleton
+import com.android.systemui.notifications.intelligence.rules.data.repository.NotificationRulesRepository
 import com.android.systemui.notifications.intelligence.rules.shared.model.RuleModel
-import dagger.assisted.AssistedFactory
-import dagger.assisted.AssistedInject
+import javax.inject.Inject
 
-class NotificationRulesScreenViewModelImpl
-@AssistedInject
-constructor(private val interactor: NotificationRulesInteractor) :
-    NotificationRulesScreenViewModel, HydratedActivatable() {
+@SysUISingleton
+class NotificationRulesInteractorImpl
+@Inject
+constructor(private val repository: NotificationRulesRepository) : NotificationRulesInteractor {
     override val rules: List<RuleModel>
-        get() = interactor.rules
+        get() = repository.rules
 
     override fun createRule(newRule: RuleModel) {
-        interactor.createRule(newRule)
-    }
-
-    @AssistedFactory
-    interface Factory : NotificationRulesScreenViewModel.Factory {
-        override fun create(): NotificationRulesScreenViewModelImpl
+        repository.createRule(newRule)
     }
 }
