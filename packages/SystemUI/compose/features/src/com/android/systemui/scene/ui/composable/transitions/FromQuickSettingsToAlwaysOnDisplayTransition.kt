@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,25 +22,23 @@ import com.android.compose.animation.scene.TransitionBuilder
 import com.android.systemui.notifications.ui.composable.Notifications
 import com.android.systemui.plugins.keyguard.ui.composable.elements.LockscreenElementKeys
 import com.android.systemui.qs.shared.ui.QuickSettings
-import com.android.systemui.shade.ui.composable.Shade
+import com.android.systemui.shade.ui.composable.ShadeHeader
 import kotlin.time.Duration.Companion.milliseconds
 
-fun TransitionBuilder.shadeToAlwaysOnDisplayTransition() {
+fun TransitionBuilder.quickSettingsToAlwaysOnDisplayTransition() {
     spec =
         tween(durationMillis = DefaultDuration.inWholeMilliseconds.toInt(), easing = Easings.Linear)
 
     sharedElement(Notifications.Elements.StackPlaceholder, enabled = false)
 
-    // Fade out the shade elements first.
+    // Fade out the Quick Settings elements first.
     fractionRange(end = 0.4f) {
-        fade(Shade.Elements.ShadeElement)
-        fade(Shade.Elements.ShadeHeader)
-        fade(Shade.Elements.BackgroundScrim)
-        fade(Notifications.Elements.StackPlaceholder)
-        fade(QuickSettings.Elements.QuickQuickSettingsAndMedia)
-        fade(QuickSettings.Elements.SplitShadeQuickSettings)
-        fade(QuickSettings.Elements.FooterActions)
-        fade(Notifications.Elements.NotificationScrim)
+        fade(ShadeHeader.Elements.ExpandedContent)
+        fade(ShadeHeader.Elements.Clock)
+        fade(ShadeHeader.Elements.ShadeCarrierGroup)
+        fade(QuickSettings.Elements.BrightnessSlider)
+        fade(QuickSettings.Elements.QuickSettingsContent)
+        fade(Notifications.Elements.HeadsUpNotificationPlaceholder)
     }
 
     // Once the screen is black, fade in the AOD elements.
