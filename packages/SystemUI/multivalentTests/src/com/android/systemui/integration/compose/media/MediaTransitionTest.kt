@@ -13,25 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.android.systemui.media
 
 import android.platform.test.annotations.DisableFlags
 import android.testing.TestableLooper
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.saveable.Saver
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
-import com.android.compose.animation.scene.TestContentScope
+import com.android.compose.animation.scene.ObservableTransitionState
+import com.android.compose.snapshot.ObserveReadsRoot
 import com.android.compose.theme.PlatformTheme
 import com.android.systemui.Flags
-import com.android.systemui.Flags.FLAG_DUAL_SHADE
 import com.android.systemui.SysuiTestCase
-import com.android.systemui.compose.modifiers.resIdToTestTag
 import com.android.systemui.flags.EnableSceneContainer
 import com.android.systemui.integration.SystemUiIntegrationTest
 import com.android.systemui.jank.interactionJankMonitor
@@ -42,12 +39,19 @@ import com.android.systemui.media.remedia.data.repository.setFakeCurrentMedia
 import com.android.systemui.media.remedia.data.repository.setHasMedia
 import com.android.systemui.notifications.intelligence.rules.ui.viewmodel.notificationRulesParentViewModelFactory
 import com.android.systemui.qs.composefragment.dagger.usingMediaInComposeFragment
+import com.android.systemui.qs.ui.composable.QuickSettingsScene
+import com.android.systemui.qs.ui.viewmodel.quickSettingsSceneContentViewModelFactory
+import com.android.systemui.qs.ui.viewmodel.quickSettingsUserActionsViewModelFactory
+import com.android.systemui.scene.sceneContainerTransitions
+import com.android.systemui.scene.sceneContainerViewModelFactory
 import com.android.systemui.scene.session.shared.SessionStorage
 import com.android.systemui.scene.session.ui.composable.SaveableSession
 import com.android.systemui.scene.session.ui.composable.Session
 import com.android.systemui.scene.shared.model.Scenes
+import com.android.systemui.scene.shared.model.sceneDataSourceDelegator
+import com.android.systemui.scene.ui.composable.SceneContainer
+import com.android.systemui.scene.ui.view.sceneJankMonitorFactory
 import com.android.systemui.shade.domain.interactor.enableSingleShade
-import com.android.systemui.shade.domain.interactor.enableSplitShade
 import com.android.systemui.shade.ui.composable.ShadeScene
 import com.android.systemui.shade.ui.composable.WithStatusIconContext
 import com.android.systemui.shade.ui.viewmodel.shadeSceneContentViewModelFactory
@@ -56,7 +60,7 @@ import com.android.systemui.statusbar.notification.stack.ui.view.notificationScr
 import com.android.systemui.statusbar.notification.stack.ui.viewmodel.notificationsPlaceholderViewModelFactory
 import com.android.systemui.statusbar.phone.ui.tintedIconManagerFactory
 import com.android.systemui.testKosmos
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -66,9 +70,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 @TestableLooper.RunWithLooper
 @EnableSceneContainer
-@DisableFlags(FLAG_DUAL_SHADE)
+@DisableFlags(Flags.FLAG_DUAL_SHADE)
 @SystemUiIntegrationTest
-class SwipeDownToMediaTest : SysuiTestCase() {
+class MediaTransitionTest : SysuiTestCase() {
     @get:Rule val composeTestRule = createComposeRule()
 
     private val kosmos = testKosmos()
@@ -82,7 +86,8 @@ class SwipeDownToMediaTest : SysuiTestCase() {
                 init: () -> T,
             ): T = rememberSession(key, inputs = inputs, init = init)
         }
-    private val scene =
+
+    private val shadeScene =
         ShadeScene(
             shadeSession = shadeSession,
             notificationStackScrollView = { kosmos.notificationScrollView },
@@ -95,80 +100,87 @@ class SwipeDownToMediaTest : SysuiTestCase() {
             jankMonitor = kosmos.interactionJankMonitor,
         )
 
+    private val quickSettingsScene =
+        QuickSettingsScene(
+            shadeSession = shadeSession,
+            notificationStackScrollView = { kosmos.notificationScrollView },
+            notificationsPlaceholderViewModelFactory =
+                kosmos.notificationsPlaceholderViewModelFactory,
+            actionsViewModelFactory = kosmos.quickSettingsUserActionsViewModelFactory,
+            contentViewModelFactory = kosmos.quickSettingsSceneContentViewModelFactory,
+            notificationRulesParentViewModelFactory =
+                kosmos.notificationRulesParentViewModelFactory,
+            jankMonitor = kosmos.interactionJankMonitor,
+        )
+
     @Before
     fun setup() {
         kosmos.setFakeCurrentMedia(listOf(kosmos.fakeActiveMedia))
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
+    @DisableFlags(Flags.FLAG_STATUS_BAR_MOBILE_ICON_KAIROS)
     @Test
-    fun swipeDown_showsQqsAndMedia() =
+    fun transitFromShadeToQuickSettings() {
         kosmos.runTest {
             usingMediaInComposeFragment = true
             enableSingleShade()
             setHasMedia(true)
 
-            // Start with the shade closed to properly test the swipe gesture.
-            composeTestRule.setContent {
-                PlatformTheme {
-                    WithStatusIconContext(tintedIconManagerFactory) {
-                        with(scene) {
-                            TestContentScope(currentScene = Scenes.Gone) { Content(Modifier) }
-                        }
-                    }
-                }
-            }
+            composeTestRule.setContent { shadeSceneToQuickSettingsSceneContainer() }
             runCurrent()
             composeTestRule.waitForIdle()
 
-            // Perform a realistic swipe from the top-center edge of the screen.
+            // Verify that the UMO show on shade.
+            composeTestRule
+                .onNodeWithContentDescription(EXPECTED_UMO_CONTENT_DESC, substring = true)
+                .assertIsDisplayed()
+
             composeTestRule.swipeDownFromTopCenter()
             runCurrent()
 
-            // Verify that the QQS panel exists.
-            composeTestRule.onNodeWithTag(QQS_PANEL_TAG, useUnmergedTree = true).assertExists()
-            // Verify that the media controls (UMO) are visible in the shade.
+            // Verify that the UMO show on quick settings.
             composeTestRule
                 .onNodeWithContentDescription(EXPECTED_UMO_CONTENT_DESC, substring = true)
-                .assertExists()
+                .assertIsDisplayed()
         }
+    }
 
-    @DisableFlags(Flags.FLAG_STATUS_BAR_MOBILE_ICON_KAIROS)
-    @Test
-    fun swipeDown_showsQqsAndMedia_splitShade() =
-        kosmos.runTest {
-            usingMediaInComposeFragment = true
-            enableSplitShade()
-            setHasMedia(true)
+    @Composable
+    private fun shadeSceneToQuickSettingsSceneContainer() {
+        val transitionState =
+            MutableStateFlow<ObservableTransitionState>(
+                ObservableTransitionState.Idle(Scenes.Shade)
+            )
 
-            // Start with the shade closed to properly test the swipe gesture.
-            composeTestRule.setContent {
-                PlatformTheme {
-                    WithStatusIconContext(tintedIconManagerFactory) {
-                        with(scene) {
-                            TestContentScope(currentScene = Scenes.Gone) { Content(Modifier) }
-                        }
-                    }
+        PlatformTheme {
+            ObserveReadsRoot {
+                WithStatusIconContext(kosmos.tintedIconManagerFactory) {
+                    val vm =
+                        kosmos.sceneContainerViewModelFactory
+                            .create() {}
+                            .apply { setTransitionState(transitionState = transitionState) }
+
+                    SceneContainer(
+                        viewModel = vm,
+                        sceneByKey =
+                            mapOf(
+                                Scenes.Shade to shadeScene,
+                                Scenes.QuickSettings to quickSettingsScene,
+                            ),
+                        initialSceneKey = Scenes.Shade,
+                        transitionsBuilder = kosmos.sceneContainerTransitions,
+                        overlayByKey = mapOf(),
+                        dataSourceDelegator = kosmos.sceneDataSourceDelegator,
+                        sceneJankMonitorFactory = kosmos.sceneJankMonitorFactory,
+                        onTransitionStart = { _, _ -> },
+                        onSnap = {},
+                    )
                 }
             }
-            runCurrent()
-            composeTestRule.waitForIdle()
-
-            // Perform a realistic swipe from the top-center edge of the screen.
-            composeTestRule.swipeDownFromTopCenter()
-            runCurrent()
-
-            // Verify that the split shade qs exists.
-            composeTestRule.onNodeWithTag(SPLIT_SHADE_QS_TAG).assertExists()
-            // Verify that the media controls (UMO) are visible in the shade.
-            composeTestRule
-                .onNodeWithContentDescription(EXPECTED_UMO_CONTENT_DESC, substring = true)
-                .assertExists()
         }
+    }
 
     private companion object {
-        private val QQS_PANEL_TAG = resIdToTestTag("quick_qs_panel")
-        private const val SPLIT_SHADE_QS_TAG = "element:SplitShadeQuickSettings"
-        private const val EXPECTED_UMO_CONTENT_DESC = "Fake_Music_Player"
+        const val EXPECTED_UMO_CONTENT_DESC = "Fake_Music_Player"
     }
 }
