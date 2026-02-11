@@ -13,15 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.android.wm.shell.shared.bubbles
 
-/** Some features of bubbles aren't available on all devices. This allows easy querying. */
-interface BubbleFeatureConfig {
+class FakeBubbleFeatureConfig : BubbleFeatureConfig {
 
-    /** Returns {@code true} if app bubbles are supported. */
-    fun areAppBubblesSupported(): Boolean
+    /** Override if app bubbles are supported. */
+    var areAppBubblesSupported = true
 
-    /** Returns {@code true} if the scrim can be shown. */
-    fun isScrimEnabled(displayId: Int): Boolean
+    /** Override if the scrim is enabled across any display. */
+    var isScrimEnabled = false
+
+    override fun areAppBubblesSupported(): Boolean {
+        return areAppBubblesSupported
+    }
+
+    override fun isScrimEnabled(displayId: Int): Boolean {
+        return isScrimEnabled
+    }
 }
