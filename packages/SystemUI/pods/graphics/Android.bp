@@ -1,4 +1,3 @@
-//
 // Copyright (C) 2026 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,18 +13,28 @@
 // limitations under the License.
 //
 
+package {
+    default_applicable_licenses: ["frameworks_base_packages_SystemUI_license"],
+}
+
 java_library {
-    name: "com.android.systemui.bundle.phone_dagger",
-    defaults: ["sysui_dagger"],
+    name: "com.android.systemui.graphics_api",
+    defaults: ["sysui_api"],
+}
 
+java_library {
+    name: "com.android.systemui.graphics_main",
+    defaults: ["sysui_main"],
     static_libs: [
-        "com.android.systemui.brightness_dagger",
-        "com.android.systemui.graphics_dagger",
-        "com.android.systemui.notifications.intelligence.rules_dagger",
-        "com.android.systemui.notifications.intelligence.rules.ui_dagger",
+        "com.android.systemui.graphics_api",
+        "SystemUISharedLib",
     ],
+}
 
-    visibility: [
-        "//visibility:public",
+java_library {
+    name: "com.android.systemui.graphics_dagger",
+    defaults: ["sysui_dagger"],
+    static_libs: [
+        "com.android.systemui.graphics_main",
     ],
 }
