@@ -16,16 +16,22 @@
 
 package com.android.systemui.notifications.intelligence.rules.domain.interactor
 
-import com.android.systemui.dagger.SysUISingleton
-import com.android.systemui.notifications.intelligence.rules.data.repository.InstalledAppsRepository
-import com.android.systemui.notifications.intelligence.rules.shared.model.AppModel
-import javax.inject.Inject
+import android.content.ContentResolver
+import android.content.Context
+import android.graphics.Bitmap
+import android.net.Uri
+import androidx.core.graphics.createBitmap
+import com.android.systemui.notifications.intelligence.rules.shared.model.ContactModel
 
-@SysUISingleton
-class InstalledAppsInteractorImpl
-@Inject
-constructor(private val repository: InstalledAppsRepository) : InstalledAppsInteractor {
-    override suspend fun fetchInstalledApps(): List<AppModel> {
-        return repository.fetchInstalledApps()
+class FakeContactsInteractor : ContactsInteractor {
+    override suspend fun fetchContacts(
+        searchQuery: String,
+        contentResolver: ContentResolver,
+    ): List<ContactModel> {
+        return emptyList()
+    }
+
+    override suspend fun loadBitmapFromUri(uri: Uri, userContext: Context, sizePx: Int): Bitmap {
+        return createBitmap(sizePx, sizePx)
     }
 }

@@ -16,16 +16,12 @@
 
 package com.android.systemui.notifications.intelligence.rules.domain.interactor
 
-import com.android.systemui.dagger.SysUISingleton
-import com.android.systemui.notifications.intelligence.rules.data.repository.InstalledAppsRepository
 import com.android.systemui.notifications.intelligence.rules.shared.model.AppModel
-import javax.inject.Inject
 
-@SysUISingleton
-class InstalledAppsInteractorImpl
-@Inject
-constructor(private val repository: InstalledAppsRepository) : InstalledAppsInteractor {
+class FakeInstalledAppsInteractor : InstalledAppsInteractor {
+    var installedApps: List<AppModel> = emptyList()
+
     override suspend fun fetchInstalledApps(): List<AppModel> {
-        return repository.fetchInstalledApps()
+        return installedApps
     }
 }
