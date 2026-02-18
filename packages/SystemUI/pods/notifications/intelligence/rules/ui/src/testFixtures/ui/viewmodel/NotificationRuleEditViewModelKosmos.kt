@@ -17,21 +17,19 @@
 package com.android.systemui.notifications.intelligence.rules.ui.viewmodel
 
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.notifications.intelligence.rules.domain.interactor.notificationRulesInteractor
+import com.android.systemui.notifications.intelligence.rules.domain.interactor.fakeContactsInteractor
+import com.android.systemui.notifications.intelligence.rules.domain.interactor.fakeInstalledAppsInteractor
+import com.android.systemui.notifications.intelligence.rules.shared.model.DraftRuleModel
 
-val Kosmos.notificationRulesScreenViewModel by
+val Kosmos.notificationRuleEditViewModelFactory by
     Kosmos.Fixture {
-        NotificationRulesScreenViewModelImpl(
-            notificationRulesInteractor,
-            notificationRuleEditViewModelFactory,
-        )
-    }
-
-val Kosmos.notificationRulesScreenViewModelFactory by
-    Kosmos.Fixture {
-        object : NotificationRulesScreenViewModel.Factory {
-            override fun create(): NotificationRulesScreenViewModel {
-                return notificationRulesScreenViewModel
+        object : NotificationRuleEditViewModel.Factory {
+            override fun create(draftRule: DraftRuleModel): NotificationRuleEditViewModel {
+                return NotificationRuleEditViewModelImpl(
+                    draftRule,
+                    fakeContactsInteractor,
+                    fakeInstalledAppsInteractor,
+                )
             }
         }
     }

@@ -16,22 +16,12 @@
 
 package com.android.systemui.notifications.intelligence.rules.ui.viewmodel
 
-import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.notifications.intelligence.rules.domain.interactor.notificationRulesInteractor
+/** Represents the current state of the rules screen. */
+public sealed interface RulesScreenViewState {
+    /** The rules screen is showing a list of the currently saved rules. */
+    public data object CurrentRules : RulesScreenViewState
 
-val Kosmos.notificationRulesScreenViewModel by
-    Kosmos.Fixture {
-        NotificationRulesScreenViewModelImpl(
-            notificationRulesInteractor,
-            notificationRuleEditViewModelFactory,
-        )
-    }
-
-val Kosmos.notificationRulesScreenViewModelFactory by
-    Kosmos.Fixture {
-        object : NotificationRulesScreenViewModel.Factory {
-            override fun create(): NotificationRulesScreenViewModel {
-                return notificationRulesScreenViewModel
-            }
-        }
-    }
+    /** The rules screen is showing an edit page for the given [editVewModel.rule]. */
+    public data class RuleEdit(val editViewModel: NotificationRuleEditViewModel) :
+        RulesScreenViewState
+}
