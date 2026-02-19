@@ -16,36 +16,48 @@
 
 package com.android.wm.shell.flicker.bubbles
 
+import android.graphics.Bitmap
 import android.platform.test.annotations.Presubmit
+import android.platform.test.annotations.RequiresDevice
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.tools.NavBar
-import android.tools.device.apphelpers.CalculatorAppHelper
+import android.tools.Rotation
+import android.tools.traces.component.ComponentNameMatcher.Companion.LAUNCHER
 import android.tools.traces.component.ComponentNameMatcher.Companion.TASK_BAR
-import androidx.test.filters.RequiresDevice
+import com.android.server.wm.flicker.helpers.ImeShownOnAppStartHelper
 import com.android.wm.shell.Flags
 import com.android.wm.shell.Utils.testSetupRule
+import com.android.wm.shell.flicker.bubbles.EnterBubbleFromOverviewSingleAppWithImeTest.Companion.testApp
 import com.android.wm.shell.flicker.bubbles.testcase.EnterBubbleTestCases
+import com.android.wm.shell.flicker.bubbles.testcase.ImeBecomesVisibleAndBubbleIsShrunkTestCase
 import com.android.wm.shell.flicker.bubbles.utils.AssumptionRule
 import com.android.wm.shell.flicker.bubbles.utils.BubbleFlickerTestHelper.waitAndAssertBubbleAppInExpandedState
 import com.android.wm.shell.flicker.bubbles.utils.RecordTraceWithTransitionRule
 import com.android.wm.shell.flicker.bubbles.utils.RunOncePerParameterRule
 import com.android.wm.shell.flicker.utils.SplitScreenUtils
+import com.google.common.truth.Truth.assertThat
 import org.junit.FixMethodOrder
 import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.junit.runners.MethodSorters
+import org.junit.runners.Parameterized
+import org.junit.runners.Parameterized.Parameters
 
 /**
- * Test entering bubble for a live tile app via clicking bubble menu in taskbar from overview.
+ * Test entering bubble via clicking bubble menu in taskbar from the overview screen with a single
+ * app. The app is set up to show the IME when it is launched.
  *
- * To run this test: `atest WMShellExplicitFlickerTestsBubbles:EnterBubbleFromOverviewLiveTileTest`
+ * To run this test:
+ * ```
+ *     atest WMShellExplicitFlickerTestsBubbles:EnterBubbleFromOverviewSingleAppWithImeTest
+ * ```
  *
  * Pre-steps:
  * ```
- *     Launch [secondApp] to ensure we have something in overview after [testApp] becomes a bubble.
- *     Launch [testApp] and enter overview from it to ensure it remains running in overview.
- *     Enter overview from [testApp] to ensure it remains running in overview.
+ *     Launch [testApp].
+ *     Enter overview via home screen.
  * ```
  *
  * Actions:
@@ -57,41 +69,50 @@ import org.junit.runners.MethodSorters
  * Verified tests:
  * - [BubbleFlickerTestBase]
  * - [EnterBubbleTestCases]
+ * - [ImeBecomesVisibleAndBubbleIsShrunkTestCase]
  */
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CREATE_ANY_BUBBLE)
 @RequiresDevice
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Presubmit
-class EnterBubbleFromOverviewLiveTileTest : BubbleFlickerTestBase(), EnterBubbleTestCases {
+@RunWith(Parameterized::class)
+class EnterBubbleFromOverviewSingleAppWithImeTest(navBar: NavBar) :
+    BubbleFlickerTestBase(), EnterBubbleTestCases, ImeBecomesVisibleAndBubbleIsShrunkTestCase {
 
     companion object {
-        private val secondApp = CalculatorAppHelper(instrumentation)
+        private val testApp = ImeShownOnAppStartHelper(instrumentation, Rotation.ROTATION_0)
+
+        /** The screenshot took at the end of the transition. */
+        private lateinit var bitmapAtEnd: Bitmap
+
+        /** The IME inset observed from [testApp] */
+        private var imeInset: Int = -1
 
         private val recordTraceWithTransitionRule =
             RecordTraceWithTransitionRule(
                 setUpBeforeTransition = {
                     // Make sure testApp is in hotseat so it appears in taskbar in overview
                     SplitScreenUtils.createShortcutOnHotseatIfNotExist(tapl, testApp.appName)
-
-                    secondApp.launchViaIntent(wmHelper)
                     testApp.launchViaIntent(wmHelper)
-
-                    tapl.launchedAppState.switchToOverview()
+                    tapl.goHome().switchToOverview()
                 },
                 transition = {
                     val taskBar = tapl.overview.taskbar ?: error("Taskbar not found")
                     val appIcon = taskBar.getAppIcon(testApp.appName)
                     appIcon.openMenu().bubbleMenuItem.click()
                     waitAndAssertBubbleAppInExpandedState(testApp, wmHelper)
+                    testApp.waitIMEShown(wmHelper)
+                    bitmapAtEnd = instrumentation.uiAutomation.takeScreenshot()
+                    imeInset = testApp.retrieveImeBottomInset()
+                    assertThat(imeInset).isGreaterThan(0)
                 },
                 tearDownAfterTransition = {
                     testApp.exit(wmHelper)
-                    secondApp.exit(wmHelper)
                     tapl.goHome()
                 },
             )
 
-        private val navBar = NavBar.MODE_GESTURAL
+        @Parameters(name = "{0}") @JvmStatic fun data(): List<NavBar> = NavBar.entries
     }
 
     @get:Rule(order = 1)
@@ -112,34 +133,25 @@ class EnterBubbleFromOverviewLiveTileTest : BubbleFlickerTestBase(), EnterBubble
     override val traceDataReader
         get() = recordTraceWithTransitionRule.reader
 
+    override val testApp
+        get() = Companion.testApp
+
+    override val bitmapAtEnd
+        get() = Companion.bitmapAtEnd
+
+    override val expectedImeInset
+        get() = imeInset
+
+    @Test
     override fun focusChanges() {
         eventLogSubject.focusChanges(
-            testApp.toWindowName(), // LOST, test starts with app running in live tile
-            TASK_BAR.toWindowName(), // GAINED, open taskbar app menu
-            testApp.toWindowName(), // GAINED, open as bubble
+            LAUNCHER.toWindowName(), // LOST, start in overview
+            TASK_BAR.toWindowName(), // GAINED, interacting with taskbar
+            testApp.toWindowName(), // GAINED, the app is running in bubble mode
         )
     }
 
-    @Ignore("The app is running in live-tile mode in overview, so it starts in visible state")
+    @Ignore("Ime shows up during the transition, so the Bubble view can get occluded")
     @Test
-    override fun appLayerBecomesVisible() {}
-
-    @Ignore("The app is running in live-tile mode in overview, so it starts in visible state")
-    @Test
-    override fun appWindowBecomesVisible() {}
-
-    @Test
-    override fun appLayerMoveInSingleDirection() {
-        // TODO(b/483519862): live-tile to bubble animation needs to be fixed
-    }
-
-    @Test
-    override fun appLayerResizeConsistently() {
-        // TODO(b/483519862): live-tile to bubble animation needs to be fixed
-    }
-
-    @Test
-    override fun launcherLayerIsAlwaysVisible() {
-        // TODO(b/483519862): live-tile to bubble animation needs to be fixed
-    }
+    override fun appLayerResizeConsistently() {}
 }
