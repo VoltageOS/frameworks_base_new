@@ -196,4 +196,7 @@
     <string name="quick_settings_animation_scale_off">Animations off</string>
     <string name="qs_animation_scale_dialog_title">Animation Speed</string>
 
+    <!-- Nirvana QS tile -->
+    <string name="quick_settings_nirvana_label">Nirvana Mode</string>
+
 </resources>
