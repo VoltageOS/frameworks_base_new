@@ -42,6 +42,7 @@ import com.android.systemui.qs.tiles.SleepModeTile
 import com.android.systemui.qs.tiles.SoundTile
 import com.android.systemui.qs.tiles.VolumeQSTile
 import com.android.systemui.qs.tiles.UsbTetherTile
+import com.android.systemui.qs.tiles.NirvanaTile
 import com.android.systemui.qs.tiles.VPNTetheringTile
 import com.android.systemui.qs.tiles.VolumeTile
 import com.android.systemui.qs.tiles.VpnTile
@@ -190,6 +191,12 @@ interface VoltageModule {
     @IntoMap
     @StringKey(VolumeTile.TILE_SPEC)
     fun bindVolumeTile(volumeTile: VolumeTile): QSTileImpl<*>
+
+    /** Inject NirvanaTile into tileMap in QSModule */
+    @Binds
+    @IntoMap
+    @StringKey(NirvanaTile.TILE_SPEC)
+    fun bindNirvanaTile(nirvanaTile: NirvanaTile): QSTileImpl<*>
 
     /** Inject VpnTile into tileMap in QSModule */
     @Binds
@@ -563,6 +570,21 @@ interface VoltageModule {
                 ),
                 instanceId = uiEventLogger.getNewInstanceId(),
                 category = TileCategory.DISPLAY
+            )
+        }
+
+        @Provides
+        @IntoMap
+        @StringKey(NirvanaTile.TILE_SPEC)
+        fun provideNirvanaTileConfig(uiEventLogger: QsEventLogger): QSTileConfig {
+            return QSTileConfig(
+                tileSpec = TileSpec.create(NirvanaTile.TILE_SPEC),
+                uiConfig = QSTileUIConfig.Resource(
+                    iconRes = R.drawable.ic_qs_nirvana,
+                    labelRes = R.string.quick_settings_nirvana_label
+                ),
+                instanceId = uiEventLogger.getNewInstanceId(),
+                category = TileCategory.UTILITIES
             )
         }
 
