@@ -1110,6 +1110,33 @@ public class DisplayRotation {
      * @param lastRotation The most recently used rotation.
      * @return The surface rotation to use.
      */
+    /**
+     * Returns the per-app orientation override for the given package without updating the cache.
+     * If no override is set, returns {@code baseOrientation} unchanged.
+     */
+    @ScreenOrientation
+    int peekPerAppRotationAsOrientation(String packageName,
+            @ScreenOrientation int baseOrientation) {
+        if (packageName == null) return baseOrientation;
+        try {
+            final IActivityManager service = ActivityManager.getService();
+            if (service == null) return baseOrientation;
+            final int result = service.getRotationForApp(packageName);
+            switch (result) {
+                case PER_APP_ROTATION_PORTRAIT:
+                    return ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+                case PER_APP_ROTATION_LANDSCAPE:
+                    return ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+                case PER_APP_ROTATION_FULL_SENSOR:
+                    return ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR;
+                default:
+                    return baseOrientation;
+            }
+        } catch (RemoteException e) {
+            return baseOrientation;
+        }
+    }
+
     @Surface.Rotation
     int rotationForOrientation(@ScreenOrientation int orientation,
             @Surface.Rotation int lastRotation) {
