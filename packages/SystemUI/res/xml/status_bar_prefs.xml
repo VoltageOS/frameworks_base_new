@@ -184,4 +184,10 @@
         android:title="@string/projection_privacy_indicator_title"
         sysui:defValue="true" />
 
+    <com.android.systemui.tuner.TunerSwitch
+        android:icon="@drawable/ic_statusbar_bluetooth_battery"
+        android:key="system:bluetooth_show_battery"
+        android:title="@string/bluetooth_battery_icon_title"
+        sysui:defValue="true" />
+
 </PreferenceScreen>

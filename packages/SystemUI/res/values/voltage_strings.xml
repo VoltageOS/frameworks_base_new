@@ -300,4 +300,7 @@
     <!-- Nirvana QS tile -->
     <string name="quick_settings_nirvana_label">Nirvana Mode</string>
 
+    <!-- Bluetooth battery icon -->
+    <string name="bluetooth_battery_icon_title">Bluetooth battery</string>
+
 </resources>
