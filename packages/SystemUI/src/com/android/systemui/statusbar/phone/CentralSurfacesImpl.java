@@ -1322,8 +1322,18 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
                             mOnGoingActionProgressController =
                                  new OnGoingActionProgressController(
                                          mContext,
-                                     statusBarViewController.getOngoingActionProgressGroup(), mNotificationListener,
-                                     mKeyguardStateController, mHeadsUpManager);
+                                         statusBarViewController.getOngoingActionProgressGroup(), 
+                                         mNotificationListener,
+                                         mKeyguardStateController, 
+                                         mHeadsUpManager,
+                                         com.android.systemui.Dependency.get(com.android.systemui.statusbar.policy.FlashlightController.class),
+                                         com.android.systemui.Dependency.get(com.android.systemui.statusbar.policy.HotspotController.class),
+                                         null,
+                                         mBatteryController,
+                                         null,
+                                         mBroadcastDispatcher,
+                                         null,
+                                         null);
                         }
 			mBurnInProtectionController.setPhoneStatusBarView(
     				(PhoneStatusBarView) mPhoneStatusBarViewController.getPhoneStatusBarView()

@@ -151,6 +151,14 @@ constructor(
     private val notificationListener: NotificationListener,
     private val keyguardStateController: KeyguardStateController,
     private val headsUpManager: HeadsUpManager,
+    private val flashlightController: com.android.systemui.statusbar.policy.FlashlightController,
+    private val hotspotController: com.android.systemui.statusbar.policy.HotspotController,
+    private val zenModeController: com.android.systemui.statusbar.policy.ZenModeController,
+    private val batteryController: com.android.systemui.statusbar.policy.BatteryController,
+    private val nextAlarmController: com.android.systemui.statusbar.policy.NextAlarmController,
+    private val broadcastDispatcher: com.android.systemui.broadcast.BroadcastDispatcher,
+    private val caffeineController: com.android.systemui.statusbar.policy.CaffeineController,
+    private val notifSuppressController: com.android.systemui.statusbar.policy.NotificationSuppressController,
 ) {
     fun create(root: ViewGroup, andThen: (ViewGroup) -> Unit): ComposeView {
         val composeView = ComposeView(root.context)
@@ -179,6 +187,14 @@ constructor(
                         notificationListener = notificationListener,
                         keyguardStateController = keyguardStateController,
                         headsUpManager = headsUpManager,
+                        flashlightController = flashlightController,
+                        hotspotController = hotspotController,
+                        zenModeController = zenModeController,
+                        batteryController = batteryController,
+                        nextAlarmController = nextAlarmController,
+                        broadcastDispatcher = broadcastDispatcher,
+                        caffeineController = caffeineController,
+                        notifSuppressController = notifSuppressController,
                         modifier = Modifier.sysUiResTagContainer(),
                     )
                 }
@@ -221,6 +237,14 @@ fun StatusBarRoot(
     notificationListener: NotificationListener,
     keyguardStateController: KeyguardStateController,
     headsUpManager: HeadsUpManager,
+    flashlightController: com.android.systemui.statusbar.policy.FlashlightController,
+    hotspotController: com.android.systemui.statusbar.policy.HotspotController,
+    zenModeController: com.android.systemui.statusbar.policy.ZenModeController,
+    batteryController: com.android.systemui.statusbar.policy.BatteryController,
+    nextAlarmController: com.android.systemui.statusbar.policy.NextAlarmController,
+    broadcastDispatcher: com.android.systemui.broadcast.BroadcastDispatcher,
+    caffeineController: com.android.systemui.statusbar.policy.CaffeineController,
+    notifSuppressController: com.android.systemui.statusbar.policy.NotificationSuppressController,
     modifier: Modifier = Modifier,
 ) {
     val displayId = parent.context.displayId
@@ -283,6 +307,14 @@ fun StatusBarRoot(
                         notificationListener = notificationListener,
                         keyguardStateController = keyguardStateController,
                         headsUpManager = headsUpManager,
+                        flashlightController = flashlightController,
+                        hotspotController = hotspotController,
+                        zenModeController = zenModeController,
+                        batteryController = batteryController,
+                        nextAlarmController = nextAlarmController,
+                        broadcastDispatcher = broadcastDispatcher,
+                        caffeineController = caffeineController,
+                        notifSuppressController = notifSuppressController,
                         context = context,
                     )
                 }
@@ -427,6 +459,14 @@ private fun addStartSideComposable(
     notificationListener: NotificationListener,
     keyguardStateController: KeyguardStateController,
     headsUpManager: HeadsUpManager,
+    flashlightController: com.android.systemui.statusbar.policy.FlashlightController,
+    hotspotController: com.android.systemui.statusbar.policy.HotspotController,
+    zenModeController: com.android.systemui.statusbar.policy.ZenModeController,
+    batteryController: com.android.systemui.statusbar.policy.BatteryController,
+    nextAlarmController: com.android.systemui.statusbar.policy.NextAlarmController,
+    broadcastDispatcher: com.android.systemui.broadcast.BroadcastDispatcher,
+    caffeineController: com.android.systemui.statusbar.policy.CaffeineController,
+    notifSuppressController: com.android.systemui.statusbar.policy.NotificationSuppressController,
     context: Context,
 ) {
     val startSideExceptHeadsUp =
@@ -513,7 +553,15 @@ private fun addStartSideComposable(
                         context,
                         notificationListener,
                         keyguardStateController,
-                        headsUpManager
+                        headsUpManager,
+                        flashlightController,
+                        hotspotController,
+                        zenModeController,
+                        batteryController,
+                        nextAlarmController,
+                        broadcastDispatcher,
+                        caffeineController,
+                        notifSuppressController
                     )
                 }
                 
