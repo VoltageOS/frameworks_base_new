@@ -37,6 +37,7 @@ import com.android.systemui.shade.ShadeController
 import com.android.systemui.shade.ShadeLogger
 import com.android.systemui.shade.ShadeViewController
 import com.android.systemui.shade.data.repository.ShadeDisplaysRepository
+import com.android.systemui.broadcast.BroadcastDispatcher
 import com.android.systemui.shade.display.StatusBarTouchShadeDisplayPolicy
 import com.android.systemui.shade.display.domain.interactor.ShadeExpansionTargetDisplayInteractor
 import com.android.systemui.shade.domain.interactor.PanelExpansionInteractor
@@ -50,8 +51,11 @@ import com.android.systemui.statusbar.notification.headsup.HeadsUpManager
 import com.android.systemui.statusbar.NotificationListener
 import com.android.systemui.statusbar.OnGoingActionProgressController
 import com.android.systemui.statusbar.OnGoingActionProgressGroup
+import com.android.systemui.statusbar.policy.BatteryController
 import com.android.systemui.statusbar.policy.Clock
 import com.android.systemui.statusbar.policy.ConfigurationController
+import com.android.systemui.statusbar.policy.FlashlightController
+import com.android.systemui.statusbar.policy.HotspotController
 import com.android.systemui.statusbar.policy.KeyguardStateController
 import com.android.systemui.statusbar.window.StatusBarWindowControllerStore
 import com.android.systemui.statusbar.window.StatusBarWindowStateController
@@ -97,6 +101,10 @@ private constructor(
     private val notificationListener: NotificationListener,
     private val keyguardStateController: KeyguardStateController,
     private val headsUpManager: HeadsUpManager,
+    private val flashlightController: FlashlightController,
+    private val hotspotController: HotspotController,
+    private val batteryController: BatteryController,
+    private val broadcastDispatcher: BroadcastDispatcher,
 ) : ViewController<PhoneStatusBarView>(view) {
 
     private var ongoingActionProgressController: OnGoingActionProgressController? = null
@@ -220,6 +228,14 @@ private constructor(
                 notificationListener,
                 keyguardStateController,
                 headsUpManager,
+                flashlightController,
+                hotspotController,
+                null,
+                batteryController,
+                null,
+                broadcastDispatcher,
+                null,
+                null,
             )
         }
     }
@@ -503,6 +519,10 @@ private constructor(
         private val notificationListener: NotificationListener,
         private val keyguardStateController: KeyguardStateController,
         private val headsUpManager: HeadsUpManager,
+        private val flashlightController: FlashlightController,
+        private val hotspotController: HotspotController,
+        private val batteryController: BatteryController,
+        private val broadcastDispatcher: BroadcastDispatcher,
     ) {
         fun create(view: PhoneStatusBarView): PhoneStatusBarViewController {
             return PhoneStatusBarViewController(
@@ -531,6 +551,10 @@ private constructor(
                 notificationListener,
                 keyguardStateController,
                 headsUpManager,
+                flashlightController,
+                hotspotController,
+                batteryController,
+                broadcastDispatcher,
             )
         }
     }
