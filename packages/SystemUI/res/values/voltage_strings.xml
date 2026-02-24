@@ -265,4 +265,7 @@
     <string name="battery_info_notif_deep_sleep">Deep sleep <xliff:g id="duration" example="4h 0m 43s">%1$s</xliff:g>  ·  <xliff:g id="pct" example="78%">%2$s</xliff:g></string>
     <string name="battery_info_notif_awake">Awake <xliff:g id="duration" example="1h 4m 31s">%1$s</xliff:g>  ·  <xliff:g id="pct" example="21%">%2$s</xliff:g></string>
 
+    <!-- Bluetooth battery icon -->
+    <string name="bluetooth_battery_icon_title">Bluetooth battery</string>
+
 </resources>
