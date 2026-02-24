@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,14 @@ package com.android.wm.shell.windowdecor.caption
 
 import android.app.ActivityManager.RunningTaskInfo
 import android.app.assist.AssistContent
+import android.graphics.Insets
+import android.graphics.Rect
 import android.os.Looper
 import android.platform.test.annotations.EnableFlags
 import android.testing.AndroidTestingRunner
 import android.testing.TestableLooper
 import android.view.Display
+import android.view.InsetsState
 import android.view.SurfaceControl
 import android.window.WindowContainerTransaction
 import com.android.testing.wm.util.StubTransaction
@@ -35,6 +38,7 @@ import com.android.wm.shell.apptoweb.AppToWebRepositoryImpl
 import com.android.wm.shell.apptoweb.AssistContentRequester
 import com.android.wm.shell.common.DisplayController
 import com.android.wm.shell.common.MultiInstanceHelper
+import com.android.wm.shell.desktopmode.DesktopTestHelpers.createFullscreenTask
 import com.android.wm.shell.desktopmode.DesktopUserRepositories
 import com.android.wm.shell.shared.desktopmode.FakeDesktopConfig
 import com.android.wm.shell.shared.desktopmode.FakeDesktopState
@@ -42,12 +46,9 @@ import com.android.wm.shell.splitscreen.SplitScreenController
 import com.android.wm.shell.sysui.ShellInit
 import com.android.wm.shell.transition.Transitions
 import com.android.wm.shell.windowdecor.HandleMenu
-import com.android.wm.shell.windowdecor.LayoutMenu
-import com.android.wm.shell.windowdecor.LayoutMenuFactory
 import com.android.wm.shell.windowdecor.WindowDecoration2.RelayoutParams
 import com.android.wm.shell.windowdecor.WindowDecorationActions
 import com.android.wm.shell.windowdecor.WindowDecorationTestHelper.TestWindowDecorTaskResourceLoader
-import com.android.wm.shell.windowdecor.WindowDecorationTestHelper.createOpaqueAppHeaderTask
 import com.android.wm.shell.windowdecor.WindowManagerWrapper
 import com.android.wm.shell.windowdecor.caption.CaptionController.CaptionType
 import com.android.wm.shell.windowdecor.common.viewhost.WindowDecorViewHost
@@ -63,11 +64,10 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.ArgumentMatchers.anyBoolean
 import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
@@ -75,14 +75,14 @@ import org.mockito.kotlin.spy
 import org.mockito.kotlin.whenever
 
 /**
- * Tests for [appHeaderController].
+ * Tests for [FullscreenHeaderController].
  *
- * Build/Install/Run: atest WMShellUnitTests:AppHeaderControllerTests
+ * Build/Install/Run: atest WMShellUnitTests:FullscreenHeaderControllerTests
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidTestingRunner::class)
 @TestableLooper.RunWithLooper(setAsMainLooper = true)
-class AppHeaderControllerTests : ShellTestCase() {
+class FullscreenHeaderControllerTests : ShellTestCase() {
     private val mockSplitScreenController = mock<SplitScreenController>()
     private val mockDisplayController = mock<DisplayController>()
     private val mockWindowDecorationActions = mock<WindowDecorationActions>()
@@ -91,12 +91,12 @@ class AppHeaderControllerTests : ShellTestCase() {
     private val mockWindowManagerWrapper = mock<WindowManagerWrapper>()
     private val mockMultiInstanceHelper = mock<MultiInstanceHelper>()
     private val mockHandleMenuFactory = spy(HandleMenu.HandleMenuFactory)
-    private val mockLayoutMenuFactory = mock<LayoutMenuFactory>()
     private val mockDisplay = mock<Display>()
     private val mockViewHost = mock<WindowDecorViewHost>()
     private val mockViewHostSupplier = mock<WindowDecorViewHostSupplier<WindowDecorViewHost>>()
     private val mockAssistContentRequester = mock<AssistContentRequester>()
     private val mockAssistContent = mock<AssistContent>()
+    private val mockInsetsState = mock<InsetsState>()
 
     private val testDispatcher = StandardTestDispatcher(TestCoroutineScheduler())
     private val testHandler = TestHandler(Looper.getMainLooper())
@@ -111,8 +111,7 @@ class AppHeaderControllerTests : ShellTestCase() {
 
     private lateinit var userRepositories: DesktopUserRepositories
     private lateinit var appToWebRepository: AppToWebRepositoryImpl
-    private lateinit var appHeaderController: AppHeaderController
-    private lateinit var taskInfo: RunningTaskInfo
+    private lateinit var fullscreenHeaderController: FullscreenHeaderController
 
     @Before
     fun setup() {
@@ -149,11 +148,15 @@ class AppHeaderControllerTests : ShellTestCase() {
             callback.onAssistContentAvailable(mockAssistContent)
         }
         whenever(mockDisplayController.getDisplay(anyInt())).thenReturn(mockDisplay)
+        whenever(mockDisplayController.getInsetsState(anyInt())).thenReturn(mockInsetsState)
+        whenever(mockInsetsState.calculateInsets(any<Rect>(), any<Rect>(), anyInt(), anyBoolean()))
+            .thenReturn(Insets.NONE)
         whenever(mockViewHostSupplier.acquire(any(), any())).thenReturn(mockViewHost)
         shellInit.init()
 
-        taskInfo = createOpaqueAppHeaderTask()
-        appHeaderController = createAppHeaderController(taskInfo).apply { relayout(taskInfo) }
+        val taskInfo = createFullscreenTask()
+        fullscreenHeaderController =
+            createFullscreenHeaderController(taskInfo).apply { relayout(taskInfo) }
     }
 
     @After
@@ -166,77 +169,16 @@ class AppHeaderControllerTests : ShellTestCase() {
     @Test
     @EnableFlags(Flags.FLAG_ENABLE_WINDOW_DECORATION_REFACTOR)
     fun createHandleMenu_notCreatedWhenHandleMenuJobCreationActive() = runTest {
-        appHeaderController.createHandleMenu(minimumInstancesFound = true)
-        appHeaderController.createHandleMenu(minimumInstancesFound = true)
+        fullscreenHeaderController.createHandleMenu(minimumInstancesFound = true)
+        fullscreenHeaderController.createHandleMenu(minimumInstancesFound = true)
         testScope.advanceUntilIdle()
 
         // Verify menu was only created once
         mockHandleMenuFactory.verifyHandleMenuCreated()
     }
 
-    @Test
-    fun relayout_taskLosesFocus_closesMenus() = runTest {
-        // Start focused
-        val paramsFocused =
-            RelayoutParams(
-                runningTaskInfo = taskInfo,
-                captionType = CaptionType.APP_HEADER,
-                hasGlobalFocus = true,
-                isCaptionVisible = true,
-            )
-        appHeaderController.relayout(
-            paramsFocused,
-            decorationSurface,
-            mockDisplay,
-            context,
-            StubTransaction(),
-            StubTransaction(),
-            WindowContainerTransaction(),
-        )
-
-        // Open layout menu
-        val mockLayoutMenu = mock<LayoutMenu>()
-        whenever(
-                mockLayoutMenuFactory.create(
-                    any(),
-                    any(),
-                    any(),
-                    any(),
-                    any(),
-                    any(),
-                    any(),
-                    any(),
-                    any(),
-                )
-            )
-            .thenReturn(mockLayoutMenu)
-        appHeaderController.createLayoutMenu()
-        assertTrue(appHeaderController.isLayoutMenuActive)
-
-        // Lose focus
-        val paramsUnfocused =
-            RelayoutParams(
-                runningTaskInfo = taskInfo,
-                captionType = CaptionType.APP_HEADER,
-                hasGlobalFocus = false,
-                isCaptionVisible = true,
-            )
-        appHeaderController.relayout(
-            paramsUnfocused,
-            decorationSurface,
-            mockDisplay,
-            context,
-            StubTransaction(),
-            StubTransaction(),
-            WindowContainerTransaction(),
-        )
-
-        // Verify menu is closed
-        assertFalse(appHeaderController.isLayoutMenuActive)
-    }
-
-    private fun createAppHeaderController(taskInfo: RunningTaskInfo) =
-        AppHeaderController(
+    private fun createFullscreenHeaderController(taskInfo: RunningTaskInfo) =
+        FullscreenHeaderController(
             taskInfo = taskInfo,
             windowDecorViewHostSupplier = mockViewHostSupplier,
             userContext = context,
@@ -261,7 +203,6 @@ class AppHeaderControllerTests : ShellTestCase() {
             gestureInterceptor = mock(),
             appToWebRepository = appToWebRepository,
             handleMenuFactory = mockHandleMenuFactory,
-            layoutMenuFactory = mockLayoutMenuFactory,
             rootTaskDisplayAreaOrganizer = mock(),
             windowDecorCaptionRepository = mock(),
             onLongClickListener = mock(),
@@ -270,7 +211,7 @@ class AppHeaderControllerTests : ShellTestCase() {
             focusTransitionObserver = mock(),
         )
 
-    private fun AppHeaderController.relayout(taskInfo: RunningTaskInfo) {
+    private fun FullscreenHeaderController.relayout(taskInfo: RunningTaskInfo) {
         relayout(
             params = RelayoutParams(taskInfo, CaptionType.APP_HEADER),
             parentContainer = decorationSurface,
