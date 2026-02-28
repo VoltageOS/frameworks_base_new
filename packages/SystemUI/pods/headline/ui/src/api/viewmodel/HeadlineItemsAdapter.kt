@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-package com.android.systemui.headline.ui.compose
+package com.android.systemui.headline.ui.viewmodel
 
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import com.android.systemui.headline.ui.viewmodel.HeadlineViewModel
+import kotlinx.coroutines.flow.Flow
 
-/** Interface for the Headline UI composer. */
-public interface Headline {
-    /** Renders the headline UI. */
-    @Composable public fun Content(viewModelFactory: HeadlineViewModel.Factory, modifier: Modifier)
+/** Adapter to provide the list of [HeadlineItem] coming from the SysUI monolith. */
+public interface HeadlineItemsAdapter {
+    public val headlineItems: Flow<List<HeadlineItem>>
 }

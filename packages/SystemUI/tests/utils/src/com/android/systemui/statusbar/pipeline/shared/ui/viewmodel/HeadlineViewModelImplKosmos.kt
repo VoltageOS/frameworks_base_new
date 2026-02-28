@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-package com.android.systemui.headline.ui.compose
+package com.android.systemui.statusbar.pipeline.shared.ui.viewmodel
 
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import com.android.systemui.headline.ui.viewmodel.HeadlineViewModel
+import com.android.systemui.kosmos.Kosmos
 
-/** Interface for the Headline UI composer. */
-public interface Headline {
-    /** Renders the headline UI. */
-    @Composable public fun Content(viewModelFactory: HeadlineViewModel.Factory, modifier: Modifier)
-}
+val Kosmos.headlineViewModelImpl: HeadlineViewModelImpl by
+    Kosmos.Fixture { HeadlineViewModelImpl(headlineItemsAdapter) }
+
+val Kosmos.headlineViewModelImplFactory: HeadlineViewModelImpl.Factory by
+    Kosmos.Fixture {
+        object : HeadlineViewModelImpl.Factory {
+            override fun create(): HeadlineViewModelImpl = headlineViewModelImpl
+        }
+    }
