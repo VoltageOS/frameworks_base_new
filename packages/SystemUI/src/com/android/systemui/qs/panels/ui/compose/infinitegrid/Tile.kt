@@ -59,6 +59,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -367,7 +368,10 @@ private fun TileExpandable(
 ) {
     Expandable(
         controller = rememberExpandableController(color = color, shape = shape),
-        modifier = modifier.clip(shape).verticalSquish(squishiness),
+        modifier = modifier.graphicsLayer {
+            this.clip = true
+            this.shape = shape
+        }.verticalSquish(squishiness),
         useModifierBasedImplementation = true,
     ) {
         content(hapticsViewModel?.createStateAwareExpandable(it) ?: it)
@@ -411,9 +415,14 @@ fun LargeStaticTile(
 ) {
     val colors = TileDefaults.getColorForState(uiState = uiState, iconOnly = false)
 
+    val tileShape by TileDefaults.animateTileShapeAsState(state = uiState.state)
+
     Box(
         modifier
-            .clip(TileDefaults.animateTileShapeAsState(state = uiState.state).value)
+            .graphicsLayer {
+                this.clip = true
+                this.shape = tileShape
+            }
             .background(colors.background)
             .height(TileHeight)
             .largeTilePadding()
