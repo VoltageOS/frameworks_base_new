@@ -23,8 +23,6 @@ import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
-import android.widget.ImageView
-import android.widget.ProgressBar
 import androidx.annotation.VisibleForTesting
 import com.android.systemui.Gefingerpoken
 import com.android.systemui.battery.BatteryMeterView
@@ -46,7 +44,6 @@ import com.android.systemui.shade.shared.flag.ShadeWindowGoesAround
 import com.android.systemui.statusbar.core.StatusBarConnectedDisplays
 import com.android.systemui.statusbar.data.repository.StatusBarConfigurationController
 import com.android.systemui.statusbar.data.repository.StatusBarContentInsetsProviderStore
-import com.android.systemui.statusbar.OnGoingActionProgressGroup
 import com.android.systemui.statusbar.policy.Clock
 import com.android.systemui.statusbar.policy.ConfigurationController
 import com.android.systemui.statusbar.window.StatusBarWindowControllerStore
@@ -311,18 +308,6 @@ private constructor(
                 !upOrCancel || shadeController.isExpandedVisible,
             )
         }
-    }
-
-    fun getOngoingActionProgressGroup(): OnGoingActionProgressGroup {
-        return OnGoingActionProgressGroup(
-            mView.findViewById(R.id.status_bar_ongoing_action_chip),
-            mView.findViewById(R.id.ongoing_action_app_icon) as ImageView,
-            mView.findViewById(R.id.app_action_progress) as ProgressBar,
-
-	    mView.findViewById(R.id.ongoing_progress_chip_compact),
-            mView.findViewById(R.id.ongoing_action_app_icon_compact) as ImageView,
-            mView.findViewById(R.id.circular_progress) as ProgressBar
-        )
     }
 
     fun getPhoneStatusBarView(): View = mView
