@@ -24,8 +24,6 @@ import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
-import android.widget.ImageView
-import android.widget.ProgressBar
 import androidx.annotation.VisibleForTesting
 import com.android.systemui.Gefingerpoken
 import com.android.systemui.display.dagger.SystemUIDisplaySubcomponent.DisplayAware
@@ -37,26 +35,16 @@ import com.android.systemui.shade.ShadeController
 import com.android.systemui.shade.ShadeLogger
 import com.android.systemui.shade.ShadeViewController
 import com.android.systemui.shade.data.repository.ShadeDisplaysRepository
-import com.android.systemui.broadcast.BroadcastDispatcher
 import com.android.systemui.shade.display.StatusBarTouchShadeDisplayPolicy
 import com.android.systemui.shade.display.domain.interactor.ShadeExpansionTargetDisplayInteractor
 import com.android.systemui.shade.domain.interactor.PanelExpansionInteractor
 import com.android.systemui.shade.domain.interactor.ShadeModeInteractor
 import com.android.systemui.statusbar.core.StatusBarEventForwardingModernization
-import com.android.systemui.statusbar.core.StatusBarRootModernization
 import com.android.systemui.statusbar.data.repository.StatusBarConfigurationController
 import com.android.systemui.statusbar.gesture.StatusBarLongPressGestureDetector
 import com.android.systemui.statusbar.layout.StatusBarContentInsetsProvider
-import com.android.systemui.statusbar.notification.headsup.HeadsUpManager
-import com.android.systemui.statusbar.NotificationListener
-import com.android.systemui.statusbar.OnGoingActionProgressController
-import com.android.systemui.statusbar.OnGoingActionProgressGroup
-import com.android.systemui.statusbar.policy.BatteryController
 import com.android.systemui.statusbar.policy.Clock
 import com.android.systemui.statusbar.policy.ConfigurationController
-import com.android.systemui.statusbar.policy.FlashlightController
-import com.android.systemui.statusbar.policy.HotspotController
-import com.android.systemui.statusbar.policy.KeyguardStateController
 import com.android.systemui.statusbar.window.StatusBarWindowControllerStore
 import com.android.systemui.statusbar.window.StatusBarWindowStateController
 import com.android.systemui.unfold.UNFOLD_STATUS_BAR
@@ -98,16 +86,7 @@ private constructor(
     private val shadeExpansionTargetDisplayInteractor: ShadeExpansionTargetDisplayInteractor,
     private val lazyShadeDisplaysRepository: Lazy<ShadeDisplaysRepository>,
     private val statusBarWindowControllerStore: StatusBarWindowControllerStore,
-    private val notificationListener: NotificationListener,
-    private val keyguardStateController: KeyguardStateController,
-    private val headsUpManager: HeadsUpManager,
-    private val flashlightController: FlashlightController,
-    private val hotspotController: HotspotController,
-    private val batteryController: BatteryController,
-    private val broadcastDispatcher: BroadcastDispatcher,
 ) : ViewController<PhoneStatusBarView>(view) {
-
-    private var ongoingActionProgressController: OnGoingActionProgressController? = null
 
     private lateinit var clock: Clock
     private lateinit var startSideContainer: View
@@ -220,24 +199,6 @@ private constructor(
         }
         progressProvider?.setReadyToHandleTransition(true)
         configurationController.addCallback(configurationListener)
-
-        if (!StatusBarRootModernization.isEnabled && ongoingActionProgressController == null) {
-            ongoingActionProgressController = OnGoingActionProgressController(
-                mView.context,
-                getOngoingActionProgressGroup(),
-                notificationListener,
-                keyguardStateController,
-                headsUpManager,
-                flashlightController,
-                hotspotController,
-                null,
-                batteryController,
-                null,
-                broadcastDispatcher,
-                null,
-                null,
-            )
-        }
     }
 
     private fun addCursorSupportToIconContainers() {
@@ -350,18 +311,6 @@ private constructor(
                 !upOrCancel || shadeController.isExpandedVisible,
             )
         }
-    }
-
-    fun getOngoingActionProgressGroup(): OnGoingActionProgressGroup {
-        return OnGoingActionProgressGroup(
-            mView.findViewById(R.id.status_bar_ongoing_action_chip),
-            mView.findViewById(R.id.ongoing_action_app_icon) as ImageView,
-            mView.findViewById(R.id.app_action_progress) as ProgressBar,
-
-	    mView.findViewById(R.id.ongoing_progress_chip_compact),
-            mView.findViewById(R.id.ongoing_action_app_icon_compact) as ImageView,
-            mView.findViewById(R.id.circular_progress) as ProgressBar
-        )
     }
 
     fun getPhoneStatusBarView(): View = mView
@@ -516,13 +465,6 @@ private constructor(
         private val shadeExpansionTargetDisplayInteractor: ShadeExpansionTargetDisplayInteractor,
         private val lazyShadeDisplaysRepository: Lazy<ShadeDisplaysRepository>,
         private val statusBarWindowControllerStore: StatusBarWindowControllerStore,
-        private val notificationListener: NotificationListener,
-        private val keyguardStateController: KeyguardStateController,
-        private val headsUpManager: HeadsUpManager,
-        private val flashlightController: FlashlightController,
-        private val hotspotController: HotspotController,
-        private val batteryController: BatteryController,
-        private val broadcastDispatcher: BroadcastDispatcher,
     ) {
         fun create(view: PhoneStatusBarView): PhoneStatusBarViewController {
             return PhoneStatusBarViewController(
@@ -548,13 +490,6 @@ private constructor(
                 shadeExpansionTargetDisplayInteractor,
                 lazyShadeDisplaysRepository,
                 statusBarWindowControllerStore,
-                notificationListener,
-                keyguardStateController,
-                headsUpManager,
-                flashlightController,
-                hotspotController,
-                batteryController,
-                broadcastDispatcher,
             )
         }
     }
