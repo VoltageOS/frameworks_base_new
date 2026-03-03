@@ -14,10 +14,16 @@
  * limitations under the License.
  */
 
-package com.android.systemui.statusbar.quickactions.data.repository
+package com.android.systemui.statusbar.quickactions.domain.interactor
 
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.statusbar.quickactions.data.repository.impl.QuickActionChipsRepositoryImpl
+import com.android.systemui.scene.domain.interactor.sceneInteractor
+import com.android.systemui.statusbar.quickactions.data.repository.quickActionChipsRepository
 
-val Kosmos.quickActionChipsRepository by Kosmos.Fixture { FakeQuickActionChipsRepository() }
-val Kosmos.realQuickActionChipsRepository by Kosmos.Fixture { QuickActionChipsRepositoryImpl() }
+val Kosmos.quickActionsInteractor by
+    Kosmos.Fixture {
+        QuickActionsInteractor(
+            repository = quickActionChipsRepository,
+            sceneInteractor = sceneInteractor,
+        )
+    }
