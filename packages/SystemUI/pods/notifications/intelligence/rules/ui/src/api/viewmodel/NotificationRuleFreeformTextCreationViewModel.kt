@@ -14,22 +14,24 @@
  * limitations under the License.
  */
 
-package com.android.systemui.notifications.intelligence.rules.data.repository
+package com.android.systemui.notifications.intelligence.rules.ui.viewmodel
 
+import androidx.compose.foundation.text.input.TextFieldState
 import com.android.systemui.notifications.intelligence.rules.shared.model.ActionModel
 import com.android.systemui.notifications.intelligence.rules.shared.model.DraftRuleModel
-import com.android.systemui.notifications.intelligence.rules.shared.model.RuleModel
 
-/**
- * A repository storing a user's current notification rules and methods for updating those rules.
- */
-public interface NotificationRulesRepository {
-    /** A list of the user's current rules. Backed by snapshot state. */
-    public val rules: List<RuleModel>
+/** View model for the screen allowing a user to input freeform text in order to create a rule. */
+public interface NotificationRuleFreeformTextCreationViewModel {
+    /** The currently-selected action on the screen. */
+    public var selectedAction: ActionModel
+
+    /** The currently-inputted text on the screen. */
+    public val enteredText: TextFieldState
 
     /** Creates a draft rule based on the freeform text inputted by the user. */
-    public suspend fun createDraftRuleFromFreeformText(action: ActionModel, text: String): DraftRuleModel
+    public suspend fun createDraftRuleFromFreeformText(): DraftRuleModel
 
-    /** Creates a new rule and adds it to the list of saved rules. */
-    public fun createRule(newRule: RuleModel)
+    public interface Factory {
+        public fun create(): NotificationRuleFreeformTextCreationViewModel
+    }
 }
