@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package com.android.systemui.statusbar.quickactions.shared.model
+package com.android.systemui.scene.ui.composable.transitions
 
-import android.graphics.Rect
-import com.android.systemui.statusbar.quickactions.popups.ui.viewmodel.StatusBarPopupViewModel
+import androidx.compose.animation.core.tween
+import com.android.compose.animation.scene.TransitionBuilder
+import com.android.systemui.statusbar.quickactions.ui.compose.QuickActions
+import kotlin.time.Duration.Companion.milliseconds
 
-/**
- * A Model representing the currently active quick action panel in the status bar. QuickActionPanels
- * are panels anchored to a specific QuickActionChip in the status bar.
- */
-data class QuickActionPanelModel(
-    val chipId: QuickActionChipId,
-    val displayId: Int,
-    val anchorBounds: Rect,
-    val panelContentViewModelFactory: StatusBarPopupViewModel.Factory,
-)
+fun TransitionBuilder.toQuickActionsTransition(durationScale: Double = 1.0) {
+    spec = tween(durationMillis = (DefaultDuration * durationScale).inWholeMilliseconds.toInt())
+
+    fade(QuickActions.Elements.Panel)
+}
+
+private val DefaultDuration = 300.milliseconds
