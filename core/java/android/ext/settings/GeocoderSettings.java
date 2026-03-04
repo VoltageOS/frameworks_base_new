@@ -6,12 +6,12 @@ import android.provider.Settings;
 public class GeocoderSettings {
 
     public static final int GEOCODER_DISABLED = 0;
-    public static final int GEOCODER_SERVER_NOMINATIM = 1;
-    public static final int GEOCODER_SERVER_GRAPHENEOS_PROXY = 2;
+    public static final int GEOCODER_SERVER_OPENSTREETMAPS = 1;
+    public static final int GEOCODER_SERVER_GRAPHENEOS = 2;
 
     public static final IntSetting GEOCODER_SETTING = new IntSetting(
             Setting.Scope.GLOBAL, Settings.Global.GEOCODER,
             GEOCODER_DISABLED, // default
-            GEOCODER_SERVER_GRAPHENEOS_PROXY, GEOCODER_SERVER_NOMINATIM, GEOCODER_DISABLED // valid values
+            GEOCODER_SERVER_GRAPHENEOS, GEOCODER_SERVER_OPENSTREETMAPS, GEOCODER_DISABLED // valid values
     );
 }
