@@ -210,7 +210,7 @@ class MediaSessionManagerHelper private constructor(private val context: Context
 
     private fun getActiveLocalMediaController(): MediaController? {
         var localController: MediaController? = null
-        val remoteMediaSessionLists = mutableListOf<String>()
+        var remoteController: MediaController? = null
         // mediaSessionManager can be null if the service is not available yet.
         // Though in this class's init it's fetched with '!!', defensive check here is fine.
         mediaSessionManager.getActiveSessions(null)?.forEach { controller ->
@@ -221,23 +221,17 @@ class MediaSessionManagerHelper private constructor(private val context: Context
                 return@forEach
             }
 
-            if (playbackInfo.playbackType == MediaController.PlaybackInfo.PLAYBACK_TYPE_REMOTE) {
-                if (localController != null && localController?.packageName == controller.packageName) {
-                    localController = null // Prioritize local if remote is from same app
-                }
-                if (!remoteMediaSessionLists.contains(controller.packageName)) {
-                    remoteMediaSessionLists.add(controller.packageName)
-                }
-                return@forEach // Continue to next controller
-            }
-
             if (playbackInfo.playbackType == MediaController.PlaybackInfo.PLAYBACK_TYPE_LOCAL) {
-                if (localController == null && !remoteMediaSessionLists.contains(controller.packageName)) {
+                if (localController == null) {
                     localController = controller
+                }
+            } else if (playbackInfo.playbackType == MediaController.PlaybackInfo.PLAYBACK_TYPE_REMOTE) {
+                if (remoteController == null) {
+                    remoteController = controller
                 }
             }
         }
-        return localController
+        return localController ?: remoteController
     }
 
     fun getMediaBitmap(): Bitmap? {
