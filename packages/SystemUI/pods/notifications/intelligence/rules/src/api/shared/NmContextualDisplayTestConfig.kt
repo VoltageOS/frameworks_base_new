@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package com.android.systemui.notifications.intelligence.rules.data.repository
+package com.android.systemui.notifications.intelligence.rules.shared
 
-import android.app.notificationManager
-import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.kosmos.applicationCoroutineScope
-import com.android.systemui.kosmos.testDispatcher
-
-val Kosmos.realNotificationRulesRepository by
-    Kosmos.Fixture {
-        NotificationRulesRepositoryImpl(
-            notificationManager,
-            freeformRuleRepository = realFreeformRuleRepository,
-            applicationScope = applicationCoroutineScope,
-            backgroundDispatcher = testDispatcher,
-        )
-    }
+/**
+ * A helper object to help manually test certain behaviors for contextual display during feature
+ * development. This is temporary while we're building out the feature.
+ */
+interface NmContextualDisplayTestConfig {
+    /**
+     * Sets the amount of delay before returning a response for processing of freeform text into a
+     * rule.
+     */
+    val delayOnRuleGenerationMs: Long
+    /** Forces the processing of freeform text into a rule to return an error. */
+    val forceErrorOnRuleGeneration: Boolean
+}

@@ -14,19 +14,16 @@
  * limitations under the License.
  */
 
-package com.android.systemui.notifications.intelligence.rules.data.repository
+package com.android.systemui.notifications.intelligence.rules.shared.model
 
-import android.app.notificationManager
-import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.kosmos.applicationCoroutineScope
-import com.android.systemui.kosmos.testDispatcher
+/** Represents possible responses from system_server, where the desired response is of type [T]. */
+sealed interface ResponseModel<out T> {
+    /** SysUI is waiting for a response from system_server. */
+    data object Loading : ResponseModel<Nothing>
 
-val Kosmos.realNotificationRulesRepository by
-    Kosmos.Fixture {
-        NotificationRulesRepositoryImpl(
-            notificationManager,
-            freeformRuleRepository = realFreeformRuleRepository,
-            applicationScope = applicationCoroutineScope,
-            backgroundDispatcher = testDispatcher,
-        )
-    }
+    /** SysUI received a successful response. */
+    data class Success<T>(val draftRule: T) : ResponseModel<T>
+
+    /** system_server had some sort of error. */
+    data object Error : ResponseModel<Nothing>
+}

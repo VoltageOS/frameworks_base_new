@@ -14,24 +14,21 @@
  * limitations under the License.
  */
 
-package com.android.systemui.notifications.intelligence.rules.domain.interactor
+package com.android.systemui.notifications.intelligence.rules.data.repository
 
 import com.android.systemui.notifications.intelligence.rules.shared.model.ActionModel
 import com.android.systemui.notifications.intelligence.rules.shared.model.DraftRuleModel
 import com.android.systemui.notifications.intelligence.rules.shared.model.ResponseModel
-import com.android.systemui.notifications.intelligence.rules.shared.model.RuleModel
 
-/** An interactor for a user's current notification rules and methods for updating those rules. */
-public interface NotificationRulesInteractor {
-    /** A list of the user's current rules. Backed by snapshot state. */
-    public val rules: List<RuleModel>
-
-    /** Creates a draft rule based on the freeform text inputted by the user. */
+/** Responsible for transforming freeform text into a draft rule. */
+interface FreeformRuleRepository {
+    /**
+     * Creates a draft rule based on the freeform text inputted by the user.
+     *
+     * If created successfully, the new draft rule will be sent via [onChangeResponseStatus].
+     */
     public suspend fun createDraftRuleFromFreeformText(
         action: ActionModel,
         text: String,
     ): ResponseModel<DraftRuleModel>
-
-    /** Creates a new rule and adds it to the list of saved rules. */
-    public fun createRule(newRule: RuleModel)
 }
