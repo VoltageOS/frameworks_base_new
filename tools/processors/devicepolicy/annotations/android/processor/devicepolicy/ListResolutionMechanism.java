@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,30 +16,28 @@
 
 package android.processor.devicepolicy;
 
-import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 
 /**
- * Metadata for a string list policy.
+ * Define the conflict resolution mechanism for a list policy.
+ *
+ * <p>This expresses which value takes effect when multiple values are set for the same policy.
+ *
+ * <p>Exactly one option must be selected.
  */
 @Retention(RetentionPolicy.SOURCE)
-@Target({ElementType.FIELD})
-public @interface ListOfStringPolicyDefinition {
+public @interface ListResolutionMechanism {
     /**
-     * Base data for all policies.
+     * Use a custom resolution mechanism hard-coded in the code.
+     *
+     * <p>Only use this option if none of the other resolution mechanism apply.
      */
-    StringPolicyDefinition base();
+    boolean custom() default false;
 
     /**
-     * By default an empty list is not allowed as a policy value. Set it to true if it should
-     * be allowed.
+     * The resolved policy will contain the union of all values set.
+     * Duplicate values will be present exactly once in the resulting union.
      */
-    boolean emptyListAllowed() default false;
-
-    /**
-     * Indicates the conflict resolution mechanism used by this policy.
-     */
-    ListResolutionMechanism resolutionMechanism();
+    boolean union() default false;
 }
