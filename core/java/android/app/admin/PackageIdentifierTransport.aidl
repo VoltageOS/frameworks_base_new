@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2025 The Android Open Source Project
+/**
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,11 @@
 
 package android.app.admin;
 
-import android.app.admin.PackageIdentifierTransport;
-
 /**
- * Internal IPC to send a policy value over the wire.
- * Currently only supports a limited set of built-in types.
+ * This is a transport representation of {@link PackageIdentifier}.
  *
  * @hide
  */
-union PolicyValueTransport {
-    int integerField;
-    boolean booleanField;
-    long longField;
-    String stringField;
-    List<String> listOfStringField;
-    PackageIdentifierTransport packageField;
+parcelable PackageIdentifierTransport {
+  String packageName;
 }
