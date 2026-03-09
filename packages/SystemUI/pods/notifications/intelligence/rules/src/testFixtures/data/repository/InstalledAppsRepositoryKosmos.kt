@@ -14,13 +14,20 @@
  * limitations under the License.
  */
 
-package com.android.systemui.notifications.intelligence.rules.domain.interactor
+package com.android.systemui.notifications.intelligence.rules.data.repository
 
-import android.content.Context
-import com.android.systemui.notifications.intelligence.rules.shared.model.AppModel
+import android.content.packageManager
+import com.android.systemui.kosmos.Kosmos
+import com.android.systemui.kosmos.testDispatcher
+import com.android.systemui.notifications.content.icon.mockAppIconProvider
+import com.android.systemui.user.data.repository.fakeUserRepository
 
-/** Interactor for information about installed apps. */
-public interface InstalledAppsInteractor {
-    /** Fetches all apps installed on the device. */
-    public suspend fun fetchInstalledApps(context: Context): List<AppModel>
-}
+val Kosmos.realInstalledAppsRepository by
+    Kosmos.Fixture {
+        InstalledAppsRepositoryImpl(
+            testDispatcher,
+            packageManager,
+            mockAppIconProvider,
+            fakeUserRepository,
+        )
+    }
