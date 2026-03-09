@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,12 +44,11 @@ import com.android.wm.shell.common.DisplayController
 import com.android.wm.shell.common.MultiInstanceHelper
 import com.android.wm.shell.common.SyncTransactionQueue
 import com.android.wm.shell.desktopmode.CaptionState
-import com.android.wm.shell.desktopmode.CaptionState.AppHeader
+import com.android.wm.shell.desktopmode.CaptionState.FullscreenHeader
 import com.android.wm.shell.desktopmode.DesktopModeUiEventLogger
 import com.android.wm.shell.desktopmode.DesktopModeUiEventLogger.DesktopUiEventEnum
 import com.android.wm.shell.desktopmode.DesktopUserRepositories
 import com.android.wm.shell.desktopmode.WindowDecorCaptionRepository
-import com.android.wm.shell.desktopmode.isTaskMaximized
 import com.android.wm.shell.shared.FocusTransitionListener
 import com.android.wm.shell.shared.annotations.ShellBackgroundThread
 import com.android.wm.shell.shared.annotations.ShellMainThread
@@ -76,10 +75,9 @@ import com.android.wm.shell.windowdecor.WindowManagerWrapper
 import com.android.wm.shell.windowdecor.common.WindowDecorTaskResourceLoader
 import com.android.wm.shell.windowdecor.common.viewhost.WindowDecorViewHost
 import com.android.wm.shell.windowdecor.common.viewhost.WindowDecorViewHostSupplier
-import com.android.wm.shell.windowdecor.extension.isDragResizable
 import com.android.wm.shell.windowdecor.extension.requestingImmersive
-import com.android.wm.shell.windowdecor.viewholder.AppHeaderViewHolder
-import com.android.wm.shell.windowdecor.viewholder.AppHeaderViewHolder.HeaderData
+import com.android.wm.shell.windowdecor.viewholder.FullscreenHeaderViewHolder
+import com.android.wm.shell.windowdecor.viewholder.FullscreenHeaderViewHolder.HeaderData
 import com.android.wm.shell.windowdecor.viewholder.WindowDecorationViewHolder
 import com.android.wm.shell.windowdecor.viewholder.util.LargeHeaderDimensions
 import kotlinx.coroutines.CoroutineScope
@@ -88,10 +86,10 @@ import kotlinx.coroutines.MainCoroutineDispatcher
 import kotlinx.coroutines.launch
 
 /**
- * Controller for the app header. Creates, updates, and removes the views of the caption and its
- * menus.
+ * Controller for the fullscreen header. Creates, updates, and removes the views of the caption and
+ * its menus.
  */
-class AppHeaderController(
+class FullscreenHeaderController(
     taskInfo: RunningTaskInfo,
     windowDecorViewHostSupplier: WindowDecorViewHostSupplier<WindowDecorViewHost>,
     private val userContext: Context,
@@ -123,8 +121,8 @@ class AppHeaderController(
     private val focusTransitionObserver: FocusTransitionObserver,
     private val layoutMenuFactory: LayoutMenuFactory = DefaultLayoutMenuFactory,
     private val handleMenuFactory: HandleMenuFactory = HandleMenuFactory,
-    private val appHeaderViewHolderFactory: AppHeaderViewHolder.Factory =
-        AppHeaderViewHolder.DefaultFactory(),
+    private val fullscreenHeaderViewHolderFactory: FullscreenHeaderViewHolder.Factory =
+        FullscreenHeaderViewHolder.DefaultFactory(),
     private val surfaceControlBuilderSupplier: () -> SurfaceControl.Builder = {
         SurfaceControl.Builder()
     },
@@ -142,9 +140,9 @@ class AppHeaderController(
     HandleMenuController,
     ManageWindowsMenuController {
 
-    override val captionType = CaptionType.APP_HEADER
+    override val captionType = CaptionType.FULLSCREEN_HEADER
 
-    private lateinit var viewHolder: AppHeaderViewHolder
+    private lateinit var viewHolder: FullscreenHeaderViewHolder
 
     private var handleMenu: HandleMenu? = null
     private var openByDefaultDialog: OpenByDefaultDialog? = null
@@ -165,20 +163,11 @@ class AppHeaderController(
     private val isOpenByDefaultDialogActive
         get() = openByDefaultDialog != null
 
-    private val inFullImmersive
-        get() =
-            desktopUserRepositories
-                .getProfile(taskInfo.userId)
-                .isTaskInFullImmersiveState(taskInfo.taskId)
-
-    private val taskPositionInParent
-        get() = taskInfo.positionInParent
-
     private val closeLayoutMenuRunnable = Runnable { closeLayoutMenu() }
     private val dimensions = LargeHeaderDimensions(decorWindowContext.resources)
 
     private var isLayoutMenuHovered = false
-    private var isAppHeaderMaximizeButtonHovered = false
+    private var isFullscreenHeaderExitFullscreenButtonHovered = false
     private var loadAppInfoJob: Job? = null
 
     override fun relayout(
@@ -192,27 +181,21 @@ class AppHeaderController(
     ): CaptionRelayoutResult =
         traceSection(
             traceTag = Trace.TRACE_TAG_WINDOW_MANAGER,
-            name = "AppHeaderController#relayout",
+            name = "FullscreenHeaderController#relayout",
         ) {
-            var isTaskFocused: Boolean
-            if (FocusTransitionListener.isDisplayLocalIsFocusedMigrationEnabled()) {
-                isTaskFocused = focusTransitionObserver.isFocusedOnDisplay(taskInfo)
-            } else {
-                isTaskFocused = taskInfo.isFocused
-            }
+            val isTaskFocused =
+                if (FocusTransitionListener.isDisplayLocalIsFocusedMigrationEnabled()) {
+                    focusTransitionObserver.isFocusedOnDisplay(taskInfo)
+                } else {
+                    taskInfo.isFocused
+                }
 
-            // If we get a relayout call while hovering over maximize button in the app header but
-            // the task has lost focus, explicitly cancel the hover (since we don't get a HOVER_EXIT
-            // signal in this case).
-            if (!isTaskFocused && isAppHeaderMaximizeButtonHovered) {
+            // If we get a relayout call while hovering over exit fullscreen button in the
+            // fullscreen header but the task has lost focus, explicitly cancel the hover (since we
+            // don't get a HOVER_EXIT signal in this case).
+            if (!isTaskFocused && isFullscreenHeaderExitFullscreenButtonHovered) {
                 setHeaderMaximizeButtonHovered(hovered = false)
                 onLayoutButtonHoverExit()
-            }
-
-            if (hasGlobalFocus && !params.hasGlobalFocus) {
-                closeHandleMenu()
-                closeManageWindowsMenu()
-                closeLayoutMenu()
             }
 
             val captionLayout =
@@ -230,23 +213,23 @@ class AppHeaderController(
                 taskInfo.configuration,
                 captionLayout.captionX,
                 // Add top padding to the caption Y so that the menu is shown over what is the
-                // actual contents of the caption, ignoring padding. This is currently relevant
-                // to the Header in desktop immersive.
+                // actual contents of the caption, ignoring padding.
                 captionLayout.captionY + captionLayout.captionTopPadding,
             )
 
-            updateLayoutMenu(startT)
-
             updateViewHolder(params.hasGlobalFocus)
+
+            if (!params.hasGlobalFocus) {
+                closeHandleMenu()
+                closeManageWindowsMenu()
+                closeLayoutMenu()
+            }
 
             notifyCaptionStateChanged()
             return captionLayout
         }
 
     override fun getCaptionTopPadding(): Int {
-        if (!inFullImmersive) {
-            return 0
-        }
         val displayInsetsState = displayController.getInsetsState(taskInfo.displayId)
         val taskBounds = taskInfo.configuration.windowConfiguration.bounds
         val systemBarInsets =
@@ -265,25 +248,20 @@ class AppHeaderController(
             notifyNoCaption()
             return
         }
-        viewHolder.runOnAppChipGlobalLayout { notifyAppHeaderStateChanged() }
+        viewHolder.runOnAppChipGlobalLayout { notifyFullscreenHeaderStateChanged() }
     }
 
     private fun notifyNoCaption() {
         windowDecorCaptionRepository.notifyCaptionChanged(CaptionState.NoCaption(taskInfo.taskId))
     }
 
-    private fun notifyAppHeaderStateChanged() {
+    private fun notifyFullscreenHeaderStateChanged() {
         val appChipPositionInWindow = viewHolder.getAppChipLocationInWindow()
         val taskBounds = taskInfo.configuration.windowConfiguration.bounds
         val appChipGlobalPosition =
-            Rect(
-                taskBounds.left + appChipPositionInWindow.left,
-                taskBounds.top + appChipPositionInWindow.top,
-                taskBounds.left + appChipPositionInWindow.right,
-                taskBounds.top + appChipPositionInWindow.bottom,
-            )
+            Rect(appChipPositionInWindow).apply { offset(taskBounds.left, taskBounds.top) }
         val captionState =
-            AppHeader(
+            FullscreenHeader(
                 runningTaskInfo = taskInfo,
                 isHeaderMenuExpanded = isHandleMenuActive,
                 globalAppChipBounds = appChipGlobalPosition,
@@ -291,15 +269,6 @@ class AppHeaderController(
             )
 
         windowDecorCaptionRepository.notifyCaptionChanged(captionState)
-    }
-
-    private fun updateLayoutMenu(startT: SurfaceControl.Transaction) {
-        if (!taskInfo.isDragResizable(inFullImmersive) || !isLayoutMenuActive) return
-        if (!taskInfo.isVisible()) {
-            closeLayoutMenu()
-        } else {
-            layoutMenu?.positionMenu(startT)
-        }
     }
 
     private fun calculateLayoutMenuPosition(menuWidth: Int, menuHeight: Int): Point {
@@ -311,12 +280,11 @@ class AppHeaderController(
         val displayHeight = displayLayout.height()
         val captionHeight = getCaptionHeight()
 
-        val maximizeButtonLocation = viewHolder.getMaximizeButtonPosition()
+        val exitFullscreenButtonLocation = viewHolder.getExitFullscreenButtonPosition()
 
         var menuLeft =
-            taskPositionInParent.x + maximizeButtonLocation[0] -
-                (menuWidth - viewHolder.maximizeButtonWidth) / 2
-        var menuTop = taskPositionInParent.y + captionHeight
+            exitFullscreenButtonLocation[0] - (menuWidth - viewHolder.exitFullscreenButtonWidth) / 2
+        var menuTop = captionHeight
         val menuRight = menuLeft + menuWidth
         val menuBottom = menuTop + menuHeight
 
@@ -357,7 +325,7 @@ class AppHeaderController(
                 )
                 .apply {
                     show(
-                        isTaskInImmersiveMode = inFullImmersive,
+                        isTaskInImmersiveMode = false,
                         showImmersiveOption = taskInfo.requestingImmersive,
                         showSnapOptions = taskInfo.isResizeable,
                         onHoverListener = { hovered: Boolean ->
@@ -370,18 +338,18 @@ class AppHeaderController(
                 }
     }
 
-    /** Set whether the header's maximize button is hovered. */
+    /** Set whether the header's exit fullscreen button is hovered. */
     override fun setHeaderMaximizeButtonHovered(hovered: Boolean) {
-        isAppHeaderMaximizeButtonHovered = hovered
+        isFullscreenHeaderExitFullscreenButtonHovered = hovered
         onLayoutButtonHoverStateChanged()
     }
 
     /**
-     * Called when either one of the maximize button in the header or the layout menu has changed
-     * its hover state.
+     * Called when either one of the exit fullscreen button in the header or the layout menu has
+     * change its hover state.
      */
     override fun onLayoutButtonHoverStateChanged() {
-        if (!isLayoutMenuHovered && !isAppHeaderMaximizeButtonHovered) {
+        if (!isLayoutMenuHovered && !isFullscreenHeaderExitFullscreenButtonHovered) {
             // Neither is hovered, close the menu.
             if (isLayoutMenuActive) {
                 mainHandler.postDelayed(closeLayoutMenuRunnable, CLOSE_LAYOUT_MENU_DELAY_MS)
@@ -395,15 +363,15 @@ class AppHeaderController(
     /** Close the layout menu window if open. */
     override fun closeLayoutMenu() {
         layoutMenu?.close {
-            // Request the accessibility service to refocus on the maximize button after closing
-            // the menu.
-            a11yFocusMaximizeButton()
+            // Request the accessibility service to refocus on the exit fullscreen button after
+            // closing the menu.
+            a11yFocusExitFullscreenButton()
         }
         layoutMenu = null
     }
 
-    /** Request direct a11y focus on the maximize button */
-    fun a11yFocusMaximizeButton() = viewHolder.requestAccessibilityFocus()
+    /** Request direct a11y focus on the exit fullscreen button */
+    fun a11yFocusExitFullscreenButton() = viewHolder.requestAccessibilityFocus()
 
     private fun createOpenByDefaultDialog() {
         if (isOpenByDefaultDialogActive) return
@@ -427,18 +395,13 @@ class AppHeaderController(
             )
     }
 
-    private fun canOpenLayoutMenu(animatingTaskResizeOrReposition: Boolean): Boolean {
-        val inImmersiveAndRequesting = inFullImmersive && taskInfo.requestingImmersive
-        return !animatingTaskResizeOrReposition && !inImmersiveAndRequesting
-    }
-
     /**
      * Called when there is a [MotionEvent.ACTION_HOVER_EXIT] on the maximize window button.
      *
      * TODO(b/409648813): Move all hover logic to view holder
      */
     override fun onLayoutButtonHoverExit() {
-        viewHolder.onMaximizeWindowHoverExit()
+        viewHolder.onExitFullscreenWindowHoverExit()
     }
 
     /**
@@ -447,7 +410,7 @@ class AppHeaderController(
      * TODO(b/409648813): Move all hover logic to view holder
      */
     override fun onLayoutButtonHoverEnter() {
-        viewHolder.onMaximizeWindowHoverEnter()
+        viewHolder.onExitFullscreenWindowHoverEnter()
     }
 
     /** Updates app info and creates and displays handle menu window. */
@@ -497,7 +460,7 @@ class AppHeaderController(
                     windowDecorationActions = windowDecorationActions,
                     taskResourceLoader = taskResourceLoader,
                     // TODO(b/409648813): Have handle menus use [CaptionType]
-                    layoutResId = R.layout.desktop_mode_app_header,
+                    layoutResId = R.layout.desktop_mode_fullscreen_header,
                     splitScreenController = splitScreenController,
                     shouldShowWindowingPill =
                         !Flags.enableConsolidatedWindowOptions() &&
@@ -516,8 +479,7 @@ class AppHeaderController(
                     captionHeight = captionLayoutResult.captionHeight,
                     captionX = captionLayoutResult.captionX,
                     // Add top padding to the caption Y so that the menu is shown over what is the
-                    // actual contents of the caption, ignoring padding. This is currently relevant
-                    // to the Header in desktop immersive.
+                    // actual contents of the caption, ignoring padding.
                     captionY = captionLayoutResult.captionY + captionLayoutResult.captionTopPadding,
                 )
                 .apply {
@@ -531,7 +493,7 @@ class AppHeaderController(
                         onCloseMenuClickListener = { closeHandleMenu() },
                         onOutsideTouchListener = { closeHandleMenu() },
                         onHandleMenuClicked = { closeHandleMenu() },
-                        forceShowSystemBars = inFullImmersive,
+                        forceShowSystemBars = false,
                     )
                 }
         notifyCaptionStateChanged()
@@ -547,9 +509,8 @@ class AppHeaderController(
     }
 
     private fun isBrowserApp(): Boolean =
-        taskInfo.baseIntent.component?.let {
-            isBrowserApp(userContext, it.packageName, userContext.userId)
-        } ?: false
+        taskInfo.baseActivity?.let { isBrowserApp(userContext, it.packageName, userContext.userId) }
+            ?: false
 
     /** Creates and shows the manage windows menu. */
     override fun createManageWindowsMenu(snapshotList: ArrayList<Pair<Int, TaskSnapshot>>) {
@@ -584,41 +545,24 @@ class AppHeaderController(
         manageWindowsMenu = null
     }
 
-    /** Update the view holder for app header. */
-    private fun updateViewHolder(
-        hasGlobalFocus: Boolean,
-        animatingTaskResizeOrReposition: Boolean = false,
-    ) =
-        traceSection("AppHeaderController#updateViewHolder") {
+    /** Update the view holder for fullscreen header. */
+    private fun updateViewHolder(hasGlobalFocus: Boolean) =
+        traceSection("FullscreenHeaderController#updateViewHolder") {
             val displayId = taskInfo.displayId
             val displayLayout = displayController.getDisplayLayout(displayId) ?: return@traceSection
-            viewHolder.bindData(
-                HeaderData(
-                    taskInfo,
-                    isTaskMaximized(taskInfo, displayLayout),
-                    inFullImmersive,
-                    hasGlobalFocus,
-                    canOpenLayoutMenu(animatingTaskResizeOrReposition),
-                    isCaptionVisible,
-                )
-            )
+            viewHolder.bindData(HeaderData(taskInfo, hasGlobalFocus, true, isCaptionVisible))
         }
 
-    override fun onAnimatingTaskRepositioningOrResize(animatingTaskResizeOrReposition: Boolean) {
-        updateViewHolder(hasGlobalFocus, animatingTaskResizeOrReposition)
-    }
-
     override fun createCaptionView(): WindowDecorationViewHolder<HeaderData> {
-        val appHeaderViewHolder =
-            appHeaderViewHolderFactory.create(
+        val fullscreenHeaderViewHolder =
+            fullscreenHeaderViewHolderFactory.create(
                 // View holder should inflate the caption's root view
-                rootView = null,
                 context = decorWindowContext,
                 windowDecorationActions = windowDecorationActions,
                 gestureInterceptor = gestureInterceptor,
                 onLongClickListener = onLongClickListener,
                 onCaptionGenericMotionListener = onCaptionGenericMotionListener,
-                onMaximizeHoverAnimationFinishedListener = { createLayoutMenu() },
+                onExitFullscreenHoverAnimationFinishedListener = { createLayoutMenu() },
                 desktopModeUiEventLogger = desktopModeUiEventLogger,
                 dimensions = dimensions,
                 focusTransitionObserver = focusTransitionObserver,
@@ -631,79 +575,24 @@ class AppHeaderController(
                 viewHolder.setAppIcon(icon)
                 notifyCaptionStateChanged()
             }
-        viewHolder = appHeaderViewHolder
-        return appHeaderViewHolder
+        viewHolder = fullscreenHeaderViewHolder
+        return fullscreenHeaderViewHolder
     }
-
-    /** Returns the valid drag area for a task based on elements in the app chip. */
-    override fun calculateValidDragArea(): Rect {
-        val resources = decorWindowContext.resources
-        val leftButtonsWidth =
-            resources.getDimensionPixelSize(R.dimen.desktop_mode_app_details_width_minus_text) +
-                viewHolder.appNameTextWidth
-        val requiredEmptySpace =
-            resources.getDimensionPixelSize(R.dimen.freeform_required_visible_empty_space_in_header)
-        val rightButtonsWidth =
-            resources.getDimensionPixelSize(R.dimen.desktop_mode_right_edge_buttons_width)
-        val taskWidth = taskInfo.configuration.windowConfiguration.bounds.width()
-        val layout = displayController.getDisplayLayout(taskInfo.displayId) ?: return Rect()
-        val displayWidth = layout.width()
-        val stableBounds = Rect()
-        layout.getStableBounds(stableBounds)
-        return Rect(
-            determineMinX(leftButtonsWidth, rightButtonsWidth, requiredEmptySpace, taskWidth),
-            stableBounds.top,
-            determineMaxX(
-                leftButtonsWidth,
-                rightButtonsWidth,
-                requiredEmptySpace,
-                taskWidth,
-                displayWidth,
-            ),
-            determineMaxY(requiredEmptySpace, stableBounds),
-        )
-    }
-
-    /** Determine the lowest x coordinate of a freeform task. Used for restricting drag inputs. */
-    private fun determineMinX(
-        leftButtonsWidth: Int,
-        rightButtonsWidth: Int,
-        requiredEmptySpace: Int,
-        taskWidth: Int,
-    ): Int =
-        // Do not let apps with < 48dp empty header space go off the left edge at all.
-        if (leftButtonsWidth + rightButtonsWidth + requiredEmptySpace > taskWidth) {
-            0
-        } else {
-            -taskWidth + requiredEmptySpace + rightButtonsWidth
-        }
-
-    /** Determine the highest x coordinate of a freeform task. Used for restricting drag inputs. */
-    private fun determineMaxX(
-        leftButtonsWidth: Int,
-        rightButtonsWidth: Int,
-        requiredEmptySpace: Int,
-        taskWidth: Int,
-        displayWidth: Int,
-    ): Int =
-        // Do not let apps with < 48dp empty header space go off the right edge at all.
-        if (leftButtonsWidth + rightButtonsWidth + requiredEmptySpace > taskWidth) {
-            displayWidth - taskWidth
-        } else {
-            displayWidth - requiredEmptySpace - leftButtonsWidth
-        }
-
-    /** Determine the highest y coordinate of a freeform task. Used for restricting drag inputs. */
-    private fun determineMaxY(requiredEmptySpace: Int, stableBounds: Rect): Int =
-        stableBounds.bottom - requiredEmptySpace
 
     override fun getCaptionHeight(): Int = dimensions.height + getCaptionTopPadding()
 
     override fun getCaptionWidth(): Int =
         taskInfo.getConfiguration().windowConfiguration.bounds.width()
 
-    override val occludingElements: List<OccludingElement>
-        get() = viewHolder.getOccludingElements()
+    override val occludingElements: List<OccludingElement> = emptyList()
+
+    /**
+     * Announces that the app window is now being focused for accessibility. This is used after a
+     * window is minimized/closed, and a new app window gains focus.
+     */
+    fun a11yAnnounceFocused() {
+        viewHolder.a11yAnnounceFocused()
+    }
 
     override fun close(wct: WindowContainerTransaction, t: SurfaceControl.Transaction): Boolean {
         loadAppInfoJob?.cancel()
@@ -717,7 +606,7 @@ class AppHeaderController(
     }
 
     private companion object {
-        private const val TAG = "AppHeaderController"
+        private const val TAG = "FullscreenHeaderController"
         private const val CLOSE_LAYOUT_MENU_DELAY_MS = 150L
     }
 }
