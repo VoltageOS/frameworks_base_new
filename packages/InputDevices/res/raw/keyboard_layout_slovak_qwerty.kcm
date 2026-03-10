@@ -1,4 +1,4 @@
-# Copyright (C) 2012 The Android Open Source Project
+# Copyright (C) 2026 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -153,10 +153,10 @@ key T {
 }
 
 key Y {
-    label:                              'Z'
-    base:                               'z'
-    shift, capslock:                    'Z'
-    shift+capslock:                     'z'
+    label:                              'Y'
+    base:                               'y'
+    shift, capslock:                    'Y'
+    shift+capslock:                     'y'
 }
 
 key U {
@@ -304,10 +304,10 @@ key PLUS {
 }
 
 key Z {
-    label:                              'Y'
-    base:                               'y'
-    shift, capslock:                    'Y'
-    shift+capslock:                     'y'
+    label:                              'Z'
+    base:                               'z'
+    shift, capslock:                    'Z'
+    shift+capslock:                     'z'
     ralt:                               '>'
 }
 
