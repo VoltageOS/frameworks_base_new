@@ -40,6 +40,7 @@ import android.provider.Settings;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.telephony.TelephonyCallback;
+import android.telephony.TelephonyDisplayInfo;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.util.LruCache;
@@ -183,6 +184,7 @@ public class OnGoingActionProgressController
   private boolean mUpdatePending = false;
   private long mLastUpdateTime = 0;
 
+  private boolean mIs5gConnected = false;
   public static final int TYPE_NONE = 0;
   public static final int TYPE_TRANSIENT = 1;
   public static final int TYPE_FLASHLIGHT = 2;
@@ -269,15 +271,51 @@ public class OnGoingActionProgressController
     }
   }
 
+  private final BroadcastReceiver mSimStateReceiver =
+      new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+          update5gState();
+        }
+      };
+
+  private void update5gState() {
+    if (mTelephonyManager == null) return;
+    try {
+      boolean hasSim = mTelephonyManager.getSimState() != TelephonyManager.SIM_STATE_ABSENT;
+      long supported = mTelephonyManager.getSupportedRadioAccessFamily();
+      boolean hardwareSupports5g = (supported & TelephonyManager.NETWORK_TYPE_BITMASK_NR) != 0;
+      long allowed = mTelephonyManager.getAllowedNetworkTypesForReason(TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_USER);
+      boolean userAllows5g = (allowed & TelephonyManager.NETWORK_TYPE_BITMASK_NR) != 0;
+
+      updateStateHistory(TYPE_FIVEG, hasSim && hardwareSupports5g && userAllows5g && mIs5gConnected);
+    } catch (Exception e) {
+      Log.w(TAG, "Failed to update 5G state", e);
+      updateStateHistory(TYPE_FIVEG, false);
+    }
+  }
+
   private class NetworkTypeListener extends TelephonyCallback
-      implements TelephonyCallback.AllowedNetworkTypesListener {
+      implements TelephonyCallback.AllowedNetworkTypesListener,
+                 TelephonyCallback.DisplayInfoListener {
     @Override
     public void onAllowedNetworkTypesChanged(int reason, long allowedNetworkType) {
       if (reason == TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_USER) {
-        boolean is5g = (allowedNetworkType & TelephonyManager.NETWORK_TYPE_BITMASK_NR) != 0;
-        updateStateHistory(TYPE_FIVEG, is5g);
+        update5gState();
       }
     }
+
+    @Override
+    public void onDisplayInfoChanged(TelephonyDisplayInfo displayInfo) {
+      int networkType = displayInfo.getNetworkType();
+      int overrideType = displayInfo.getOverrideNetworkType();
+
+      mIs5gConnected = (networkType == TelephonyManager.NETWORK_TYPE_NR) ||
+                       (overrideType == TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_NSA) ||
+                       (overrideType == TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_ADVANCED);
+      update5gState();
+    }
+
   }
 
   private final Runnable mMediaProgressRunnable =
@@ -411,11 +449,9 @@ public class OnGoingActionProgressController
         mNetworkTypeListener = new NetworkTypeListener();
         mTelephonyManager.registerTelephonyCallback(
             mContext.getMainExecutor(), mNetworkTypeListener);
-        long allowed =
-            mTelephonyManager.getAllowedNetworkTypesForReason(
-                TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_USER);
-        boolean is5g = (allowed & TelephonyManager.NETWORK_TYPE_BITMASK_NR) != 0;
-        updateStateHistory(TYPE_FIVEG, is5g);
+        mBroadcastDispatcher.registerReceiver(
+            mSimStateReceiver, new IntentFilter("android.intent.action.SIM_STATE_CHANGED"));
+        update5gState();
       }
     } catch (Exception e) {
       Log.e(TAG, "Failed to register 5G TelephonyCallback", e);
@@ -594,6 +630,15 @@ public class OnGoingActionProgressController
             && !mHeadsUpPinned
             && !mIsSystemChipVisible
             && mCurrentDisplayState != TYPE_NONE;
+
+    boolean isSmartAction = mCurrentDisplayState != TYPE_TRANSIENT
+        && mCurrentDisplayState != TYPE_DONE_CHECKMARK
+        && mCurrentDisplayState != TYPE_LOGO
+        && mCurrentDisplayState != TYPE_NONE;
+
+    if (isSmartAction && !mSmartActionsEnabled) {
+      isVisible = false;
+    }
 
     if (isVisible) {
       float opacity = mProgressBarOpacity / 255f;
@@ -1694,6 +1739,7 @@ public class OnGoingActionProgressController
 
     mBroadcastDispatcher.unregisterReceiver(mRingerReceiver);
     mBroadcastDispatcher.unregisterReceiver(mConfigurationReceiver);
+    mBroadcastDispatcher.unregisterReceiver(mSimStateReceiver);
 
     mSettingsObserver.unregister();
 
