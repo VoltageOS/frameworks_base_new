@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,15 +22,11 @@ import android.tools.traces.parsers.toFlickerComponent
 import com.android.server.wm.flicker.testapp.ActivityOptions
 
 /**
- * The test activity that is used to send chat bubble notifications.
- *
- * The bubble notifications use an intent of a different activity.
- *
- * @see ChatBubbleActivityHelper
+ * The test activity that is launched by chat bubble notifications created by [LaunchBubbleHelper].
  */
-class LaunchBubbleHelper(instrumentation: Instrumentation) :
+class ChatBubbleActivityHelper(instrumentation: Instrumentation) :
     StandardAppHelper(
         instrumentation,
-        ActivityOptions.Bubbles.LaunchBubble.LABEL,
-        ActivityOptions.Bubbles.LaunchBubble.COMPONENT.toFlickerComponent()
+        ActivityOptions.Bubbles.BubbleActivity.LABEL,
+        ActivityOptions.Bubbles.BubbleActivity.COMPONENT.toFlickerComponent()
     )
