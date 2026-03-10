@@ -15,7 +15,6 @@
  */
 package com.android.systemui.common.ringer
 
-import android.media.AudioManager
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
@@ -46,15 +45,14 @@ fun RingerSliderWidget(
     border: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null
 ) {
-    val mode by interactor.ringerMode.collectAsState(initial = interactor.getCurrentMode())
+    val availableModes = interactor.getAvailableRingerModes()
+    val numModes = interactor.getNumberOfModes()
+    val maxOffset = interactor.getMaxOffset()
     val isDndEnabled by interactor.dndMode.collectAsState(initial = interactor.isDndEnabled())
     
-    val targetPosition = when (mode) {
-        AudioManager.RINGER_MODE_SILENT -> 0f
-        AudioManager.RINGER_MODE_VIBRATE -> 1f
-        AudioManager.RINGER_MODE_NORMAL -> 2f
-        else -> 0f
-    }
+    val targetPosition by interactor.targetPositionFlow.collectAsState(
+        initial = interactor.getTargetPosition(interactor.getCurrentMode())
+    )
 
     var dragOffset by remember { mutableStateOf(targetPosition) }
     var isDragging by remember { mutableStateOf(false) }
@@ -95,23 +93,13 @@ fun RingerSliderWidget(
     detectTapGestures(
         onTap = { tapOffset ->
             if (isDndEnabled) return@detectTapGestures
-            val sectionWidth = size.width / 3f
 
-            val snappedIndex = when {
-                tapOffset.x < sectionWidth -> 0
-                tapOffset.x < sectionWidth * 2 -> 1
-                else -> 2
-            }
+            val sectionWidth = size.width / numModes.toFloat()
+            val snappedIndex = (tapOffset.x / sectionWidth).toInt().coerceIn(0, numModes - 1)
 
             dragOffset = snappedIndex.toFloat()
 
-            val snappedMode = when (snappedIndex) {
-                0 -> AudioManager.RINGER_MODE_SILENT
-                1 -> AudioManager.RINGER_MODE_VIBRATE
-                else -> AudioManager.RINGER_MODE_NORMAL
-            }
-
-            interactor.setRingerMode(snappedMode)
+            interactor.setRingerMode(availableModes[snappedIndex].mode)
         },
         onLongPress = {
             onLongClick?.invoke()
@@ -123,14 +111,9 @@ fun RingerSliderWidget(
                     onDragStart = { isDragging = true },
                     onDragEnd = {
                         isDragging = false
-                        val snappedMode = when {
-                            dragOffset < 0.5f -> AudioManager.RINGER_MODE_SILENT
-                            dragOffset < 1.5f -> AudioManager.RINGER_MODE_VIBRATE
-                            else -> AudioManager.RINGER_MODE_NORMAL
-                        }
                         if (isDndEnabled) return@detectDragGestures
 
-                        interactor.setRingerMode(snappedMode)
+                        interactor.setRingerMode(interactor.snapMode(dragOffset))
                     },
                     onDragCancel = { 
                         isDragging = false
@@ -142,7 +125,6 @@ fun RingerSliderWidget(
                     }
                     change.consume()
                     val trackWidth = size.width - dimens.thumbSize.toPx()
-                    val maxOffset = 2f
                     val pixelPerUnit = trackWidth / maxOffset
                     dragOffset = (dragOffset + (dragAmount.x / pixelPerUnit))
                         .coerceIn(0f, maxOffset)
@@ -156,9 +138,9 @@ fun RingerSliderWidget(
             verticalAlignment = Alignment.CenterVertically
         ) {
             val currentIndex = animatedPosition.roundToInt()
-            repeat(3) { index ->
+            availableModes.forEachIndexed { index, _ ->
                 val dotAlpha by animateFloatAsState(
-                    targetValue = if (currentIndex == index) 0f else 0.4f,
+                    targetValue = if (isDndEnabled) 0f else if (currentIndex == index) 0f else 0.4f,
                     animationSpec = tween(durationMillis = 200),
                     label = "dot_alpha"
                 )
@@ -176,10 +158,11 @@ fun RingerSliderWidget(
 
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
             val totalWidth = maxWidth
+            val step = if (numModes > 1) (totalWidth - dimens.thumbSize) / (numModes - 1) else 0.dp
             val thumbOffset = if (isDndEnabled) {
                 (totalWidth - dimens.thumbSize) / 2f
             } else {
-                ((totalWidth - dimens.thumbSize) / 2f) * animatedPosition
+                step * animatedPosition
             }
             
             Box(
@@ -207,12 +190,11 @@ fun RingerSliderWidget(
                     ),
                 contentAlignment = Alignment.Center
             ) {
+                val currentIndex = animatedPosition.roundToInt().coerceIn(0, numModes - 1)
                 Icon(
                     imageVector = when {
                         isDndEnabled -> Icons.Filled.DoNotDisturb
-                        mode == AudioManager.RINGER_MODE_VIBRATE -> Icons.Filled.Vibration
-                        mode == AudioManager.RINGER_MODE_SILENT -> Icons.Filled.VolumeOff
-                        else -> Icons.Filled.VolumeUp
+                        else -> availableModes[currentIndex].icon
                     },
                     contentDescription = null,
                     tint = when {
