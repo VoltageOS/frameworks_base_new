@@ -232,9 +232,13 @@ public class ImageWallpaper extends WallpaperService {
     private void updateHazeState() {
       boolean wasHazeEnabled = mIsHazeEnabled;
       mIsHazeEnabled =
-          Settings.System.getInt(getDisplayContext().getContentResolver(), KEY_HAZE_ENABLED, 0) == 1;
+          Settings.System.getInt(getDisplayContext().getContentResolver(), KEY_HAZE_ENABLED, 0)
+              == 1;
 
       if (wasHazeEnabled != mIsHazeEnabled) {
+        synchronized (mLock) {
+          mDrawn = false;
+        }
         if (mSurfaceHolder != null && mSurfaceHolder.getSurface().isValid()) {
           drawFrame();
         }
@@ -274,7 +278,7 @@ public class ImageWallpaper extends WallpaperService {
       if (mHazeThread != null) {
         mHazeThread.quitSafely();
         try {
-          mHazeThread.join(500); 
+          mHazeThread.join(500);
         } catch (InterruptedException e) {
           Log.e(TAG, "Interrupted waiting for Haze thread to die");
         }
@@ -306,6 +310,11 @@ public class ImageWallpaper extends WallpaperService {
       }
       if (mHazeThread != null) {
         mHazeThread.quitSafely();
+        try {
+          mHazeThread.join(250);
+        } catch (InterruptedException e) {
+          Log.e(TAG, "Interrupted waiting for Haze thread to die");
+        }
         mHazeThread = null;
       }
     }
@@ -352,6 +361,9 @@ public class ImageWallpaper extends WallpaperService {
               mHazeThread.quitSafely();
               mHazeThread = null;
             }
+            synchronized (mLock) {
+              mDrawn = false;
+            }
             drawFrame();
           });
     }
@@ -374,6 +386,7 @@ public class ImageWallpaper extends WallpaperService {
           } else {
             mHazeThread.setBitmap(bitmap);
           }
+          mDrawn = true;
         }
         Trace.endSection();
         return;
@@ -381,6 +394,11 @@ public class ImageWallpaper extends WallpaperService {
 
       if (mHazeThread != null) {
         mHazeThread.quitSafely();
+        try {
+          mHazeThread.join(250);
+        } catch (InterruptedException e) {
+          Log.e(TAG, "Interrupted waiting for Haze thread to die");
+        }
         mHazeThread = null;
       }
 
