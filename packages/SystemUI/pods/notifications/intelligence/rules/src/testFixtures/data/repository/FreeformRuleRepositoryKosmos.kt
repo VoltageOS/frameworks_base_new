@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-package com.android.systemui.notifications.intelligence.rules.domain.interactor
+package com.android.systemui.notifications.intelligence.rules.data.repository
 
-import android.content.Context
-import com.android.systemui.notifications.intelligence.rules.shared.model.AppModel
+import com.android.systemui.kosmos.Kosmos
+import com.android.systemui.kosmos.testDispatcher
+import com.android.systemui.notifications.intelligence.rules.shared.nmContextualDisplayTestConfig
 
-/** Interactor for information about installed apps. */
-public interface InstalledAppsInteractor {
-    /** Fetches all apps installed on the device. */
-    public suspend fun fetchInstalledApps(context: Context): List<AppModel>
-}
+val Kosmos.realFreeformRuleRepository by
+    Kosmos.Fixture {
+        FreeformRuleRepositoryImpl(
+            backgroundDispatcher = testDispatcher,
+            testConfig = nmContextualDisplayTestConfig,
+        )
+    }

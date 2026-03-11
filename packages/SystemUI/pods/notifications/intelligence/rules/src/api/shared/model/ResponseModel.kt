@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-package com.android.systemui.notifications.intelligence.rules.domain.interactor
+package com.android.systemui.notifications.intelligence.rules.shared.model
 
-import android.content.Context
-import com.android.systemui.notifications.intelligence.rules.shared.model.AppModel
+/** Represents possible responses from system_server, where the desired response is of type [T]. */
+sealed interface ResponseModel<out T> {
+    /** SysUI is waiting for a response from system_server. */
+    data object Loading : ResponseModel<Nothing>
 
-/** Interactor for information about installed apps. */
-public interface InstalledAppsInteractor {
-    /** Fetches all apps installed on the device. */
-    public suspend fun fetchInstalledApps(context: Context): List<AppModel>
+    /** SysUI received a successful response. */
+    data class Success<T>(val draftRule: T) : ResponseModel<T>
+
+    /** system_server had some sort of error. */
+    data object Error : ResponseModel<Nothing>
 }

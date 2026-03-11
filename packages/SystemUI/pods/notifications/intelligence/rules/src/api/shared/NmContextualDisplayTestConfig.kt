@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
-package com.android.systemui.notifications.intelligence.rules.domain.interactor
+package com.android.systemui.notifications.intelligence.rules.shared
 
-import android.content.Context
-import com.android.systemui.notifications.intelligence.rules.shared.model.AppModel
-
-/** Interactor for information about installed apps. */
-public interface InstalledAppsInteractor {
-    /** Fetches all apps installed on the device. */
-    public suspend fun fetchInstalledApps(context: Context): List<AppModel>
+/**
+ * A helper object to help manually test certain behaviors for contextual display during feature
+ * development. This is temporary while we're building out the feature.
+ */
+interface NmContextualDisplayTestConfig {
+    /**
+     * Sets the amount of delay before returning a response for processing of freeform text into a
+     * rule.
+     */
+    val delayOnRuleGenerationMs: Long
+    /** Forces the processing of freeform text into a rule to return an error. */
+    val forceErrorOnRuleGeneration: Boolean
 }

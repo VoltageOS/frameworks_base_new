@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.systemui.notifications.intelligence.rules.domain.interactor
+package com.android.systemui.notifications.intelligence.rules.shared
 
-import android.content.Context
-import com.android.systemui.notifications.intelligence.rules.shared.model.AppModel
+import com.android.systemui.kosmos.Kosmos
 
-/** Interactor for information about installed apps. */
-public interface InstalledAppsInteractor {
-    /** Fetches all apps installed on the device. */
-    public suspend fun fetchInstalledApps(context: Context): List<AppModel>
-}
+var Kosmos.nmContextualDisplayTestConfig by
+    Kosmos.Fixture {
+        object : NmContextualDisplayTestConfig {
+            override val delayOnRuleGenerationMs = 0L
+            override val forceErrorOnRuleGeneration = false
+        }
+    }
