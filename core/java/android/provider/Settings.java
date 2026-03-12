@@ -7602,6 +7602,15 @@ public final class Settings {
         public static final String LOCKSCREEN_WEATHER_HUMIDITY_INFO = "lockscreen_weather_humidity_info";
 
         /**
+         * Lockscreen weather + date layout style.
+         * 0 = classic: stacked date then pixel-row weather (default)
+         * 1 = modern: date right of small clock / same row as large clock;
+         *             inline weather (compound-drawable TextView) below/beside date
+         * @hide
+         */
+        public static final String LOCKSCREEN_WEATHER_STYLE = "lockscreen_weather_style";
+
+        /**
          * Whether to show daily/weekly data usage in the QS footer.
          * @hide
          */

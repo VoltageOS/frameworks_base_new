@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2026 VoltageOS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +20,6 @@ package com.android.systemui.keyguard.ui.view.layout.sections
 
 import android.content.Context
 import android.os.Handler
-import android.util.TypedValue
 import android.view.LayoutInflater
 import androidx.constraintlayout.widget.Barrier
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -34,6 +34,7 @@ import com.android.systemui.keyguard.domain.interactor.KeyguardInteractor
 import com.android.systemui.keyguard.shared.model.KeyguardSection
 import com.android.systemui.keyguard.ui.binder.KeyguardSliceViewBinder
 import com.android.systemui.keyguard.ui.viewmodel.AodBurnInViewModel
+import com.android.systemui.keyguard.ui.viewmodel.KeyguardClockViewModel
 import com.android.systemui.plugins.ActivityStarter
 import com.android.systemui.plugins.keyguard.ui.clocks.ClockViewIds
 import com.android.systemui.power.domain.interactor.PowerInteractor
@@ -53,6 +54,7 @@ constructor(
     @Main val handler: Handler,
     @Background val bgHandler: Handler,
     val activityStarter: ActivityStarter,
+    val keyguardClockViewModel: KeyguardClockViewModel,
     val configurationController: ConfigurationController,
     val dumpManager: DumpManager,
     val displayTracker: DisplayTracker,
@@ -99,51 +101,133 @@ constructor(
 
     override fun applyConstraints(constraintSet: ConstraintSet) {
         if (smartspaceController.isEnabled) return
+
+        val isModern = smartspaceController.isOmniWeatherModern
+        val isLargeClock = keyguardClockViewModel.isLargeClockVisible.value
+        val marginStart =
+            context.resources.getDimensionPixelSize(clocksR.dimen.clock_padding_start) +
+                context.resources.getDimensionPixelSize(clocksR.dimen.status_view_margin_horizontal)
+        
+        val clockGap = (16 * context.resources.displayMetrics.density).toInt()
+        
+        val smallClockGap = (46 * context.resources.displayMetrics.density).toInt()
+        
+        val topClockMargin = (36 * context.resources.displayMetrics.density).toInt()
+        val barrierMargin = (48 * context.resources.displayMetrics.density).toInt()
+
         constraintSet.apply {
-            connect(
-                R.id.keyguard_slice_view,
-                ConstraintSet.START,
-                ConstraintSet.PARENT_ID,
-                ConstraintSet.START,
-                context.resources.getDimensionPixelSize(clocksR.dimen.clock_padding_start) +
-                    context.resources.getDimensionPixelSize(clocksR.dimen.status_view_margin_horizontal),
-            )
-            connect(
-                R.id.keyguard_slice_view,
-                ConstraintSet.END,
-                ConstraintSet.PARENT_ID,
-                ConstraintSet.END,
-            )
             constrainHeight(R.id.keyguard_slice_view, ConstraintSet.WRAP_CONTENT)
 
-            connect(
-                R.id.keyguard_slice_view,
-                ConstraintSet.TOP,
-                ClockViewIds.LOCKSCREEN_CLOCK_VIEW_SMALL,
-                ConstraintSet.BOTTOM,
-            )
+            when {
+                isModern && !isLargeClock -> {
+                    sliceView.setPaddingRelative(smallClockGap, 0, 0, 0)
+                    
+                    try {
+                        setMargin(ClockViewIds.LOCKSCREEN_CLOCK_VIEW_SMALL, ConstraintSet.TOP, topClockMargin)
+                    } catch (e: Exception) {}
 
-            if (!smartspaceController.isOmniWeatherEnabled) {
-                createBarrier(
-                    R.id.smart_space_barrier_bottom,
-                    Barrier.BOTTOM,
-                    0,
-                    *intArrayOf(R.id.keyguard_slice_view),
-                )
-            } else {
-                createBarrier(
-                    R.id.keyguard_weather_area,
-                    Barrier.BOTTOM,
-                    0,
-                    *intArrayOf(R.id.keyguard_slice_view),
-                )
+                    constrainWidth(R.id.keyguard_slice_view, ConstraintSet.WRAP_CONTENT)
+                    clear(R.id.keyguard_slice_view, ConstraintSet.START)
+                    clear(R.id.keyguard_slice_view, ConstraintSet.END)
+                    clear(R.id.keyguard_slice_view, ConstraintSet.TOP)
+                    clear(R.id.keyguard_slice_view, ConstraintSet.BOTTOM)
+
+                    connect(
+                        R.id.keyguard_slice_view, ConstraintSet.START,
+                        ClockViewIds.LOCKSCREEN_CLOCK_VIEW_SMALL, ConstraintSet.END,
+                        0,
+                    )
+                    connect(
+                        R.id.keyguard_slice_view, ConstraintSet.END,
+                        ConstraintSet.PARENT_ID, ConstraintSet.END,
+                        0,
+                    )
+                    setHorizontalBias(R.id.keyguard_slice_view, 0.0f)
+                    
+                    connect(
+                        R.id.keyguard_slice_view, ConstraintSet.TOP,
+                        ClockViewIds.LOCKSCREEN_CLOCK_VIEW_SMALL, ConstraintSet.TOP,
+                    )
+                    connect(
+                        R.id.keyguard_slice_view, ConstraintSet.BOTTOM,
+                        R.id.weather_inline_text, ConstraintSet.TOP,
+                    )
+                    setVerticalChainStyle(R.id.keyguard_slice_view, ConstraintSet.CHAIN_PACKED)
+                    setVerticalBias(R.id.keyguard_slice_view, 0.5f)
+                }
+
+                isModern && isLargeClock -> {
+                    sliceView.setPaddingRelative(0, 0, 0, 0)
+                    constrainWidth(R.id.keyguard_slice_view, ConstraintSet.WRAP_CONTENT)
+                    clear(R.id.keyguard_slice_view, ConstraintSet.START)
+                    clear(R.id.keyguard_slice_view, ConstraintSet.END)
+                    clear(R.id.keyguard_slice_view, ConstraintSet.TOP)
+                    clear(R.id.keyguard_slice_view, ConstraintSet.BOTTOM)
+
+                    connect(
+                        R.id.keyguard_slice_view, ConstraintSet.START,
+                        ConstraintSet.PARENT_ID, ConstraintSet.START,
+                    )
+                    connect(
+                        R.id.keyguard_slice_view, ConstraintSet.END,
+                        R.id.weather_inline_text, ConstraintSet.START,
+                    )
+                    setHorizontalChainStyle(R.id.keyguard_slice_view, ConstraintSet.CHAIN_PACKED)
+                    setHorizontalBias(R.id.keyguard_slice_view, 0.5f)
+
+                    connect(
+                        R.id.keyguard_slice_view, ConstraintSet.TOP,
+                        ClockViewIds.LOCKSCREEN_CLOCK_VIEW_LARGE, ConstraintSet.BOTTOM,
+                        clockGap,
+                    )
+                }
+
+                else -> {
+                    sliceView.setPaddingRelative(0, 0, 0, 0)
+                    constrainWidth(R.id.keyguard_slice_view, ConstraintSet.MATCH_CONSTRAINT)
+                    clear(R.id.keyguard_slice_view, ConstraintSet.START)
+                    clear(R.id.keyguard_slice_view, ConstraintSet.END)
+                    clear(R.id.keyguard_slice_view, ConstraintSet.TOP)
+                    clear(R.id.keyguard_slice_view, ConstraintSet.BOTTOM)
+
+                    connect(
+                        R.id.keyguard_slice_view, ConstraintSet.START,
+                        ConstraintSet.PARENT_ID, ConstraintSet.START,
+                        marginStart,
+                    )
+                    connect(
+                        R.id.keyguard_slice_view, ConstraintSet.END,
+                        ConstraintSet.PARENT_ID, ConstraintSet.END,
+                    )
+                    connect(
+                        R.id.keyguard_slice_view, ConstraintSet.TOP,
+                        ClockViewIds.LOCKSCREEN_CLOCK_VIEW_SMALL, ConstraintSet.BOTTOM,
+                    )
+                }
             }
+
+            val barrierIds = mutableListOf(R.id.keyguard_slice_view)
+            if (smartspaceController.isOmniWeatherEnabled) {
+                if (isModern) {
+                    barrierIds.add(R.id.weather_inline_text)
+                } else {
+                    barrierIds.add(R.id.keyguard_weather_area)
+                }
+            }
+            
+            createBarrier(
+                R.id.smart_space_barrier_bottom,
+                Barrier.BOTTOM,
+                if (isModern && !isLargeClock) barrierMargin else 0,
+                *barrierIds.toIntArray()
+            )
         }
     }
 
     override fun removeViews(constraintLayout: ConstraintLayout) {
         if (smartspaceController.isEnabled) return
 
+        disposableHandle?.dispose()
         constraintLayout.removeView(R.id.keyguard_slice_view)
     }
 }

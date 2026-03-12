@@ -35,6 +35,7 @@ import android.provider.Settings.Secure.LOCK_SCREEN_ALLOW_PRIVATE_NOTIFICATIONS
 import android.provider.Settings.Secure.LOCK_SCREEN_SHOW_NOTIFICATIONS
 import android.provider.Settings.Secure.LOCKSCREEN_SMARTSPACE_ENABLED
 import android.provider.Settings.System.LOCKSCREEN_WEATHER_ENABLED
+import android.provider.Settings.System.LOCKSCREEN_WEATHER_STYLE
 import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.View
@@ -322,6 +323,12 @@ constructor(
                 ) == 1
             return showCustomWeather && !isWeatherEnabled
         }
+
+    val isOmniWeatherModern: Boolean
+        get() = isOmniWeatherEnabled &&
+            systemSettings.getIntForUser(
+                LOCKSCREEN_WEATHER_STYLE, 0, userTracker.userId,
+            ) == 1
 
     val isEnabled: Boolean
         get() = plugin != null && isWeatherEnabled
