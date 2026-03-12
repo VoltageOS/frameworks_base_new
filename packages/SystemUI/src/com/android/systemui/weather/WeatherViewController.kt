@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2025 the AxionAOSP Project
+ * Copyright (C) 2026 VoltageOS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +21,7 @@ import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.os.UserHandle
 import android.provider.Settings
+import android.graphics.drawable.Drawable
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
@@ -35,16 +37,21 @@ import kotlinx.coroutines.flow.*
 
 class WeatherViewController(
     private val context: Context,
-    private val weatherIcon: ImageView,
-    private val weatherTemp: TextView,
-    private val weatherInfoView: View,
+    private val weatherIcon: ImageView?,
+    private val weatherTemp: TextView?,
+    private val weatherInfoView: View?,
+    private val weatherInlineView: TextView? = null,
 ) : OmniJawsClient.OmniJawsObserver {
 
     private var weatherInfo: OmniJawsClient.WeatherInfo? = null
     private val scope = CoroutineScope(Dispatchers.Main.immediate + SupervisorJob())
+    private var bootRetryCount = 0
+    private val maxBootRetries = 6
 
     private var mDozing = false
     private val statusBarStateController: StatusBarStateController = Dependency.get(StatusBarStateController::class.java)
+
+    private fun isInlineMode() = weatherInlineView != null
 
     private val statusBarStateListener = object : StatusBarStateController.StateListener {
         override fun onStateChanged(newState: Int) {}
@@ -117,9 +124,9 @@ class WeatherViewController(
         if (mDozing) {
             val matrix = ColorMatrix()
             matrix.setSaturation(0f)
-            weatherIcon.colorFilter = ColorMatrixColorFilter(matrix)
+            weatherIcon?.colorFilter = ColorMatrixColorFilter(matrix)
         } else {
-            weatherIcon.colorFilter = null
+            weatherIcon?.colorFilter = null
         }
     }
 
@@ -133,27 +140,67 @@ class WeatherViewController(
             OmniJawsClient.get().queryWeather(context)
             weatherInfo = OmniJawsClient.get().weatherInfo
             weatherInfo?.let { info ->
-                weatherIcon.setImageDrawable(
-                    OmniJawsClient.get().getWeatherConditionImage(context, 
-                    info.conditionCode))
-                updateIconTint()
-                weatherTemp.text = buildWeatherText(info)
-                weatherTemp.isSelected = true
+                bootRetryCount = 0
+                if (isInlineMode()) {
+                    updateInlineWeather(info)
+                } else {
+                    weatherIcon?.setImageDrawable(
+                        OmniJawsClient.get().getWeatherConditionImage(context, info.conditionCode))
+                    weatherTemp?.text = buildWeatherText(info)
+                    weatherTemp?.isSelected = true
+                }
+            } ?: run {
+                if (bootRetryCount < maxBootRetries) {
+                    bootRetryCount++
+                    scope.launch {
+                        delay(10000)
+                        if (weatherSettingsFlow.value.weatherEnabled) {
+                            updateWeather()
+                        }
+                    }
+                }
             }
         } catch (e: Exception) {}
     }
 
+    private fun updateInlineWeather(info: OmniJawsClient.WeatherInfo) {
+        val view = weatherInlineView ?: return
+        val icon: Drawable? =
+            OmniJawsClient.get().getWeatherConditionImage(context, info.conditionCode)
+       val text = buildInlineWeatherText(info)
+        scope.launch(Dispatchers.Main) {
+            view.text = text
+            if (icon != null) {
+                val size = (view.textSize * 1.15f).toInt()
+                icon.setBounds(0, 0, size, size)
+                view.setCompoundDrawablesRelative(icon, null, null, null)
+            } else {
+                view.setCompoundDrawablesRelative(null, null, null, null)
+            }
+            view.visibility = View.VISIBLE
+        }
+    }
+
+    private fun buildInlineWeatherText(info: OmniJawsClient.WeatherInfo): String {
+        return "${info.temp}${info.tempUnits}"
+    }
+
     private fun hideAllViews() {
         scope.launch {
-            listOf(weatherInfoView, weatherIcon, weatherTemp).forEach {
+            listOfNotNull(weatherInfoView, weatherIcon, weatherTemp).forEach {
                 updateViewVisibility(it, false)
             }
+            weatherInlineView?.let { updateViewVisibility(it, false) }
         }
     }
 
     private fun showAllViews() {
+        if (isInlineMode()) {
+            weatherInfo?.let { updateInlineWeather(it) }
+            return
+        }
         scope.launch {
-            listOf(weatherInfoView, weatherIcon, weatherTemp).forEach {
+            listOfNotNull(weatherInfoView, weatherIcon, weatherTemp).forEach {
                 updateViewVisibility(it, true)
             }
         }
@@ -174,8 +221,12 @@ class WeatherViewController(
     override fun weatherError(errorReason: Int) {
         if (errorReason == OmniJawsClient.EXTRA_ERROR_DISABLED) {
             weatherInfo = null
-            weatherIcon.setImageDrawable(null)
-            weatherTemp.text = ""
+            weatherIcon?.setImageDrawable(null)
+            weatherTemp?.text = ""
+            weatherInlineView?.apply {
+                text = ""
+                setCompoundDrawablesRelative(null, null, null, null)
+            }
             hideAllViews()
         }
     }

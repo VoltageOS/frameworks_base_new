@@ -311,4 +311,8 @@
 
     <!-- Custom overlay on lockscreen/doze -->
     <item type="id" name="custom_overlay_container" />
+
+    <!-- Barrier tracking the END edge of the lockscreen small clock -->
+    <item type="id" name="clock_end_barrier" />
+
 </resources>
