@@ -63,7 +63,7 @@ import com.android.systemui.statusbar.policy.ZenModeController;
 import com.android.systemui.util.MediaSessionManagerHelper;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -202,7 +202,7 @@ public class OnGoingActionProgressController
   public static final int TYPE_FIVEG = 14;
 
   private int mCurrentDisplayState = TYPE_NONE;
-  private final LinkedList<Integer> mActiveStatesHistory = new LinkedList<>();
+  private final ArrayList<Integer> mActiveStatesHistory = new ArrayList<>();
 
   private boolean mHasTransient = false;
   private boolean mIsTransientGracePending = false;
@@ -214,6 +214,13 @@ public class OnGoingActionProgressController
   private long mLastTransientTime = 0;
   private final Runnable mTransientBufferRunnable = this::requestUiUpdate;
   private final Runnable mFinishAnimRunnable = this::requestUiUpdate;
+
+  private int mOverrideState = TYPE_NONE;
+  private long mOverrideEndTime = 0;
+  private final Runnable mClearOverrideRunnable = () -> {
+      mOverrideState = TYPE_NONE;
+      requestUiUpdate();
+  };
 
   private TelephonyManager mTelephonyManager;
   private NetworkTypeListener mNetworkTypeListener;
@@ -544,16 +551,57 @@ public class OnGoingActionProgressController
     notifyStateCallback();
   }
 
-  private void updateStateHistory(int type, boolean active) {
-    if (active && !mActiveStatesHistory.contains(type)) {
-      mLastStateChangeTime = System.currentTimeMillis();
-    }
+  private boolean isHardware(int type) {
+      return type == TYPE_FLASHLIGHT;
+  }
 
-    mActiveStatesHistory.remove((Integer) type);
-    if (active) {
-      mActiveStatesHistory.addLast(type);
-    }
-    requestUiUpdate();
+  private int getPriority(int type) {
+      switch(type) {
+          case TYPE_FLASHLIGHT: return 1;
+          case TYPE_HOTSPOT: return 2;
+          case TYPE_NIRVANA: return 3;
+          case TYPE_DND: return 4;
+          case TYPE_SILENT: return 5;
+          case TYPE_SAVER: return 6;
+          case TYPE_CAFFEINE: return 7;
+          case TYPE_NOTIF_SUPPRESS: return 8;
+          case TYPE_FIVEG: return 9;
+          case TYPE_ALARM: return 10;
+          case TYPE_STUCK_NOTIF: return 11;
+          default: return 99;
+      }
+  }
+
+  private void updateStateHistory(int type, boolean active) {
+      boolean changed = false;
+      if (active) {
+          if (!mActiveStatesHistory.contains(type)) {
+              mActiveStatesHistory.add(type);
+              changed = true;
+          }
+          mOverrideState = type;
+          long duration = isHardware(type) ? 2500 : 4500;
+          mOverrideEndTime = System.currentTimeMillis() + duration;
+          mHandler.removeCallbacks(mClearOverrideRunnable);
+          mHandler.postDelayed(mClearOverrideRunnable, duration);
+      } else {
+          if (mActiveStatesHistory.contains((Integer) type)) {
+              mActiveStatesHistory.remove((Integer) type);
+              changed = true;
+          }
+          if (mOverrideState == type) {
+              mOverrideState = TYPE_NONE;
+              mHandler.removeCallbacks(mClearOverrideRunnable);
+          }
+      }
+
+      if (changed) {
+          mActiveStatesHistory.sort((a, b) -> Integer.compare(getPriority(a), getPriority(b)));
+          mLastStateChangeTime = System.currentTimeMillis();
+          requestUiUpdate();
+      } else if (active) {
+          requestUiUpdate();
+      }
   }
 
   @Override
@@ -683,10 +731,11 @@ public class OnGoingActionProgressController
       return;
     }
 
-    boolean isMediaPlaying = mShowMediaProgress && mMediaSessionHelper.isMediaPlaying();
-    boolean isTransientNow = isMediaPlaying || (mIsEnabled && mIsTrackingProgress && !mIsStuck);
+    boolean isDownloadNow = mIsEnabled && mIsTrackingProgress && !mIsStuck;
+    boolean isMediaNow = mShowMediaProgress && mMediaSessionHelper.isMediaPlaying();
     long now = System.currentTimeMillis();
 
+    boolean isTransientNow = isDownloadNow || isMediaNow;
     if (isTransientNow) {
       mLastTransientTime = now;
     }
@@ -708,18 +757,32 @@ public class OnGoingActionProgressController
       mHandler.removeCallbacks(mTransientGraceRunnable);
     }
 
-    if (now < mFinishAnimationEndTime) {
-      mCurrentDisplayState = TYPE_DONE_CHECKMARK;
-      mHandler.removeCallbacks(mFinishAnimRunnable);
-      mHandler.postDelayed(mFinishAnimRunnable, mFinishAnimationEndTime - now + 50);
-    } else if (isTransientBuffered && !mIsTransientGracePending) {
+    boolean isOverrideActive = mOverrideState != TYPE_NONE && mActiveStatesHistory.contains(mOverrideState);
+    List<Integer> hardwareStates = new ArrayList<>();
+    for (int state : mActiveStatesHistory) {
+        if (isHardware(state)) hardwareStates.add(state);
+    }
+
+    if (isDownloadNow) {
       mCurrentDisplayState = TYPE_TRANSIENT;
+    } else if (isOverrideActive && now < mOverrideEndTime) {
+        mCurrentDisplayState = mOverrideState;
+        mHandler.removeCallbacks(mClearOverrideRunnable);
+        mHandler.postDelayed(mClearOverrideRunnable, mOverrideEndTime - now + 50);
+    } else if (!hardwareStates.isEmpty()) {
+        mCurrentDisplayState = hardwareStates.get(0);
+    } else if (isMediaNow) {
+        mCurrentDisplayState = TYPE_TRANSIENT;
+    } else if (now < mFinishAnimationEndTime) {
+        mCurrentDisplayState = TYPE_DONE_CHECKMARK;
+        mHandler.removeCallbacks(mFinishAnimRunnable);
+        mHandler.postDelayed(mFinishAnimRunnable, mFinishAnimationEndTime - now + 50);
+    } else if (isTransientBuffered && !mIsTransientGracePending) {
+        mCurrentDisplayState = TYPE_TRANSIENT;
+    } else if (!mActiveStatesHistory.isEmpty()) {
+        mCurrentDisplayState = mActiveStatesHistory.get(0);
     } else {
-      if (mSmartActionsEnabled && !mActiveStatesHistory.isEmpty()) {
-        mCurrentDisplayState = mActiveStatesHistory.getLast();
-      } else {
         mCurrentDisplayState = mShowVoltageLogo ? TYPE_LOGO : TYPE_NONE;
-      }
     }
 
     if (mIsForceHidden || mHeadsUpPinned || mCurrentDisplayState == TYPE_NONE) {
@@ -733,19 +796,19 @@ public class OnGoingActionProgressController
     }
 
     if (mIsCompactModeEnabled && !mIsExpanded) {
-      if (!mIsEnabled && !isMediaPlaying) {
+      if (!mIsEnabled && !isMediaNow) {
         mHandler.removeCallbacks(mMediaProgressRunnable);
         notifyStateCallback();
         return;
       }
 
-      if (isMediaPlaying) {
+      if (isMediaNow) {
         updateMediaProgressCompact();
       } else {
         updateNotificationProgressCompact();
       }
     } else {
-      if (isMediaPlaying) {
+      if (isMediaNow) {
         if (mNeedsFullUiUpdate) {
           updateMediaProgressFull();
           mNeedsFullUiUpdate = false;
@@ -1732,6 +1795,7 @@ public class OnGoingActionProgressController
     mHandler.removeCallbacks(mTransientGraceRunnable);
     mHandler.removeCallbacks(mAlarmCheckRunnable);
     mHandler.removeCallbacks(mTransientBufferRunnable);
+    mHandler.removeCallbacks(mClearOverrideRunnable);
     mHandler.removeCallbacks(mFinishAnimRunnable);
     mHandler.removeCallbacks(mCompactCollapseRunnable);
     mHandler.removeCallbacks(mMenuCollapseRunnable);
