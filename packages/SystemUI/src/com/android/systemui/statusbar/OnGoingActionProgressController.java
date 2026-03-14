@@ -155,7 +155,7 @@ public class OnGoingActionProgressController
   private boolean mHeadsUpPinned = false;
   private long mLastProgressUpdateTime = 0;
   private boolean mIsEnabled;
-  private boolean mSmartActionsEnabled = true;
+  private boolean mSmartActionsEnabled = false;
   private boolean mIsCompactModeEnabled = false;
   private int mCurrentProgress = 0;
   private int mCurrentProgressMax = 0;
@@ -1752,7 +1752,7 @@ public class OnGoingActionProgressController
 
     mSmartActionsEnabled =
         Settings.System.getIntForUser(
-                mContentResolver, ONGOING_SMART_ACTIONS_ENABLED, 1, UserHandle.USER_CURRENT)
+                mContentResolver, ONGOING_SMART_ACTIONS_ENABLED, 0, UserHandle.USER_CURRENT)
             == 1;
 
     int opacityPercentage =
