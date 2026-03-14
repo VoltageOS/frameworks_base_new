@@ -16,8 +16,15 @@
 
 package com.android.systemui.statusbar.quickactions.data.repository
 
-import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.statusbar.quickactions.data.repository.impl.QuickActionChipsRepositoryImpl
+import androidx.compose.runtime.mutableStateOf
+import com.android.systemui.statusbar.quickactions.shared.model.QuickActionPanelModel
 
-val Kosmos.quickActionChipsRepository by Kosmos.Fixture { FakeQuickActionChipsRepository() }
-val Kosmos.realQuickActionChipsRepository by Kosmos.Fixture { QuickActionChipsRepositoryImpl() }
+/** A fake implementation of [QuickActionChipsRepository] for testing. */
+class FakeQuickActionChipsRepository : QuickActionChipsRepository {
+
+    override val activePanel = mutableStateOf<QuickActionPanelModel?>(null)
+
+    override fun setActivePanel(panel: QuickActionPanelModel?) {
+        activePanel.value = panel
+    }
+}
