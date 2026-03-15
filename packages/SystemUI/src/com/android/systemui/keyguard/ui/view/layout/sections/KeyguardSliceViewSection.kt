@@ -110,7 +110,7 @@ constructor(
         
         val clockGap = (16 * context.resources.displayMetrics.density).toInt()
         
-        val smallClockGap = (46 * context.resources.displayMetrics.density).toInt()
+        val smallClockGap = (16 * context.resources.displayMetrics.density).toInt()
         
         val topClockMargin = (36 * context.resources.displayMetrics.density).toInt()
         val barrierMargin = (48 * context.resources.displayMetrics.density).toInt()
@@ -120,13 +120,11 @@ constructor(
 
             when {
                 isModern && !isLargeClock -> {
-                    sliceView.setPaddingRelative(smallClockGap, 0, 0, 0)
-                    
                     try {
                         setMargin(ClockViewIds.LOCKSCREEN_CLOCK_VIEW_SMALL, ConstraintSet.TOP, topClockMargin)
                     } catch (e: Exception) {}
 
-                    constrainWidth(R.id.keyguard_slice_view, ConstraintSet.WRAP_CONTENT)
+                    constrainWidth(R.id.keyguard_slice_view, ConstraintSet.MATCH_CONSTRAINT)
                     clear(R.id.keyguard_slice_view, ConstraintSet.START)
                     clear(R.id.keyguard_slice_view, ConstraintSet.END)
                     clear(R.id.keyguard_slice_view, ConstraintSet.TOP)
@@ -135,7 +133,7 @@ constructor(
                     connect(
                         R.id.keyguard_slice_view, ConstraintSet.START,
                         ClockViewIds.LOCKSCREEN_CLOCK_VIEW_SMALL, ConstraintSet.END,
-                        0,
+                        smallClockGap,
                     )
                     connect(
                         R.id.keyguard_slice_view, ConstraintSet.END,
@@ -157,7 +155,6 @@ constructor(
                 }
 
                 isModern && isLargeClock -> {
-                    sliceView.setPaddingRelative(0, 0, 0, 0)
                     constrainWidth(R.id.keyguard_slice_view, ConstraintSet.WRAP_CONTENT)
                     clear(R.id.keyguard_slice_view, ConstraintSet.START)
                     clear(R.id.keyguard_slice_view, ConstraintSet.END)
@@ -183,7 +180,6 @@ constructor(
                 }
 
                 else -> {
-                    sliceView.setPaddingRelative(0, 0, 0, 0)
                     constrainWidth(R.id.keyguard_slice_view, ConstraintSet.MATCH_CONSTRAINT)
                     clear(R.id.keyguard_slice_view, ConstraintSet.START)
                     clear(R.id.keyguard_slice_view, ConstraintSet.END)
@@ -199,6 +195,7 @@ constructor(
                         R.id.keyguard_slice_view, ConstraintSet.END,
                         ConstraintSet.PARENT_ID, ConstraintSet.END,
                     )
+                    setHorizontalBias(R.id.keyguard_slice_view, 0.0f)
                     connect(
                         R.id.keyguard_slice_view, ConstraintSet.TOP,
                         ClockViewIds.LOCKSCREEN_CLOCK_VIEW_SMALL, ConstraintSet.BOTTOM,

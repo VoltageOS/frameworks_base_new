@@ -57,17 +57,15 @@ constructor(
     override fun addViews(constraintLayout: ConstraintLayout) {
         if (!isEnabled()) return
 
-        if (isModern()) {
-            weatherInlineView = layoutInflater.inflate(
-                R.layout.keyguard_weather_area_inline, null, false,
-            ) as TextView
-            constraintLayout.addView(weatherInlineView)
-        } else {
-            weatherView = layoutInflater.inflate(
-                R.layout.keyguard_weather_area, null, false,
-            ) as WeatherInfoView
-            constraintLayout.addView(weatherView)
-        }
+        weatherInlineView = layoutInflater.inflate(
+            R.layout.keyguard_weather_area_inline, null, false,
+        ) as TextView
+        constraintLayout.addView(weatherInlineView)
+
+        weatherView = layoutInflater.inflate(
+            R.layout.keyguard_weather_area, null, false,
+        ) as WeatherInfoView
+        constraintLayout.addView(weatherView)
     }
 
     override fun bindData(constraintLayout: ConstraintLayout) {
@@ -83,124 +81,87 @@ constructor(
                 weatherInlineView = inlineView,
             )
             weatherInlineController?.init()
+
+            weatherView?.cleanup()
+            weatherView?.visibility = View.GONE
+
         } else {
             weatherView?.init()
+
+            weatherInlineController?.removeObserver()
+            weatherInlineController = null
+            weatherInlineView?.visibility = View.GONE
+
         }
     }
 
     override fun applyConstraints(constraintSet: ConstraintSet) {
         if (!isEnabled()) return
 
+        val modern = isModern()
         val marginStart =
             context.resources.getDimensionPixelSize(clocksR.dimen.clock_padding_start) +
                 context.resources.getDimensionPixelSize(clocksR.dimen.status_view_margin_horizontal)
         
         val weatherGap = (8 * context.resources.displayMetrics.density).toInt()
-        val smallClockGap = (46 * context.resources.displayMetrics.density).toInt()
+        val smallClockGap = (16 * context.resources.displayMetrics.density).toInt()
         val isLargeClock = keyguardClockViewModel.isLargeClockVisible.value
 
-        if (isModern()) {
-            constraintSet.apply {
-                constrainHeight(R.id.weather_inline_text, ConstraintSet.WRAP_CONTENT)
+        constraintSet.apply {
+            setVisibility(R.id.keyguard_weather_area, if (!modern) View.VISIBLE else View.GONE)
+            setVisibility(R.id.weather_inline_text, if (modern) View.VISIBLE else View.GONE)
+
+            constrainHeight(R.id.weather_inline_text, ConstraintSet.WRAP_CONTENT)
+
+            if (!isLargeClock) {
+                constrainWidth(R.id.weather_inline_text, ConstraintSet.MATCH_CONSTRAINT)
+                clear(R.id.weather_inline_text, ConstraintSet.START)
+                clear(R.id.weather_inline_text, ConstraintSet.END)
+                clear(R.id.weather_inline_text, ConstraintSet.TOP)
+                clear(R.id.weather_inline_text, ConstraintSet.BOTTOM)
+                connect(R.id.weather_inline_text, ConstraintSet.START, ClockViewIds.LOCKSCREEN_CLOCK_VIEW_SMALL, ConstraintSet.END, smallClockGap)
+                connect(R.id.weather_inline_text, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END, 0)
+                setHorizontalBias(R.id.weather_inline_text, 0.0f)
+                connect(R.id.weather_inline_text, ConstraintSet.TOP, R.id.keyguard_slice_view, ConstraintSet.BOTTOM)
+                connect(R.id.weather_inline_text, ConstraintSet.BOTTOM, ClockViewIds.LOCKSCREEN_CLOCK_VIEW_SMALL, ConstraintSet.BOTTOM)
+            } else {
                 constrainWidth(R.id.weather_inline_text, ConstraintSet.WRAP_CONTENT)
-
-                if (!isLargeClock) {
-                    weatherInlineView?.setPaddingRelative(smallClockGap, 0, 0, 0)
-
-                    clear(R.id.weather_inline_text, ConstraintSet.START)
-                    clear(R.id.weather_inline_text, ConstraintSet.END)
-                    clear(R.id.weather_inline_text, ConstraintSet.TOP)
-                    clear(R.id.weather_inline_text, ConstraintSet.BOTTOM)
-
-                    connect(
-                        R.id.weather_inline_text, ConstraintSet.START,
-                        ClockViewIds.LOCKSCREEN_CLOCK_VIEW_SMALL, ConstraintSet.END,
-                        0,
-                    )
-                    connect(
-                        R.id.weather_inline_text, ConstraintSet.END,
-                        ConstraintSet.PARENT_ID, ConstraintSet.END,
-                        0,
-                    )
-                    setHorizontalBias(R.id.weather_inline_text, 0.0f)
-
-                    connect(
-                        R.id.weather_inline_text, ConstraintSet.TOP,
-                        R.id.keyguard_slice_view, ConstraintSet.BOTTOM,
-                    )
-                    connect(
-                        R.id.weather_inline_text, ConstraintSet.BOTTOM,
-                        ClockViewIds.LOCKSCREEN_CLOCK_VIEW_SMALL, ConstraintSet.BOTTOM,
-                    )
-                } else {
-                    weatherInlineView?.setPaddingRelative(0, 0, 0, 0)
-                    
-                    clear(R.id.weather_inline_text, ConstraintSet.START)
-                    clear(R.id.weather_inline_text, ConstraintSet.END)
-                    clear(R.id.weather_inline_text, ConstraintSet.TOP)
-                    clear(R.id.weather_inline_text, ConstraintSet.BOTTOM)
-
-                    connect(
-                        R.id.weather_inline_text, ConstraintSet.START,
-                        R.id.keyguard_slice_view, ConstraintSet.END,
-                        weatherGap,
-                    )
-                    connect(
-                        R.id.weather_inline_text, ConstraintSet.END,
-                        ConstraintSet.PARENT_ID, ConstraintSet.END,
-                    )
-                    setHorizontalBias(R.id.weather_inline_text, 0.5f)
-                    
-                    connect(
-                        R.id.weather_inline_text, ConstraintSet.TOP,
-                        R.id.keyguard_slice_view, ConstraintSet.TOP,
-                    )
-                    connect(
-                        R.id.weather_inline_text, ConstraintSet.BOTTOM,
-                        R.id.keyguard_slice_view, ConstraintSet.BOTTOM,
-                    )
-                }
+                clear(R.id.weather_inline_text, ConstraintSet.START)
+                clear(R.id.weather_inline_text, ConstraintSet.END)
+                clear(R.id.weather_inline_text, ConstraintSet.TOP)
+                clear(R.id.weather_inline_text, ConstraintSet.BOTTOM)
+                connect(R.id.weather_inline_text, ConstraintSet.START, R.id.keyguard_slice_view, ConstraintSet.END, weatherGap)
+                connect(R.id.weather_inline_text, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END)
+                setHorizontalBias(R.id.weather_inline_text, 0.5f)
+                connect(R.id.weather_inline_text, ConstraintSet.TOP, R.id.keyguard_slice_view, ConstraintSet.TOP)
+                connect(R.id.weather_inline_text, ConstraintSet.BOTTOM, R.id.keyguard_slice_view, ConstraintSet.BOTTOM)
             }
-        } else {
-            weatherInlineView?.setPaddingRelative(0, 0, 0, 0)
-            constraintSet.apply {
-                clear(R.id.keyguard_weather_area, ConstraintSet.START)
-                clear(R.id.keyguard_weather_area, ConstraintSet.END)
-                clear(R.id.keyguard_weather_area, ConstraintSet.TOP)
-                clear(R.id.keyguard_weather_area, ConstraintSet.BOTTOM)
 
-                connect(
-                    R.id.keyguard_weather_area, ConstraintSet.START,
-                    ConstraintSet.PARENT_ID, ConstraintSet.START,
-                    marginStart,
-                )
-                connect(
-                    R.id.keyguard_weather_area, ConstraintSet.END,
-                    ConstraintSet.PARENT_ID, ConstraintSet.END,
-                )
-                constrainHeight(R.id.keyguard_weather_area, ConstraintSet.WRAP_CONTENT)
-                connect(
-                    R.id.keyguard_weather_area, ConstraintSet.TOP,
-                    R.id.keyguard_slice_view, ConstraintSet.BOTTOM,
-                )
+            constrainWidth(R.id.keyguard_weather_area, ConstraintSet.MATCH_CONSTRAINT)
+            constrainHeight(R.id.keyguard_weather_area, ConstraintSet.WRAP_CONTENT)
+            clear(R.id.keyguard_weather_area, ConstraintSet.START)
+            clear(R.id.keyguard_weather_area, ConstraintSet.END)
+            clear(R.id.keyguard_weather_area, ConstraintSet.TOP)
+            clear(R.id.keyguard_weather_area, ConstraintSet.BOTTOM)
+            connect(R.id.keyguard_weather_area, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START, marginStart)
+            connect(R.id.keyguard_weather_area, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END)
+            setHorizontalBias(R.id.keyguard_weather_area, 0.0f)
+            connect(R.id.keyguard_weather_area, ConstraintSet.TOP, R.id.keyguard_slice_view, ConstraintSet.BOTTOM)
             }
         }
-    }
 
     override fun removeViews(constraintLayout: ConstraintLayout) {
         if (!isEnabled()) return
 
-        if (isModern()) {
-            weatherInlineController?.removeObserver()
-            weatherInlineController = null
-            weatherInlineView?.let { constraintLayout.removeView(it) }
-            weatherInlineView = null
-        } else {
-            constraintLayout.findViewById<WeatherInfoView?>(R.id.keyguard_weather_area)?.let {
-                it.cleanup()
-                constraintLayout.removeView(it)
-            }
-            weatherView = null
+        weatherInlineController?.removeObserver()
+        weatherInlineController = null
+        weatherInlineView?.let { constraintLayout.removeView(it) }
+        weatherInlineView = null
+
+        constraintLayout.findViewById<WeatherInfoView?>(R.id.keyguard_weather_area)?.let {
+            it.cleanup()
+            constraintLayout.removeView(it)
         }
+        weatherView = null
     }
 }
