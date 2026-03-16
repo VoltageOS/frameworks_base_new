@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.systemui.headline.ui.compose
+package com.android.systemui.statusbar.pipeline.shared.ui.viewmodel
 
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import com.android.systemui.headline.ui.viewmodel.HeadlineViewModel
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import com.android.systemui.headline.ui.viewmodel.HeadlineItem
+import com.android.systemui.headline.ui.viewmodel.HeadlineItemsAdapter
+import kotlinx.coroutines.flow.MutableStateFlow
 
-/** Interface for the Headline UI composer. */
-public interface Headline {
-    /** Renders the headline UI. */
-    @Composable public fun Content(viewModelFactory: HeadlineViewModel.Factory, modifier: Modifier)
+class FakeHeadlineItemsAdapter : HeadlineItemsAdapter {
+    override var headlineItems: MutableStateFlow<List<HeadlineItem>> = MutableStateFlow(emptyList())
 }

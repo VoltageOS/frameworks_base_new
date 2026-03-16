@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.systemui.headline.ui.compose
+package com.android.systemui.statusbar.pipeline.shared.ui.model
 
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import com.android.systemui.headline.ui.viewmodel.HeadlineViewModel
+import com.android.systemui.headline.ui.viewmodel.HeadlineItem
+import com.android.systemui.headline.ui.viewmodel.HeadlineItemContent
+import com.android.systemui.headline.ui.viewmodel.HeadlineItemKey
 
-/** Interface for the Headline UI composer. */
-public interface Headline {
-    /** Renders the headline UI. */
-    @Composable public fun Content(viewModelFactory: HeadlineViewModel.Factory, modifier: Modifier)
-}
+data class HeadlineItemImpl(
+    override val key: HeadlineItemKey,
+    override val startContents: List<HeadlineItemContent>,
+    override val endContents: List<HeadlineItemContent>,
+) : HeadlineItem
