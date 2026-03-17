@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,10 @@
 
 package com.android.settingslib.metadata.preferencesapi.types
 
-import android.content.Context
-import com.android.settingslib.metadata.R
-import com.android.settingslib.metadata.preferencesapi.types.EType
+sealed interface EType<T : Any> {
+    val clazz: Class<T>
 
-/** A valid sim slot ID. */
-class SimSlotId: DirectApiType<String> {
-
-    override val externalType: EType<String> = EType.String
-
-    override fun getDescription(context: Context) =
-        context.getString(R.string.sim_slot_id_type_description)
-
-    override fun getKey(): String = "SimSlotId"
+    data object String : EType<kotlin.String> { override val clazz = kotlin.String::class.java }
+    data object Boolean : EType<kotlin.Boolean> { override val clazz = kotlin.Boolean::class.javaObjectType }
+    data object Int : EType<kotlin.Int> { override val clazz = kotlin.Int::class.javaObjectType }
 }
