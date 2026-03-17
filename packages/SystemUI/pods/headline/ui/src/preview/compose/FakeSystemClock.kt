@@ -16,12 +16,16 @@
 
 package com.android.systemui.headline.ui.compose
 
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import com.android.systemui.headline.ui.viewmodel.HeadlineViewModel
+import com.android.systemui.util.time.SystemClock
 
-/** Interface for the Headline UI composer. */
-public interface Headline {
-    /** Renders the headline UI. */
-    @Composable public fun Content(viewModel: HeadlineViewModel, modifier: Modifier)
+class FakeSystemClock : SystemClock {
+    override fun uptimeMillis(): Long = 10000
+
+    override fun elapsedRealtime(): Long = 10000
+
+    override fun elapsedRealtimeNanos(): Long = 10000 * 1000000 + 447
+
+    override fun currentThreadTimeMillis(): Long = 10000
+
+    override fun currentTimeMillis(): Long = 10000
 }
