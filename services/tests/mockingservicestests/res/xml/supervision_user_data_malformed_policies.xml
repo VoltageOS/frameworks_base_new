@@ -28,16 +28,15 @@
                 package_name="test.package"
                 package_type="1" />
             <policy_holder
-                policy_type="unknown_policy_type"
+                policy_type="package"
                 policy_version="1"
-                package_name="test.package.unknown"
-                package_type="1" />
+                package_name="test.package.malformed.time.limit"
+                package_type="2" />
             <policy_holder
                 policy_type="package"
                 policy_version="1"
-                package_name="test.package.time.limit"
-                time_limit="10000"
-                package_type="2" />
+                package_name="test.package.malformed.package.type.value"
+                package_type="9999" />
         </policies_list>
     </supervision_user_data>
 </supervision_data>
