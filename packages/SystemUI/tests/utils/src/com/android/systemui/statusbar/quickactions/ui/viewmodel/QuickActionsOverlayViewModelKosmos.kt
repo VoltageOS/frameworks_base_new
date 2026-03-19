@@ -14,10 +14,20 @@
  * limitations under the License.
  */
 
-package com.android.systemui.statusbar.quickactions.data.repository
+package com.android.systemui.statusbar.quickactions.ui.viewmodel
 
 import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.statusbar.quickactions.data.repository.impl.QuickActionChipsRepositoryImpl
+import com.android.systemui.shade.domain.interactor.shadeInteractor
+import com.android.systemui.statusbar.quickactions.domain.interactor.quickActionsInteractor
 
-val Kosmos.quickActionChipsRepository by Kosmos.Fixture { FakeQuickActionChipsRepository() }
-val Kosmos.realQuickActionChipsRepository by Kosmos.Fixture { QuickActionChipsRepositoryImpl() }
+val Kosmos.quickActionOverlayViewModelFactory by
+    Kosmos.Fixture {
+        object : QuickActionOverlayViewModel.Factory {
+            override fun create(): QuickActionOverlayViewModel {
+                return QuickActionOverlayViewModel(
+                    interactor = quickActionsInteractor,
+                    shadeInteractor = shadeInteractor,
+                )
+            }
+        }
+    }
