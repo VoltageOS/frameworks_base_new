@@ -1710,7 +1710,9 @@ public class ActivityManagerService extends IActivityManager.Stub
                     HashMap<String, Object> data = (HashMap<String, Object>) msg.obj;
                     synchronized (mProcLock) {
                         ProcessRecord proc = (ProcessRecord) data.get("app");
+                        AppErrorResult res = (AppErrorResult) data.get("result");
                         if (proc == null) {
+                            res.set(0);
                             Slog.e(TAG, "App not found when showing strict mode dialog.");
                             break;
                         }
@@ -1718,7 +1720,6 @@ public class ActivityManagerService extends IActivityManager.Stub
                             Slog.e(TAG, "App already has strict mode dialog: " + proc);
                             return;
                         }
-                        AppErrorResult res = (AppErrorResult) data.get("result");
                         if (mAtmInternal.showStrictModeViolationDialog()) {
                             proc.mErrorState.getDialogController().showViolationDialogs(res);
                         } else {
