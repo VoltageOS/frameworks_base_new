@@ -97,7 +97,9 @@ class NirvanaTile @Inject constructor(
         val currentState = isManualActive()
         Settings.Secure.putInt(mContext.contentResolver, KEY_MANUAL_ACTIVE, if (currentState) 0 else 1)
         
-        mContext.sendBroadcast(Intent(ACTION_UPDATE_NIRVANA_SCHEDULE))
+        val intent = Intent(ACTION_UPDATE_NIRVANA_SCHEDULE)
+        intent.setPackage("com.android.settings")
+        mContext.sendBroadcast(intent)
         
         refreshState()
     }
