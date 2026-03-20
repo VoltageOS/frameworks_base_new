@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.systemui.keyguard.data.repository
+package com.android.wm.shell.keyguard
 
 import com.android.systemui.kosmos.Kosmos
+import org.mockito.kotlin.mock
 
-val Kosmos.keyguardOcclusionRepository: KeyguardOcclusionRepository by
-    Kosmos.Fixture { FakeKeyguardOcclusionRepository() }
+val Kosmos.keyguardTransitions by Kosmos.Fixture { mock<KeyguardTransitions>() }

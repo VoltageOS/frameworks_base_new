@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.systemui.keyguard.data.repository
+package com.android.systemui.keyguard.shared
 
-import com.android.systemui.kosmos.Kosmos
+import android.app.ActivityManager.RunningTaskInfo
 
-val Kosmos.keyguardOcclusionRepository: KeyguardOcclusionRepository by
-    Kosmos.Fixture { FakeKeyguardOcclusionRepository() }
+/** Formats [RunningTaskInfo] into a readable string for logging. */
+fun RunningTaskInfo?.format(): String {
+    if (this == null) return "null"
+    val component = topActivity?.flattenToShortString() ?: "none"
+    val type = configuration.windowConfiguration.activityType
+    return "{topActivity=$component, activityType=$type}"
+}
