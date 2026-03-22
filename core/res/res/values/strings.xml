@@ -3430,6 +3430,7 @@
 
     <!-- Item on EditText context menu. This action is used to paste from the clipboard into the eidt field without formatting -->
     <string name="paste_as_plain_text">Paste as plain text</string>
+    <string name="save_to_sidebar">Save to Sidebar</string>
 
     <!-- Item on EditText context menu. This action is used to replace the current word by other suggested words, suggested by the IME or the spell checker -->
     <string name="replace">Replace\u2026</string>

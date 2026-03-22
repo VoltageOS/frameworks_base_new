@@ -15274,6 +15274,7 @@ public class TextView extends View implements ViewTreeObserver.OnPreDrawListener
     static final int ID_COPY = android.R.id.copy;
     static final int ID_PASTE = android.R.id.paste;
     static final int ID_SHARE = android.R.id.shareText;
+    static final int ID_SAVE_TO_SIDEBAR = com.android.internal.R.id.saveToSidebar;
     static final int ID_PASTE_AS_PLAIN_TEXT = android.R.id.pasteAsPlainText;
     static final int ID_REPLACE = android.R.id.replaceText;
     static final int ID_ASSIST = android.R.id.textAssist;
@@ -15298,6 +15299,15 @@ public class TextView extends View implements ViewTreeObserver.OnPreDrawListener
 
             min = Math.max(0, Math.min(selStart, selEnd));
             max = Math.max(0, Math.max(selStart, selEnd));
+        }
+
+        if (id == ID_SAVE_TO_SIDEBAR) {
+            Intent saveIntent = new Intent(Intent.ACTION_SEND);
+            saveIntent.setComponent(new android.content.ComponentName("com.libremobileos.sidebar", "com.libremobileos.sidebar.ui.sidebar.SmartClipboardShareActivity"));
+            saveIntent.setType("text/plain");
+            saveIntent.putExtra(Intent.EXTRA_TEXT, getTransformedText(min, max));
+            getContext().startActivity(saveIntent);
+            return true;
         }
 
         switch (id) {

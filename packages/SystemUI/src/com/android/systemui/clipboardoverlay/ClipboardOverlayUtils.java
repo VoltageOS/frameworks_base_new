@@ -88,4 +88,7 @@ class ClipboardOverlayUtils {
         }
         return actions;
     }
+    public boolean isShareable(ClipboardModel model) {
+        return model != null && model.getClipData() != null && model.getType() != ClipboardModel.Type.OTHER;
+    }
 }

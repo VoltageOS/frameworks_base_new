@@ -31,6 +31,7 @@ import android.app.AppGlobals;
 import android.app.PendingIntent;
 import android.app.PendingIntent.CanceledException;
 import android.app.RemoteAction;
+import com.android.internal.util.SidebarUtils;
 import android.compat.annotation.UnsupportedAppUsage;
 import android.content.ClipData;
 import android.content.Context;
@@ -3341,6 +3342,12 @@ public class Editor {
                         .setIcon(a.getDrawable(6))
                         .setOnMenuItemClickListener(mOnContextMenuItemClickListener);
             }
+            if (SidebarUtils.isSmartClipboardEnabled(mTextView.getContext())) {
+                menu.add(CONTEXT_MENU_GROUP_MISC, TextView.ID_SAVE_TO_SIDEBAR, menuItemOrderShare + 1,
+                                com.android.internal.R.string.save_to_sidebar)
+                        .setIcon(com.android.internal.R.drawable.ic_menu_save)
+                        .setOnMenuItemClickListener(mOnContextMenuItemClickListener);
+            }
 
             final String selected = mTextView.getSelectedText();
             if (mTextView.canRequestAutofill() && (selected == null || selected.isEmpty())) {
@@ -3399,6 +3406,13 @@ public class Editor {
                     .setEnabled(mTextView.canShare())
                     .setIcon(a.getDrawable(6))
                     .setOnMenuItemClickListener(mOnContextMenuItemClickListener);
+            if (SidebarUtils.isSmartClipboardEnabled(mTextView.getContext())) {
+                menu.add(CONTEXT_MENU_GROUP_MISC, TextView.ID_SAVE_TO_SIDEBAR, menuItemOrderShare + 1,
+                                com.android.internal.R.string.save_to_sidebar)
+                        .setEnabled(true)
+                        .setIcon(com.android.internal.R.drawable.ic_menu_save)
+                        .setOnMenuItemClickListener(mOnContextMenuItemClickListener);
+            }
             final String selected = mTextView.getSelectedText();
             menu.add(CONTEXT_MENU_GROUP_MISC, TextView.ID_AUTOFILL, menuItemOrderAutofill,
                             android.R.string.autofill)
@@ -4799,6 +4813,12 @@ public class Editor {
             if (mTextView.canShare()) {
                 menu.add(Menu.NONE, TextView.ID_SHARE, ACTION_MODE_MENU_ITEM_ORDER_SHARE,
                         com.android.internal.R.string.share)
+                        .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
+            }
+
+            if (SidebarUtils.isSmartClipboardEnabled(mTextView.getContext())) {
+                menu.add(Menu.NONE, TextView.ID_SAVE_TO_SIDEBAR, ACTION_MODE_MENU_ITEM_ORDER_SHARE + 1,
+                        com.android.internal.R.string.save_to_sidebar)
                         .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
             }
 

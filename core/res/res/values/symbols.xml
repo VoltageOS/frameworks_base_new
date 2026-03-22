@@ -175,6 +175,7 @@
   <java-symbol type="id" name="sha1_fingerprint" />
   <java-symbol type="id" name="sha256_fingerprint" />
   <java-symbol type="id" name="share" />
+  <java-symbol type="id" name="saveToSidebar" />
   <java-symbol type="id" name="shortcut" />
   <java-symbol type="id" name="skip_button" />
   <java-symbol type="id" name="split_action_bar" />
@@ -638,6 +639,7 @@
   <java-symbol type="string" name="prepend_shortcut_label" />
   <java-symbol type="string" name="private_dns_broken_detailed" />
   <java-symbol type="string" name="paste_as_plain_text" />
+  <java-symbol type="string" name="save_to_sidebar" />
   <java-symbol type="string" name="pasted_from_clipboard" />
   <java-symbol type="string" name="replace" />
   <java-symbol type="string" name="undo" />
