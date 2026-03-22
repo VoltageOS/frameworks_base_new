@@ -70,6 +70,7 @@
   <item type="id" name="cut" />
   <item type="id" name="copy" />
   <item type="id" name="paste" />
+  <item type="id" name="saveToSidebar" />
   <!-- Editor action that makes selected text bold. -->
   <item type="id" name="bold" />
   <!-- Editor action that makes selected text italic. -->

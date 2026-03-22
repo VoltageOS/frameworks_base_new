@@ -80,6 +80,8 @@ public class ClipboardOverlayView extends DraggableConstraintLayout {
 
         void onShareButtonTapped();
 
+        void onSaveToSidebarButtonTapped();
+
         void onPreviewTapped();
 
         void onMinimizedViewTapped();
@@ -100,6 +102,7 @@ public class ClipboardOverlayView extends DraggableConstraintLayout {
     private LinearLayout mMinimizedPreview;
     private View mPreviewBorder;
     private View mShareChip;
+    private View mSaveToSidebarChip;
     private View mRemoteCopyChip;
     private View mActionContainerBackground;
     private View mIndicationContainer;
@@ -133,6 +136,7 @@ public class ClipboardOverlayView extends DraggableConstraintLayout {
         mHiddenPreview = requireViewById(R.id.hidden_preview);
         mMinimizedPreview = requireViewById(R.id.minimized_preview);
         mShareChip = requireViewById(R.id.share_chip);
+        mSaveToSidebarChip = requireViewById(R.id.save_to_sidebar_chip);
         mRemoteCopyChip = requireViewById(R.id.remote_copy_chip);
         mIndicationContainer = requireViewById(R.id.indication_container);
         mIndicationText = mIndicationContainer.findViewById(R.id.indication_text);
@@ -180,6 +184,23 @@ public class ClipboardOverlayView extends DraggableConstraintLayout {
                             public Unit invoke() {
                                 if (mClipboardCallbacks != null) {
                                     mClipboardCallbacks.onShareButtonTapped();
+                                }
+                                return null;
+                            }
+                        }));
+        mActionButtonViewBinder.bind(mSaveToSidebarChip,
+                ActionButtonViewModel.Companion.withNextId(
+                        new ActionButtonAppearance(
+                                Icon.createWithResource(mContext,
+                                        com.android.internal.R.drawable.ic_menu_save).loadDrawable(mContext),
+                                null,
+                                mContext.getString(com.android.internal.R.string.save_to_sidebar),
+                                true),
+                        new Function0<>() {
+                            @Override
+                            public Unit invoke() {
+                                if (mClipboardCallbacks != null) {
+                                    mClipboardCallbacks.onSaveToSidebarButtonTapped();
                                 }
                                 return null;
                             }
@@ -329,8 +350,11 @@ public class ClipboardOverlayView extends DraggableConstraintLayout {
         }
     }
 
-    void showShareChip() {
+    void showShareChip(boolean showSaveToSidebar) {
         mShareChip.setVisibility(View.VISIBLE);
+        if (showSaveToSidebar) {
+            mSaveToSidebarChip.setVisibility(View.VISIBLE);
+        }
         mActionContainerBackground.setVisibility(View.VISIBLE);
     }
 
@@ -340,6 +364,7 @@ public class ClipboardOverlayView extends DraggableConstraintLayout {
         mActionContainerBackground.setVisibility(View.GONE);
         mIndicationContainer.setVisibility(View.GONE);
         mShareChip.setVisibility(View.GONE);
+        mSaveToSidebarChip.setVisibility(View.GONE);
         mRemoteCopyChip.setVisibility(View.GONE);
         setEditAccessibilityAction(false);
         resetActionChips();

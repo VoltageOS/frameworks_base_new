@@ -108,6 +108,8 @@
             android:divider="@drawable/shelf_action_chip_divider"
             android:animateLayoutChanges="true">
             <include layout="@layout/shelf_action_chip"
+                     android:id="@+id/save_to_sidebar_chip"/>
+            <include layout="@layout/shelf_action_chip"
                      android:id="@+id/share_chip"/>
             <include layout="@layout/shelf_action_chip"
                      android:id="@+id/remote_copy_chip"/>

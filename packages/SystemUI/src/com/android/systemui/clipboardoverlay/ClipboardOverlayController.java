@@ -299,8 +299,9 @@ public class ClipboardOverlayController implements ClipboardListener.ClipboardOv
         if (!model.isRemote()) {
             maybeShowRemoteCopy(model.getClipData());
         }
-        if (model.getType() != ClipboardModel.Type.OTHER) {
-            mView.showShareChip();
+        if (mClipboardUtils.isShareable(mClipboardModel)) {
+            boolean showSaveToSidebar = com.android.internal.util.SidebarUtils.isSmartClipboardEnabled(mContext);
+            mView.showShareChip(showSaveToSidebar);
         }
     }
 
@@ -521,6 +522,50 @@ public class ClipboardOverlayController implements ClipboardListener.ClipboardOv
                 break;
             case IMAGE:
                 finishWithSharedTransition(CLIPBOARD_OVERLAY_SHARE_TAPPED, shareIntent);
+                break;
+        }
+    }
+
+    @Override
+    public void onSaveToSidebarButtonTapped() {
+        Intent saveIntent = new Intent(Intent.ACTION_SEND);
+        saveIntent.setComponent(new android.content.ComponentName("com.libremobileos.sidebar", "com.libremobileos.sidebar.ui.sidebar.SmartClipboardShareActivity"));
+        ClipData clipData = mClipboardModel.getClipData();
+        if (clipData != null && clipData.getItemCount() > 0) {
+            saveIntent.setClipData(clipData);
+            saveIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            ClipData.Item item = clipData.getItemAt(0);
+            switch (mClipboardModel.getType()) {
+                case TEXT:
+                    saveIntent.setType("text/plain");
+                    if (item.getText() != null) {
+                        saveIntent.putExtra(Intent.EXTRA_TEXT, item.getText().toString());
+                    }
+                    break;
+                case URI:
+                case IMAGE:
+                    String mimeType = "image/*";
+                    if (clipData.getDescription() != null && clipData.getDescription().getMimeTypeCount() > 0) {
+                        mimeType = clipData.getDescription().getMimeType(0);
+                    }
+                    saveIntent.setType(mimeType);
+                    saveIntent.putExtra(Intent.EXTRA_STREAM, item.getUri());
+                    break;
+                default:
+                    saveIntent.setType("*/*");
+                    break;
+            }
+        }
+        switch (mClipboardModel.getType()) {
+            case TEXT:
+            case URI:
+                finish(CLIPBOARD_OVERLAY_SHARE_TAPPED, saveIntent);
+                break;
+            case IMAGE:
+                finishWithSharedTransition(CLIPBOARD_OVERLAY_SHARE_TAPPED, saveIntent);
+                break;
+            default:
+                finish(CLIPBOARD_OVERLAY_SHARE_TAPPED, saveIntent);
                 break;
         }
     }
