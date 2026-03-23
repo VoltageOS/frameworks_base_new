@@ -18,22 +18,25 @@ package com.android.systemui.notifications.intelligence.rules.data.repository
 
 import android.content.ContentResolver
 import android.net.Uri
+import com.android.systemui.kosmos.Kosmos
 import com.android.systemui.notifications.intelligence.rules.shared.model.ContactModel
 
-/** A repository to fetch contact-related information for notification rules. */
-interface ContactsRepository {
-    /**
-     * Returns the contact associated with the given [lookupUri], or null if it couldn't be found.
-     */
-    suspend fun lookupContact(lookupUri: Uri, contentResolver: ContentResolver): ContactModel?
+val Kosmos.fakeContactsRepository by Kosmos.Fixture { FakeContactsRepository() }
 
-    /**
-     * Fetches all contacts whose name matches [searchQuery].
-     *
-     * @param contentResolver the content resolver for the current user.
-     */
-    suspend fun fetchContacts(
+class FakeContactsRepository : ContactsRepository {
+    var contacts = emptyList<ContactModel>()
+
+    override suspend fun lookupContact(
+        lookupUri: Uri,
+        contentResolver: ContentResolver,
+    ): ContactModel? {
+        return contacts.find { it.lookupUri == lookupUri }
+    }
+
+    override suspend fun fetchContacts(
         searchQuery: String,
         contentResolver: ContentResolver,
-    ): List<ContactModel>
+    ): List<ContactModel> {
+        return contacts
+    }
 }
