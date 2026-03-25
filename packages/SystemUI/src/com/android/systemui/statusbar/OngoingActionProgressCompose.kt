@@ -21,14 +21,9 @@ import android.graphics.Bitmap
 import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -78,7 +73,6 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -110,7 +104,7 @@ fun ProgressRing(progressProvider: () -> Int, maxProgressProvider: () -> Int, st
         val progressValue = if (maxProgressProvider() > 0) {
             (progressProvider().toFloat() / maxProgressProvider().toFloat()).coerceIn(0f, 1f)
         } else 0f
-        val strokeWidthPx = 3.dp.toPx()
+        val strokeWidthPx = 2.dp.toPx()
         val diameter = size.minDimension - strokeWidthPx
         val radius = diameter / 2
         val topLeftOffset = center - Offset(radius, radius)
@@ -204,7 +198,7 @@ fun OngoingActionProgress(
 
             val scale by animateFloatAsState(
                 targetValue = if (isPressed) 0.9f else 1f,
-                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                animationSpec = tween(150, easing = FastOutSlowInEasing),
                 label = "ScaleAnimation"
             )
 
@@ -271,29 +265,21 @@ fun OngoingActionProgress(
                     )
                 }
             } else {
-                val animatedBaseModifier = baseModifier.animateContentSize(
-                    animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f)
-                )
-
                 AnimatedContent(
                     targetState = state.activeStateType,
                     transitionSpec = {
-                        val morphSpring = spring<Float>(
-                            dampingRatio = 0.7f,
-                            stiffness = 400f
-                        )
                         (
-                            (fadeIn(morphSpring) + scaleIn(initialScale = 0.4f, animationSpec = morphSpring) + 
-                                slideInVertically(animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f), initialOffsetY = { it / 2 })) togetherWith 
-                            (fadeOut(tween(150)) + scaleOut(targetScale = 0.6f, animationSpec = morphSpring) + 
-                                slideOutVertically(animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f), targetOffsetY = { -it / 2 }))
-                        ).using(SizeTransform(clip = false, sizeAnimationSpec = { _, _ -> 
-                            spring(dampingRatio = 0.7f, stiffness = 400f) 
-                        }))
+                            (fadeIn(tween(250, easing = FastOutSlowInEasing)) + 
+                             scaleIn(initialScale = 0.4f, animationSpec = tween(250, easing = FastOutSlowInEasing)) + 
+                                 slideInVertically(animationSpec = tween(250, easing = FastOutSlowInEasing), initialOffsetY = { it / 2 })) togetherWith 
+                            (fadeOut(tween(150, easing = FastOutSlowInEasing)) + 
+                             scaleOut(targetScale = 0.6f, animationSpec = tween(150, easing = FastOutSlowInEasing)) + 
+                                 slideOutVertically(animationSpec = tween(150, easing = FastOutSlowInEasing), targetOffsetY = { -it / 2 }))
+                        )
                     },
                     label = "IndicatorTypeCrossfade"
                 ) { currentType ->
-                    val circleModifier = animatedBaseModifier
+                    val circleModifier = baseModifier
                         .size(30.dp)
                         .alpha(state.opacity)
                         .clip(RoundedCornerShape(15.dp))
@@ -328,7 +314,7 @@ fun OngoingActionProgress(
                                 launch { sparkScale.animateTo(1.2f, tween(50)) }
                                 sparkAlpha.animateTo(1f, tween(50))
                                 sparkAlpha.animateTo(0f, tween(50))
-                                launch { sparkScale.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 400f)) }
+                                launch { sparkScale.animateTo(1f, tween(300, easing = FastOutSlowInEasing)) }
                                 sparkAlpha.animateTo(1f, tween(40))
                                 sparkAlpha.animateTo(0f, tween(400))
                                 hasSparked = true
@@ -405,14 +391,14 @@ fun OngoingActionProgress(
                                 progressProvider = { state.progress },
                                 maxProgressProvider = { state.maxProgress },
                                 statusColor = statusColor,
-                                modifier = Modifier.fillMaxSize()
+                                modifier = Modifier.size(26.dp) // Sized down from fillMaxSize (30dp)
                             )
 
                             AnimatedContent(
                                 targetState = displayedIcon != null,
                                 transitionSpec = {
-                                    (fadeIn(tween(200)) + scaleIn(initialScale = 0.8f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow))) togetherWith
-                                    (fadeOut(tween(150)) + scaleOut(targetScale = 0.8f, animationSpec = tween(150)))
+                                    (fadeIn(tween(200, easing = FastOutSlowInEasing)) + scaleIn(initialScale = 0.8f, animationSpec = tween(200, easing = FastOutSlowInEasing))) togetherWith
+                                    (fadeOut(tween(150, easing = FastOutSlowInEasing)) + scaleOut(targetScale = 0.8f, animationSpec = tween(150, easing = FastOutSlowInEasing)))
                                 },
                                 label = "CompactAppIconPresence"
                             ) { hasIcon ->
@@ -420,7 +406,7 @@ fun OngoingActionProgress(
                                     Image(
                                         bitmap = displayedIcon!!,
                                         contentDescription = "App icon",
-                                        modifier = Modifier.size(18.dp).clip(RoundedCornerShape(18.dp)),
+                                        modifier = Modifier.size(16.dp).clip(RoundedCornerShape(8.dp)),
                                         colorFilter = null,
                                     )
                                 }
