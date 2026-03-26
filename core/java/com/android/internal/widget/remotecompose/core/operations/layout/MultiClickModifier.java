@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import com.android.internal.widget.remotecompose.core.PaintOperation;
 import com.android.internal.widget.remotecompose.core.RemoteContext;
 import com.android.internal.widget.remotecompose.core.WireBuffer;
 import com.android.internal.widget.remotecompose.core.documentation.DocumentationBuilder;
+import com.android.internal.widget.remotecompose.core.documentation.DocumentedOperation;
 import com.android.internal.widget.remotecompose.core.operations.TextData;
 import com.android.internal.widget.remotecompose.core.operations.Utils;
 import com.android.internal.widget.remotecompose.core.operations.layout.managers.LayoutManager;
@@ -43,14 +44,24 @@ import com.android.internal.widget.remotecompose.core.serialize.SerializeTags;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Represents a click modifier + actions */
-public class ClickModifierOperation extends PaintOperation
+/**
+ * Represents a click modifier + actions
+ * This modifier supports single click, double click as well as long press interactions.
+ * It aims to replace ClickModifierOperation.
+ */
+public class MultiClickModifier extends PaintOperation
         implements Container,
         ModifierOperation,
         DecoratorComponent,
         ClickHandler,
         AccessibleComponent {
-    private static final int OP_CODE = Operations.MODIFIER_CLICK;
+    private static final int OP_CODE = Operations.MODIFIER_MULTI_CLICK;
+
+    public static final int CLICK_TYPE_SINGLE = 0;
+    public static final int CLICK_TYPE_LONG = 1;
+    public static final int CLICK_TYPE_DOUBLE = 2;
+
+    int mClickType = CLICK_TYPE_SINGLE;
 
     long mAnimateRippleStart = 0;
     float mAnimateRippleX = 0f;
@@ -63,6 +74,13 @@ public class ClickModifierOperation extends PaintOperation
     public @NonNull float [] locationInWindow = new float[2];
 
     @NonNull PaintBundle mPaint = new PaintBundle();
+
+    public MultiClickModifier() {
+    }
+
+    public MultiClickModifier(int clickType) {
+        mClickType = clickType;
+    }
 
     @Override
     public boolean isClickable() {
@@ -103,7 +121,7 @@ public class ClickModifierOperation extends PaintOperation
 
     @Override
     public void write(@NonNull WireBuffer buffer) {
-        apply(buffer);
+        apply(buffer, mClickType);
     }
 
     @NonNull
@@ -111,6 +129,9 @@ public class ClickModifierOperation extends PaintOperation
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("ClickModifier");
+        if (mClickType != CLICK_TYPE_SINGLE) {
+            sb.append(" type: " + mClickType);
+        }
         for (Operation modifierOperation : mList) {
             sb.append("\n        ");
             sb.append(modifierOperation.toString());
@@ -188,7 +209,11 @@ public class ClickModifierOperation extends PaintOperation
 
     @Override
     public void serializeToString(int indent, @NonNull StringSerializer serializer) {
-        serializer.append(indent, "CLICK_MODIFIER");
+        if (mClickType == 0) {
+            serializer.append(indent, "CLICK_MODIFIER");
+        } else {
+            serializer.append(indent, "CLICK_MODIFIER " + mClickType);
+        }
         for (Operation o : mList) {
             if (o instanceof ActionOperation) {
                 ((ActionOperation) o).serializeToString(indent + 1, serializer);
@@ -203,9 +228,50 @@ public class ClickModifierOperation extends PaintOperation
             @NonNull Component component,
             float x,
             float y) {
-        if (!component.isVisible()) {
+        if (mClickType != CLICK_TYPE_SINGLE || !component.isVisible()) {
             return false;
         }
+        performAction(context, document, component, x, y);
+        context.hapticEffect(3);
+        return true;
+    }
+
+    @Override
+    public boolean onLongPress(
+            @NonNull RemoteContext context,
+            @NonNull CoreDocument document,
+            @NonNull Component component,
+            float x,
+            float y) {
+        if (mClickType != CLICK_TYPE_LONG || !component.isVisible()) {
+            return false;
+        }
+        performAction(context, document, component, x, y);
+        context.hapticEffect(0);
+        return true;
+    }
+
+    @Override
+    public boolean onDoubleClick(
+            @NonNull RemoteContext context,
+            @NonNull CoreDocument document,
+            @NonNull Component component,
+            float x,
+            float y) {
+        if (mClickType != CLICK_TYPE_DOUBLE || !component.isVisible()) {
+            return false;
+        }
+        performAction(context, document, component, x, y);
+        context.hapticEffect(3);
+        return true;
+    }
+
+    private void performAction(
+            @NonNull RemoteContext context,
+            @NonNull CoreDocument document,
+            @NonNull Component component,
+            float x,
+            float y) {
         if (context.getTouchVersion() == LayoutManager.FIX_TOUCH_EVENT) {
             if (context.isAnimationEnabled()) {
                 // x and y are already content-relative coordinates
@@ -226,20 +292,6 @@ public class ClickModifierOperation extends PaintOperation
                 ((ActionOperation) o).runAction(context, document, component, x, y);
             }
         }
-        context.hapticEffect(3);
-        return true;
-    }
-
-    @Override
-    public boolean onLongPress(@NonNull RemoteContext context, @NonNull CoreDocument document,
-            @NonNull Component component, float x, float y) {
-        return false;
-    }
-
-    @Override
-    public boolean onDoubleClick(@NonNull RemoteContext context, @NonNull CoreDocument document,
-            @NonNull Component component, float x, float y) {
-        return false;
     }
 
     /**
@@ -255,8 +307,9 @@ public class ClickModifierOperation extends PaintOperation
     /**
      * Write the operation on the buffer
      */
-    public static void apply(@NonNull WireBuffer buffer) {
+    public static void apply(@NonNull WireBuffer buffer, int clickType) {
         buffer.start(OP_CODE);
+        buffer.writeInt(clickType);
     }
 
     /**
@@ -266,7 +319,8 @@ public class ClickModifierOperation extends PaintOperation
      * @param operations the list of operations that will be added to
      */
     public static void read(@NonNull WireBuffer buffer, @NonNull List<Operation> operations) {
-        operations.add(new ClickModifierOperation());
+        int clickType = buffer.readInt();
+        operations.add(new MultiClickModifier(clickType));
     }
 
     /**
@@ -277,12 +331,18 @@ public class ClickModifierOperation extends PaintOperation
     public static void documentation(@NonNull DocumentationBuilder doc) {
         doc.operation("Modifier Operations", OP_CODE, name())
                 .description(
-                        "Click modifier. This operation contains"
-                                + " a list of action operations executed on click");
+                        "MultiClick modifier. This operation contains"
+                                + " a list of action operations executed on click")
+                .field(
+                        DocumentedOperation.INT,
+                        "clickType",
+                        "Type of click (0=single, 1=long, 2=double)");
     }
 
     @Override
     public void serialize(@NonNull MapSerializer serializer) {
-        serializer.addTags(SerializeTags.MODIFIER).addType("ClickModifierOperation");
+        serializer.addTags(SerializeTags.MODIFIER)
+                .addType("MultiClickModifier")
+                .add("clickType", mClickType);
     }
 }
