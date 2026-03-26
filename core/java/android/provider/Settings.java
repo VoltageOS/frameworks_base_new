@@ -7458,6 +7458,12 @@ public final class Settings {
          */
         public static final String GESTURE_NAVBAR_LENGTH_MODE = "gesture_navbar_length_mode";
 
+        /**
+         * Gesture navbar auto-hide mode.
+         * @hide
+         */
+        public static final String GESTURE_NAVBAR_AUTO_HIDE = "gesture_navbar_auto_hide";
+
         /** @hide */
         public static final String BACK_GESTURE_HEIGHT = "back_gesture_height";
 
