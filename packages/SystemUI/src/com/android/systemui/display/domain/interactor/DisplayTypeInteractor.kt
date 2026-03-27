@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package com.android.systemui.biometrics.domain.interactor
+package com.android.systemui.display.domain.interactor
 
-import com.android.systemui.common.ui.domain.interactor.configurationInteractor
-import com.android.systemui.display.domain.interactor.shadeDisplayTypeInteractor
-import com.android.systemui.kosmos.Kosmos
-import com.android.systemui.kosmos.Kosmos.Fixture
+import android.view.Display
+import com.android.systemui.display.data.repository.DisplayTypeRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
-val Kosmos.peripheralFpsInteractor by Fixture {
-    PeripheralFpsInteractor(
-        configurationInteractor = configurationInteractor,
-        fingerprintPropertyInteractor = fingerprintPropertyInteractor,
-        displayTypeInteractor = shadeDisplayTypeInteractor,
-    )
+/** Extracts the display type logic for current display. */
+class DisplayTypeInteractor(displayTypeRepository: DisplayTypeRepository) {
+
+    /** True if display type is `TYPE_INTERNAL` */
+    val isInternalDisplay: Flow<Boolean> =
+        displayTypeRepository.displayType.map { it == Display.TYPE_INTERNAL }.distinctUntilChanged()
 }
