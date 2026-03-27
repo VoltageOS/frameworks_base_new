@@ -1396,6 +1396,9 @@ public class Typeface {
 
     /** @hide */
     public static Typeface getOverrideTypeface(@NonNull String familyName) {
+        if (DEFAULT.mPendingTypeface != null && DEFAULT.mPendingTypeface.get() == null) {
+            return getSystemDefaultTypeface(familyName);
+        }
         Typeface tf = FontController.getOverrideTypeface(familyName);
         return tf == null ? getSystemDefaultTypeface(familyName) : tf;
     }
