@@ -15,7 +15,11 @@
  */
 package com.android.systemui.statusbar.policy
 
+import android.content.Context
+import android.content.res.Configuration
 import android.content.res.Resources
+import android.provider.Settings
+import android.os.UserHandle
 import com.android.systemui.dagger.SysUISingleton
 import com.android.systemui.flags.FeatureFlags
 import com.android.systemui.flags.Flags
@@ -24,11 +28,13 @@ import javax.inject.Inject
 
 /**
  * Source of truth for split shade state: should or should not use split shade based on orientation,
- * screen width, and flags.
+ * screen width, flags, and user preference.
  */
 @SysUISingleton
-class SplitShadeStateControllerImpl @Inject constructor(private val featureFlags: FeatureFlags) :
-    SplitShadeStateController {
+class SplitShadeStateControllerImpl @Inject constructor(
+    private val context: Context,
+    private val featureFlags: FeatureFlags
+) : SplitShadeStateController {
 
     @Deprecated(
         message = "This is deprecated, please use ShadeInteractor#isSplitShade instead",
@@ -39,8 +45,21 @@ class SplitShadeStateControllerImpl @Inject constructor(private val featureFlags
             ),
     )
     override fun shouldUseSplitNotificationShade(resources: Resources): Boolean {
-        return (resources.getBoolean(R.bool.config_use_split_notification_shade) ||
+        val splitShadeUserPreference = Settings.System.getIntForUser(
+            context.contentResolver,
+            Settings.System.QS_SPLIT_SHADE,
+            -1,
+            UserHandle.USER_CURRENT
+        )
+
+        val defaultBehavior = resources.getBoolean(R.bool.config_use_split_notification_shade) ||
             (featureFlags.isEnabled(Flags.LOCKSCREEN_ENABLE_LANDSCAPE) &&
-                resources.getBoolean(R.bool.force_config_use_split_notification_shade)))
+                resources.getBoolean(R.bool.force_config_use_split_notification_shade))
+
+        return when (splitShadeUserPreference) {
+            0 -> false
+            1 -> resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE || defaultBehavior
+            else -> defaultBehavior
+        }
     }
 }
