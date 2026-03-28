@@ -5047,7 +5047,7 @@ public class PackageInstallerSession extends IPackageInstallerSession.Stub {
                     case PackageId.PIXEL_HEALTH_NAME:
                         throw new PackageManagerException(errorCode,
                                 "Only the first-party package source and shell are allowed " +
-                                        "to install " + PackageId.PIXEL_HEALTH_NAME);
+                                        "to install " + mPackageName);
                 }
             }
         }
