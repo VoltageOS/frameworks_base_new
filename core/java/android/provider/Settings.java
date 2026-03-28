@@ -7287,6 +7287,12 @@ public final class Settings {
          */
         public static final String NETWORK_TRAFFIC_HIDEARROW = "network_traffic_hidearrow";
 
+        /**
+         * Whether to use a two-column layout for notifications and Quick Settings in landscape
+         * @hide
+         */
+        public static final String QS_SPLIT_SHADE = "qs_split_shade";
+
 	/**
          * Whether to display cross sign for a data disabled connection
          * @hide
