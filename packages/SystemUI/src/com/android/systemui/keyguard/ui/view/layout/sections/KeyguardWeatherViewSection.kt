@@ -21,6 +21,7 @@ package com.android.systemui.keyguard.ui.view.layout.sections
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewTreeObserver
 import android.widget.TextView
 import androidx.constraintlayout.widget.Barrier
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -48,6 +49,7 @@ constructor(
 
     private var weatherInlineView: TextView? = null
     private var weatherInlineController: WeatherViewController? = null
+    private var preDrawListener: ViewTreeObserver.OnPreDrawListener? = null
 
     private fun isEnabled() =
         smartspaceController.isOmniWeatherEnabled && !smartspaceController.isEnabled
@@ -61,6 +63,16 @@ constructor(
             R.layout.keyguard_weather_area_inline, null, false,
         ) as TextView
         constraintLayout.addView(weatherInlineView)
+
+        preDrawListener = ViewTreeObserver.OnPreDrawListener {
+            val sliceView = constraintLayout.findViewById<View>(R.id.keyguard_slice_view)
+            sliceView?.let {
+                weatherInlineView?.translationX = it.translationX
+                weatherInlineView?.translationY = it.translationY
+            }
+            true
+        }
+        weatherInlineView?.viewTreeObserver?.addOnPreDrawListener(preDrawListener)
 
         weatherView = layoutInflater.inflate(
             R.layout.keyguard_weather_area, null, false,
@@ -152,6 +164,13 @@ constructor(
 
     override fun removeViews(constraintLayout: ConstraintLayout) {
         if (!isEnabled()) return
+
+        preDrawListener?.let {
+            if (weatherInlineView?.viewTreeObserver?.isAlive == true) {
+                weatherInlineView?.viewTreeObserver?.removeOnPreDrawListener(it)
+            }
+            preDrawListener = null
+        }
 
         weatherInlineController?.removeObserver()
         weatherInlineController = null
