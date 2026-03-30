@@ -120,9 +120,6 @@ constructor(
 
             when {
                 isModern && !isLargeClock -> {
-                    try {
-                        setMargin(ClockViewIds.LOCKSCREEN_CLOCK_VIEW_SMALL, ConstraintSet.TOP, topClockMargin)
-                    } catch (e: Exception) {}
 
                     constrainWidth(R.id.keyguard_slice_view, ConstraintSet.MATCH_CONSTRAINT)
                     clear(R.id.keyguard_slice_view, ConstraintSet.START)
