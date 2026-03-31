@@ -530,6 +530,7 @@ public class ClipboardOverlayController implements ClipboardListener.ClipboardOv
     public void onSaveToSidebarButtonTapped() {
         Intent saveIntent = new Intent(Intent.ACTION_SEND);
         saveIntent.setComponent(new android.content.ComponentName("com.libremobileos.sidebar", "com.libremobileos.sidebar.ui.sidebar.SmartClipboardShareActivity"));
+        saveIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         ClipData clipData = mClipboardModel.getClipData();
         if (clipData != null && clipData.getItemCount() > 0) {
             saveIntent.setClipData(clipData);
