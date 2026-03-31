@@ -9582,11 +9582,11 @@
     <protected-broadcast android:name="lineageos.platform.intent.action.CHARGING_CONTROL_CANCEL_ONCE" />
 
     <!-- @hide -->
-    <permission android:name="lineageos.permission.HARDWARE_ABSTRACTION_ACCESS"
+    <permission android:name="voltageos.permission.HARDWARE_ABSTRACTION_ACCESS"
                 android:protectionLevel="signature|privileged" />
 
     <!-- @hide  -->
-    <permission android:name="lineageos.permission.MANAGE_LIVEDISPLAY"
+    <permission android:name="voltageos.permission.MANAGE_LIVEDISPLAY"
                 android:protectionLevel="signature|privileged" />
 
     <application android:process="system"
