@@ -69,11 +69,11 @@ public final class PixelPropsUtils {
     private static final String PACKAGE_GOOGLE = "com.google";
     private static final String PACKAGE_NEXUS_LAUNCHER = "com.google.android.apps.nexuslauncher";
     private static final String PACKAGE_SI = "com.google.android.settings.intelligence";
-    private static final String SPOOF_PIXEL_PROPS = "persist.sys.pphooks.enable";
+    private static final String SPOOF_PP = "persist.sys.pp";
 
-    private static final String PROP_HOOKS = "persist.sys.pihooks_";
-    public static final String SPOOF_PIXEL_GMS = "persist.sys.pixelprops.gms";
-    public static final String ENABLE_GAME_PROP_OPTIONS = "persist.sys.gameprops.enabled";
+    private static final String PROP_HOOKS = "persist.sys.binfo.";
+    public static final String SPOOF_GMS = "persist.sys.pp.gms";
+    public static final String ENABLE_GAME_PROP_OPTIONS = "persist.sys.pp.games";
 
     private static final String TAG = PixelPropsUtils.class.getSimpleName();
     private static final boolean DEBUG = false;
@@ -257,7 +257,7 @@ public final class PixelPropsUtils {
     }
 
     public static void spoofBuildGms() {
-        if (!SystemProperties.getBoolean(SPOOF_PIXEL_GMS, true))
+        if (!SystemProperties.getBoolean(SPOOF_GMS, true))
             return;
         for (String key : GMS_SPOOF_KEYS) {
             setPropValue(key, SystemProperties.get(PROP_HOOKS + key));
@@ -277,7 +277,7 @@ public final class PixelPropsUtils {
         boolean isPixelDevice = SystemProperties.get("ro.soc.manufacturer").equalsIgnoreCase("Google");
         boolean isMainlineDevice = isPixelDevice && model.matches("Pixel (8|9|10)[a-zA-Z ]*");
         boolean isTensorDevice = isPixelDevice && model.matches("Pixel (6|7|8|9|10)[a-zA-Z ]*");
-        boolean isPixelGmsEnabled = SystemProperties.getBoolean(SPOOF_PIXEL_GMS, true);
+        boolean isPixelGmsEnabled = SystemProperties.getBoolean(SPOOF_GMS, true);
         propsToChangeGeneric.forEach((k, v) -> setPropValue(k, v));
         if (packageName == null || processName == null || packageName.isEmpty()) {
             return;
@@ -287,7 +287,7 @@ public final class PixelPropsUtils {
         }
         if (packageName.equals(PACKAGE_FINSKY)) {
             String[] finskyProps = {"FINGERPRINT", "SECURITY_PATCH", "DEVICE_INITIAL_SDK_INT"};
-            if (SystemProperties.getBoolean(SPOOF_PIXEL_GMS, true)) {
+            if (SystemProperties.getBoolean(SPOOF_GMS, true)) {
                 dlog("Spoofing a few props for: " + packageName);
                 for (String key : finskyProps) {
                     setPropValue(key, SystemProperties.get(PROP_HOOKS + key));
@@ -305,7 +305,7 @@ public final class PixelPropsUtils {
                 }
             }
         } else if (Arrays.asList(packagesToChangeRecentPixel).contains(packageName)) {
-            if (isMainlineDevice || !SystemProperties.getBoolean(SPOOF_PIXEL_PROPS, true)) {
+            if (isMainlineDevice || !SystemProperties.getBoolean(SPOOF_PP, true)) {
                 return;
             } else if (packageName.equals(PACKAGE_GMS) && !sIsGms) {
                 setPropValue("TIME", System.currentTimeMillis());
@@ -319,7 +319,7 @@ public final class PixelPropsUtils {
                         propsToChange.putAll(propsToChangePixel5a);
                     }
                 }
-            } else if (SystemProperties.getBoolean(SPOOF_PIXEL_PROPS, true)) {
+            } else if (SystemProperties.getBoolean(SPOOF_PP, true)) {
                 if (sIsTablet) {
                     propsToChange.putAll(propsToChangePixelTablet);
                 } else {
@@ -370,7 +370,7 @@ public final class PixelPropsUtils {
         Map<String, String> gamePropsToChange = new HashMap<>();
         String[] keys = {"BRAND", "DEVICE", "MANUFACTURER", "MODEL", "FINGERPRINT", "PRODUCT"};
         for (String key : keys) {
-            String systemPropertyKey = "persist.sys.gameprops." + packageName + "." + key;
+            String systemPropertyKey = "persist.sys.pp.game." + packageName + "." + key;
             String value = SystemProperties.get(systemPropertyKey);
             if (value != null && !value.isEmpty()) {
                 gamePropsToChange.put(key, value);
