@@ -15306,6 +15306,7 @@ public class TextView extends View implements ViewTreeObserver.OnPreDrawListener
             saveIntent.setComponent(new android.content.ComponentName("com.libremobileos.sidebar", "com.libremobileos.sidebar.ui.sidebar.SmartClipboardShareActivity"));
             saveIntent.setType("text/plain");
             saveIntent.putExtra(Intent.EXTRA_TEXT, getTransformedText(min, max));
+            saveIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             getContext().startActivity(saveIntent);
             return true;
         }
