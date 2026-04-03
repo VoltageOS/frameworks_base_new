@@ -118,11 +118,11 @@ public class AndroidKeyStoreSpi extends KeyStoreSpi {
 
     private KeyStore2 mKeyStore;
     private @KeyProperties.Namespace int mNamespace = KeyProperties.NAMESPACE_APPLICATION;
-    
-    private static final ThreadLocal<Boolean> sInHack = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
     // Defined in RFC 8410.
     private static final String ED25519_OID = "1.3.101.112";
+    
+    private static final ThreadLocal<Boolean> sInHack = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
     @Override
     public Key engineGetKey(String alias, char[] password) throws NoSuchAlgorithmException,
