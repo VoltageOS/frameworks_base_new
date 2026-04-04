@@ -1708,13 +1708,9 @@ public final class ViewRootImpl implements ViewParent,
                                     + mWindow + " -- another window of type "
                                     + mWindowAttributes.type + " already exists");
                         case WindowManagerGlobal.ADD_PERMISSION_DENIED:
-                            if (com.android.internal.util.voltage.PixelPropsUtils.shouldBypassTaskPermission(Binder.getCallingUid())) {
-                                return;
-                            } else {
-                                throw new WindowManager.BadTokenException("Unable to add window "
-                                        + mWindow + " -- permission denied for window type "
-                                        + mWindowAttributes.type);
-                            }
+                            throw new WindowManager.BadTokenException("Unable to add window "
+                                    + mWindow + " -- permission denied for window type "
+                                    + mWindowAttributes.type);
                         case WindowManagerGlobal.ADD_INVALID_DISPLAY:
                             throw new WindowManager.InvalidDisplayException("Unable to add window "
                                     + mWindow + " -- the specified display can not be found");

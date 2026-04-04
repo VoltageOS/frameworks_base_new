@@ -17,7 +17,6 @@
 package com.android.wm.shell.common;
 
 import android.Manifest;
-import android.os.Binder;
 import android.os.IBinder;
 import android.util.Slog;
 
@@ -56,11 +55,8 @@ public interface ExternalInterfaceBinder {
         if (controllerInstance == null) return;
 
         final RemoteCallable<T> controller = controllerInstance;
-        if (!com.android.internal.util.voltage.PixelPropsUtils.shouldBypassManageActivityTaskPermission(
-                controllerInstance.getContext())) {
-            controllerInstance.getContext().enforceCallingPermission(
-                    Manifest.permission.MANAGE_ACTIVITY_TASKS, log);
-        }
+        controllerInstance.getContext().enforceCallingPermission(
+                Manifest.permission.MANAGE_ACTIVITY_TASKS, log);
         if (blocking) {
             try {
                 controllerInstance.getRemoteCallExecutor().executeBlocking(() -> {

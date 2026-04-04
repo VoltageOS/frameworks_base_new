@@ -1585,9 +1585,6 @@ public class ContentProviderHelper {
             return "ContentProvider access not allowed from sdk sandbox UID. "
                     + "ProviderInfo: " + cpi.toString();
         }
-        if (cpi.name.contains("com.google.")) {
-            return null;
-        }
         boolean checkedGrants = false;
         if (checkUser) {
             // Looking for cross-user grants before enforcing the typical cross-users permissions
