@@ -25,6 +25,9 @@ import android.annotation.UserHandleAware;
 import android.content.Context;
 import android.os.RemoteException;
 
+import com.android.internal.widget.LockscreenCredential;
+import com.android.internal.widget.VerifyCredentialResponse;
+
 import java.util.List;
 
 /**
@@ -47,6 +50,27 @@ public final class AppLockManager {
 
     /** @hide */
     public static final boolean DEFAULT_HIDE_IN_LAUNCHER = false;
+
+    /** @hide */
+    public static final int APP_LOCK_CREDENTIAL_TYPE_NONE = 0;
+
+    /** @hide */
+    public static final int APP_LOCK_CREDENTIAL_TYPE_PIN = 1;
+
+    /** @hide */
+    public static final int APP_LOCK_CREDENTIAL_TYPE_PATTERN = 2;
+
+    /** @hide */
+    public static final int APP_LOCK_RELOCK_BEHAVIOR_TIMEOUT = 0;
+
+    /** @hide */
+    public static final int APP_LOCK_RELOCK_BEHAVIOR_SCREEN_OFF = 1;
+
+    /** @hide */
+    public static final boolean DEFAULT_BIOMETRIC_PROMPT_ENABLED = false;
+
+    /** @hide */
+    public static final int DEFAULT_RELOCK_BEHAVIOR = APP_LOCK_RELOCK_BEHAVIOR_TIMEOUT;
 
     /**
      * Intent action for starting credential activity in SystemUI.
@@ -191,6 +215,139 @@ public final class AppLockManager {
     public boolean isBiometricsAllowed() {
         try {
             return mService.isBiometricsAllowed(mContext.getUserId());
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Set whether to auto-show the biometric prompt when app lock is opened.
+     *
+     * @hide
+     */
+    @UserHandleAware
+    @RequiresPermission(Manifest.permission.MANAGE_APP_LOCK)
+    public void setBiometricPromptEnabled(boolean enabled) {
+        try {
+            mService.setBiometricPromptEnabled(enabled, mContext.getUserId());
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Whether app lock should auto-show biometrics when available.
+     *
+     * @hide
+     */
+    @UserHandleAware
+    public boolean isBiometricPromptEnabled() {
+        try {
+            return mService.isBiometricPromptEnabled(mContext.getUserId());
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Set the app lock relock behavior.
+     *
+     * @hide
+     */
+    @UserHandleAware
+    @RequiresPermission(Manifest.permission.MANAGE_APP_LOCK)
+    public void setRelockBehavior(int relockBehavior) {
+        try {
+            mService.setRelockBehavior(relockBehavior, mContext.getUserId());
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Get the app lock relock behavior.
+     *
+     * @hide
+     */
+    @UserHandleAware
+    public int getRelockBehavior() {
+        try {
+            return mService.getRelockBehavior(mContext.getUserId());
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Set the separate app lock credential for the current user. This also enables separate
+     * app lock credentials.
+     *
+     * @hide
+     */
+    @UserHandleAware
+    @RequiresPermission(Manifest.permission.MANAGE_APP_LOCK)
+    public void setSeparateCredential(@NonNull LockscreenCredential credential) {
+        try {
+            mService.setSeparateCredential(credential, mContext.getUserId());
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Clear the separate app lock credential and fall back to the device credential.
+     *
+     * @hide
+     */
+    @UserHandleAware
+    @RequiresPermission(Manifest.permission.MANAGE_APP_LOCK)
+    public void clearSeparateCredential() {
+        try {
+            mService.clearSeparateCredential(mContext.getUserId());
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Whether app lock uses a separate credential instead of the device credential.
+     *
+     * @hide
+     */
+    @UserHandleAware
+    public boolean isSeparateCredentialEnabled() {
+        try {
+            return mService.isSeparateCredentialEnabled(mContext.getUserId());
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Get the currently configured separate app lock credential type.
+     *
+     * @hide
+     */
+    @UserHandleAware
+    public int getSeparateCredentialType() {
+        try {
+            return mService.getSeparateCredentialType(mContext.getUserId());
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Verify the supplied app lock credential.
+     *
+     * @hide
+     */
+    @UserHandleAware
+    @RequiresPermission(Manifest.permission.MANAGE_APP_LOCK)
+    @NonNull
+    public VerifyCredentialResponse verifyCredential(@NonNull LockscreenCredential credential) {
+        try {
+            return mService.verifyCredential(credential, mContext.getUserId());
         } catch (RemoteException e) {
             throw e.rethrowFromSystemServer();
         }

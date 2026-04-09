@@ -17,15 +17,23 @@
 package com.android.server.app
 
 import android.app.AppLockData
+import android.app.AppLockManager.APP_LOCK_CREDENTIAL_TYPE_NONE
+import android.app.AppLockManager.APP_LOCK_CREDENTIAL_TYPE_PATTERN
+import android.app.AppLockManager.APP_LOCK_CREDENTIAL_TYPE_PIN
+import android.app.AppLockManager.APP_LOCK_RELOCK_BEHAVIOR_SCREEN_OFF
+import android.app.AppLockManager.APP_LOCK_RELOCK_BEHAVIOR_TIMEOUT
+import android.app.AppLockManager.DEFAULT_BIOMETRIC_PROMPT_ENABLED
 import android.app.AppLockManager.DEFAULT_BIOMETRICS_ALLOWED
 import android.app.AppLockManager.DEFAULT_HIDE_IN_LAUNCHER
 import android.app.AppLockManager.DEFAULT_PROTECT_APP
 import android.app.AppLockManager.DEFAULT_REDACT_NOTIFICATION
+import android.app.AppLockManager.DEFAULT_RELOCK_BEHAVIOR
 import android.app.AppLockManager.DEFAULT_TIMEOUT
 import android.os.FileUtils
 import android.os.FileUtils.S_IRWXU
 import android.os.FileUtils.S_IRWXG
 import android.util.ArrayMap
+import android.util.Base64
 import android.util.Slog
 
 import java.io.File
@@ -38,7 +46,7 @@ import org.json.JSONObject
 private const val APP_LOCK_DIR_NAME = "app_lock"
 private const val APP_LOCK_CONFIG_FILE = "app_lock_config.json"
 
-private const val CURRENT_VERSION = 3
+private const val CURRENT_VERSION = 5
 
 // Only in version 0
 private const val KEY_PACKAGES = "packages"
@@ -57,6 +65,16 @@ private const val KEY_BIOMETRICS_ALLOWED = "biometrics_allowed"
 // From version 2 and up.
 private const val KEY_HIDE_FROM_LAUNCHER = "hide_from_launcher"
 
+// From version 4 and up.
+private const val KEY_SEPARATE_CREDENTIAL_ENABLED = "separate_credential_enabled"
+private const val KEY_SEPARATE_CREDENTIAL_TYPE = "separate_credential_type"
+private const val KEY_SEPARATE_CREDENTIAL_SALT = "separate_credential_salt"
+private const val KEY_SEPARATE_CREDENTIAL_HASH = "separate_credential_hash"
+
+// From version 5 and up.
+private const val KEY_BIOMETRIC_PROMPT_ENABLED = "biometric_prompt_enabled"
+private const val KEY_RELOCK_BEHAVIOR = "relock_behavior"
+
 /**
  * Container for app lock configuration. Also handles logic of reading
  * and writing configuration to disk, serialized as a JSON file.
@@ -73,6 +91,12 @@ internal class AppLockConfig(dataDir: File) {
 
     var appLockTimeout: Long = DEFAULT_TIMEOUT
     var biometricsAllowed = DEFAULT_BIOMETRICS_ALLOWED
+    var biometricPromptEnabled = DEFAULT_BIOMETRIC_PROMPT_ENABLED
+    var relockBehavior = DEFAULT_RELOCK_BEHAVIOR
+    var separateCredentialEnabled = false
+    var separateCredentialType = APP_LOCK_CREDENTIAL_TYPE_NONE
+    private var separateCredentialSalt: ByteArray? = null
+    private var separateCredentialHash: ByteArray? = null
 
     init {
         appLockDir.mkdirs()
@@ -261,6 +285,49 @@ internal class AppLockConfig(dataDir: File) {
         return appLockDataMap[packageName]?.hideFromLauncher == true
     }
 
+    fun setSeparateCredential(
+        credentialType: Int,
+        credentialSalt: ByteArray,
+        credentialHash: ByteArray,
+    ): Boolean {
+        if (credentialType != APP_LOCK_CREDENTIAL_TYPE_PIN
+                && credentialType != APP_LOCK_CREDENTIAL_TYPE_PATTERN) {
+            throw IllegalArgumentException("Unsupported app lock credential type $credentialType")
+        }
+        separateCredentialEnabled = true
+        separateCredentialType = credentialType
+        separateCredentialSalt = credentialSalt.copyOf()
+        separateCredentialHash = credentialHash.copyOf()
+        return true
+    }
+
+    fun clearSeparateCredential(): Boolean {
+        val changed = separateCredentialEnabled ||
+            separateCredentialType != APP_LOCK_CREDENTIAL_TYPE_NONE ||
+            separateCredentialSalt != null ||
+            separateCredentialHash != null
+        separateCredentialSalt?.fill(0)
+        separateCredentialHash?.fill(0)
+        separateCredentialEnabled = false
+        separateCredentialType = APP_LOCK_CREDENTIAL_TYPE_NONE
+        separateCredentialSalt = null
+        separateCredentialHash = null
+        return changed
+    }
+
+    fun hasSeparateCredential(): Boolean =
+        separateCredentialEnabled &&
+            separateCredentialType != APP_LOCK_CREDENTIAL_TYPE_NONE &&
+            separateCredentialSalt != null &&
+            separateCredentialHash != null
+
+    fun getSeparateCredentialSalt(): ByteArray? = separateCredentialSalt?.copyOf()
+
+    fun getSeparateCredentialHash(): ByteArray? = separateCredentialHash?.copyOf()
+
+    fun isRelockBehaviorValid(value: Int): Boolean =
+        value == APP_LOCK_RELOCK_BEHAVIOR_TIMEOUT || value == APP_LOCK_RELOCK_BEHAVIOR_SCREEN_OFF
+
     /**
      * Parse contents from [appLockConfigFile].
      */
@@ -281,6 +348,27 @@ internal class AppLockConfig(dataDir: File) {
 
                 appLockTimeout = rootObject.optLong(KEY_TIMEOUT, DEFAULT_TIMEOUT)
                 biometricsAllowed = rootObject.optBoolean(KEY_BIOMETRICS_ALLOWED, DEFAULT_BIOMETRICS_ALLOWED)
+                biometricPromptEnabled = rootObject.optBoolean(
+                    KEY_BIOMETRIC_PROMPT_ENABLED,
+                    DEFAULT_BIOMETRIC_PROMPT_ENABLED
+                )
+                relockBehavior = rootObject.optInt(KEY_RELOCK_BEHAVIOR, DEFAULT_RELOCK_BEHAVIOR)
+                    .takeIf(::isRelockBehaviorValid) ?: DEFAULT_RELOCK_BEHAVIOR
+                separateCredentialEnabled =
+                    rootObject.optBoolean(KEY_SEPARATE_CREDENTIAL_ENABLED, false)
+                separateCredentialType =
+                    rootObject.optInt(KEY_SEPARATE_CREDENTIAL_TYPE, APP_LOCK_CREDENTIAL_TYPE_NONE)
+                separateCredentialSalt = decodeFromBase64(
+                    if (rootObject.isNull(KEY_SEPARATE_CREDENTIAL_SALT)) null
+                    else rootObject.optString(KEY_SEPARATE_CREDENTIAL_SALT)
+                )
+                separateCredentialHash = decodeFromBase64(
+                    if (rootObject.isNull(KEY_SEPARATE_CREDENTIAL_HASH)) null
+                    else rootObject.optString(KEY_SEPARATE_CREDENTIAL_HASH)
+                )
+                if (!hasSeparateCredential()) {
+                    clearSeparateCredential()
+                }
                 val appLockDataList = rootObject.optJSONArray(KEY_APP_LOCK_DATA_LIST) ?: return@use
                 for (i in 0 until appLockDataList.length()) {
                     val appLockData = appLockDataList.getJSONObject(i)
@@ -309,6 +397,9 @@ internal class AppLockConfig(dataDir: File) {
         appLockDataMap.clear()
         appLockTimeout = DEFAULT_TIMEOUT
         biometricsAllowed = DEFAULT_BIOMETRICS_ALLOWED
+        biometricPromptEnabled = DEFAULT_BIOMETRIC_PROMPT_ENABLED
+        relockBehavior = DEFAULT_RELOCK_BEHAVIOR
+        clearSeparateCredential()
     }
 
     private fun migrateData(jsonData: JSONObject, dataVersion: Int) {
@@ -373,6 +464,8 @@ internal class AppLockConfig(dataDir: File) {
                     }
                 }
             }
+            3 -> Unit
+            4 -> Unit
             else -> throw IllegalArgumentException("Unknown data version $dataVersion")
         }
         val nextVersion = dataVersion + 1
@@ -393,6 +486,12 @@ internal class AppLockConfig(dataDir: File) {
             rootObject.put(KEY_VERSION, CURRENT_VERSION)
             rootObject.put(KEY_TIMEOUT, appLockTimeout)
             rootObject.put(KEY_BIOMETRICS_ALLOWED, biometricsAllowed)
+            rootObject.put(KEY_BIOMETRIC_PROMPT_ENABLED, biometricPromptEnabled)
+            rootObject.put(KEY_RELOCK_BEHAVIOR, relockBehavior)
+            rootObject.put(KEY_SEPARATE_CREDENTIAL_ENABLED, separateCredentialEnabled)
+            rootObject.put(KEY_SEPARATE_CREDENTIAL_TYPE, separateCredentialType)
+            rootObject.put(KEY_SEPARATE_CREDENTIAL_SALT, encodeToBase64(separateCredentialSalt))
+            rootObject.put(KEY_SEPARATE_CREDENTIAL_HASH, encodeToBase64(separateCredentialHash))
             rootObject.put(
                 KEY_APP_LOCK_DATA_LIST,
                 JSONArray(
@@ -423,4 +522,10 @@ internal class AppLockConfig(dataDir: File) {
             Slog.wtf(TAG, "Failed to write config to file", e)
         }
     }
+
+    private fun encodeToBase64(value: ByteArray?): String? =
+        value?.let { Base64.encodeToString(it, Base64.NO_WRAP) }
+
+    private fun decodeFromBase64(value: String?): ByteArray? =
+        if (value.isNullOrEmpty()) null else Base64.decode(value, Base64.DEFAULT)
 }

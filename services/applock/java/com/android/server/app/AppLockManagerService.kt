@@ -25,6 +25,11 @@ import android.app.ActivityOptions
 import android.app.ActivityTaskManager
 import android.app.AlarmManager
 import android.app.AppLockData
+import android.app.AppLockManager.APP_LOCK_RELOCK_BEHAVIOR_SCREEN_OFF
+import android.app.AppLockManager.APP_LOCK_RELOCK_BEHAVIOR_TIMEOUT
+import android.app.AppLockManager.APP_LOCK_CREDENTIAL_TYPE_NONE
+import android.app.AppLockManager.APP_LOCK_CREDENTIAL_TYPE_PATTERN
+import android.app.AppLockManager.APP_LOCK_CREDENTIAL_TYPE_PIN
 import android.app.AppLockManager
 import android.app.IAppLockManagerService
 import android.app.KeyguardManager
@@ -43,6 +48,7 @@ import android.os.Process
 import android.os.RemoteException
 import android.os.SystemClock
 import android.os.UserHandle
+import android.security.Scrypt
 import android.util.ArrayMap
 import android.util.ArraySet
 import android.util.Log
@@ -50,6 +56,9 @@ import android.util.Slog
 
 import com.android.internal.R
 import com.android.internal.annotations.GuardedBy
+import com.android.internal.util.ArrayUtils
+import com.android.internal.widget.LockscreenCredential
+import com.android.internal.widget.VerifyCredentialResponse
 import com.android.internal.util.voltage.VoltageUtils
 import com.android.server.LocalServices
 import com.android.server.SystemService
@@ -67,11 +76,20 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.security.MessageDigest
+import java.security.SecureRandom
+import java.time.Duration
 
 internal val TAG = AppLockManagerService::class.simpleName
 
 private const val ACTION_APP_LOCK_TIMEOUT = "com.android.server.app.AppLockManagerService.APP_LOCK_TIMEOUT"
 private const val SETTINGS_PACKAGE = "com.android.settings"
+private const val EXTRA_GO_HOME_ON_CANCEL = "com.android.server.app.extra.GO_HOME_ON_CANCEL"
+private const val APP_LOCK_CREDENTIAL_SALT_LENGTH = 16
+private const val APP_LOCK_CREDENTIAL_HASH_LENGTH = 32
+private const val APP_LOCK_CREDENTIAL_SCRYPT_N = 1 shl 11
+private const val APP_LOCK_CREDENTIAL_SCRYPT_R = 8
+private const val APP_LOCK_CREDENTIAL_SCRYPT_P = 1
 
 internal inline fun logD(crossinline msg: () -> String) {
     if (Log.isLoggable(TAG, Log.DEBUG)) {
@@ -87,6 +105,11 @@ internal inline fun logD(crossinline msg: () -> String) {
 class AppLockManagerService(
     private val context: Context
 ) : IAppLockManagerService.Stub() {
+
+    private data class SeparateCredentialAttemptState(
+        var failedAttempts: Int = 0,
+        var lockoutDeadlineElapsedRealtime: Long = 0L,
+    )
 
     private val localService = LocalService()
     private val serviceScope = CoroutineScope(Dispatchers.Default)
@@ -107,9 +130,15 @@ class AppLockManagerService(
     @GuardedBy("mutex")
     private val unlockedPackages = ArraySet<String>()
 
+    @GuardedBy("mutex")
+    private val separateCredentialAttempts = ArrayMap<Int, SeparateCredentialAttemptState>()
+
     private val biometricUnlocker: BiometricUnlocker by lazy {
         BiometricUnlocker(context)
     }
+
+    private val secureRandom = SecureRandom()
+    private val scrypt by lazy { Scrypt() }
 
     private val atmInternal: ActivityTaskManagerInternal by lazy {
         LocalServices.getService(ActivityTaskManagerInternal::class.java)
@@ -301,7 +330,11 @@ class AppLockManagerService(
                 }
             }
             val timeout = mutex.withLock {
-                userConfigMap[currentUserId]?.appLockTimeout
+                val config = userConfigMap[currentUserId]
+                if (config?.relockBehavior != APP_LOCK_RELOCK_BEHAVIOR_TIMEOUT) {
+                    return@launch
+                }
+                config.appLockTimeout
             } ?: run {
                 Slog.e(TAG, "Failed to retrieve user config for $currentUserId")
                 return@launch
@@ -339,23 +372,59 @@ class AppLockManagerService(
             logD {
                 "$pkg is locked out, asking user to unlock"
             }
-            unlockInternal(pkg, currentUserId,
-                onSuccess = {
-                    serviceScope.launch {
-                        mutex.withLock {
-                            unlockedPackages.add(pkg)
-                        }
-                    }
-                },
-                onCancel = {
-                    // Send user to home on cancel
-                    context.mainExecutor.execute {
-                        atmInternal.startHomeActivity(currentUserId,
-                            "unlockInternal#onCancel")
-                    }
-                }
+            launchCredentialActivity(pkg, currentUserId, true /* goHomeOnCancel */)
+        }
+    }
+
+    private val screenOffReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action != Intent.ACTION_SCREEN_OFF) return
+            serviceScope.launch {
+                handleScreenTurnedOff()
+            }
+        }
+    }
+
+    private suspend fun lockUnlockedPackagesForUser(userId: Int) {
+        val packagesToLock = mutex.withLock {
+            if (userId != currentUserId || unlockedPackages.isEmpty()) {
+                return
+            }
+            unlockedPackages.toList().also {
+                unlockedPackages.clear()
+            }
+        }
+        if (packagesToLock.isEmpty()) return
+        alarmsMutex.withLock {
+            scheduledAlarms.values.forEach {
+                alarmManager.cancel(it)
+            }
+            scheduledAlarms.clear()
+        }
+        val config = mutex.withLock {
+            userConfigMap[userId] ?: return
+        }
+        packagesToLock.forEach { packageName ->
+            val shouldSecureContent = mutex.withLock {
+                config.shouldRedactNotification(packageName)
+            }
+            notificationManagerInternal.updateSecureNotifications(
+                packageName,
+                shouldSecureContent,
+                shouldSecureContent,
+                userId
             )
         }
+    }
+
+    private suspend fun handleScreenTurnedOff() {
+        val config = mutex.withLock {
+            userConfigMap[currentUserId] ?: return
+        }
+        if (config.relockBehavior != APP_LOCK_RELOCK_BEHAVIOR_SCREEN_OFF) {
+            return
+        }
+        lockUnlockedPackagesForUser(currentUserId)
     }
 
     private val lockAlarmReceiver = object : BroadcastReceiver() {
@@ -411,6 +480,62 @@ class AppLockManagerService(
             return block()
         } finally {
             Binder.restoreCallingIdentity(ident)
+        }
+    }
+
+    private fun getSeparateCredentialAttemptState(userId: Int): SeparateCredentialAttemptState =
+        separateCredentialAttempts[userId] ?: SeparateCredentialAttemptState().also {
+            separateCredentialAttempts[userId] = it
+        }
+
+    private fun getSeparateCredentialType(credential: LockscreenCredential): Int =
+        when {
+            credential.isPin -> APP_LOCK_CREDENTIAL_TYPE_PIN
+            credential.isPattern -> APP_LOCK_CREDENTIAL_TYPE_PATTERN
+            else -> APP_LOCK_CREDENTIAL_TYPE_NONE
+        }
+
+    private fun hashCredential(credential: LockscreenCredential, salt: ByteArray): ByteArray {
+        val credentialBytes = credential.getCredential().copyOf()
+        return try {
+            scrypt.scrypt(
+                credentialBytes,
+                salt,
+                APP_LOCK_CREDENTIAL_SCRYPT_N,
+                APP_LOCK_CREDENTIAL_SCRYPT_R,
+                APP_LOCK_CREDENTIAL_SCRYPT_P,
+                APP_LOCK_CREDENTIAL_HASH_LENGTH,
+            )
+        } finally {
+            ArrayUtils.zeroize(credentialBytes)
+        }
+    }
+
+    private fun getLockoutTimeout(failedAttempts: Int): Duration =
+        when {
+            failedAttempts >= 15 -> Duration.ofMinutes(5)
+            failedAttempts >= 10 -> Duration.ofMinutes(1)
+            failedAttempts >= 5 -> Duration.ofSeconds(30)
+            else -> Duration.ZERO
+        }
+
+    private fun launchCredentialActivity(
+        pkg: String,
+        userId: Int,
+        goHomeOnCancel: Boolean,
+    ) {
+        val intent = Intent(AppLockManager.ACTION_UNLOCK_APP)
+            .setPackage(SETTINGS_PACKAGE)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            .apply {
+                putExtra(Intent.EXTRA_PACKAGE_NAME, pkg)
+                putExtra(Intent.EXTRA_USER_ID, userId)
+                putExtra(AppLockManager.EXTRA_PACKAGE_LABEL, getLabelForPackage(pkg, userId))
+                putExtra(AppLockManager.EXTRA_ALLOW_BIOMETRICS, isBiometricsAllowed(userId))
+                putExtra(EXTRA_GO_HOME_ON_CANCEL, goHomeOnCancel)
+            }
+        clearAndExecute {
+            context.startActivityAsUser(intent, UserHandle.of(userId))
         }
     }
 
@@ -653,6 +778,9 @@ class AppLockManagerService(
                 }
                 if (config.biometricsAllowed == biometricsAllowed) return@withLock
                 config.biometricsAllowed = biometricsAllowed
+                if (!biometricsAllowed) {
+                    config.biometricPromptEnabled = false
+                }
                 biometricUnlocker.biometricsAllowed = biometricsAllowed
                 withContext(Dispatchers.IO) {
                     config.write()
@@ -678,6 +806,248 @@ class AppLockManagerService(
                     AppLockManager.DEFAULT_BIOMETRICS_ALLOWED
                 }
             }
+        }
+    }
+
+    @RequiresPermission(Manifest.permission.MANAGE_APP_LOCK)
+    override fun setBiometricPromptEnabled(enabled: Boolean, userId: Int) {
+        logD {
+            "setBiometricPromptEnabled: enabled = $enabled, userId = $userId"
+        }
+        enforceCallingPermission("setBiometricPromptEnabled")
+        val actualUserId = getActualUserId(userId, "setBiometricPromptEnabled")
+        serviceScope.launch {
+            mutex.withLock {
+                val config = userConfigMap[actualUserId] ?: run {
+                    Slog.e(TAG, "setBiometricPromptEnabled requested by unknown user $actualUserId")
+                    return@withLock
+                }
+                val shouldEnable = enabled && config.biometricsAllowed
+                if (config.biometricPromptEnabled == shouldEnable) return@withLock
+                config.biometricPromptEnabled = shouldEnable
+                withContext(Dispatchers.IO) {
+                    config.write()
+                }
+            }
+        }
+    }
+
+    override fun isBiometricPromptEnabled(userId: Int): Boolean {
+        logD {
+            "isBiometricPromptEnabled: userId = $userId"
+        }
+        val actualUserId = getActualUserId(userId, "isBiometricPromptEnabled")
+        return runBlocking {
+            mutex.withLock {
+                userConfigMap[actualUserId]?.biometricPromptEnabled
+                    ?: AppLockManager.DEFAULT_BIOMETRIC_PROMPT_ENABLED
+            }
+        }
+    }
+
+    @RequiresPermission(Manifest.permission.MANAGE_APP_LOCK)
+    override fun setRelockBehavior(relockBehavior: Int, userId: Int) {
+        logD {
+            "setRelockBehavior: relockBehavior = $relockBehavior, userId = $userId"
+        }
+        enforceCallingPermission("setRelockBehavior")
+        val actualUserId = getActualUserId(userId, "setRelockBehavior")
+        serviceScope.launch {
+            mutex.withLock {
+                val config = userConfigMap[actualUserId] ?: run {
+                    Slog.e(TAG, "setRelockBehavior requested by unknown user $actualUserId")
+                    return@withLock
+                }
+                if (!config.isRelockBehaviorValid(relockBehavior)) {
+                    throw IllegalArgumentException("Invalid relock behavior $relockBehavior")
+                }
+                if (config.relockBehavior == relockBehavior) return@withLock
+                config.relockBehavior = relockBehavior
+                withContext(Dispatchers.IO) {
+                    config.write()
+                }
+            }
+            if (relockBehavior == APP_LOCK_RELOCK_BEHAVIOR_SCREEN_OFF) {
+                lockUnlockedPackagesForUser(actualUserId)
+            }
+        }
+    }
+
+    override fun getRelockBehavior(userId: Int): Int {
+        logD {
+            "getRelockBehavior: userId = $userId"
+        }
+        val actualUserId = getActualUserId(userId, "getRelockBehavior")
+        return runBlocking {
+            mutex.withLock {
+                userConfigMap[actualUserId]?.relockBehavior
+                    ?: AppLockManager.DEFAULT_RELOCK_BEHAVIOR
+            }
+        }
+    }
+
+    @RequiresPermission(Manifest.permission.MANAGE_APP_LOCK)
+    override fun setSeparateCredential(credential: LockscreenCredential, userId: Int) {
+        logD {
+            "setSeparateCredential: userId = $userId"
+        }
+        enforceCallingPermission("setSeparateCredential")
+        val actualUserId = getActualUserId(userId, "setSeparateCredential")
+        val credentialCopy = credential.duplicate()
+        try {
+            val credentialType = getSeparateCredentialType(credentialCopy)
+            credentialCopy.validateBasicRequirements()
+            if (credentialType == APP_LOCK_CREDENTIAL_TYPE_NONE) {
+                throw IllegalArgumentException("App lock supports only PIN or pattern credentials")
+            }
+            val salt = ByteArray(APP_LOCK_CREDENTIAL_SALT_LENGTH).also(secureRandom::nextBytes)
+            val hash = hashCredential(credentialCopy, salt)
+            runBlocking {
+                mutex.withLock {
+                    val config = userConfigMap[actualUserId] ?: run {
+                        Slog.e(TAG, "setSeparateCredential requested by unknown user $actualUserId")
+                        return@withLock
+                    }
+                    config.setSeparateCredential(credentialType, salt, hash)
+                    getSeparateCredentialAttemptState(actualUserId).apply {
+                        failedAttempts = 0
+                        lockoutDeadlineElapsedRealtime = 0L
+                    }
+                    withContext(Dispatchers.IO) {
+                        config.write()
+                    }
+                }
+            }
+        } finally {
+            credentialCopy.zeroize()
+            LockscreenCredential.zeroizeIfFromParcel(credential)
+        }
+    }
+
+    @RequiresPermission(Manifest.permission.MANAGE_APP_LOCK)
+    override fun clearSeparateCredential(userId: Int) {
+        logD {
+            "clearSeparateCredential: userId = $userId"
+        }
+        enforceCallingPermission("clearSeparateCredential")
+        val actualUserId = getActualUserId(userId, "clearSeparateCredential")
+        runBlocking {
+            mutex.withLock {
+                val config = userConfigMap[actualUserId] ?: run {
+                    Slog.e(TAG, "clearSeparateCredential requested by unknown user $actualUserId")
+                    return@withLock
+                }
+                if (!config.clearSeparateCredential()) {
+                    return@withLock
+                }
+                getSeparateCredentialAttemptState(actualUserId).apply {
+                    failedAttempts = 0
+                    lockoutDeadlineElapsedRealtime = 0L
+                }
+                withContext(Dispatchers.IO) {
+                    config.write()
+                }
+            }
+        }
+    }
+
+    override fun isSeparateCredentialEnabled(userId: Int): Boolean {
+        logD {
+            "isSeparateCredentialEnabled: userId = $userId"
+        }
+        val actualUserId = getActualUserId(userId, "isSeparateCredentialEnabled")
+        return runBlocking {
+            mutex.withLock {
+                userConfigMap[actualUserId]?.hasSeparateCredential() ?: false
+            }
+        }
+    }
+
+    override fun getSeparateCredentialType(userId: Int): Int {
+        logD {
+            "getSeparateCredentialType: userId = $userId"
+        }
+        val actualUserId = getActualUserId(userId, "getSeparateCredentialType")
+        return runBlocking {
+            mutex.withLock {
+                userConfigMap[actualUserId]?.separateCredentialType
+                    ?: APP_LOCK_CREDENTIAL_TYPE_NONE
+            }
+        }
+    }
+
+    @RequiresPermission(Manifest.permission.MANAGE_APP_LOCK)
+    override fun verifyCredential(
+        credential: LockscreenCredential,
+        userId: Int,
+    ): VerifyCredentialResponse {
+        logD {
+            "verifyCredential: userId = $userId"
+        }
+        enforceCallingPermission("verifyCredential")
+        val actualUserId = getActualUserId(userId, "verifyCredential")
+        val credentialCopy = credential.duplicate()
+        return try {
+            runBlocking {
+                mutex.withLock {
+                    val config = userConfigMap[actualUserId] ?: run {
+                        Slog.e(TAG, "verifyCredential requested by unknown user $actualUserId")
+                        return@withLock VerifyCredentialResponse.OTHER_ERROR
+                    }
+                    if (!config.hasSeparateCredential()) {
+                        return@withLock VerifyCredentialResponse.OTHER_ERROR
+                    }
+                    val state = getSeparateCredentialAttemptState(actualUserId)
+                    val now = SystemClock.elapsedRealtime()
+                    if (state.lockoutDeadlineElapsedRealtime > now) {
+                        return@withLock VerifyCredentialResponse.fromTimeout(
+                            Duration.ofMillis(state.lockoutDeadlineElapsedRealtime - now)
+                        )
+                    }
+                    val credentialType = getSeparateCredentialType(credentialCopy)
+                    if (credentialType != config.separateCredentialType) {
+                        state.failedAttempts += 1
+                        val timeout = getLockoutTimeout(state.failedAttempts)
+                        if (!timeout.isZero) {
+                            state.lockoutDeadlineElapsedRealtime = now + timeout.toMillis()
+                            return@withLock VerifyCredentialResponse.credIncorrect(timeout)
+                        }
+                        return@withLock VerifyCredentialResponse.credIncorrect()
+                    }
+                    try {
+                        credentialCopy.validateBasicRequirements()
+                    } catch (_: IllegalArgumentException) {
+                        return@withLock VerifyCredentialResponse.credTooShort()
+                    }
+                    val storedHash = config.getSeparateCredentialHash()
+                    val storedSalt = config.getSeparateCredentialSalt()
+                    if (storedHash == null || storedSalt == null) {
+                        return@withLock VerifyCredentialResponse.OTHER_ERROR
+                    }
+                    val computedHash = hashCredential(credentialCopy, storedSalt)
+                    val matched = try {
+                        MessageDigest.isEqual(storedHash, computedHash)
+                    } finally {
+                        ArrayUtils.zeroize(computedHash)
+                    }
+                    if (matched) {
+                        state.failedAttempts = 0
+                        state.lockoutDeadlineElapsedRealtime = 0L
+                        return@withLock VerifyCredentialResponse.OK
+                    }
+                    state.failedAttempts += 1
+                    val timeout = getLockoutTimeout(state.failedAttempts)
+                    if (!timeout.isZero) {
+                        state.lockoutDeadlineElapsedRealtime = now + timeout.toMillis()
+                        VerifyCredentialResponse.credIncorrect(timeout)
+                    } else {
+                        VerifyCredentialResponse.credIncorrect()
+                    }
+                }
+            }
+        } finally {
+            credentialCopy.zeroize()
+            LockscreenCredential.zeroizeIfFromParcel(credential)
         }
     }
 
@@ -845,6 +1215,11 @@ class AppLockManagerService(
             null /* scheduler */,
         )
 
+        context.registerReceiver(
+            screenOffReceiver,
+            IntentFilter(Intent.ACTION_SCREEN_OFF),
+        )
+
         ActivityTaskManager.getService().registerTaskStackListener(taskStackListener)
     }
 
@@ -859,6 +1234,7 @@ class AppLockManagerService(
                 withContext(Dispatchers.IO) {
                     val config = AppLockConfig(Environment.getDataSystemDeDirectory(userId))
                     userConfigMap[userId] = config
+                    separateCredentialAttempts.remove(userId)
                     config.read()
                     biometricUnlocker.biometricsAllowed = config.biometricsAllowed
                     verifyPackagesLocked(config)
@@ -908,6 +1284,7 @@ class AppLockManagerService(
         return serviceScope.launch {
             mutex.withLock {
                 unlockedPackages.clear()
+                separateCredentialAttempts.remove(userId)
                 userConfigMap[userId]?.let {
                     withContext(Dispatchers.IO) {
                         it.write()

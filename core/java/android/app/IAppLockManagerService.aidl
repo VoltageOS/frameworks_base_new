@@ -17,6 +17,8 @@
 package android.app;
 
 import android.app.AppLockData;
+import com.android.internal.widget.LockscreenCredential;
+import com.android.internal.widget.VerifyCredentialResponse;
 
 /**
  * Interface for managing app lock.
@@ -37,6 +39,24 @@ interface IAppLockManagerService {
     void setBiometricsAllowed(in boolean biometricsAllowed, in int userId);
 
     boolean isBiometricsAllowed(in int userId);
+
+    void setBiometricPromptEnabled(in boolean enabled, in int userId);
+
+    boolean isBiometricPromptEnabled(in int userId);
+
+    void setRelockBehavior(in int relockBehavior, in int userId);
+
+    int getRelockBehavior(in int userId);
+
+    void setSeparateCredential(in LockscreenCredential credential, in int userId);
+
+    void clearSeparateCredential(in int userId);
+
+    boolean isSeparateCredentialEnabled(in int userId);
+
+    int getSeparateCredentialType(in int userId);
+
+    VerifyCredentialResponse verifyCredential(in LockscreenCredential credential, in int userId);
 
     void unlockPackage(in String packageName, in int userId);
 
