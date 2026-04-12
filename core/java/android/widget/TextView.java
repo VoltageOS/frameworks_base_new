@@ -885,6 +885,7 @@ public class TextView extends View implements ViewTreeObserver.OnPreDrawListener
     private int mFontWeightAdjustment;
     private Typeface mOriginalTypeface;
     private String mFontFamily;
+    private String mOriginalFontFamily;
 
     // True if setKeyListener() has been explicitly called
     private boolean mListenerChanged = false;
@@ -4401,6 +4402,7 @@ public class TextView extends View implements ViewTreeObserver.OnPreDrawListener
                     if (attributes.mTypefaceIndex != -1 && !attributes.mFontFamilyExplicit) {
                         attributes.mFontFamily = null;
                         mFontFamily = null;
+                        mOriginalFontFamily = null;
                     }
                     break;
                 case com.android.internal.R.styleable.TextAppearance_fontFamily:
@@ -4414,6 +4416,7 @@ public class TextView extends View implements ViewTreeObserver.OnPreDrawListener
                     if (attributes.mFontTypeface == null) {
                         attributes.mFontFamily = appearance.getString(attr);
                         mFontFamily = attributes.mFontFamily;
+                        mOriginalFontFamily = attributes.mFontFamily;
                     }
                     attributes.mFontFamilyExplicit = true;
                     break;
@@ -4510,6 +4513,7 @@ public class TextView extends View implements ViewTreeObserver.OnPreDrawListener
         if (attributes.mTypefaceIndex != -1 && !attributes.mFontFamilyExplicit) {
             attributes.mFontFamily = null;
             mFontFamily = null;
+            mOriginalFontFamily = null;
         }
         setTypefaceFromAttrs(attributes.mFontTypeface, attributes.mFontFamily,
                 attributes.mTypefaceIndex, attributes.mTextStyle, attributes.mFontWeight);
@@ -4691,7 +4695,7 @@ public class TextView extends View implements ViewTreeObserver.OnPreDrawListener
         }
 
         if (!TextUtils.equals(mFontFamily, Typeface.getFontName())) {
-            Typeface tf = Typeface.getOverrideTypeface(mFontFamily);
+            Typeface tf = Typeface.getOverrideTypeface(mOriginalFontFamily);
             setTypeface(tf);
             mFontFamily = Typeface.getFontName();
         }
