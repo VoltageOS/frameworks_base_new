@@ -6883,6 +6883,15 @@ public class AccessibilityManagerService extends IAccessibilityManager.Stub
     }
 
     @Override
+    public void onPasteAction(AbstractAccessibilityServiceConnection connection, int callingUid,
+            int userId, int windowId) {
+        synchronized (mLock) {
+            SecurePasteAccessibility.onPasteActionLocked(connection, callingUid, userId, windowId,
+                    getCurrentUserStateLocked(), mA11yWindowManager);
+        }
+    }
+
+    @Override
     public void requestImeLocked(AbstractAccessibilityServiceConnection connection) {
         if (!(connection instanceof AccessibilityServiceConnection)
                 || (connection instanceof ProxyAccessibilityServiceConnection)) {
