@@ -16,4 +16,7 @@
     </string-array>
     <java-symbol type="array" name="read_additional_security_state_known_signers" />
 
+    <bool name="setting_default_allow_clipboard_read">true</bool>
+    <java-symbol type="bool" name="setting_default_allow_clipboard_read" />
+
 </resources>

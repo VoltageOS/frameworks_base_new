@@ -22,6 +22,8 @@ import com.android.server.LocalServices;
 import java.util.Objects;
 
 import static android.content.pm.GosPackageStateFlag.ALLOW_ACCESS_TO_OBB_DIRECTORY;
+import static android.content.pm.GosPackageStateFlag.ALLOW_CLIPBOARD_READ;
+import static android.content.pm.GosPackageStateFlag.ALLOW_CLIPBOARD_READ_NON_DEFAULT;
 import static android.content.pm.GosPackageStateFlag.BLOCK_NATIVE_DEBUGGING;
 import static android.content.pm.GosPackageStateFlag.BLOCK_NATIVE_DEBUGGING_NON_DEFAULT;
 import static android.content.pm.GosPackageStateFlag.BLOCK_NATIVE_DEBUGGING_SUPPRESS_NOTIF;
@@ -141,6 +143,8 @@ class GosPackageStatePermissions {
                 FORCE_MEMTAG,
                 FORCE_MEMTAG_SUPPRESS_NOTIF,
                 ENABLE_EXPLOIT_PROTECTION_COMPAT_MODE,
+                ALLOW_CLIPBOARD_READ_NON_DEFAULT,
+                ALLOW_CLIPBOARD_READ,
         };
         builder()
                 .readWriteFlags(settingsReadWriteFlags)

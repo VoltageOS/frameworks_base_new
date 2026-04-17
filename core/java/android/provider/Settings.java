@@ -15885,6 +15885,10 @@ public final class Settings {
                 readWrite = {KnownSystemPackage.SETTINGS, KnownSystemPackage.SETUP_WIZARD})
         public static final String GNSS_PSDS_STANDARD = "psds_server"; // historical name
 
+        /** @hide */
+        @Protected(readWrite = KnownSystemPackage.SETTINGS)
+        public static final String ALLOW_CLIPBOARD_READ_BY_DEFAULT = "allow_clipboard_read";
+
         // ExtSettings END
 
         // NOTE: If you add new settings here, be sure to add them to

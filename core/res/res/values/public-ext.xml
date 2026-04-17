@@ -12,6 +12,8 @@
         <public name="config_usbPortSecuritySupported"/>
         <!-- @hide -->
         <public name="config_usb_port_security_applies_to_pogo_pins"/>        
+        <!-- @hide -->
+        <public name="setting_default_allow_clipboard_read"/>
     </staging-public-group>
 
     <staging-public-group type="drawable" first-id="0x0194f000">
