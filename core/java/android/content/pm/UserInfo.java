@@ -546,10 +546,10 @@ public class UserInfo implements Parcelable {
      * @hide
      */
     public boolean canHaveProfile(String userType) {
-        if (UserManager.isUserTypePrivateProfile(userType)) {
-            return isFull();
-        }
         if (!canHaveProfile()) {
+            if (UserManager.isUserTypePrivateProfile(userType) && UserManager.USER_TYPE_FULL_SECONDARY.equals(this.userType)) {
+                return true;
+            }
             return false;
         }
         return true;
