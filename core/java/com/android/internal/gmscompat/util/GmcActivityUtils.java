@@ -121,6 +121,17 @@ public class GmcActivityUtils implements Application.ActivityLifecycleCallbacks 
             return null;
         }
 
+        if (BluetoothAdapter.ACTION_REQUEST_ENABLE.equals(intent.getAction())) {
+            if (GmsCompat.isGmsCore() && !GmsCompat.hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
+                try {
+                    GmsCompatApp.iGms2Gca().showGmsCoreMissingNearbyDevicesPermissionGeneric();
+                } catch (RemoteException e) {
+                    GmsCompatApp.callFailed(e);
+                }
+                return null;
+            }
+        }
+
         String pkg = cn != null ? cn.getPackageName() : intent.getPackage();
         if (pkg != null) {
             boolean checkIntent = false;
