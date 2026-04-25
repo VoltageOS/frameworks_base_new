@@ -110,7 +110,7 @@ public class DozeMinMode implements DozeMachine.Part {
                     break;
                 case MinModeManager.STATE_NONE:
                     nextState =
-                            mConfig.alwaysOnEnabled(mUserTracker.getUserId())
+                            mConfig.screenOffAodEnabled(mUserTracker.getUserId())
                                     ? State.DOZE_AOD
                                     : State.DOZE;
                     break;

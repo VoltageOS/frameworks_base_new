@@ -100,6 +100,7 @@ public class DozeParameters implements
 
     private boolean mControlScreenOffAnimation;
     private boolean mIsQuickPickupEnabled;
+    private boolean mScreenOffPeekActive;
 
     private boolean mKeyguardVisible;
     @VisibleForTesting
@@ -172,6 +173,7 @@ public class DozeParameters implements
         tunerService.addTunable(
                 this,
                 Settings.Secure.DOZE_ALWAYS_ON,
+                Settings.Secure.DOZE_PEEK,
                 Settings.Secure.ACCESSIBILITY_DISPLAY_INVERSION_ENABLED);
         configurationController.addCallback(this);
         statusBarStateController.addCallback(this);
@@ -269,6 +271,10 @@ public class DozeParameters implements
      * @return duration in millis.
      */
     public long getWallpaperAodDuration() {
+        if (mScreenOffPeekActive) {
+            return mAmbientDisplayConfiguration.getScreenOffPeekDurationMillis(
+                    mUserTracker.getUserId());
+        }
         if (shouldControlScreenOff()) {
             return DozeScreenState.ENTER_DOZE_HIDE_WALLPAPER_DELAY;
         }
@@ -297,8 +303,34 @@ public class DozeParameters implements
      * @return {@code true} if enabled and available.
      */
     public boolean getAlwaysOn() {
-        return mAmbientDisplayConfiguration.alwaysOnEnabled(mUserTracker.getUserId()) && !mBatteryController.isAodPowerSave()
-               || isMinModeActive();
+        return ((mAmbientDisplayConfiguration.alwaysOnEnabled(mUserTracker.getUserId())
+                || mScreenOffPeekActive)
+                && !mBatteryController.isAodPowerSave())
+                || isMinModeActive();
+    }
+
+    public boolean shouldShowAodUi() {
+        return getAlwaysOn()
+                || mAmbientDisplayConfiguration.screenOffPeekEnabled(mUserTracker.getUserId());
+    }
+
+    public void setScreenOffPeekActive(boolean active) {
+        if (mScreenOffPeekActive == active) {
+            return;
+        }
+        mScreenOffPeekActive = active;
+        updateControlScreenOff();
+        dispatchAlwaysOnEvent();
+    }
+
+    public boolean isScreenOffPeekActive() {
+        return mScreenOffPeekActive;
+    }
+
+    private boolean shouldUseScreenOffAnimationAod() {
+        return (mAmbientDisplayConfiguration.screenOffAodEnabled(mUserTracker.getUserId())
+                && !mBatteryController.isAodPowerSave())
+                || isMinModeActive();
     }
 
     /**
@@ -334,7 +366,8 @@ public class DozeParameters implements
     public void updateControlScreenOff() {
         if (!getDisplayNeedsBlanking()) {
             final boolean controlScreenOff =
-                    getAlwaysOn() && (mKeyguardVisible || shouldControlUnlockedScreenOff());
+                    shouldUseScreenOffAnimationAod()
+                            && (mKeyguardVisible || shouldControlUnlockedScreenOff());
             if (SceneContainerFlag.isEnabled()) {
                 setControlScreenOffAnimation(controlScreenOff
                         && !mStatusBarStateController.isExpanded());
@@ -349,7 +382,7 @@ public class DozeParameters implements
      * possible if AOD isn't even enabled or if the display needs blanking.
      */
     public boolean canControlUnlockedScreenOff() {
-        return getAlwaysOn() && !getDisplayNeedsBlanking();
+        return shouldUseScreenOffAnimationAod() && !getDisplayNeedsBlanking();
     }
 
     /**
@@ -390,6 +423,9 @@ public class DozeParameters implements
      * delayed for a few seconds. This might be useful to play animations without reducing FPS.
      */
     public boolean shouldDelayDisplayDozeTransition() {
+        if (!shouldUseScreenOffAnimationAod()) {
+            return false;
+        }
         if (mTransitionInteractor.getTransitionState().getValue().getTo() == KeyguardState.AOD) {
             return true;
         }
@@ -462,7 +498,8 @@ public class DozeParameters implements
 
     @Override
     public void onTuningChanged(String key, String newValue) {
-        if (key.equals(Settings.Secure.DOZE_ALWAYS_ON)) {
+        if (key.equals(Settings.Secure.DOZE_ALWAYS_ON)
+                || key.equals(Settings.Secure.DOZE_PEEK)) {
             updateControlScreenOff();
         }
 
@@ -504,9 +541,9 @@ public class DozeParameters implements
     }
 
     private void dispatchAlwaysOnEvent() {
-        mScreenOffAnimationController.onAlwaysOnChanged(getAlwaysOn());
-        mDozeInteractor.setAodAvailable(getAlwaysOn());
-
+        final boolean aodAvailable = shouldUseScreenOffAnimationAod();
+        mScreenOffAnimationController.onAlwaysOnChanged(aodAvailable);
+        mDozeInteractor.setAodAvailable(aodAvailable);
     }
 
     private boolean getPostureSpecificBool(
@@ -530,6 +567,8 @@ public class DozeParameters implements
                 Settings.Secure.getUriFor(Settings.Secure.DOZE_PICK_UP_GESTURE);
         private final Uri mAlwaysOnEnabled =
                 Settings.Secure.getUriFor(Settings.Secure.DOZE_ALWAYS_ON);
+        private final Uri mDozePeekEnabled =
+                Settings.Secure.getUriFor(Settings.Secure.DOZE_PEEK);
         private final Context mContext;
 
         private final Handler mHandler;
@@ -548,6 +587,8 @@ public class DozeParameters implements
             mSecureSettings.registerContentObserverForUserAsync(mPickupGesture,
                     this, UserHandle.USER_ALL);
             mSecureSettings.registerContentObserverForUserAsync(mAlwaysOnEnabled,
+                    this, UserHandle.USER_ALL);
+            mSecureSettings.registerContentObserverForUserAsync(mDozePeekEnabled,
                     this, UserHandle.USER_ALL,
                     // The register calls are called in order, so this ensures that update()
                     // is called after them all and value retrieval isn't racy.
@@ -563,7 +604,8 @@ public class DozeParameters implements
             if (uri == null
                     || mQuickPickupGesture.equals(uri)
                     || mPickupGesture.equals(uri)
-                    || mAlwaysOnEnabled.equals(uri)) {
+                    || mAlwaysOnEnabled.equals(uri)
+                    || mDozePeekEnabled.equals(uri)) {
                 // the quick pickup gesture is dependent on alwaysOn being disabled and
                 // the pickup gesture being enabled
                 updateQuickPickupEnabled();
