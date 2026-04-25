@@ -43,6 +43,7 @@ import java.util.Map;
  */
 @TestApi
 public class AmbientDisplayConfiguration {
+    private static final int DEFAULT_DOZE_PEEK_DURATION_SECONDS = 5;
     private static final IntentFilter sIntentFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
 
     private final Context mContext;
@@ -57,6 +58,8 @@ public class AmbientDisplayConfiguration {
     private static final String[] DOZE_SETTINGS = {
             Settings.Secure.DOZE_ENABLED,
             Settings.Secure.DOZE_ALWAYS_ON,
+            Settings.Secure.DOZE_PEEK,
+            Settings.Secure.DOZE_PEEK_DURATION,
             Settings.Secure.DOZE_PICK_UP_GESTURE,
             Settings.Secure.DOZE_PULSE_ON_LONG_PRESS,
             Settings.Secure.DOZE_DOUBLE_TAP_GESTURE,
@@ -99,7 +102,7 @@ public class AmbientDisplayConfiguration {
         return pulseOnNotificationEnabled(user)
                 || pulseOnLongPressEnabled(user)
                 || pulseOnCustomDozeEventEnabled(user)
-                || alwaysOnEnabled(user)
+                || screenOffAodEnabled(user)
                 || wakeLockScreenGestureEnabled(user)
                 || wakeDisplayGestureEnabled(user)
                 || pickupGestureEnabled(user)
@@ -278,6 +281,54 @@ public class AmbientDisplayConfiguration {
     @TestApi
     public boolean alwaysOnEnabled(int user) {
         return alwaysOnEnabledSetting(user) || alwaysOnChargingEnabled(user);
+    }
+
+    /**
+     * Returns if any screen-off AOD experience should start for the current screen-off session.
+     *
+     * <p>This includes full AOD as well as a short-lived AOD peek.
+     *
+     * @hide
+     */
+    public boolean screenOffAodEnabled(int user) {
+        return alwaysOnEnabled(user) || screenOffPeekEnabled(user);
+    }
+
+    /**
+     * Returns if a short-lived screen-off AOD peek should be shown for the current user.
+     *
+     * @hide
+     */
+    public boolean screenOffPeekEnabled(int user) {
+        return boolSettingDefaultOff(Settings.Secure.DOZE_PEEK, user)
+                && ambientDisplayAvailable()
+                && !alwaysOnEnabled(user)
+                && !accessibilityInversionEnabled(user);
+    }
+
+    /**
+     * Returns the configured screen-off AOD peek duration in milliseconds.
+     *
+     * @hide
+     */
+    public long getScreenOffPeekDurationMillis(int user) {
+        return getScreenOffPeekDurationSeconds(user) * 1000L;
+    }
+
+    private int getScreenOffPeekDurationSeconds(int user) {
+        final int configuredDuration = Settings.Secure.getIntForUser(
+                mContext.getContentResolver(),
+                Settings.Secure.DOZE_PEEK_DURATION,
+                DEFAULT_DOZE_PEEK_DURATION_SECONDS,
+                user);
+        switch (configuredDuration) {
+            case 7:
+            case 10:
+                return configuredDuration;
+            case DEFAULT_DOZE_PEEK_DURATION_SECONDS:
+            default:
+                return DEFAULT_DOZE_PEEK_DURATION_SECONDS;
+        }
     }
 
     public boolean alwaysOnEnabledSetting(int user) {

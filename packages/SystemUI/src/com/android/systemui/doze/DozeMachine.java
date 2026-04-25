@@ -458,7 +458,7 @@ public class DozeMachine {
                     nextState = State.FINISH;
                 } else if (mDockManager.isDocked()) {
                     nextState = mDockManager.isHidden() ? State.DOZE : State.DOZE_AOD_DOCKED;
-                } else if (mAmbientDisplayConfig.alwaysOnEnabled(mUserTracker.getUserId())) {
+                } else if (mAmbientDisplayConfig.screenOffAodEnabled(mUserTracker.getUserId())) {
                     nextState = State.DOZE_AOD;
                 } else {
                     nextState = State.DOZE;
