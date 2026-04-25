@@ -124,7 +124,7 @@ public class DozeSuppressor implements DozeMachine.Part {
             if (mDozeHost.isPowerSaveActive()) {
                 nextState = DozeMachine.State.DOZE;
             } else if (mMachine.getState() == DozeMachine.State.DOZE
-                    && mConfig.alwaysOnEnabled(mUserTracker.getUserId())) {
+                    && mConfig.screenOffAodEnabled(mUserTracker.getUserId())) {
                 nextState = DozeMachine.State.DOZE_AOD;
             }
 
@@ -139,7 +139,7 @@ public class DozeSuppressor implements DozeMachine.Part {
             // handles suppression changes, while DozeMachine#transitionPolicy handles gating
             // transitions to DOZE_AOD
             final DozeMachine.State nextState;
-            if (mConfig.alwaysOnEnabled(mUserTracker.getUserId()) && !suppressed) {
+            if (mConfig.screenOffAodEnabled(mUserTracker.getUserId()) && !suppressed) {
                 nextState = DozeMachine.State.DOZE_AOD;
             } else {
                 nextState = DozeMachine.State.DOZE;

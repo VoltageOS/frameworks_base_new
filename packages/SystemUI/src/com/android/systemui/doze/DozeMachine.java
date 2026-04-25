@@ -157,6 +157,8 @@ public class DozeMachine {
                 case DOZE_AOD_MINMODE:
                     return Display.STATE_ON;
                 case DOZE_AOD:
+                    return parameters.isScreenOffPeekActive()
+                            ? Display.STATE_ON : Display.STATE_DOZE_SUSPEND;
                 case DOZE_AOD_PAUSING:
                     return Display.STATE_DOZE_SUSPEND;
                 default:
@@ -458,7 +460,7 @@ public class DozeMachine {
                     nextState = State.FINISH;
                 } else if (mDockManager.isDocked()) {
                     nextState = mDockManager.isHidden() ? State.DOZE : State.DOZE_AOD_DOCKED;
-                } else if (mAmbientDisplayConfig.alwaysOnEnabled(mUserTracker.getUserId())) {
+                } else if (mAmbientDisplayConfig.screenOffAodEnabled(mUserTracker.getUserId())) {
                     nextState = State.DOZE_AOD;
                 } else {
                     nextState = State.DOZE;

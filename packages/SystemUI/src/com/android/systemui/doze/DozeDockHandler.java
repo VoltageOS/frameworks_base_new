@@ -107,8 +107,8 @@ public class DozeDockHandler implements DozeMachine.Part {
                     nextState = State.DOZE_AOD_DOCKED;
                     break;
                 case DockManager.STATE_NONE:
-                    nextState = mConfig.alwaysOnEnabled(mUserTracker.getUserId()) ? State.DOZE_AOD
-                            : State.DOZE;
+                    nextState = mConfig.screenOffAodEnabled(mUserTracker.getUserId())
+                            ? State.DOZE_AOD : State.DOZE;
                     break;
                 case DockManager.STATE_DOCKED_HIDE:
                     nextState = State.DOZE;
