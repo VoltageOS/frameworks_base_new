@@ -45,9 +45,9 @@ class GmsCoreHooks extends PackageHooks {
         GosPackageState gosPs = LocalServices.getService(PackageManagerInternal.class)
                 .getGosPackageState(PackageId.GMS_CORE_NAME, userId);
         if (gosPs.hasPackageFlag(flag)) {
-            return PERMISSION_OVERRIDE_REVOKE;
+            return PERMISSION_OVERRIDE_GRANT;
         }
-        return PERMISSION_OVERRIDE_GRANT;
+        return PERMISSION_OVERRIDE_REVOKE;
     }
 
     static class ParsingHooks extends GmsCompatPkgParsingHooks {
