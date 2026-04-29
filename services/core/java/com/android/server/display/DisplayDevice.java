@@ -57,6 +57,7 @@ abstract class DisplayDevice {
      */
     static final float MAX_ANISOTROPY = 1.025f;
     private static final String TAG = "DisplayDevice";
+    private static final boolean DEBUG = false;
     private static final Display.Mode EMPTY_DISPLAY_MODE = new Display.Mode.Builder().build();
 
     private final DisplayAdapter mDisplayAdapter;
@@ -329,8 +330,10 @@ abstract class DisplayDevice {
         if (mCurrentLayerStack != layerStack) {
             mCurrentLayerStack = layerStack;
             t.setDisplayLayerStack(mDisplayToken, layerStack);
-            Slog.i(TAG, "[" + layerStackTag + "] Layerstack set to " + layerStack + " for "
-                    + mUniqueId);
+            if (DEBUG) {
+                Slog.i(TAG, "[" + layerStackTag + "] Layerstack set to " + layerStack + " for "
+                        + mUniqueId);
+            }
         }
     }
 

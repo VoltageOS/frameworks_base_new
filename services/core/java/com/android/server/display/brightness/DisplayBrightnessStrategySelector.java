@@ -52,6 +52,7 @@ import java.io.PrintWriter;
  */
 public class DisplayBrightnessStrategySelector {
     private static final String TAG = "DisplayBrightnessStrategySelector";
+    private static final boolean DEBUG = false;
     // True if the config to use the light sensor to automatically determine doze screen brightness
     // is enabled. Note that the actual value representing if the auto-brightness is to be kept
     // enabled while dozing can differ, but is dependent on this
@@ -220,10 +221,12 @@ public class DisplayBrightnessStrategySelector {
         }
 
         if (!mOldBrightnessStrategyName.equals(displayBrightnessStrategy.getName())) {
-            Slog.i(TAG,
-                    "Changing the DisplayBrightnessStrategy from " + mOldBrightnessStrategyName
-                            + " to " + displayBrightnessStrategy.getName() + " for display "
-                            + mDisplayId);
+            if (DEBUG) {
+                Slog.i(TAG,
+                        "Changing the DisplayBrightnessStrategy from " + mOldBrightnessStrategyName
+                                + " to " + displayBrightnessStrategy.getName() + " for display "
+                                + mDisplayId);
+            }
             mOldBrightnessStrategyName = displayBrightnessStrategy.getName();
         }
         return displayBrightnessStrategy;

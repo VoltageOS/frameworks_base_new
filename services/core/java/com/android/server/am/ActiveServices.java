@@ -4978,8 +4978,10 @@ public final class ActiveServices {
             // ServiceMap so the package visibility doesn't apply to it. We need to filter it.
             if (mAm.getPackageManagerInternal().filterAppAccess(r.packageName, callingUid,
                     userId)) {
-                Slog.w(TAG_SERVICE, "Unable to start service " + service + " U=" + userId
-                        + ": not found");
+                if (DEBUG_SERVICE) {
+                    Slog.w(TAG_SERVICE, "Unable to start service " + service + " U=" + userId
+                            + ": not found");
+                }
                 return null;
             }
             if ((r.serviceInfo.flags & ServiceInfo.FLAG_EXTERNAL_SERVICE) != 0
@@ -5062,8 +5064,10 @@ public final class ActiveServices {
                         resolvedType, flags, userId, callingUid, callingPid);
                 ServiceInfo sInfo = rInfo != null ? rInfo.serviceInfo : null;
                 if (sInfo == null) {
-                    Slog.w(TAG_SERVICE, "Unable to start service " + service + " U=" + userId +
-                          ": not found");
+                    if (DEBUG_SERVICE) {
+                        Slog.w(TAG_SERVICE, "Unable to start service " + service + " U=" + userId
+                                + ": not found");
+                    }
                     return null;
                 }
                 if (instanceName != null
