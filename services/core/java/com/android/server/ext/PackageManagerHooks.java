@@ -105,7 +105,7 @@ public class PackageManagerHooks {
 
         int[] flagsArr = new int[AppBindArgs.FLAGS_ARRAY_LEN];
         flagsArr[AppBindArgs.FLAGS_IDX_SPECIAL_RUNTIME_PERMISSIONS] =
-                SpecialRuntimePermUtils.getFlags(pm, pkg, pkgState, userId);
+                SpecialRuntimePermUtils.getFlags(pkg, pkgState, userId);
 
         flagsArr[AppBindArgs.FLAGS_IDX_HOOKED_LOCATION_MANAGER] =
                 HookedLocationManager.getFlags(gosPs, isUserApp);
