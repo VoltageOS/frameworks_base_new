@@ -98,7 +98,7 @@ public class PackageManagerHooks {
         GosPackageState unfilteredGosPs = pkgState.getUserStateOrDefault(userId).getGosPackageState();
         // GosPackageState that is filtered for the target app
         GosPackageState gosPs = GosPackageStatePmHooks.getFiltered(pmComputer, pkgState, unfilteredGosPs,
-                callingUid, callingPid, userId);
+                appUid, pid, userId);
 
         ApplicationInfo appInfo =
                 requireNonNull(pmComputer.getApplicationInfo(packageName, 0L, userId));
