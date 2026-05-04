@@ -22,7 +22,10 @@ class ActivityThreadHooks {
 
     // called after the initial app context is constructed
     // ActivityThread.handleBindApplication
-    static Bundle onBind(Context appContext) {
+    static Bundle onBind(Context appContext, ActivityThread.AppBindData appBindData) {
+        Bundle args = appBindData.extraArgs;
+        Objects.requireNonNull(args, "args bundle is null");
+
         if (called) {
             throw new IllegalStateException("onBind called for the second time");
         }
@@ -31,21 +34,6 @@ class ActivityThreadHooks {
         AppGlobals.setInitialPackageId(appContext.getApplicationInfo().ext().getPackageId());
 
         if (Process.isIsolated()) {
-            return null;
-        }
-
-        final String pkgName = appContext.getPackageName();
-        final String TAG = "AppBindArgs";
-
-        Bundle args = null;
-        try {
-            args = ActivityThread.getPackageManager().getExtraAppBindArgs(pkgName);
-        } catch (RemoteException e) {
-            Log.e(TAG, "", e);
-        }
-
-        if (args == null) {
-            Log.e(TAG, "bundle is null");
             return null;
         }
 

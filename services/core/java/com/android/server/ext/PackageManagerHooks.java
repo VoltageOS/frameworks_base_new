@@ -1,9 +1,9 @@
 package com.android.server.ext;
 
-import android.Manifest;
 import android.annotation.Nullable;
 import android.annotation.UserIdInt;
 import android.app.AppBindArgs;
+import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.GosPackageState;
 import android.content.pm.GosPackageStateFlag;
@@ -11,8 +11,6 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManagerInternal;
 import android.ext.PackageId;
 import android.location.HookedLocationManager;
-import android.os.Binder;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.UserHandle;
 import android.util.ArraySet;
@@ -21,7 +19,6 @@ import android.util.Slog;
 import com.android.internal.app.ContactScopes;
 import com.android.server.pm.Computer;
 import com.android.server.pm.GosPackageStatePmHooks;
-import com.android.server.pm.PackageManagerService;
 import com.android.server.pm.ext.PackageExt;
 import com.android.server.pm.ext.PackageHooks;
 import com.android.server.pm.permission.SpecialRuntimePermUtils;
@@ -70,13 +67,23 @@ public class PackageManagerHooks {
     }
 
     @Nullable
-    public static Bundle getExtraAppBindArgs(PackageManagerService pm, String packageName) {
-        final int callingUid = Binder.getCallingUid();
-        final int callingPid = Binder.getCallingPid();
-        final int appId = UserHandle.getAppId(callingUid);
-        final int userId = UserHandle.getUserId(callingUid);
+    public static Bundle getExtraAppBindArgs(Context context, PackageManagerInternal pm,
+                                             String packageName, int appUid, int pid) {
+        if (android.os.Flags.isDevBuild()) {
+            Slog.d("AppBindArgs", "obtaining args for pkgName " + packageName
+                    + ", appUid " + appUid + ", pid " + pid);
+        }
 
-        Computer pmComputer = pm.snapshotComputer();
+        // Note that:
+        // - app UID differs from process UID for isolated processes
+        // - for android:externalService processes (e.g. WebView processes), app UID and package
+        // name values are client's, not host's
+
+        final int appId = UserHandle.getAppId(appUid);
+        final int userId = UserHandle.getUserId(appUid);
+
+        Computer pmComputer = (Computer) pm.snapshot();
+
         PackageStateInternal pkgState = pmComputer.getPackageStateInternal(packageName);
         if (pkgState == null) {
             return null;

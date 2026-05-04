@@ -233,6 +233,7 @@ public class NativeApplicationThreadWrapper extends IApplicationThread.Stub {
 
     @Override
     public final void bindApplication(
+            Bundle extraArgs,
             String processName,
             ApplicationInfo appInfo,
             String sdkSandboxClientAppVolumeUuid,
