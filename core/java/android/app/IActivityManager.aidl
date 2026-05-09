@@ -1088,6 +1088,7 @@ interface IActivityManager {
     int getRotationForApp(in String packageName);
 
     String getSpoofPifConfig();
+    String getSpoofPifSpoofPhotos();
     String getSpoofGamePropsConfig();
     String getSpoofTrickyStoreTarget();
     String getSpoofTrickyStoreKeyBox();

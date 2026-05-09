@@ -21360,6 +21360,12 @@ public class ActivityManagerService extends IActivityManager.Stub
     }
 
     @Override
+    public String getSpoofPifSpoofPhotos() {
+        final AxSpoofManagerInternal service = getAxSpoofManager();
+        return service != null ? service.getPifSpoofPhotos() : null;
+    }
+
+    @Override
     public String getSpoofGamePropsConfig() {
         final AxSpoofManagerInternal service = getAxSpoofManager();
         return service != null ? service.getGamePropsConfig() : null;
