@@ -1,0 +1,46 @@
+cc_library_shared {
+    name: "libgoscompat_maps_scan_jni",
+    srcs: ["jni/maps_scan_jni.c"],
+    // The helper app is SDK-built, so the JNI dependency needs a matching SDK variant.
+    sdk_version: "current",
+    header_libs: ["jni_headers"],
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+    stl: "none",
+}
+
+android_test_helper_app {
+    name: "GosCompatCheckApp",
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
+    manifest: "AndroidManifest.xml",
+    jni_libs: ["libgoscompat_maps_scan_jni"],
+    // Keep the JNI library inside the standalone helper APK loaded by Tradefed and manual installs.
+    use_embedded_native_libs: true,
+    // Build both ABIs so the helper can run under either app process ABI in multi-ABI test runs.
+    compile_multilib: "both",
+    static_libs: [
+        "GosCompatCheckCommon",
+        "androidx.activity_activity",
+        "androidx.activity_activity-compose",
+        "androidx.core_core",
+        "androidx.compose.foundation_foundation",
+        "androidx.compose.foundation_foundation-layout",
+        "androidx.compose.material3_material3",
+        "androidx.compose.runtime_runtime",
+        "androidx.compose.ui_ui",
+        "androidx.compose.ui_ui-graphics",
+        "androidx.compose.ui_ui-text",
+        "androidx.compose.ui_ui-unit",
+    ],
+    kotlincflags: [
+        "-Xjvm-default=all",
+        "-P plugin:androidx.compose.compiler.plugins.kotlin:sourceInformation=true",
+    ],
+    sdk_version: "system_current",
+}

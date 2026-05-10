@@ -1,0 +1,7 @@
+{
+  "gos_postsubmit": [
+    {
+      "name": "GosCompatMapsScanTests"
+    }
+  ]
+}
