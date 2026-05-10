@@ -1,0 +1,32 @@
+android_test {
+    name: "GosCompatMapsScanTests",
+    srcs: [
+        "src/**/*.java",
+    ],
+    manifest: "AndroidManifest.xml",
+    test_config: "AndroidTest.xml",
+    static_libs: [
+        "GosCompatCheckCommon",
+        "androidx.test.ext.junit",
+        "androidx.test.runner",
+        "androidx.test.rules",
+        "androidx.test.uiautomator_uiautomator",
+        // Provides TestLogData and LogFileLogger for tombstone artifacts.
+        "collector-device-lib",
+        // Provides PollingCheck and shell-permission helpers for ApplicationExitInfo access.
+        "compatibility-device-util-axt",
+        "truth",
+    ],
+    libs: ["android.test.runner.stubs"],
+    data: [
+        // Install the standalone helper app that owns the crashing :maps_scan process.
+        ":GosCompatCheckApp",
+    ],
+    // Tradefed failure reporting loads LogcatParser from loganalysis.
+    host_required: [
+        "loganalysis",
+    ],
+    platform_apis: true,
+    certificate: "platform",
+    test_suites: ["device-tests"],
+}

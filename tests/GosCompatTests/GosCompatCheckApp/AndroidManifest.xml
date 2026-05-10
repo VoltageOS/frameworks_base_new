@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="app.grapheneos.goscompat.checks">
+
+    <application
+        android:debuggable="true"
+        android:label="GOS Compat Checks"
+        android:theme="@android:style/Theme.DeviceDefault.DayNight">
+        <activity
+            android:name=".GosCompatCheckActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Shell holds DUMP; gate this exported crash trigger to shell-driven tests. -->
+        <activity
+            android:name=".MapsScanCrashActivity"
+            android:exported="true"
+            android:permission="android.permission.DUMP"
+            android:process=":maps_scan"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <provider
+            android:name=".MapsScanProvider"
+            android:authorities="app.grapheneos.goscompat.checks.maps_scan_provider"
+            android:exported="false"
+            android:process=":maps_scan" />
+    </application>
+</manifest>

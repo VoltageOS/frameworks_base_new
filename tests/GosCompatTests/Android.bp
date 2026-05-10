@@ -1,0 +1,10 @@
+android_library {
+    name: "GosCompatCheckCommon",
+    srcs: ["common/src/**/*.java"],
+    manifest: "common/AndroidManifest.xml",
+    static_libs: [
+        // Shared by the helper UI and tests for parsing native crash tombstone protobufs.
+        "framework-protos",
+    ],
+    sdk_version: "system_current",
+}
