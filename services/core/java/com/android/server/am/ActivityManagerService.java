@@ -3489,7 +3489,8 @@ public class ActivityManagerService extends IActivityManager.Stub
 
         if (!app.isKilled()) {
             if (!fromBinderDied) {
-                killProcessQuiet(pid);
+                // killProcessQuiet(pid);
+                Process.killProcessByPidfdQuiet(pid, app.info.uid);
                 mProcessList.noteAppKill(app, ApplicationExitInfo.REASON_OTHER,
                         ApplicationExitInfo.SUBREASON_UNKNOWN, reason);
             }
