@@ -5069,7 +5069,7 @@
          enabled by the accessibility shortcut. This service must be trusted, as it can be activated
          without explicit consent of the user. If no accessibility service with the specified name
          exists on the device, the accessibility shortcut will be disabled by default. -->
-    <string name="config_defaultAccessibilityService" translatable="false"></string>
+    <string name="config_defaultAccessibilityService" translatable="false">com.android.talkback/com.google.android.marvin.talkback.TalkBackService</string>
 
     <!-- The component name, flattened to a string, for the default select to speak service to be
          enabled by the accessibility keyboard shortcut. If the service with the specified component
