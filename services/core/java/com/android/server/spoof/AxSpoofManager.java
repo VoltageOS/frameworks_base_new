@@ -37,6 +37,10 @@ public class AxSpoofManager implements IAxSpoofManager {
     private static final String[] WATCHED_KEYS = {
             Settings.Secure.SPOOF_PIF_CONFIG,
             Settings.Secure.SPOOF_PIF_PHOTOS,
+            Settings.Secure.SPOOF_PIF_PROPS,
+            Settings.Secure.SPOOF_PIF_PROVIDER,
+            Settings.Secure.SPOOF_PIF_SIGNATURE,
+            Settings.Secure.SPOOF_PIF_VENDING_BUILD,
             Settings.Secure.SPOOF_GAMEPROPS_CONFIG,
             Settings.Secure.SPOOF_TRICKYSTORE_TARGET,
             Settings.Secure.SPOOF_TRICKYSTORE_KEYBOX,
@@ -113,6 +117,26 @@ public class AxSpoofManager implements IAxSpoofManager {
     @Override
     public String getPifSpoofPhotos() {
         return getCached(Settings.Secure.SPOOF_PIF_PHOTOS);
+    }
+
+    @Override
+    public String getPifSpoofProps() {
+        return getCached(Settings.Secure.SPOOF_PIF_PROPS);
+    }
+
+    @Override
+    public String getPifSpoofProvider() {
+        return getCached(Settings.Secure.SPOOF_PIF_PROVIDER);
+    }
+
+    @Override
+    public String getPifSpoofSignature() {
+        return getCached(Settings.Secure.SPOOF_PIF_SIGNATURE);
+    }
+
+    @Override
+    public String getPifSpoofVendingBuild() {
+        return getCached(Settings.Secure.SPOOF_PIF_VENDING_BUILD);
     }
 
     @Override

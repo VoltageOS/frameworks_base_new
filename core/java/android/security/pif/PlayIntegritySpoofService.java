@@ -204,6 +204,23 @@ public final class PlayIntegritySpoofService {
             String spoofPhotos = am.getSpoofPifSpoofPhotos();
             mSpoofPhotos = spoofPhotos == null || "1".equals(spoofPhotos)
                             || "true".equalsIgnoreCase(spoofPhotos);
+
+            String spoofProps = am.getSpoofPifSpoofProps();
+            mSpoofProps = spoofProps == null || "1".equals(spoofProps)
+                            || "true".equalsIgnoreCase(spoofProps);
+
+            String spoofProvider = am.getSpoofPifSpoofProvider();
+            mSpoofProvider = spoofProvider == null || "1".equals(spoofProvider)
+                            || "true".equalsIgnoreCase(spoofProvider);
+
+            String spoofSignature = am.getSpoofPifSpoofSignature();
+            mSpoofSignature = spoofSignature != null
+                            && ("1".equals(spoofSignature)
+                            || "true".equalsIgnoreCase(spoofSignature));
+
+            String spoofVendingBuild = am.getSpoofPifSpoofVendingBuild();
+            mSpoofVendingBuild = spoofVendingBuild == null || "1".equals(spoofVendingBuild)
+                            || "true".equalsIgnoreCase(spoofVendingBuild);
         } catch (Throwable e) {
             Log.e(TAG, "Failed to fetch PIF config from system_server", e);
             return;
@@ -222,11 +239,6 @@ public final class PlayIntegritySpoofService {
 
         mVerboseLogs = 0;
         mSpoofBuild = true;
-        mSpoofProps = true;
-        mSpoofProvider = true;
-        mSpoofSignature = false;
-        mSpoofVendingBuild = true;
-        mSpoofVendingSdk = false;
         mDebug = false;
 
         try {
@@ -314,16 +326,9 @@ public final class PlayIntegritySpoofService {
                 mSpoofBuild = "1".equals(value) || "true".equalsIgnoreCase(value);
                 break;
             case "spoofProps":
-                mSpoofProps = "1".equals(value) || "true".equalsIgnoreCase(value);
-                break;
             case "spoofProvider":
-                mSpoofProvider = "1".equals(value) || "true".equalsIgnoreCase(value);
-                break;
             case "spoofSignature":
-                mSpoofSignature = "1".equals(value) || "true".equalsIgnoreCase(value);
-                break;
             case "spoofVendingBuild":
-                mSpoofVendingBuild = "1".equals(value) || "true".equalsIgnoreCase(value);
                 break;
             case "spoofVendingSdk":
                 mSpoofVendingSdk = "1".equals(value) || "true".equalsIgnoreCase(value);
