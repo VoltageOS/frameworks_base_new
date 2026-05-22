@@ -76,7 +76,7 @@ final class MapsScanTombstoneReporter {
     private static boolean isMatchingNativeCrash(ApplicationExitInfo exit, long startTimeMillis) {
         return exit.getTimestamp() >= startTimeMillis
                 && exit.getReason() == ApplicationExitInfo.REASON_CRASH_NATIVE
-                && GosCompatContract.MAPS_SCAN_PROCESS.equals(exit.getProcessName());
+                && GosCompatContract.MapsScan.PROCESS.equals(exit.getProcessName());
     }
 
     private static String formatTombstone(ApplicationExitInfo exit) throws Exception {

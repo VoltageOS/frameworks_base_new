@@ -61,17 +61,17 @@ public final class MapsScanTests {
 
     @After
     public void tearDown() throws Exception {
-        mDevice.executeShellCommand("am force-stop " + GosCompatContract.APP_PACKAGE);
+        mDevice.executeShellCommand("am force-stop " + GosCompatContract.App.PACKAGE_NAME);
     }
 
     @Test
     public void directNativeMapsScanDoesNotCrashFromJavaWorkerThread() throws Exception {
-        assertMapsScanModeDoesNotCrash(GosCompatContract.MODE_DIRECT);
+        assertMapsScanModeDoesNotCrash(GosCompatContract.MapsScan.Mode.DIRECT);
     }
 
     @Test
     public void reflectiveNativeMapsScanDoesNotCrashFromJavaWorkerThread() throws Exception {
-        assertMapsScanModeDoesNotCrash(GosCompatContract.MODE_REFLECTIVE);
+        assertMapsScanModeDoesNotCrash(GosCompatContract.MapsScan.Mode.REFLECTIVE);
     }
 
     private void assertMapsScanModeDoesNotCrash(String mode) throws Exception {
@@ -85,21 +85,21 @@ public final class MapsScanTests {
 
         // The translucent trigger activity starts the scan asynchronously. Force-stop first so each
         // attempt gets a newly created helper process with fresh bionic thread mappings.
-        mDevice.executeShellCommand("am force-stop " + GosCompatContract.APP_PACKAGE);
+        mDevice.executeShellCommand("am force-stop " + GosCompatContract.App.PACKAGE_NAME);
 
         long startTimeMillis = System.currentTimeMillis();
         // Use an activity launch because shell-started background services are rejected by
         // ActivityManager background-start restrictions.
         String output = mDevice.executeShellCommand("am start -n "
-                + GosCompatContract.MAPS_SCAN_CRASH_ACTIVITY
-                + " --es " + GosCompatContract.EXTRA_MAPS_SCAN_MODE + " " + mode
-                + " --es " + GosCompatContract.EXTRA_MAPS_SCAN_TOKEN + " " + token);
+                + GosCompatContract.MapsScan.CRASH_ACTIVITY
+                + " --es " + GosCompatContract.MapsScan.Extra.MODE + " " + mode
+                + " --es " + GosCompatContract.MapsScan.Extra.TOKEN + " " + token);
         assertWithMessage(output).that(output).doesNotContain("Error");
 
         ScanOutcome outcome = waitForOutcome(token, startTimeMillis, mode, attempt);
         if (outcome.result != null) {
             assertCompletedResult(outcome.result, mode, attempt);
-            mDevice.executeShellCommand("am force-stop " + GosCompatContract.APP_PACKAGE);
+            mDevice.executeShellCommand("am force-stop " + GosCompatContract.App.PACKAGE_NAME);
             return;
         }
 
@@ -121,7 +121,7 @@ public final class MapsScanTests {
 
             Bundle result = getStoredResult(token);
             if (result != null
-                    && result.getBoolean(GosCompatContract.KEY_MAPS_SCAN_RESULT_AVAILABLE)) {
+                    && result.getBoolean(GosCompatContract.MapsScan.Key.RESULT_AVAILABLE)) {
                 return ScanOutcome.forResult(result);
             }
 
@@ -137,36 +137,38 @@ public final class MapsScanTests {
         try {
             // Poll a file instead of the provider so the instrumentation process never depends
             // on a binder transaction into a helper process that may be crashing.
-            String output = mDevice.executeShellCommand("run-as " + GosCompatContract.APP_PACKAGE
-                    + " cat files/" + GosCompatContract.MAPS_SCAN_RESULT_FILE + " 2>/dev/null");
+            String output = mDevice.executeShellCommand(
+                    "run-as " + GosCompatContract.App.PACKAGE_NAME
+                            + " cat files/" + GosCompatContract.MapsScan.RESULT_FILE
+                            + " 2>/dev/null");
             if (output == null || output.trim().isEmpty()) {
                 return null;
             }
 
             Properties properties = new Properties();
             properties.load(new StringReader(output));
-            if (!token.equals(properties.getProperty(GosCompatContract.EXTRA_MAPS_SCAN_TOKEN))) {
+            if (!token.equals(properties.getProperty(GosCompatContract.MapsScan.Extra.TOKEN))) {
                 return null;
             }
 
             boolean completed = getBoolean(properties,
-                    GosCompatContract.KEY_MAPS_SCAN_COMPLETED);
+                    GosCompatContract.MapsScan.Key.COMPLETED);
             boolean workerThread = getBoolean(properties,
-                    GosCompatContract.KEY_MAPS_SCAN_WORKER_THREAD);
+                    GosCompatContract.MapsScan.Key.WORKER_THREAD);
 
             Bundle result = new Bundle();
-            result.putBoolean(GosCompatContract.KEY_MAPS_SCAN_RESULT_AVAILABLE, true);
-            result.putBoolean(GosCompatContract.KEY_MAPS_SCAN_COMPLETED, completed);
-            result.putBoolean(GosCompatContract.KEY_MAPS_SCAN_WORKER_THREAD, workerThread);
-            result.putInt(GosCompatContract.KEY_MAPS_SCAN_SELECTED_RANGES,
-                    getInt(properties, GosCompatContract.KEY_MAPS_SCAN_SELECTED_RANGES));
-            result.putLong(GosCompatContract.KEY_MAPS_SCAN_SCANNED_BYTES,
-                    getLong(properties, GosCompatContract.KEY_MAPS_SCAN_SCANNED_BYTES));
-            result.putInt(GosCompatContract.KEY_MAPS_SCAN_CALLER_TID,
-                    getInt(properties, GosCompatContract.KEY_MAPS_SCAN_CALLER_TID));
-            result.putInt(GosCompatContract.KEY_MAPS_SCAN_WORKER_TID,
-                    getInt(properties, GosCompatContract.KEY_MAPS_SCAN_WORKER_TID));
-            result.putString(GosCompatContract.KEY_STATUS_TEXT,
+            result.putBoolean(GosCompatContract.MapsScan.Key.RESULT_AVAILABLE, true);
+            result.putBoolean(GosCompatContract.MapsScan.Key.COMPLETED, completed);
+            result.putBoolean(GosCompatContract.MapsScan.Key.WORKER_THREAD, workerThread);
+            result.putInt(GosCompatContract.MapsScan.Key.SELECTED_RANGES,
+                    getInt(properties, GosCompatContract.MapsScan.Key.SELECTED_RANGES));
+            result.putLong(GosCompatContract.MapsScan.Key.SCANNED_BYTES,
+                    getLong(properties, GosCompatContract.MapsScan.Key.SCANNED_BYTES));
+            result.putInt(GosCompatContract.MapsScan.Key.CALLER_TID,
+                    getInt(properties, GosCompatContract.MapsScan.Key.CALLER_TID));
+            result.putInt(GosCompatContract.MapsScan.Key.WORKER_TID,
+                    getInt(properties, GosCompatContract.MapsScan.Key.WORKER_TID));
+            result.putString(GosCompatContract.MapsScan.Key.STATUS_TEXT,
                     completed && workerThread ? "Completed" : "Failed");
             return result;
         } catch (Throwable ignored) {
@@ -188,7 +190,7 @@ public final class MapsScanTests {
 
     private ApplicationExitInfo findNativeCrash(long startTimeMillis) throws Exception {
         List<ApplicationExitInfo> exits = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                GosCompatContract.APP_PACKAGE,
+                GosCompatContract.App.PACKAGE_NAME,
                 0,
                 16,
                 mActivityManager::getHistoricalProcessExitReasons,
@@ -200,7 +202,7 @@ public final class MapsScanTests {
             if (exit.getReason() != ApplicationExitInfo.REASON_CRASH_NATIVE) {
                 continue;
             }
-            if (!GosCompatContract.MAPS_SCAN_PROCESS.equals(exit.getProcessName())) {
+            if (!GosCompatContract.MapsScan.PROCESS.equals(exit.getProcessName())) {
                 continue;
             }
             return exit;
@@ -232,22 +234,22 @@ public final class MapsScanTests {
     private void assertCompletedResult(Bundle result, String mode, int attempt) {
         String message = "mode=" + mode
                 + ", attempt=" + attempt + "/" + SCAN_ATTEMPTS
-                + ", status=" + result.getString(GosCompatContract.KEY_STATUS_TEXT)
+                + ", status=" + result.getString(GosCompatContract.MapsScan.Key.STATUS_TEXT)
                 + ", selectedRanges="
-                + result.getInt(GosCompatContract.KEY_MAPS_SCAN_SELECTED_RANGES)
+                + result.getInt(GosCompatContract.MapsScan.Key.SELECTED_RANGES)
                 + ", scannedBytes="
-                + result.getLong(GosCompatContract.KEY_MAPS_SCAN_SCANNED_BYTES)
-                + ", callerTid=" + result.getInt(GosCompatContract.KEY_MAPS_SCAN_CALLER_TID)
-                + ", workerTid=" + result.getInt(GosCompatContract.KEY_MAPS_SCAN_WORKER_TID);
+                + result.getLong(GosCompatContract.MapsScan.Key.SCANNED_BYTES)
+                + ", callerTid=" + result.getInt(GosCompatContract.MapsScan.Key.CALLER_TID)
+                + ", workerTid=" + result.getInt(GosCompatContract.MapsScan.Key.WORKER_TID);
 
         assertWithMessage(message).that(result.getBoolean(
-                GosCompatContract.KEY_MAPS_SCAN_COMPLETED)).isTrue();
+                GosCompatContract.MapsScan.Key.COMPLETED)).isTrue();
         assertWithMessage(message).that(result.getBoolean(
-                GosCompatContract.KEY_MAPS_SCAN_WORKER_THREAD)).isTrue();
+                GosCompatContract.MapsScan.Key.WORKER_THREAD)).isTrue();
         assertWithMessage(message).that(result.getInt(
-                GosCompatContract.KEY_MAPS_SCAN_SELECTED_RANGES)).isAtLeast(1);
+                GosCompatContract.MapsScan.Key.SELECTED_RANGES)).isAtLeast(1);
         assertWithMessage(message).that(result.getLong(
-                GosCompatContract.KEY_MAPS_SCAN_SCANNED_BYTES)).isGreaterThan(0L);
+                GosCompatContract.MapsScan.Key.SCANNED_BYTES)).isGreaterThan(0L);
     }
 
     private void reportTombstoneArtifacts(String mode, int attempt, String formattedTombstone,

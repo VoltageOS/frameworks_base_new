@@ -76,31 +76,31 @@ public final class MapsScanResult {
 
     public Bundle toBundle() {
         Bundle bundle = new Bundle();
-        bundle.putBoolean(GosCompatContract.KEY_MAPS_SCAN_COMPLETED, mCompleted);
-        bundle.putBoolean(GosCompatContract.KEY_MAPS_SCAN_WORKER_THREAD, mWorkerThread);
-        bundle.putInt(GosCompatContract.KEY_MAPS_SCAN_SELECTED_RANGES, mSelectedRanges);
-        bundle.putLong(GosCompatContract.KEY_MAPS_SCAN_SCANNED_BYTES, mScannedBytes);
-        bundle.putInt(GosCompatContract.KEY_MAPS_SCAN_CALLER_TID, mCallerTid);
-        bundle.putInt(GosCompatContract.KEY_MAPS_SCAN_WORKER_TID, mWorkerTid);
-        bundle.putString(GosCompatContract.KEY_STATUS_TEXT, getStatusText());
-        bundle.putString(GosCompatContract.KEY_SUMMARY, getSummary());
-        bundle.putStringArrayList(GosCompatContract.KEY_MAPS_SCAN_DETAILS,
+        bundle.putBoolean(GosCompatContract.MapsScan.Key.COMPLETED, mCompleted);
+        bundle.putBoolean(GosCompatContract.MapsScan.Key.WORKER_THREAD, mWorkerThread);
+        bundle.putInt(GosCompatContract.MapsScan.Key.SELECTED_RANGES, mSelectedRanges);
+        bundle.putLong(GosCompatContract.MapsScan.Key.SCANNED_BYTES, mScannedBytes);
+        bundle.putInt(GosCompatContract.MapsScan.Key.CALLER_TID, mCallerTid);
+        bundle.putInt(GosCompatContract.MapsScan.Key.WORKER_TID, mWorkerTid);
+        bundle.putString(GosCompatContract.MapsScan.Key.STATUS_TEXT, getStatusText());
+        bundle.putString(GosCompatContract.MapsScan.Key.SUMMARY, getSummary());
+        bundle.putStringArrayList(GosCompatContract.MapsScan.Key.DETAILS,
                 new ArrayList<>(mDetails));
-        bundle.putStringArrayList(GosCompatContract.KEY_MAPS_SCAN_ERRORS,
+        bundle.putStringArrayList(GosCompatContract.MapsScan.Key.ERRORS,
                 new ArrayList<>(mErrors));
         return bundle;
     }
 
     public static MapsScanResult fromBundle(Bundle bundle) {
         return new MapsScanResult(
-                bundle.getBoolean(GosCompatContract.KEY_MAPS_SCAN_COMPLETED),
-                bundle.getBoolean(GosCompatContract.KEY_MAPS_SCAN_WORKER_THREAD),
-                bundle.getInt(GosCompatContract.KEY_MAPS_SCAN_SELECTED_RANGES),
-                bundle.getLong(GosCompatContract.KEY_MAPS_SCAN_SCANNED_BYTES),
-                bundle.getInt(GosCompatContract.KEY_MAPS_SCAN_CALLER_TID),
-                bundle.getInt(GosCompatContract.KEY_MAPS_SCAN_WORKER_TID),
-                getStringArrayList(bundle, GosCompatContract.KEY_MAPS_SCAN_DETAILS),
-                getStringArrayList(bundle, GosCompatContract.KEY_MAPS_SCAN_ERRORS));
+                bundle.getBoolean(GosCompatContract.MapsScan.Key.COMPLETED),
+                bundle.getBoolean(GosCompatContract.MapsScan.Key.WORKER_THREAD),
+                bundle.getInt(GosCompatContract.MapsScan.Key.SELECTED_RANGES),
+                bundle.getLong(GosCompatContract.MapsScan.Key.SCANNED_BYTES),
+                bundle.getInt(GosCompatContract.MapsScan.Key.CALLER_TID),
+                bundle.getInt(GosCompatContract.MapsScan.Key.WORKER_TID),
+                getStringArrayList(bundle, GosCompatContract.MapsScan.Key.DETAILS),
+                getStringArrayList(bundle, GosCompatContract.MapsScan.Key.ERRORS));
     }
 
     public static MapsScanResult failed(String error) {

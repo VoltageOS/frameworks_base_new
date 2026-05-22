@@ -23,6 +23,14 @@
             android:process=":maps_scan"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
+        <!-- Shell holds DUMP; gate this exported WebView startup trigger to shell-driven tests. -->
+        <activity
+            android:name=".webviewua.WebViewUaStartupActivity"
+            android:exported="true"
+            android:permission="android.permission.DUMP"
+            android:process=":webview_ua_startup"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <provider
             android:name=".MapsScanProvider"
             android:authorities="app.grapheneos.goscompat.checks.maps_scan_provider"

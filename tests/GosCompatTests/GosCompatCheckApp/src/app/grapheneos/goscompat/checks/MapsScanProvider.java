@@ -14,17 +14,17 @@ public final class MapsScanProvider extends ContentProvider {
 
     @Override
     public Bundle call(String method, String arg, Bundle extras) {
-        if (GosCompatContract.METHOD_RUN_MAPS_SCAN_CHECK.equals(method)
-                || GosCompatContract.METHOD_RUN_DIRECT_MAPS_SCAN_CHECK.equals(method)) {
+        if (GosCompatContract.MapsScan.Method.RUN_CHECK.equals(method)
+                || GosCompatContract.MapsScan.Method.RUN_DIRECT_CHECK.equals(method)) {
             return MapsScanRunner.runDirect().toBundle();
         }
-        if (GosCompatContract.METHOD_RUN_REFLECTIVE_MAPS_SCAN_CHECK.equals(method)) {
+        if (GosCompatContract.MapsScan.Method.RUN_REFLECTIVE_CHECK.equals(method)) {
             return MapsScanRunner.runReflective().toBundle();
         }
-        if (GosCompatContract.METHOD_GET_MAPS_SCAN_RESULT.equals(method)) {
+        if (GosCompatContract.MapsScan.Method.GET_RESULT.equals(method)) {
             return MapsScanResultStore.load(getContext(), arg);
         }
-        if (GosCompatContract.METHOD_CLEAR_MAPS_SCAN_RESULT.equals(method)) {
+        if (GosCompatContract.MapsScan.Method.CLEAR_RESULT.equals(method)) {
             return MapsScanResultStore.clear(getContext());
         }
         return super.call(method, arg, extras);

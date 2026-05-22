@@ -48,8 +48,14 @@ class GosCompatCheckActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.auto(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.auto(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT),
+            statusBarStyle = SystemBarStyle.auto(
+                AndroidColor.TRANSPARENT,
+                AndroidColor.TRANSPARENT,
+            ),
+            navigationBarStyle = SystemBarStyle.auto(
+                AndroidColor.TRANSPARENT,
+                AndroidColor.TRANSPARENT,
+            ),
         )
 
         setContent {
@@ -71,14 +77,14 @@ class GosCompatCheckActivity : ComponentActivity() {
                         reflectiveMapsScanRunning = reflectiveMapsScanRunning.value,
                         onRunDirectMapsScan = {
                             startMapsScan(
-                                GosCompatContract.METHOD_RUN_DIRECT_MAPS_SCAN_CHECK,
+                                GosCompatContract.MapsScan.Method.RUN_DIRECT_CHECK,
                                 directMapsScanResult,
                                 directMapsScanRunning,
                             )
                         },
                         onRunReflectiveMapsScan = {
                             startMapsScan(
-                                GosCompatContract.METHOD_RUN_REFLECTIVE_MAPS_SCAN_CHECK,
+                                GosCompatContract.MapsScan.Method.RUN_REFLECTIVE_CHECK,
                                 reflectiveMapsScanResult,
                                 reflectiveMapsScanRunning,
                             )
@@ -111,7 +117,7 @@ class GosCompatCheckActivity : ComponentActivity() {
         val startTimeMillis = System.currentTimeMillis()
         return try {
             val client = context.contentResolver.acquireUnstableContentProviderClient(
-                GosCompatContract.MAPS_SCAN_CONTENT_URI,
+                GosCompatContract.MapsScan.CONTENT_URI,
             ) ?: return MapsScanResult.failed("Maps scan provider was unavailable")
             val bundle = try {
                 // Keep the UI process from becoming a stable provider dependent. The scanner is
