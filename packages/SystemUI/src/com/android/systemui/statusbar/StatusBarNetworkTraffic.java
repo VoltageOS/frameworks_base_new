@@ -144,8 +144,9 @@ public class StatusBarNetworkTraffic extends NetworkTraffic implements DarkRecei
     @Override
     protected void updateVisibility() {
         boolean visible = mEnabled && mIsActive && getText() != ""
-                    && !mKeyguardShowing 
-                    && mVisibleState == STATE_ICON;
+                    && !mKeyguardShowing
+                    && mVisibleState == STATE_ICON
+                    && !mSpaceTooSmall;
         if (visible != mVisible) {
             mVisible = visible;
             setVisibility(mVisible ? View.VISIBLE : View.GONE);

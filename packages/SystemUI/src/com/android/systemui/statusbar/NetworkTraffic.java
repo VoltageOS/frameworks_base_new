@@ -112,6 +112,7 @@ public class NetworkTraffic extends TextView implements TunerService.Tunable {
     private boolean mHideArrows;
 
     protected boolean mVisible = true;
+    protected boolean mSpaceTooSmall = false;
 
     private ConnectivityManager mConnectivityManager;
     private final Handler mTrafficHandler;
@@ -418,10 +419,22 @@ public class NetworkTraffic extends TextView implements TunerService.Tunable {
 
     protected void updateVisibility() {
         boolean visible = mEnabled && mIsActive && getText() != ""
-            && !mChipVisible;
+            && !mChipVisible && !mSpaceTooSmall;
         if (visible != mVisible) {
             mVisible = visible;
             setVisibility(mVisible ? VISIBLE : GONE);
+        }
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        final int assignedWidth = right - left;
+        final int requiredWidth = getMeasuredWidth();
+        final boolean tooSmall = assignedWidth > 0 && assignedWidth < requiredWidth;
+        if (tooSmall != mSpaceTooSmall) {
+            mSpaceTooSmall = tooSmall;
+            updateVisibility();
         }
     }
 
