@@ -31,6 +31,20 @@
             android:process=":webview_ua_startup"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
+        <!-- Shell holds DUMP; gate this exported kernel crash reproducer to shell-driven tests. -->
+        <activity
+            android:name=".dmabuf.DmaBufReleaseActivity"
+            android:exported="true"
+            android:permission="android.permission.DUMP"
+            android:process=":dmabuf_release"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <activity
+            android:name=".dmabuf.DmaBufReleaseManualActivity"
+            android:exported="false"
+            android:process=":dmabuf_release"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <provider
             android:name=".MapsScanProvider"
             android:authorities="app.grapheneos.goscompat.checks.maps_scan_provider"

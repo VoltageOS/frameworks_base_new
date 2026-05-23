@@ -12,6 +12,25 @@ cc_library_shared {
     stl: "none",
 }
 
+cc_library_shared {
+    name: "libgoscompat_dmabuf_release_jni",
+    srcs: ["jni/dmabuf_release_jni.cpp"],
+    // The helper app is SDK-built, so the JNI dependency needs a matching SDK variant.
+    sdk_version: "current",
+    header_libs: ["jni_headers"],
+    shared_libs: [
+        "libEGL",
+        "libGLESv2",
+        "liblog",
+    ],
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+    stl: "c++_static",
+}
+
 android_test_helper_app {
     name: "GosCompatCheckApp",
     srcs: [
@@ -19,7 +38,10 @@ android_test_helper_app {
         "src/**/*.kt",
     ],
     manifest: "AndroidManifest.xml",
-    jni_libs: ["libgoscompat_maps_scan_jni"],
+    jni_libs: [
+        "libgoscompat_maps_scan_jni",
+        "libgoscompat_dmabuf_release_jni",
+    ],
     // Keep the JNI library inside the standalone helper APK loaded by Tradefed and manual installs.
     use_embedded_native_libs: true,
     // Build both ABIs so the helper can run under either app process ABI in multi-ABI test runs.

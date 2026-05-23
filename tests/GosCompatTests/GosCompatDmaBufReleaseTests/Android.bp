@@ -1,0 +1,22 @@
+android_test {
+    name: "GosCompatDmaBufReleaseTests",
+    srcs: [
+        "src/**/*.java",
+    ],
+    manifest: "AndroidManifest.xml",
+    test_config: "AndroidTest.xml",
+    static_libs: [
+        "GosCompatCheckCommon",
+        "androidx.test.ext.junit",
+        "androidx.test.runner",
+        "androidx.test.uiautomator_uiautomator",
+        "truth",
+    ],
+    libs: ["android.test.runner.stubs"],
+    data: [
+        ":GosCompatCheckApp",
+    ],
+    platform_apis: true,
+    certificate: "platform",
+    test_suites: ["device-tests"],
+}

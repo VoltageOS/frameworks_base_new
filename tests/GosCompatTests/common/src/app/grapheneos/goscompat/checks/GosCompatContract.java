@@ -100,6 +100,87 @@ public final class GosCompatContract {
         }
     }
 
+    public static final class DmaBufRelease {
+        public static final String PROCESS = App.PACKAGE_NAME + ":dmabuf_release";
+        public static final String ACTIVITY = App.PACKAGE_NAME + "/.dmabuf.DmaBufReleaseActivity";
+        public static final String RESULT_FILE = "dmabuf_release_result.properties";
+        public static final int DEFAULT_ITERATIONS = 4;
+        public static final int VFRAME_SECURE_DIRECT_WIDTH = 8192;
+        public static final int VFRAME_SECURE_DIRECT_HEIGHT = 8192;
+        public static final int VFRAME_SECURE_DIRECT_COUNT = 1;
+        public static final int VSTREAM_SECURE_DIRECT_WIDTH = 1024;
+        public static final int VSTREAM_SECURE_DIRECT_HEIGHT = 1024;
+        public static final int VSTREAM_SECURE_DIRECT_COUNT = 1;
+        public static final int SECURE_CHUNK_HEAP_ONE_CHUNK_WIDTH = 128;
+        public static final int SECURE_CHUNK_HEAP_ONE_CHUNK_HEIGHT = 128;
+        public static final int SECURE_CHUNK_HEAP_ONE_CHUNK_COUNT = 1;
+        public static final int PROTECTED_EGL_WIDTH = 8192;
+        public static final int PROTECTED_EGL_HEIGHT = 8192;
+        public static final int PROTECTED_EGL_RESOURCE_COUNT = 2;
+
+        public static final class Extra {
+            public static final String TOKEN = "dmabuf_release_token";
+            public static final String MODE = "dmabuf_release_mode";
+            public static final String HEAP_NAME = "dmabuf_release_heap_name";
+            public static final String WIDTH = "dmabuf_release_width";
+            public static final String HEIGHT = "dmabuf_release_height";
+            public static final String BUFFER_COUNT = "dmabuf_release_buffer_count";
+            public static final String ITERATIONS = "dmabuf_release_iterations";
+            public static final String RELEASE_AFTER_READY =
+                    "dmabuf_release_release_after_ready";
+
+            private Extra() {
+            }
+        }
+
+        public static final class Mode {
+            public static final String SECURE_CHUNK_HEAP_DIRECT =
+                    "secure_chunk_heap_direct";
+            public static final String PROTECTED_EGL = "protected_egl";
+
+            private Mode() {
+            }
+        }
+
+        public static final class Heap {
+            public static final String VFRAME_SECURE = "vframe-secure";
+            public static final String VSTREAM_SECURE = "vstream-secure";
+
+            private Heap() {
+            }
+        }
+
+        public static final class Key {
+            public static final String RESULT_AVAILABLE = "dmabuf_release_result_available";
+            public static final String READY = "dmabuf_release_ready";
+            public static final String UNSUPPORTED = "dmabuf_release_unsupported";
+            public static final String MODE = "dmabuf_release_mode";
+            public static final String WIDTH = "dmabuf_release_width";
+            public static final String HEIGHT = "dmabuf_release_height";
+            public static final String REQUESTED_BUFFERS =
+                    "dmabuf_release_requested_buffers";
+            public static final String ALLOCATED_BUFFERS =
+                    "dmabuf_release_allocated_buffers";
+            public static final String ITERATIONS = "dmabuf_release_iterations";
+            public static final String PID = "dmabuf_release_pid";
+            public static final String TID = "dmabuf_release_tid";
+            public static final String PROTECTED_CONTENT =
+                    "dmabuf_release_protected_content";
+            public static final String RELEASED = "dmabuf_release_released";
+            public static final String HEAP_PATH = "dmabuf_release_heap_path";
+            public static final String HEAP_NAME = "dmabuf_release_heap_name";
+            public static final String ALLOCATOR = "dmabuf_release_allocator";
+            public static final String ALLOCATION = "dmabuf_release_allocation";
+            public static final String ERROR = "dmabuf_release_error";
+
+            private Key() {
+            }
+        }
+
+        private DmaBufRelease() {
+        }
+    }
+
     private GosCompatContract() {
     }
 }

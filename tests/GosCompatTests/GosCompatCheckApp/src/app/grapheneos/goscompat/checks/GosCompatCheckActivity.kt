@@ -26,6 +26,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -37,11 +38,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.grapheneos.goscompat.checks.dmabuf.DmaBufReleasePanel
 
 class GosCompatCheckActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,6 +88,9 @@ class GosCompatCheckActivity : ComponentActivity() {
                                 reflectiveMapsScanResult,
                                 reflectiveMapsScanRunning,
                             )
+                        },
+                        dmaBufReleaseContent = {
+                            DmaBufReleasePanel(this@GosCompatCheckActivity)
                         },
                     )
                 }
@@ -149,6 +152,7 @@ private fun GosCompatCheckScreen(
     reflectiveMapsScanRunning: Boolean,
     onRunDirectMapsScan: () -> Unit,
     onRunReflectiveMapsScan: () -> Unit,
+    dmaBufReleaseContent: @Composable () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -164,23 +168,42 @@ private fun GosCompatCheckScreen(
             fontWeight = FontWeight.SemiBold,
         )
 
-        MapsScanControl(
-            title = "Direct JNI maps scan",
-            mapsScanResult = directMapsScanResult,
-            mapsScanRunning = directMapsScanRunning,
-            onRunMapsScan = onRunDirectMapsScan,
-        )
-        ResultSection("Direct JNI details", directMapsScanResult?.details.orEmpty())
-        ResultSection("Direct JNI errors", directMapsScanResult?.errors.orEmpty())
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Text(
+                    text = "Memory maps scan",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                MapsScanControl(
+                    title = "Direct JNI maps scan",
+                    mapsScanResult = directMapsScanResult,
+                    mapsScanRunning = directMapsScanRunning,
+                    onRunMapsScan = onRunDirectMapsScan,
+                )
+                ResultSection("Direct JNI details", directMapsScanResult?.details.orEmpty())
+                ResultSection("Direct JNI errors", directMapsScanResult?.errors.orEmpty())
 
-        MapsScanControl(
-            title = "Reflective JNI maps scan",
-            mapsScanResult = reflectiveMapsScanResult,
-            mapsScanRunning = reflectiveMapsScanRunning,
-            onRunMapsScan = onRunReflectiveMapsScan,
-        )
-        ResultSection("Reflective JNI details", reflectiveMapsScanResult?.details.orEmpty())
-        ResultSection("Reflective JNI errors", reflectiveMapsScanResult?.errors.orEmpty())
+                MapsScanControl(
+                    title = "Reflective JNI maps scan",
+                    mapsScanResult = reflectiveMapsScanResult,
+                    mapsScanRunning = reflectiveMapsScanRunning,
+                    onRunMapsScan = onRunReflectiveMapsScan,
+                )
+                ResultSection("Reflective JNI details", reflectiveMapsScanResult?.details.orEmpty())
+                ResultSection("Reflective JNI errors", reflectiveMapsScanResult?.errors.orEmpty())
+            }
+        }
+
+        dmaBufReleaseContent()
     }
 }
 
@@ -215,10 +238,7 @@ private fun MapsScanControl(
                 text = status,
                 modifier = Modifier
                     .background(statusColor.copy(alpha = 0.12f), RoundedCornerShape(6.dp))
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
-                    .semantics {
-                        contentDescription = "Memory maps scan status: $status"
-                    },
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 color = statusColor,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
@@ -237,7 +257,7 @@ private fun MapsScanControl(
 }
 
 @Composable
-private fun ResultSection(title: String, lines: List<String>) {
+internal fun ResultSection(title: String, lines: List<String>) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = title,

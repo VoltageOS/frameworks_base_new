@@ -5,6 +5,9 @@
     },
     {
       "name": "GosCompatWebViewTests"
+    },
+    {
+      "name": "GosCompatDmaBufReleaseTests"
     }
   ]
 }
