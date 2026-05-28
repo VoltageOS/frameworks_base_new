@@ -8183,6 +8183,7 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
 
     public boolean shouldForceCutoutFullscreen(String packageName) {
         synchronized (this) {
+            if (mCutoutFullscreenController == null) return false;
             return mCutoutFullscreenController.shouldForceCutoutFullscreen(packageName);
         }
     }
