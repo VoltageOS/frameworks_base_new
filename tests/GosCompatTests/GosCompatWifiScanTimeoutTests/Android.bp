@@ -1,0 +1,16 @@
+android_test {
+    name: "GosCompatWifiScanTimeoutTests",
+    srcs: [
+        "src/**/*.java",
+    ],
+    manifest: "AndroidManifest.xml",
+    test_config: "AndroidTest.xml",
+    static_libs: [
+        "androidx.test.ext.junit",
+        "androidx.test.runner",
+        "truth",
+    ],
+    libs: ["android.test.runner.stubs"],
+    platform_apis: true,
+    test_suites: ["device-tests"],
+}

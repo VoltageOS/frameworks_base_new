@@ -8,6 +8,9 @@
     },
     {
       "name": "GosCompatDmaBufReleaseTests"
+    },
+    {
+      "name": "GosCompatWifiScanTimeoutTests"
     }
   ]
 }

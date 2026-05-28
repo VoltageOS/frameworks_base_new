@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration description="Runs GosCompatWifiScanTimeoutTests">
+    <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+        <option name="cleanup-apks" value="true" />
+        <option name="install-arg" value="-r" />
+        <option name="install-arg" value="-d" />
+        <option name="install-arg" value="-g" />
+        <option name="install-arg" value="-t" />
+        <option name="test-file-name" value="GosCompatWifiScanTimeoutTests.apk" />
+    </target_preparer>
+
+    <test class="com.android.tradefed.testtype.AndroidJUnitTest">
+        <option name="package" value="app.grapheneos.goscompat.wifiscantimeout.tests" />
+        <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
+        <option name="hidden-api-checks" value="false" />
+    </test>
+</configuration>
