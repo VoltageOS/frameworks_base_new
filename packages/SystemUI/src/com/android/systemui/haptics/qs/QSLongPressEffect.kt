@@ -381,6 +381,6 @@ constructor(
 
     companion object {
         private const val TAG = "QSLongPressEffect"
-        private const val DEBUG = true
+        private const val DEBUG = false
     }
 }

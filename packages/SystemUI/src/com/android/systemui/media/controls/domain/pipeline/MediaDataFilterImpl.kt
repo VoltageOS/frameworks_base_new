@@ -33,7 +33,7 @@ import java.util.concurrent.Executor
 import javax.inject.Inject
 
 private const val TAG = "MediaDataFilter"
-private const val DEBUG = true
+private const val DEBUG = false
 
 /**
  * Filters data updates from [MediaDataCombineLatest] based on the current user ID, and handles user

@@ -72,7 +72,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 
 private const val TAG = "MediaDataManager"
-private const val DEBUG = true
+private const val DEBUG = false
 
 private val LOADING =
     MediaData(

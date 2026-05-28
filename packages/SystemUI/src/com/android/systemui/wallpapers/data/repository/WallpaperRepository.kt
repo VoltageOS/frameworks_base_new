@@ -239,6 +239,6 @@ constructor(
 
     companion object {
         private val TAG = WallpaperRepositoryImpl::class.simpleName
-        private val DEBUG = true
+        private val DEBUG = false
     }
 }
