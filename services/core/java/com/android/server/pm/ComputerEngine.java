@@ -184,7 +184,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import com.android.internal.util.voltage.HideAppListUtils;
+import com.android.internal.util.voltage.HideAppListCache;
 
 /**
  * This class contains the implementation of the Computer functions.  It
@@ -994,8 +994,7 @@ public class ComputerEngine implements Computer {
 
     public final ApplicationInfo getApplicationInfo(String packageName,
             @PackageManager.ApplicationInfoFlagsBits long flags, int userId) {
-        if (canHideApp(Binder.getCallingUid(), packageName) &&
-            HideAppListUtils.shouldHideAppList(mContext, packageName)) {
+        if (shouldHideFromCaller(Binder.getCallingUid(), packageName)) {
             return null;
         }
         return getApplicationInfoInternal(packageName, flags, Binder.getCallingUid(), userId);
@@ -1011,8 +1010,7 @@ public class ComputerEngine implements Computer {
             @PackageManager.ApplicationInfoFlagsBits long flags,
             int filterCallingUid, int userId) {
         if (!mUserManager.exists(userId)) return null;
-        if (canHideApp(Binder.getCallingUid(), packageName) &&
-            HideAppListUtils.shouldHideAppList(mContext, packageName)) {
+        if (shouldHideFromCaller(Binder.getCallingUid(), packageName)) {
             return null;
         }
         flags = updateFlagsForApplication(flags, userId);
@@ -1026,61 +1024,67 @@ public class ComputerEngine implements Computer {
         return getApplicationInfoInternalBody(packageName, flags, filterCallingUid, userId);
     }
     
-     private boolean canHideApp(int callingUid, String packageName) {
-        if (!isBootCompleted() || mContext == null || mContext.getPackageManager() == null) {
+    private boolean canHideApp(int callingUid, String packageName) {
+        if (!isBootCompleted()) {
             return false;
         }
 
-        String callingPackage = mContext.getPackageManager().getNameForUid(callingUid);
+        final SettingBase callerSetting =
+                mSettings.getSettingBase(UserHandle.getAppId(callingUid));
+        if (callerSetting == null) {
+            return false;
+        }
+        final String callingPackage;
+        if (callerSetting instanceof PackageStateInternal) {
+            callingPackage = ((PackageStateInternal) callerSetting).getPackageName();
+        } else {
+            callingPackage = mContext.getPackageManager().getNameForUid(callingUid);
+        }
 
         if (callingPackage == null || TextUtils.isEmpty(callingPackage)) {
             return false;
         }
 
-        // app can be always hidden if calling package is play store
-        boolean isFinsky = callingPackage.contains("com.android.vending");
+        if (callingPackage.contains("com.android.vending")) return true;
 
-        if (isFinsky) return true;
-        
         if (packageName == null || TextUtils.isEmpty(packageName)) {
             return false;
         }
-        
-        // the calling package is itself, no need to hide
+
         if (callingPackage.contains(packageName)) return false;
 
-        // we only want to hide these apps from playstore 
-        // to avoid these apps from being updated, so abort if
-        // calling package is not finsky
-        if (packageName.contains("youtube") 
-            || packageName.contains("microg")
-            || packageName.contains("revanced")
-            || packageName.contains("gms")) {
+        if (packageName.contains("youtube")
+                || packageName.contains("microg")
+                || packageName.contains("revanced")
+                || packageName.contains("gms")) {
             return false;
         }
 
-        // this is for banking apps, but we need to make sure first that 
-        // we arent hiding app infos from sandbox/system processes
-        return !isCallerSystem(callingUid) 
-            && !Process.isIsolated(callingUid)
-            && !Process.isSdkSandboxUid(callingUid);
+        return !isCallerSystem(callingUid)
+                && !Process.isIsolated(callingUid)
+                && !Process.isSdkSandboxUid(callingUid);
+    }
+
+    private boolean shouldHideFromCaller(int callingUid, String packageName) {
+        if (!HideAppListCache.shouldHide(packageName)) return false;
+        return canHideApp(callingUid, packageName);
     }
     
     public ParceledListSlice<PackageInfo> recreatePackageList(
             int callingUid, Context context, int userId, ParceledListSlice<PackageInfo> list) {
         List<PackageInfo> appList = new ArrayList<>(list.getList());
-        if (!canHideApp(callingUid, null)) return new ParceledListSlice<>(appList);
-        Set<String> hiddenApps = HideAppListUtils.getApps(context);
-        appList.removeIf(info -> hiddenApps.contains(info.packageName));
+        final Set<String> hidden = HideAppListCache.getSnapshot();
+        if (hidden.isEmpty() || !canHideApp(callingUid, null)) return new ParceledListSlice<>(appList);
+        appList.removeIf(info -> hidden.contains(info.packageName));
         return new ParceledListSlice<>(appList);
     }
 
     public List<ApplicationInfo> recreateApplicationList(
             int callingUid, Context context, int userId, List<ApplicationInfo> list) {
         List<ApplicationInfo> appList = new ArrayList<>(list);
-        if (!canHideApp(callingUid, null)) return appList;
-        Set<String> hiddenApps = HideAppListUtils.getApps(context);
-        appList.removeIf(info -> hiddenApps.contains(info.packageName));
+        final Set<String> hidden = HideAppListCache.getSnapshot();
+        if (hidden.isEmpty() || !canHideApp(callingUid, null)) return appList;
+        appList.removeIf(info -> hidden.contains(info.packageName));
         return appList;
     }
 
@@ -1761,8 +1765,7 @@ public class ComputerEngine implements Computer {
 
     public final PackageInfo getPackageInfo(String packageName,
             @PackageManager.PackageInfoFlagsBits long flags, int userId) {
-        if (canHideApp(Binder.getCallingUid(), packageName) &&
-            HideAppListUtils.shouldHideAppList(mContext, packageName)) {
+        if (shouldHideFromCaller(Binder.getCallingUid(), packageName)) {
             return null;
         }
         return getPackageInfoInternal(packageName, PackageManager.VERSION_CODE_HIGHEST,
@@ -2743,10 +2746,9 @@ public class ComputerEngine implements Computer {
             return true;
         }
         // if the target is included in Settings.Secure.HIDE_APPLIST, do filter
-         if (canHideApp(Binder.getCallingUid(), packageName) && HideAppListUtils.shouldHideAppList(
-                 mContext, packageName)) {
-             return true;
-         }
+        if (shouldHideFromCaller(Binder.getCallingUid(), packageName)) {
+            return true;
+        }
 
         return false;
     }

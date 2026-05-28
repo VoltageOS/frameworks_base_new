@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 VoltageOS
+ * Copyright (C) 2026 VoltageOS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Handler;
-import android.os.UserHandle;
 import android.provider.Settings;
 import android.util.Slog;
-import com.android.server.SystemService;
 
-import java.util.Arrays;
+import com.android.internal.util.voltage.HideAppListCache;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -48,7 +47,9 @@ public class HideAppListService extends SystemService {
 
     @Override
     public void onBootPhase(int phase) {
-        if (phase == SystemService.PHASE_BOOT_COMPLETED) {
+        if (phase == SystemService.PHASE_ACTIVITY_MANAGER_READY) {
+            HideAppListCache.init(mContext);
+
             IntentFilter filter = new IntentFilter();
             filter.addAction(Intent.ACTION_PACKAGE_FULLY_REMOVED);
             filter.addDataScheme("package");
@@ -68,17 +69,16 @@ public class HideAppListService extends SystemService {
     }
 
     private void removeFromHideAppList(String packageName) {
-        ContentResolver cr = mContext.getContentResolver();
-        String apps = Settings.Secure.getString(cr, Settings.Secure.HIDE_APPLIST);
-
-        if (apps == null || apps.isEmpty() || apps.equals(",")) {
+        Set<String> current = HideAppListCache.getSnapshot();
+        if (current.isEmpty() || !current.contains(packageName)) {
             return;
         }
 
-        Set<String> appSet = new HashSet<>(Arrays.asList(apps.split(",")));
-        if (appSet.remove(packageName)) {
-            Slog.i(TAG, "Removing package due to reason: UNINSTALLED: " + packageName);
-            Settings.Secure.putString(cr, Settings.Secure.HIDE_APPLIST, String.join(",", appSet));
-        }
+        ContentResolver cr = mContext.getContentResolver();
+        Set<String> updated = new HashSet<>(current);
+        updated.remove(packageName);
+        Slog.i(TAG, "Removing uninstalled package from hide list: " + packageName);
+        Settings.Secure.putString(cr, Settings.Secure.HIDE_APPLIST,
+                String.join(",", updated));
     }
 }
