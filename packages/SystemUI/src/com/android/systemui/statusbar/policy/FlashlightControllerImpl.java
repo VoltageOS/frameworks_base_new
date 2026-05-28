@@ -55,7 +55,7 @@ import javax.inject.Inject;
 public class FlashlightControllerImpl implements FlashlightController {
 
     private static final String TAG = "FlashlightController";
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
 
     private static final int DISPATCH_ERROR = 0;
     private static final int DISPATCH_CHANGED = 1;

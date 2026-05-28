@@ -74,7 +74,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 
 private const val TAG = "MediaDataProcessor"
-private const val DEBUG = true
+private const val DEBUG = false
 
 /** Processes all media data fields and encapsulates logic for managing media data entries. */
 @SysUISingleton
