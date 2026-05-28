@@ -86,6 +86,7 @@ public class LiveDisplayService extends SystemService {
 
     private boolean mAwaitingNudge = true;
     private boolean mSunset = false;
+    private boolean mTwilightListenerRegistered = false;
 
     private final List<LiveDisplayFeature> mFeatures = new ArrayList<LiveDisplayFeature>();
 
@@ -193,13 +194,15 @@ public class LiveDisplayService extends SystemService {
             mState.mLowPowerMode =
                     pmi.getLowPowerState(SERVICE_TYPE_DUMMY).globalBatterySaverEnabled;
 
-            mTwilightTracker.registerListener(mTwilightListener, mHandler);
-            mState.mTwilight = mTwilightTracker.getCurrentState();
-
             if (mConfig.hasModeSupport()) {
                 mModeObserver = new ModeObserver(mHandler);
                 mState.mMode = mModeObserver.getMode();
+                if (mState.mMode != MODE_OFF) {
+                    mTwilightTracker.registerListener(mTwilightListener, mHandler);
+                    mTwilightListenerRegistered = true;
+                }
             }
+            mState.mTwilight = mTwilightTracker.getCurrentState();
 
             // start and update all features
             for (int i = 0; i < mFeatures.size(); i++) {
@@ -447,6 +450,16 @@ public class LiveDisplayService extends SystemService {
             int mode = getMode();
             if (mode != mState.mMode) {
                 mState.mMode = mode;
+
+                if (mTwilightListenerRegistered && mode == MODE_OFF) {
+                    mTwilightTracker.unregisterListener(mTwilightListener);
+                    mTwilightListenerRegistered = false;
+                    mState.mTwilight = null;
+                } else if (!mTwilightListenerRegistered && mode != MODE_OFF) {
+                    mTwilightTracker.registerListener(mTwilightListener, mHandler);
+                    mTwilightListenerRegistered = true;
+                    mState.mTwilight = mTwilightTracker.getCurrentState();
+                }
 
                 updateFeatures(MODE_CHANGED);
             }

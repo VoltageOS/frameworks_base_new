@@ -107,6 +107,30 @@ public final class TwilightTracker {
         }
     }
 
+    /**
+     * Stops listening for twilight time. When the last listener is removed,
+     * location updates and the self-scheduling alarm are cancelled.
+     *
+     * @param listener The listener to remove.
+     */
+    public void unregisterListener(TwilightListener listener) {
+        synchronized (mLock) {
+            for (int i = mListeners.size() - 1; i >= 0; i--) {
+                if (mListeners.get(i).mListener == listener) {
+                    mListeners.remove(i);
+                    break;
+                }
+            }
+            if (mListeners.isEmpty()) {
+                Intent updateIntent = new Intent(ACTION_UPDATE_TWILIGHT_STATE);
+                PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                        mContext, 0, updateIntent, PendingIntent.FLAG_IMMUTABLE);
+                mAlarmManager.cancel(pendingIntent);
+                mLocationHandler.disableLocationUpdates();
+            }
+        }
+    }
+
 
     private void setTwilightState(TwilightState state) {
         synchronized (mLock) {
@@ -156,6 +180,7 @@ public final class TwilightTracker {
         private static final int MSG_GET_NEW_LOCATION_UPDATE = 2;
         private static final int MSG_PROCESS_NEW_LOCATION = 3;
         private static final int MSG_DO_TWILIGHT_UPDATE = 4;
+        private static final int MSG_DISABLE_LOCATION_UPDATES = 5;
 
         private static final long LOCATION_UPDATE_MS = 24 * DateUtils.HOUR_IN_MILLIS;
         private static final long MIN_LOCATION_UPDATE_MS = 30 * DateUtils.MINUTE_IN_MILLIS;
@@ -181,6 +206,10 @@ public final class TwilightTracker {
 
         public void enableLocationUpdates() {
             sendEmptyMessage(MSG_ENABLE_LOCATION_UPDATES);
+        }
+
+        public void disableLocationUpdates() {
+            sendEmptyMessage(MSG_DISABLE_LOCATION_UPDATES);
         }
 
         public void requestLocationUpdate() {
@@ -293,6 +322,20 @@ public final class TwilightTracker {
 
                 case MSG_DO_TWILIGHT_UPDATE:
                     updateTwilightState();
+                    break;
+
+                case MSG_DISABLE_LOCATION_UPDATES:
+                    removeMessages(MSG_ENABLE_LOCATION_UPDATES);
+                    if (mNetworkListenerEnabled) {
+                        mNetworkListenerEnabled = false;
+                        mLocationManager.removeUpdates(mEmptyLocationListener);
+                    }
+                    if (mPassiveListenerEnabled) {
+                        mPassiveListenerEnabled = false;
+                        mLocationManager.removeUpdates(mLocationListener);
+                    }
+                    mDidFirstInit = false;
+                    mLastUpdateInterval = 0;
                     break;
             }
         }
