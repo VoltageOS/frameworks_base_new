@@ -62,6 +62,7 @@ import static android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACK
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
 import static android.view.WindowManager.LayoutParams.INVALID_WINDOW_TYPE;
 import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
+import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
 import static android.view.WindowManager.LayoutParams.PRIVATE_FLAG_CONSUME_IME_INSETS;
 import static android.view.WindowManager.LayoutParams.PRIVATE_FLAG_IMMERSIVE_CONFIRMATION_WINDOW;
 import static android.view.WindowManager.LayoutParams.PRIVATE_FLAG_INTERCEPT_GLOBAL_DRAG_AND_DROP;
@@ -1058,9 +1059,15 @@ public class DisplayPolicy {
                 }
                 break;
 
-            case TYPE_BASE_APPLICATION:
-                if (attrs.isFullscreen()
-                        && win.mActivityRecord != null
+            case TYPE_BASE_APPLICATION: {
+                final String pkg = attrs.packageName;
+                if (pkg != null
+                        && attrs.layoutInDisplayCutoutMode
+                                != LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+                        && mService.mAtmService.shouldForceCutoutFullscreen(pkg)) {
+                    attrs.layoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+                }
+                if (attrs.isFullscreen() && win.mActivityRecord != null
                         && win.mActivityRecord.fillsParent()
                         && (attrs.renderingHints & RENDERING_HINT_FORCE_DRAW_BAR_BACKGROUNDS)
                                 != 0) {
@@ -1074,6 +1081,7 @@ public class DisplayPolicy {
                     }
                 }
                 break;
+            }
         }
         if ((attrs.insetsFlags.appearance & APPEARANCE_FORCE_LIGHT_NAVIGATION_BARS) != 0) {
             attrs.insetsFlags.appearance |= APPEARANCE_LIGHT_NAVIGATION_BARS;
