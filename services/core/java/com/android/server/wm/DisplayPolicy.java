@@ -1032,6 +1032,17 @@ public class DisplayPolicy {
                 }
                 break;
 
+            case TYPE_APPLICATION_STARTING: {
+                final String pkg = attrs.packageName;
+                if (pkg != null
+                        && attrs.layoutInDisplayCutoutMode
+                                != LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+                        && mService.mAtmService.shouldForceCutoutFullscreen(pkg)) {
+                    attrs.layoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+                }
+                break;
+            }
+
             case TYPE_BASE_APPLICATION: {
                 final String pkg = attrs.packageName;
                 if (pkg != null
