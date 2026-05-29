@@ -7111,13 +7111,22 @@ public final class Settings {
         public static final String BLUETOOTH_SHOW_BATTERY = "bluetooth_show_battery";
 
         /**
-         * Network traffic indicator location
+         * Network traffic
          * 0 = Disabled
-         * 1 = Statusbar
-         * 2 = Quick statusbar
+         * 1 = Enabled
          * @hide
          */
         public static final String NETWORK_TRAFFIC_LOCATION = "network_traffic_location";
+
+        /**
+         * Network traffic statusbar sub-location.
+         * 0 = Show in both the collapsed statusbar and the QQS/expanded QS header (default)
+         * 1 = Statusbar only (hide in QQS/expanded QS)
+         * 2 = QQS/expanded QS only (hide in the collapsed statusbar)
+         * @hide
+         */
+         public static final String NETWORK_TRAFFIC_STATUSBAR_LOCATION = "network_traffic_statusbar_location";
+
         /**
          * Network traffic indicator mode
          * 0 = Display both up- and down-stream traffic

@@ -246,6 +246,7 @@ public class IconManager implements DemoModeCommandReceiver {
 
     private StatusBarNetworkTraffic addNetworkTraffic(int index, String slot, NetworkTrafficState state) {
         StatusBarNetworkTraffic view = onCreateStatusBarNetworkTraffic(slot);
+        view.setStatusBarLocation(mLocation);
         view.applyNetworkTrafficState(state);
         mGroup.addView(view, index, onCreateLayoutParams(Shape.WRAP_CONTENT));
         return view;
