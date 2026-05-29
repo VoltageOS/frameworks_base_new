@@ -22,12 +22,12 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Handler;
-import android.os.Looper;
 import android.provider.Settings;
 import android.provider.Telephony;
 import android.telecom.TelecomManager;
 import android.util.ArrayMap;
 import android.util.ArraySet;
+import com.android.internal.os.BackgroundThread;
 
 import java.util.List;
 import java.util.Map;
@@ -38,12 +38,15 @@ final class SleepModeIdleController {
     private static final String TAG = "SleepModeIdleController";
     
     private static final long REAPPLY_INTERVAL_MS = 20 * 60 * 1000; // 20 min
+    private static final long DEBOUNCE_DELAY_MS = 2000;
 
     private final Context mContext;
-    private final Handler mHandler = new Handler(Looper.getMainLooper());
+    private final Handler mHandler = BackgroundThread.getHandler();
     private final Map<String, Integer> mBucketSnapshot = new ArrayMap<>();
 
-    private boolean mDeepSleepActive = false;
+    private volatile boolean mDeepSleepActive = false;
+
+    private boolean mRestrictionsApplied = false;
 
     SleepModeIdleController(Context context) {
         mContext = context;
@@ -54,17 +57,32 @@ final class SleepModeIdleController {
 
         mDeepSleepActive = enabled;
 
-        if (enabled) {
-            snapshotBuckets();
-            applyRestrictions();
-            scheduleReapply();
-        } else {
-            restoreBuckets();
-            mHandler.removeCallbacks(mReapplyRunnable);
-        }
+        mHandler.removeCallbacks(mUpdateRestrictionsRunnable);
+        mHandler.postDelayed(mUpdateRestrictionsRunnable, DEBOUNCE_DELAY_MS);
     }
 
-    private void applyRestrictions() {
+    private final Runnable mUpdateRestrictionsRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (mDeepSleepActive) {
+                if (mRestrictionsApplied) return;
+
+                final List<ApplicationInfo> apps = mContext.getPackageManager()
+                        .getInstalledApplications(PackageManager.MATCH_ALL);
+                snapshotBuckets(apps);
+                applyRestrictions(apps);
+                scheduleReapply();
+                mRestrictionsApplied = true;
+            } else {
+                if (!mRestrictionsApplied) return;
+                restoreBuckets();
+                mHandler.removeCallbacks(mReapplyRunnable);
+                mRestrictionsApplied = false;
+            }
+        }
+    };
+
+    private void applyRestrictions(List<ApplicationInfo> apps) {
         final UsageStatsManager usm = mContext.getSystemService(UsageStatsManager.class);
         final ActivityManager am = mContext.getSystemService(ActivityManager.class);
 
@@ -80,9 +98,6 @@ final class SleepModeIdleController {
                 }
             }
         }
-
-        final List<ApplicationInfo> apps = mContext.getPackageManager()
-                .getInstalledApplications(PackageManager.MATCH_ALL);
 
         for (ApplicationInfo app : apps) {
             final String pkg = app.packageName;
@@ -139,13 +154,12 @@ final class SleepModeIdleController {
         );
     }
 
-    private void snapshotBuckets() {
+    private void snapshotBuckets(List<ApplicationInfo> apps) {
         mBucketSnapshot.clear();
 
         UsageStatsManager usm = mContext.getSystemService(UsageStatsManager.class);
-        PackageManager pm = mContext.getPackageManager();
 
-        for (ApplicationInfo app : pm.getInstalledApplications(PackageManager.MATCH_ALL)) {
+        for (ApplicationInfo app : apps) {
             try {
                 int bucket = usm.getAppStandbyBucket(app.packageName);
                 mBucketSnapshot.put(app.packageName, bucket);
@@ -170,7 +184,9 @@ final class SleepModeIdleController {
         public void run() {
             if (!mDeepSleepActive) return;
 
-            applyRestrictions();
+            final List<ApplicationInfo> apps = mContext.getPackageManager()
+                    .getInstalledApplications(PackageManager.MATCH_ALL);
+            applyRestrictions(apps);
             mHandler.postDelayed(this, REAPPLY_INTERVAL_MS);
         }
     };
