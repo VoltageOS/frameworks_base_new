@@ -114,6 +114,7 @@ import android.os.UserHandle;
 import android.os.UserManager;
 import android.os.storage.StorageManager;
 import android.provider.ContactsContract;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.ArrayMap;
 import android.util.ArraySet;
@@ -1026,6 +1027,12 @@ public class ComputerEngine implements Computer {
     
     private boolean canHideApp(int callingUid, String packageName) {
         if (!isBootCompleted()) {
+            return false;
+        }
+
+        final String hiddenList = android.provider.Settings.Secure.getString(
+                mContext.getContentResolver(), android.provider.Settings.Secure.HIDE_APPLIST);
+        if (hiddenList == null || hiddenList.isEmpty() || hiddenList.equals(",")) {
             return false;
         }
 
