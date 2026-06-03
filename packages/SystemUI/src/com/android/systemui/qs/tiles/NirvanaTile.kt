@@ -20,8 +20,6 @@ import android.app.usage.UsageStatsManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ApplicationInfo
-import android.content.pm.PackageManager
 import android.database.ContentObserver
 import android.os.Handler
 import android.os.Looper
@@ -67,7 +65,6 @@ class NirvanaTile @Inject constructor(
     }
 
     private val usageStatsManager = mContext.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-    private val packageManager = mContext.packageManager
 
     override fun newTileState(): BooleanState = BooleanState()
 
@@ -146,61 +143,20 @@ class NirvanaTile @Inject constructor(
         }
     }
 
-    /**
-     * Calculates daily screen time matching the filtering logic in NirvanaStatsFragment.
-     * Filters out: Launcher, Settings, SystemUI, and non-updated System Apps.
-     */
     private fun getDailyScreenTime(): Long {
-        try {
-            val cal = Calendar.getInstance()
-            cal.set(Calendar.HOUR_OF_DAY, 0)
-            cal.set(Calendar.MINUTE, 0)
-            cal.set(Calendar.SECOND, 0)
-            cal.set(Calendar.MILLISECOND, 0)
-            val start = cal.timeInMillis
-            val end = System.currentTimeMillis()
-
-            val homeIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
-            val resolveInfo = packageManager.resolveActivity(homeIntent, PackageManager.MATCH_DEFAULT_ONLY)
-            val launcherPkg = resolveInfo?.activityInfo?.packageName
-
-            val stats = usageStatsManager.queryAndAggregateUsageStats(start, end)
-            var totalTime = 0L
-
-            stats.forEach { (pkg, stat) ->
-                if (stat.totalTimeInForeground > 0) {
-                    if (shouldIncludeApp(pkg, launcherPkg)) {
-                        totalTime += stat.totalTimeInForeground
-                    }
-                }
-            }
-            
-            return totalTime
-        } catch (e: Exception) {
-            return 0L
-        }
-    }
-
-    private fun shouldIncludeApp(pkg: String, launcherPkg: String?): Boolean {
-        if (pkg == launcherPkg) return false
-        if (pkg == "com.android.settings" || pkg == "com.android.systemui") return false
-
         return try {
-            val info = packageManager.getApplicationInfo(pkg, 0)
-            val isSystem = (info.flags and ApplicationInfo.FLAG_SYSTEM) != 0 &&
-                           (info.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) == 0
-            !isSystem
+            NirvanaUsageStats.getDailyScreenTimeMillis(mContext, usageStatsManager)
         } catch (e: Exception) {
-            false
+            0L
         }
     }
-
+            
     private fun formatDuration(millis: Long): String {
-        if (millis < 60000) return "< 1m"
+        if (millis < 60000) return "0m"
         val h = millis / 3600000
         val m = (millis % 3600000) / 60000
         return if (h > 0) {
-            String.format("%dh %02dm", h, m)
+            String.format("%dh %dm", h, m)
         } else {
             String.format("%dm", m)
         }
