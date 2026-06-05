@@ -1360,6 +1360,8 @@ public class Instrumentation {
             throws InstantiationException, IllegalAccessException, 
             ClassNotFoundException {
         GmsCompat.maybeEnable(context);
+        className = com.android.internal.app.PairipHooks.maybeReplaceApplicationClassName(
+                context, cl, className);
         final Application app;
         if (GmsCompat.isInGmsCompatProcess()) {
             // GmsCompat process should never run app's code
