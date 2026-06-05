@@ -2237,6 +2237,11 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
             Slog.w(TAG, "removeTask: No task remove with id=" + taskId);
             return false;
         }
+        // Locked apps must survive swipe-to-dismiss, like "Clear all". Reject the
+        // removal before the task is torn down so the app keeps running in recents.
+        if (getRecentTasks() != null && getRecentTasks().isTaskLocked(task)) {
+            return false;
+        }
         removeTask(task, reason);
         return true;
     }

@@ -1320,6 +1320,23 @@ class RecentTasks {
     }
 
     /**
+     * Returns whether the given task belongs to a package the user has locked
+     * to recents (see {@link Settings.System#RECENTS_LOCKED_TASKS}). Locked
+     * tasks must survive both "Clear all" and swipe-to-dismiss.
+     */
+    boolean isTaskLocked(Task task) {
+        if (task == null) return false;
+        final ComponentName cn = task.intent != null ? task.intent.getComponent() : null;
+        if (cn == null) return false;
+        final String lockedTasks = Settings.System.getStringForUser(
+                mService.mContext.getContentResolver(),
+                Settings.System.RECENTS_LOCKED_TASKS,
+                task.mUserId);
+        return lockedTasks != null && !lockedTasks.isEmpty()
+                && lockedTasks.contains(cn.getPackageName());
+    }
+
+    /**
      * Remove a task from the recent tasks list.
      */
     void remove(Task task) {
