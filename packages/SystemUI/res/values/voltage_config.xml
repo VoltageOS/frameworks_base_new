@@ -19,6 +19,11 @@
     <!-- Charging info current divider, if needed -->
     <integer name="config_currentInfoDivider" translatable="false">1000</integer>
 
+    <!-- Sign applied to BATTERY_PROPERTY_CURRENT_NOW before unit conversion.
+         1  = kernel uses Android convention (positive = charging).
+         -1 = kernel inverts the sign (positive = discharging). -->
+    <integer name="config_batteryCurrentNowSign" translatable="false">1</integer>
+
     <!-- Update battery info every second when device is charging -->
     <bool name="config_alternateFastchargeInfoUpdate">false</bool>
 

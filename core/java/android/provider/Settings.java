@@ -7266,6 +7266,15 @@ public final class Settings {
         public static final String LOCKSCREEN_BATTERY_INFO = "lockscreen_battery_info";
 
         /**
+         * Whether to show the persistent battery stats notification.
+         * Shows realtime current draw, temperature, time remaining, and
+         * cumulative screen-on/off discharge stats since last charge.
+         * 0 = disabled (default), 1 = enabled
+         * @hide
+         */
+        public static final String BATTERY_INFO_NOTIFICATION = "battery_info_notification";
+
+        /**
          * Whether to enable the ripple animation on fingerprint unlock
          * @hide
          */
