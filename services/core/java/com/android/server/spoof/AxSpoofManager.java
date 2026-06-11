@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2025-2026 AxionOS
+ * Copyright (C) 2026 VoltageOS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +29,10 @@ import android.util.Log;
 
 import com.android.server.NtServiceInjector;
 
+import org.json.JSONObject;
+
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class AxSpoofManager implements IAxSpoofManager {
@@ -71,6 +75,8 @@ public class AxSpoofManager implements IAxSpoofManager {
         }
         mResolver = mContext.getContentResolver();
 
+        migrateFlagKeysIfNeeded();
+
         for (String key : WATCHED_KEYS) {
             refreshKey(key);
         }
@@ -103,6 +109,76 @@ public class AxSpoofManager implements IAxSpoofManager {
         } else {
             mCache.put(key, value);
         }
+    }
+
+    private void migrateFlagKeysIfNeeded() {
+        if (mResolver == null) return;
+        final String blob = Settings.Secure.getStringForUser(
+                mResolver, Settings.Secure.SPOOF_PIF_CONFIG, UserHandle.USER_SYSTEM);
+        if (blob == null || blob.trim().isEmpty()) return;
+
+        final String trimmed = blob.trim();
+        boolean changed = false;
+        try {
+            if (trimmed.startsWith("{")) {
+                JSONObject json = new JSONObject(trimmed);
+                changed |= seedIfUnset(Settings.Secure.SPOOF_PIF_PROPS,
+                        json.has("spoofProps") ? json.optString("spoofProps") : null);
+                changed |= seedIfUnset(Settings.Secure.SPOOF_PIF_PROVIDER,
+                        json.has("spoofProvider") ? json.optString("spoofProvider") : null);
+                changed |= seedIfUnset(Settings.Secure.SPOOF_PIF_SIGNATURE,
+                        json.has("spoofSignature") ? json.optString("spoofSignature") : null);
+                changed |= seedIfUnset(Settings.Secure.SPOOF_PIF_VENDING_BUILD,
+                        json.has("spoofVendingBuild") ? json.optString("spoofVendingBuild") : null);
+                if (changed) {
+                    json.remove("spoofProps");
+                    json.remove("spoofProvider");
+                    json.remove("spoofSignature");
+                    json.remove("spoofVendingBuild");
+                    Settings.Secure.putStringForUser(mResolver,
+                            Settings.Secure.SPOOF_PIF_CONFIG, json.toString(), UserHandle.USER_SYSTEM);
+                }
+            } else {
+                Map<String, String> props = new LinkedHashMap<>();
+                for (String line : trimmed.split("\n")) {
+                    String l = line.trim();
+                    if (l.isEmpty() || l.startsWith("#")) continue;
+                    int eq = l.indexOf('=');
+                    if (eq <= 0) continue;
+                    props.put(l.substring(0, eq).trim(), l.substring(eq + 1).trim());
+                }
+                changed |= seedIfUnset(Settings.Secure.SPOOF_PIF_PROPS, props.get("spoofProps"));
+                changed |= seedIfUnset(Settings.Secure.SPOOF_PIF_PROVIDER, props.get("spoofProvider"));
+                changed |= seedIfUnset(Settings.Secure.SPOOF_PIF_SIGNATURE, props.get("spoofSignature"));
+                changed |= seedIfUnset(Settings.Secure.SPOOF_PIF_VENDING_BUILD, props.get("spoofVendingBuild"));
+                if (changed) {
+                    props.remove("spoofProps");
+                    props.remove("spoofProvider");
+                    props.remove("spoofSignature");
+                    props.remove("spoofVendingBuild");
+                    StringBuilder sb = new StringBuilder();
+                    for (Map.Entry<String, String> e : props.entrySet()) {
+                        sb.append(e.getKey()).append('=').append(e.getValue()).append('\n');
+                    }
+                    Settings.Secure.putStringForUser(mResolver,
+                            Settings.Secure.SPOOF_PIF_CONFIG, sb.toString(), UserHandle.USER_SYSTEM);
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to migrate legacy PIF flags", e);
+            return;
+        }
+        if (changed) Log.i(TAG, "Migrated legacy PIF boolean flags into dedicated Settings.Secure keys");
+    }
+
+    private boolean seedIfUnset(String secureKey, String blobValue) {
+        if (blobValue == null) return false;
+        if (Settings.Secure.getStringForUser(mResolver, secureKey, UserHandle.USER_SYSTEM) != null) {
+            return false;
+        }
+        boolean b = "1".equals(blobValue) || "true".equalsIgnoreCase(blobValue);
+        Settings.Secure.putStringForUser(mResolver, secureKey, String.valueOf(b), UserHandle.USER_SYSTEM);
+        return true;
     }
 
     private String getCached(String key) {
