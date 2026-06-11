@@ -239,6 +239,7 @@ public final class PlayIntegritySpoofService {
 
         mVerboseLogs = 0;
         mSpoofBuild = true;
+        mSpoofVendingSdk = false;
         mDebug = false;
 
         try {
