@@ -22,7 +22,7 @@ class ActivityThreadHooks {
 
     // called after the initial app context is constructed
     // ActivityThread.handleBindApplication
-    static Bundle onBind(Context appContext, ActivityThread.AppBindData appBindData) {
+    static Bundle onBind(ActivityThread.AppBindData appBindData) {
         Bundle args = appBindData.extraArgs;
         Objects.requireNonNull(args, "args bundle is null");
 
@@ -31,7 +31,7 @@ class ActivityThreadHooks {
         }
         called = true;
 
-        AppGlobals.setInitialPackageId(appContext.getApplicationInfo().ext().getPackageId());
+        AppGlobals.setInitialPackageId(appBindData.appInfo.ext().getPackageId());
 
         if (Process.isIsolated()) {
             return null;
