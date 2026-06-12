@@ -1,6 +1,7 @@
 package android.ext.settings;
 
 import android.annotation.SystemApi;
+import android.compat.annotation.UnsupportedAppUsage;
 import android.os.SystemProperties;
 
 /** @hide */
@@ -23,6 +24,7 @@ public class ConnChecksSetting {
             ConnChecksSetting.VAL_GRAPHENEOS, ConnChecksSetting.VAL_STANDARD, ConnChecksSetting.VAL_DISABLED
     );
 
+    @UnsupportedAppUsage
     public static int get() {
         return SYS_PROP.get();
     }
