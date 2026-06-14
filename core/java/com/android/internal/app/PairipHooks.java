@@ -1,7 +1,12 @@
 package com.android.internal.app;
 
+import android.app.AppGlobals;
 import android.content.ContentProvider;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.ext.PackageId;
+import android.os.RemoteException;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -39,19 +44,50 @@ public class PairipHooks {
         }
         Class cls = classLoader.loadClass(className);
         String res = requireNonNull(cls.getSuperclass()).getName();
-        Log.d(TAG, "replaced pairip Application class with its parent " + className);
+        Log.d(TAG, "replaced pairip Application class with its parent " + res);
         return res;
     }
 
+    private static Boolean shouldBypassCached;
+
     private static boolean shouldBypass(Context context) {
+        Boolean cache = shouldBypassCached;
+        if (cache != null) {
+            return cache.booleanValue();
+        }
+
         boolean res = context.getApplicationInfo().hasPlayStoreSourceStamp();
+        if (res) {
+            boolean installedFromPlayStore = false;
+            String installerPkg;
+            try {
+                installerPkg = AppGlobals.getPackageManager().getInstallerPackageName(context.getPackageName());
+            } catch (RemoteException e) {
+                throw e.rethrowFromSystemServer();
+            }
+            if (PackageId.PLAY_STORE_NAME.equals(installerPkg)) {
+                PackageManager pm = context.getPackageManager();
+                try {
+                    ApplicationInfo ai = pm.getApplicationInfo(PackageId.PLAY_STORE_NAME, 0);
+                    installedFromPlayStore = ai.ext().getPackageId() == PackageId.PLAY_STORE;
+                } catch (PackageManager.NameNotFoundException e) {}
+            }
+            if (installedFromPlayStore) {
+                Log.d(TAG, "app is installed from Play Store, skipping bypass");
+                res = false;
+            }
+        }
+
         if (res && android.os.Flags.isDevBuild()) {
             if (Settings.Global.getInt(context.getContentResolver(), "skip_pairip_bypass", 0) == 1) {
                 Log.d(TAG, "skip_pairip_bypass is set, keeping pairip check", new Throwable());
+                shouldBypassCached = Boolean.FALSE;
                 return false;
             }
             Log.d(TAG, "bypassing pairip check", new Throwable());
         }
+
+        shouldBypassCached = Boolean.valueOf(res);
         return res;
     }
 }
