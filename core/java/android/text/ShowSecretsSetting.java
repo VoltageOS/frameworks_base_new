@@ -68,7 +68,7 @@ public final class ShowSecretsSetting {
         return Secure.getIntForUser(
                         Objects.requireNonNull(context).getContentResolver(),
                         Secure.TEXT_SHOW_PASSWORD_TOUCH,
-                        SHOW,
+                        HIDE,
                         context.getUser().getIdentifier())
                 == SHOW;
     }
