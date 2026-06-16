@@ -1432,6 +1432,9 @@ class AppIdPermissionPolicy : SchemePolicy() {
                     }
                     newFlags = newFlags or (sourceFlags and PermissionFlags.MASK_RUNTIME)
                 }
+                if (isSpecialRuntimePermission(sourcePermissionName)) {
+                    newFlags = newFlags or PermissionFlags.RUNTIME_GRANTED
+                }
             }
             if (
                 targetSdkVersion >= Build.VERSION_CODES.M &&
