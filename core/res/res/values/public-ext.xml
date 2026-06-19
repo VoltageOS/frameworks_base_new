@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <staging-public-group type="array" first-id="0x0195f000">
+        <public name="read_additional_security_state_known_signers"/>
     </staging-public-group>
 
     <staging-public-group type="bool" first-id="0x018bf000">
