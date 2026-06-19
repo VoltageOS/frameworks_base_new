@@ -29,5 +29,6 @@
         <public name="missing_sensors_permission_message"/>
         <public name="permgrouplab_network"/>
         <public name="permgroupdesc_network"/>
+        <public name="aerr_show_details"/>
     </staging-public-group>
 </resources>
