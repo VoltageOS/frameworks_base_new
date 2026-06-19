@@ -19,5 +19,9 @@
         <public name="notification_channel_other_users_description"/>
         <public name="other_users_notification_title"/>
         <public name="other_users_notification_switch_user_action"/>
+        <public name="permgrouplab_otherSensors"/>
+        <public name="permgroupdesc_otherSensors"/>
+        <public name="permlab_otherSensors"/>
+        <public name="permdesc_otherSensors"/>
     </staging-public-group>
 </resources>
