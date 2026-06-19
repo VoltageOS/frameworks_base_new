@@ -27,5 +27,7 @@
         <public name="notification_channel_missing_permission"/>
         <public name="missing_sensors_permission_title"/>
         <public name="missing_sensors_permission_message"/>
+        <public name="permgrouplab_network"/>
+        <public name="permgroupdesc_network"/>
     </staging-public-group>
 </resources>
