@@ -31,5 +31,9 @@
         <public name="permgroupdesc_network"/>
         <public name="aerr_show_details"/>
         <public name="bluetooth_auto_off_attribution_label"/>
+        <public name="notif_channel_exploit_protection"/>
+        <public name="notif_text_tap_to_open_settings"/>
+        <public name="notif_text_tap_to_see_details"/>
+        <public name="notif_action_more_info"/>
     </staging-public-group>
 </resources>
