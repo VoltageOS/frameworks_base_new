@@ -14,5 +14,9 @@
 
     <staging-public-group type="string" first-id="0x0198f000">
         <public name="config_first_party_app_source_package_name"/>
+        <public name="notification_channel_other_users"/>
+        <public name="notification_channel_other_users_description"/>
+        <public name="other_users_notification_title"/>
+        <public name="other_users_notification_switch_user_action"/>
     </staging-public-group>
 </resources>
