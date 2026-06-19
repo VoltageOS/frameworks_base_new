@@ -35,5 +35,10 @@
         <public name="notif_text_tap_to_open_settings"/>
         <public name="notif_text_tap_to_see_details"/>
         <public name="notif_action_more_info"/>
+        <public name="notif_ch_system_journal"/>
+        <public name="process_crash_notif_title"/>
+        <public name="fsck_error_notif_title"/>
+        <public name="notif_memtag_crash_title"/>
+        <public name="notif_hmalloc_crash_title"/>
     </staging-public-group>
 </resources>
