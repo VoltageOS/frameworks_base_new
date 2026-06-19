@@ -319,6 +319,11 @@ class AppIdPermissionPolicy : SchemePolicy() {
             if (isSpecialRuntimePermission(permissionName)) {
                 return@forEach
             }
+
+            if (isImplicitSpecialRuntimeSplit(androidPackage, permissionName)) {
+                return@forEach
+            }
+
             var newFlags = oldFlags
             val isSystemOrInstalled =
                 packageState.isSystem || packageState.getUserStateOrDefault(userId).isInstalled
@@ -339,6 +344,24 @@ class AppIdPermissionPolicy : SchemePolicy() {
                 newFlags = newFlags or PermissionFlags.IMPLICIT
             }
             setPermissionFlags(appId, userId, permissionName, newFlags)
+        }
+    }
+
+    private fun MutateStateScope.isImplicitSpecialRuntimeSplit(
+        androidPackage: AndroidPackage,
+        permissionName: String,
+    ): Boolean {
+        if (permissionName !in androidPackage.implicitPermissions) {
+            return false
+        }
+
+        val sourcePermissions = newState
+            .externalState
+            .implicitToSourcePermissions[permissionName]
+            ?: return false
+
+        return sourcePermissions.anyIndexed { _, permission ->
+            isSpecialRuntimePermission(permission)
         }
     }
 
