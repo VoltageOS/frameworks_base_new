@@ -30,5 +30,6 @@
         <public name="permgrouplab_network"/>
         <public name="permgroupdesc_network"/>
         <public name="aerr_show_details"/>
+        <public name="bluetooth_auto_off_attribution_label"/>
     </staging-public-group>
 </resources>
