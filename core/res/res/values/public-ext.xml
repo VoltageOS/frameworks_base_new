@@ -23,5 +23,9 @@
         <public name="permgroupdesc_otherSensors"/>
         <public name="permlab_otherSensors"/>
         <public name="permdesc_otherSensors"/>
+        <public name="notification_action_dont_show_again"/>
+        <public name="notification_channel_missing_permission"/>
+        <public name="missing_sensors_permission_title"/>
+        <public name="missing_sensors_permission_message"/>
     </staging-public-group>
 </resources>
