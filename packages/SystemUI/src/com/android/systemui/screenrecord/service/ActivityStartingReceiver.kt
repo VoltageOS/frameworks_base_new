@@ -21,6 +21,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 
 /**
  * This [BroadcastReceiver] serves as a bridge when System UI needs to start an activity exposing
@@ -39,10 +40,18 @@ class ActivityStartingReceiver : BroadcastReceiver() {
         if (Log.isLoggable(TAG, Log.DEBUG)) {
             Log.d(TAG, "Received event in user=${context.userId}, action=${intent.action}")
         }
-        context.startActivity(
-            intent.getParcelableExtra(EXTRA_INTENT, Intent::class.java),
-            optionsBundle,
-        )
+        try {
+            context.startActivity(
+                intent.getParcelableExtra(EXTRA_INTENT, Intent::class.java),
+                optionsBundle,
+            )
+        } catch (e: android.content.ActivityNotFoundException) {
+            Log.i(TAG, "", e)
+            // reuse a similar upstream string
+            Toast.makeText(context.applicationContext,
+                com.android.systemui.res.R.string.tile_unavailable,
+                Toast.LENGTH_SHORT).show()
+        }
     }
 
     companion object {
