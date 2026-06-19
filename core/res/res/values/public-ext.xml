@@ -1,48 +1,85 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <staging-public-group type="array" first-id="0x0195f000">
+        <!-- @hide -->
         <public name="read_additional_security_state_known_signers"/>
     </staging-public-group>
 
     <staging-public-group type="bool" first-id="0x018bf000">
+        <!-- @hide -->
         <public name="setting_default_allow_disabling_hardening_via_app_compat_config"/>
+        <!-- @hide -->
         <public name="config_usbPortSecuritySupported"/>
+        <!-- @hide -->
         <public name="config_usb_port_security_applies_to_pogo_pins"/>        
     </staging-public-group>
 
     <staging-public-group type="drawable" first-id="0x0194f000">
+        <!-- @hide -->
+        <public name="ic_update"/>
+        <!-- @hide -->
+        <public name="ic_pending"/>
+        <!-- @hide -->
+        <public name="ic_error"/>
     </staging-public-group>
 
     <staging-public-group type="integer" first-id="0x018ef000">
     </staging-public-group>
 
     <staging-public-group type="string" first-id="0x0198f000">
+        <!-- @hide -->
         <public name="config_first_party_app_source_package_name"/>
+        <!-- @hide -->
         <public name="notification_channel_other_users"/>
+        <!-- @hide -->
         <public name="notification_channel_other_users_description"/>
+        <!-- @hide -->
         <public name="other_users_notification_title"/>
+        <!-- @hide -->
         <public name="other_users_notification_switch_user_action"/>
+        <!-- @hide -->
         <public name="permgrouplab_otherSensors"/>
+        <!-- @hide -->
         <public name="permgroupdesc_otherSensors"/>
+        <!-- @hide -->
         <public name="permlab_otherSensors"/>
+        <!-- @hide -->
         <public name="permdesc_otherSensors"/>
+        <!-- @hide -->
         <public name="notification_action_dont_show_again"/>
+        <!-- @hide -->
         <public name="notification_channel_missing_permission"/>
+        <!-- @hide -->
         <public name="missing_sensors_permission_title"/>
+        <!-- @hide -->
         <public name="missing_sensors_permission_message"/>
+        <!-- @hide -->
         <public name="permgrouplab_network"/>
+        <!-- @hide -->
         <public name="permgroupdesc_network"/>
+        <!-- @hide -->
         <public name="aerr_show_details"/>
+        <!-- @hide -->
         <public name="bluetooth_auto_off_attribution_label"/>
+        <!-- @hide -->
         <public name="notif_channel_exploit_protection"/>
+        <!-- @hide -->
         <public name="notif_text_tap_to_open_settings"/>
+        <!-- @hide -->
         <public name="notif_text_tap_to_see_details"/>
+        <!-- @hide -->
         <public name="notif_action_more_info"/>
+        <!-- @hide -->
         <public name="notif_ch_system_journal"/>
+        <!-- @hide -->
         <public name="process_crash_notif_title"/>
+        <!-- @hide -->
         <public name="fsck_error_notif_title"/>
+        <!-- @hide -->
         <public name="notif_memtag_crash_title"/>
+        <!-- @hide -->
         <public name="notif_hmalloc_crash_title"/>
+        <!-- @hide -->
         <public name="usb_port_security_error_title"/>
     </staging-public-group>
 </resources>
