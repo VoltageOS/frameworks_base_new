@@ -3,6 +3,7 @@ package com.android.internal.gmscompat.fileservice;
 import android.annotation.Nullable;
 import android.app.compat.gms.GmsCompat;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.ext.PackageId;
 import android.os.IBinder;
@@ -40,14 +41,16 @@ public class GmsCoreFileServerClientHooks {
     }
 
     public static void init() {
-        Context context;
+        Context context = GmsCompat.appContext();
+        ApplicationInfo gmsCoreAppInfo;
         try {
-            context = GmsCompat.appContext().createPackageContext(PackageId.GMS_CORE_NAME, 0);
+            gmsCoreAppInfo = context.getPackageManager().getApplicationInfoAsUser(
+                    PackageId.GMS_CORE_NAME, 0, context.getUserId());
         } catch (PackageManager.NameNotFoundException e) {
             throw new IllegalStateException(e);
         }
-        gmsCoreDeDataPrefix = context.createDeviceProtectedStorageContext().getDataDir().getAbsolutePath() + "/";
-        gmsCoreCeDataPrefix = context.getDataDir().getAbsolutePath() + "/";
+        gmsCoreDeDataPrefix = gmsCoreAppInfo.deviceProtectedDataDir + "/";
+        gmsCoreCeDataPrefix = gmsCoreAppInfo.credentialProtectedDataDir + "/";
         pfdCache = new ArrayMap<>(20);
         pastCachedFds = new ArrayList<>();
 
