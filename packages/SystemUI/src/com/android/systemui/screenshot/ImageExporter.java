@@ -233,12 +233,12 @@ public class ImageExporter {
      * @return a listenable future result
      */
     public ListenableFuture<Result> export(Executor executor, UUID requestId, Bitmap bitmap,
-            UserHandle owner, int displayId, @Nullable Uri customSaveUri) {
+            UserHandle owner, int displayId, @Nullable Uri customSaveUri, String foregroundAppName) {
         ZonedDateTime captureTime = ZonedDateTime.now(ZoneId.systemDefault());
         return export(executor,
                 new Task(mResolver, requestId, bitmap, captureTime, mCompressFormat,
                         mQuality, owner, createFilename(captureTime, mCompressFormat, displayId),
-                        false, customSaveUri));
+                        false, customSaveUri, foregroundAppName));
     }
 
     /**
