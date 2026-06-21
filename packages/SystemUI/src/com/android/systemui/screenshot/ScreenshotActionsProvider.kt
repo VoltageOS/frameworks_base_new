@@ -139,7 +139,7 @@ constructor(
             actionsCallback.provideActionButton(
                 ActionButtonAppearance(
                     AppCompatResources.getDrawable(context, R.drawable.ic_content_copy),
-                    null
+                    null,
                     context.resources.getString(R.string.screenshot_copy_description),
                 ),
                 showDuringEntrance = true,
@@ -156,7 +156,7 @@ constructor(
             actionsCallback.provideActionButton(
                 ActionButtonAppearance(
                     AppCompatResources.getDrawable(context, R.drawable.ic_screenshot_edit),
-                    null
+                    null,
                     context.resources.getString(R.string.screenshot_edit_description),
                 ),
                 showDuringEntrance = true,
@@ -182,7 +182,7 @@ constructor(
             actionsCallback.provideActionButton(
                 ActionButtonAppearance(
                     context.getDrawable(R.drawable.ic_screen_capture_folder),
-                    null
+                    null,
                     context.resources.getString(R.string.screenshot_open_in_folder_description),
                 ),
                 showDuringEntrance = true,
