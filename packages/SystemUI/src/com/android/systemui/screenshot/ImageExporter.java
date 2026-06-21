@@ -237,8 +237,8 @@ public class ImageExporter {
         ZonedDateTime captureTime = ZonedDateTime.now(ZoneId.systemDefault());
         return export(executor,
                 new Task(mResolver, requestId, bitmap, captureTime, mCompressFormat,
-                        mQuality, owner, createFilename(captureTime, mCompressFormat, displayId),
-                        false, customSaveUri, foregroundAppName));
+                        mQuality, owner, createFilename(captureTime, mCompressFormat, displayId,
+                        foregroundAppName), false, customSaveUri));
     }
 
     /**
