@@ -414,8 +414,10 @@ internal constructor(
         scrollCaptureExecutor.executeBatchScrollCapture(
             BitmapScreenshot(context, imageCapture.captureDisplay(display.displayId, null)),
             {
-                val intent = actionIntentCreator.createLongScreenshotIntent(owner)
-                context.startActivity(intent)
+                val intent = actionIntentCreator.createLongScreenshotIntent(owner, Uri.EMPTY)
+                val options = ActivityOptions.makeBasic()
+                options.setLaunchDisplayId(context.displayId)
+                context.startActivity(intent, options.toBundle())
 
                 statusBarManager.collapsePanels()
             },
