@@ -89,6 +89,8 @@ public class AndroidAutoHooks extends PackageHooks {
             case Manifest.permission.MODIFY_AUDIO_ROUTING:
                 flag = AndroidAutoPackageFlag.GRANT_AUDIO_ROUTING_PERM;
                 break;
+            // unprivileged permission
+            case Manifest.permission.ACCESS_LOCAL_NETWORK:
             // Allows Android Auto to associate with any companion device that has a MAC address
             // Unrestricted version would allow Android Auto to associate any package in any user
             // with any such device. Not clear whether it's feasible to restrict this permission
