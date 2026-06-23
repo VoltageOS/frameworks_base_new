@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import libcore.io.IoBridge;
 
 import static android.system.OsConstants.F_DUPFD_CLOEXEC;
+import static android.system.OsConstants.O_ACCMODE;
+import static android.system.OsConstants.O_RDONLY;
 
 public class GmsCoreFileServerClientHooks {
     private static final String TAG = "GmsCoreFileServerClientHooks";
@@ -58,7 +60,7 @@ public class GmsCoreFileServerClientHooks {
         IoBridge.openFdInterceptor = new IoBridge.OpenFdInterceptor() {
             @Override
             public FileDescriptor maybeInterceptOpenFd(String path, int flags) throws ErrnoException {
-                if (path.startsWith(gmsCoreDeDataPrefix) || path.startsWith(gmsCoreCeDataPrefix)) {
+                if (isInGmsCoreDataDir(path) && shouldProxyOpen(flags)) {
                     FileDescriptor fd = openFile(path);
                     if (fd == null) {
                         return null;
@@ -92,8 +94,8 @@ public class GmsCoreFileServerClientHooks {
         return path.startsWith(gmsCoreDeDataPrefix) || path.startsWith(gmsCoreCeDataPrefix);
     }
 
-    public static FileDescriptor openParcelFileDescriptorHook(String path) {
-        if (!isInGmsCoreDataDir(path)) {
+    public static FileDescriptor openParcelFileDescriptorHook(String path, int flags) {
+        if (!isInGmsCoreDataDir(path) || !shouldProxyOpen(flags)) {
             return null;
         }
 
@@ -140,6 +142,10 @@ public class GmsCoreFileServerClientHooks {
             // this is a very rare "binder died" exception
             throw e.rethrowAsRuntimeException();
         }
+    }
+
+    private static boolean shouldProxyOpen(int flags) {
+        return (flags & O_ACCMODE) == O_RDONLY;
     }
 
     @GuardedBy("pfdCache")
