@@ -388,6 +388,14 @@ public class TombstoneHandler {
             return false;
         }
 
+        if ("/vendor/bin/hw/android.hardware.composer.hwc3-service.pixel".equals(cmdline[0])) {
+            // occasional one-time crash at boot, present since at least AP3A (Android 15)
+            String[] functionNames = {
+                    "ExynosDevice::dynamicRecompositionThreadLoop",
+            };
+            return checkBacktraceFunctionNames(backtrace, 0, functionNames);
+        }
+
         return false;
     }
 
