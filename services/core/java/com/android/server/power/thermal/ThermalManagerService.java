@@ -976,7 +976,8 @@ public class ThermalManagerService extends SystemService {
 
     @VisibleForTesting
     void dumpInternal(FileDescriptor fd, PrintWriter pw, String[] args) {
-        if (!DumpUtils.checkDumpPermission(getContext(), TAG, pw)) {
+        if (!DumpUtils.checkDumpPermission(getContext(), TAG, pw, false)) {
+            Slog.i(TAG, "checkDumpPermission failed, skipping dump; callerPid: " + Binder.getCallingPid());
             return;
         }
         final long token = Binder.clearCallingIdentity();
