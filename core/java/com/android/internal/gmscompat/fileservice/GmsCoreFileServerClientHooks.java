@@ -9,8 +9,6 @@ import android.ext.PackageId;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
-import android.system.ErrnoException;
-import android.system.Os;
 import android.util.ArrayMap;
 import android.util.Log;
 
@@ -22,8 +20,8 @@ import java.io.FileDescriptor;
 import java.util.ArrayList;
 
 import libcore.io.IoBridge;
+import libcore.io.IoUtils;
 
-import static android.system.OsConstants.F_DUPFD_CLOEXEC;
 import static android.system.OsConstants.O_ACCMODE;
 import static android.system.OsConstants.O_RDONLY;
 
@@ -59,13 +57,9 @@ public class GmsCoreFileServerClientHooks {
         File.lastModifiedHook = GmsCoreFileServerClientHooks::getFileLastModified;
         IoBridge.openFdInterceptor = new IoBridge.OpenFdInterceptor() {
             @Override
-            public FileDescriptor maybeInterceptOpenFd(String path, int flags) throws ErrnoException {
+            public FileDescriptor maybeInterceptOpenFd(String path, int flags) {
                 if (isInGmsCoreDataDir(path) && shouldProxyOpen(flags)) {
-                    FileDescriptor fd = openFile(path);
-                    if (fd == null) {
-                        return null;
-                    }
-                    return Os.dup(fd);
+                    return openFreshFileDescriptor(path);
                 }
                 return null;
             }
@@ -77,17 +71,38 @@ public class GmsCoreFileServerClientHooks {
         final String path = file.getPath();
 
         if (isInGmsCoreDataDir(path)) {
-            FileDescriptor fd = openFile(path);
-            if (fd != null) {
-                String fdPath = "/proc/self/fd/" + fd.getInt$();
-                return new File(fdPath).lastModified();
+            if (shouldCacheForLastModified(path)) {
+                FileDescriptor fd = openCachedFile(path);
+                return fd != null ? getFileLastModified(fd) : 0L;
+            }
+
+            ParcelFileDescriptor pfd = openFreshParcelFileDescriptor(path);
+            if (pfd != null) {
+                try {
+                    return getFileLastModified(pfd.getFileDescriptor());
+                } finally {
+                    IoUtils.closeQuietly(pfd);
+                }
             }
         }
         return 0L;
     }
 
-    public static boolean isInGmsCoreDeDataDir(String path) {
+    private static long getFileLastModified(FileDescriptor fd) {
+        return new File("/proc/self/fd/" + fd.getInt$()).lastModified();
+    }
+
+    public static boolean isInGmsCoreDeDataDirAndShouldCacheFds(String path) {
         return path.startsWith(gmsCoreDeDataPrefix);
+    }
+
+    private static boolean shouldCacheForLastModified(String path) {
+        // Use cache for Dynamite modules which are served as .apk files
+        return isInGmsCoreDeDataDirAndShouldCacheFds(path) && isApkContainerPath(path);
+    }
+
+    private static boolean isApkContainerPath(String path) {
+        return path.endsWith(".apk");
     }
 
     public static boolean isInGmsCoreDataDir(String path) {
@@ -99,28 +114,14 @@ public class GmsCoreFileServerClientHooks {
             return null;
         }
 
-        FileDescriptor fd = openFile(path);
-        if (fd == null) {
-            return null;
-        }
-
-        int dupFd;
-        try {
-            dupFd = Os.fcntlInt(fd, F_DUPFD_CLOEXEC, 0);
-        } catch (ErrnoException e) {
-            throw new RuntimeException(e);
-        }
-
-        var dupJfd = new FileDescriptor();
-        dupJfd.setInt$(dupFd);
-        return dupJfd;
+        return openFreshFileDescriptor(path);
     }
 
     // Returned file descriptor should never be closed because it may be accessed at any time by the native code
     @Nullable
-    public static FileDescriptor openFile(String path) {
+    public static FileDescriptor openCachedFile(String path) {
         if (DEBUG) {
-            Log.d(TAG, "path " + path, new Throwable());
+            Log.d(TAG, "cached path " + path, new Throwable());
         }
         try {
             ArrayMap<String, ParcelFileDescriptor> cache = pfdCache;
@@ -146,6 +147,36 @@ public class GmsCoreFileServerClientHooks {
 
     private static boolean shouldProxyOpen(int flags) {
         return (flags & O_ACCMODE) == O_RDONLY;
+    }
+
+    @Nullable
+    private static FileDescriptor openFreshFileDescriptor(String path) {
+        ParcelFileDescriptor pfd = openFreshParcelFileDescriptor(path);
+        if (pfd == null) {
+            return null;
+        }
+
+        FileDescriptor fd = new FileDescriptor();
+        fd.setInt$(pfd.detachFd());
+        return fd;
+    }
+
+    @Nullable
+    private static ParcelFileDescriptor openFreshParcelFileDescriptor(String path) {
+        if (DEBUG) {
+            Log.d(TAG, "fresh path " + path, new Throwable());
+        }
+        try {
+            IFileProxyService service;
+            synchronized (pfdCache) {
+                service = getFileProxyService();
+            }
+            return service.openFile(path);
+        } catch (RemoteException e) {
+            // FileProxyService never forwards exceptions to minimize the information leaks,
+            // this is a very rare "binder died" exception
+            throw e.rethrowAsRuntimeException();
+        }
     }
 
     @GuardedBy("pfdCache")

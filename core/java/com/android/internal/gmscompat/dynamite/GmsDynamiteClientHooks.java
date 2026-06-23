@@ -44,10 +44,10 @@ public final class GmsDynamiteClientHooks {
 
     // ApkAssets#loadFromPath(String, int, AssetsProvider)
     public static ApkAssets loadAssetsFromPath(String path, int flags, AssetsProvider assets) throws IOException {
-        if (!GmsCoreFileServerClientHooks.isInGmsCoreDeDataDir(path)) {
+        if (!GmsCoreFileServerClientHooks.isInGmsCoreDeDataDirAndShouldCacheFds(path)) {
             return null;
         }
-        FileDescriptor fd = GmsCoreFileServerClientHooks.openFile(path);
+        FileDescriptor fd = GmsCoreFileServerClientHooks.openCachedFile(path);
         if (fd == null) {
             throw new IOException("unable to open " + path);
         }
@@ -70,7 +70,7 @@ public final class GmsDynamiteClientHooks {
 
         for (int i = 0; i < pathParts.length; ++i) {
             String pathPart = pathParts[i];
-            if (!GmsCoreFileServerClientHooks.isInGmsCoreDeDataDir(pathPart)) {
+            if (!GmsCoreFileServerClientHooks.isInGmsCoreDeDataDirAndShouldCacheFds(pathPart)) {
                 continue;
             }
             // defined in bionic/linker/linker_utils.cpp kZipFileSeparator
@@ -86,7 +86,7 @@ public final class GmsDynamiteClientHooks {
                 filePath = pathPart;
                 nativeLibRelPath = null;
             }
-            FileDescriptor fd = GmsCoreFileServerClientHooks.openFile(filePath);
+            FileDescriptor fd = GmsCoreFileServerClientHooks.openCachedFile(filePath);
             if (fd == null) {
                 throw new IllegalStateException("unable to open " + filePath);
             }
