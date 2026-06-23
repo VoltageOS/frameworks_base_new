@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.ext.settings.ExtSettings;
+import android.os.Binder;
 import android.util.Slog;
 
 import java.util.List;
@@ -66,7 +67,13 @@ class BluetoothAutoOff extends DelayedConditionalAction {
 
     private boolean isAdapterOnAndDisconnected() {
         Slog.d(TAG, "isAdapterOnAndDisconnected");
-        if (adapter != null) {
+        if (adapter == null) {
+            Slog.d(TAG, "adapter is null");
+            return false;
+        }
+        // Suppress warnings about usage of blocking Bluetooth APIs
+        Binder.allowBlockingForCurrentThread();
+        try {
             boolean isLeEnabled = adapter.isLeEnabled();
             Slog.d(TAG, "isLeEnabled: " + isLeEnabled);
             if (isLeEnabled) {
@@ -104,8 +111,8 @@ class BluetoothAutoOff extends DelayedConditionalAction {
                 Slog.d(TAG, "connState: " + connState);
                 return connState == BluetoothAdapter.STATE_DISCONNECTED;
             }
-        } else {
-            Slog.d(TAG, "adapter is null");
+        } finally {
+            Binder.defaultBlockingForCurrentThread();
         }
 
         return false;
