@@ -55,7 +55,7 @@ public final class GmsDynamiteClientHooks {
         return ApkAssets.loadFromFd(fd, path, flags, assets);
     }
 
-    // Replaces file paths of Dynamite modules with "/proc/self/fd" file descriptor references
+    // Replaces file paths of Dynamite modules with "/gmscompat_fd" file descriptor references
     // DelegateLastClassLoader#maybeModifyClassLoaderPath(String, Boolean)
     public static String maybeModifyClassLoaderPath(String path, Boolean nativeLibsPathB) {
         if (path == null) {
