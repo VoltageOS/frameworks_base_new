@@ -1427,6 +1427,22 @@ public class PackageInstaller {
         Objects.requireNonNull(archivedPackageInfo, "archivedPackageInfo cannot be null");
         Objects.requireNonNull(sessionParams, "sessionParams cannot be null");
         Objects.requireNonNull(statusReceiver, "statusReceiver cannot be null");
+
+        if (GmsCompat.isPlayStore()) {
+            var fillIn = new Intent();
+            fillIn.putExtra(PackageInstaller.EXTRA_PACKAGE_NAME, archivedPackageInfo.getPackageName());
+            // there's no unprivileged alternative to this API
+            fillIn.putExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE);
+            com.android.internal.os.BackgroundThread.getHandler().post(() -> {
+                try {
+                    statusReceiver.sendIntent(GmsCompat.appContext(), 0, fillIn, null, null);
+                } catch (IntentSender.SendIntentException e) {
+                    Log.d("GmsCompat", "", e);
+                }
+            });
+            return;
+        }
+
         try {
             mInstaller.installPackageArchived(
                     archivedPackageInfo.getParcel(),
