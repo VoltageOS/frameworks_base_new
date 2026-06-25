@@ -25,6 +25,7 @@ import android.content.pm.PackageManager;
 import android.nfc.NfcAdapter;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.UserHandle;
 import android.provider.Settings;
 import android.service.quicksettings.Tile;
 import android.widget.Switch;
@@ -94,7 +95,8 @@ public class NfcTile extends QSTileImpl<BooleanState> {
         mListening = listening;
         if (mListening) {
             mBroadcastDispatcher.registerReceiver(mNfcReceiver,
-                    new IntentFilter(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED));
+                    new IntentFilter(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED),
+                    null, UserHandle.ALL);
         } else {
             mBroadcastDispatcher.unregisterReceiver(mNfcReceiver);
         }
