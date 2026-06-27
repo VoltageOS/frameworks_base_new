@@ -14497,6 +14497,10 @@ public final class Settings {
         @Protected(restrictReads = false, readWrite = KnownSystemPackage.SETTINGS)
         public static final String GEOCODER = "geocoder";
 
+        /** @hide */
+        @Protected(restrictReads = false, readWrite = KnownSystemPackage.SETTINGS)
+        public static final String CERT_TRANSPARENCY_DOWNLOADER = "cert_transparency_downloader";
+
 	/** @hide */
         @Protected(restrictReads = false, readWrite = KnownSystemPackage.SETTINGS)
         public static final String GNSS_SUPL = "force_disable_supl"; // historical name

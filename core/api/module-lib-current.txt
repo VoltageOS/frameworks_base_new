@@ -165,6 +165,13 @@ package android.ext {
 
 package android.ext.settings {
 
+  public class CertTransparencyDownloaderSetting {
+    field @NonNull public static final android.ext.settings.IntSetting SETTING;
+    field public static final int VAL_GRAPHENEOS = 0; // 0x0
+    field public static final int VAL_OFF = 2; // 0x2
+    field public static final int VAL_STANDARD = 1; // 0x1
+  }
+
   public class ConnChecksSetting {
     method public static int get();
     method public static boolean put(int);
