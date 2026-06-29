@@ -6958,6 +6958,11 @@ public abstract class Context {
     public static final String APP_LOCK_SERVICE = "app_lock";
 
     /**
+     * @hide
+     */
+    public static final String APP_DATA_BACKUP_SERVICE = "app_data_backup";
+
+    /**
      * Use with {@link #getSystemService(String)} to retrieve a
      * {@link android.app.LocaleManager}.
      *
