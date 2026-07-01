@@ -24322,8 +24322,6 @@ public final class Settings {
      */
     public static boolean shouldHideSetting(@NonNull String packageName, @NonNull String name) {
         switch (name) {
-            case Settings.Global.ADB_ENABLED:
-            case Settings.Global.ADB_WIFI_ENABLED:
             case Settings.Global.DEVELOPMENT_SETTINGS_ENABLED:
                 return !isCallerSystemApp(packageName);
            default:
