@@ -175,16 +175,21 @@ public class LocationFudger {
         // update the offsets in use
         updateOffsets();
 
-        Location coarse = new Location(fine);
+        // Build the coarse location from an allowlist: start from a fresh location and copy only
+        // non-sensitive fields, so no present or future Location field can leak fine-grained data
+        // to coarse-only apps.
+        Location coarse = new Location(fine.getProvider());
+        coarse.setTime(fine.getTime());
+        coarse.setElapsedRealtimeNanos(fine.getElapsedRealtimeNanos());
+        if (fine.hasElapsedRealtimeUncertaintyNanos()) {
+            coarse.setElapsedRealtimeUncertaintyNanos(fine.getElapsedRealtimeUncertaintyNanos());
+        }
+        // The mock flag is not location data and must survive so mock locations stay identifiable
+        // (isMock()) and are cleared correctly when a test provider is removed.
+        coarse.setMock(fine.isMock());
 
-        // clear any fields that could leak more detailed location information
-        coarse.removeBearing();
-        coarse.removeSpeed();
-        coarse.removeAltitude();
-        coarse.setExtras(null);
-
-        double latitude = wrapLatitude(coarse.getLatitude());
-        double longitude = wrapLongitude(coarse.getLongitude());
+        double latitude = wrapLatitude(fine.getLatitude());
+        double longitude = wrapLongitude(fine.getLongitude());
 
         // add offsets - update longitude first using the non-offset latitude
         longitude += wrapLongitude(metersToDegreesLongitude(mLongitudeOffsetM, latitude));
@@ -221,7 +226,7 @@ public class LocationFudger {
 
         coarse.setLatitude(coarsened[LAT_INDEX]);
         coarse.setLongitude(coarsened[LNG_INDEX]);
-        coarse.setAccuracy(Math.max(accuracy, coarse.getAccuracy()));
+        coarse.setAccuracy(Math.max(accuracy, fine.getAccuracy()));
 
         synchronized (this) {
             mCachedFineLocation = fine;

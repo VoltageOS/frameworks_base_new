@@ -30,6 +30,7 @@ import static org.mockito.Mockito.verify;
 
 import android.location.Location;
 import android.location.flags.Flags;
+import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
 import android.util.Log;
 
@@ -76,20 +77,52 @@ public class LocationFudgerTest {
 
     @Test
     public void testCoarsen() {
-        // test that the coarsened location is not the same as the fine location and no leaks
+        // Coarsening must drop every position-sensitive field while carrying only the
+        // non-sensitive fields that downstream code and LocationResult.validate() rely on. Every
+        // sensitive field is set on the fine input, so a regression that copies any of them is
+        // caught here; fields Location gains in the future are covered by the allowlist
+        // construction itself rather than by this test.
         for (int i = 0; i < 100; i++) {
             Location fine = createLocation("test", mRandom);
+            fine.setElapsedRealtimeUncertaintyNanos(1);
             fine.setBearing(1);
+            fine.setBearingAccuracyDegrees(1);
             fine.setSpeed(1);
+            fine.setSpeedAccuracyMetersPerSecond(1);
             fine.setAltitude(1);
+            fine.setVerticalAccuracyMeters(1);
+            fine.setMslAltitudeMeters(1);
+            fine.setMslAltitudeAccuracyMeters(1);
+            fine.setMock(true);
+            Bundle extras = new Bundle();
+            extras.putString("secret", "leak");
+            fine.setExtras(extras);
 
             Location coarse = mFudger.createCoarse(fine);
 
             assertThat(coarse).isNotNull();
             assertThat(coarse).isNotSameInstanceAs(fine);
+
+            // No position-sensitive field may leak to coarse-only apps.
             assertThat(coarse.hasBearing()).isFalse();
+            assertThat(coarse.hasBearingAccuracy()).isFalse();
             assertThat(coarse.hasSpeed()).isFalse();
+            assertThat(coarse.hasSpeedAccuracy()).isFalse();
             assertThat(coarse.hasAltitude()).isFalse();
+            assertThat(coarse.hasVerticalAccuracy()).isFalse();
+            assertThat(coarse.hasMslAltitude()).isFalse();
+            assertThat(coarse.hasMslAltitudeAccuracy()).isFalse();
+            assertThat(coarse.getExtras()).isNull();
+
+            // Non-sensitive fields required for correctness must survive.
+            assertThat(coarse.getProvider()).isEqualTo(fine.getProvider());
+            assertThat(coarse.getTime()).isEqualTo(fine.getTime());
+            assertThat(coarse.getElapsedRealtimeNanos()).isEqualTo(fine.getElapsedRealtimeNanos());
+            assertThat(coarse.hasElapsedRealtimeUncertaintyNanos()).isTrue();
+            assertThat(coarse.getElapsedRealtimeUncertaintyNanos())
+                    .isEqualTo(fine.getElapsedRealtimeUncertaintyNanos());
+            assertThat(coarse.isMock()).isTrue();
+
             assertThat(coarse.getAccuracy()).isEqualTo(ACCURACY_M);
             assertThat(coarse.distanceTo(fine)).isGreaterThan(1F);
             assertThat(coarse).isNearby(fine, MAX_COARSE_FUDGE_DISTANCE_M);
