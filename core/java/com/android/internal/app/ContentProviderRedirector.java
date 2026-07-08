@@ -35,6 +35,9 @@ public class ContentProviderRedirector {
         if (t == null) {
             t = ContactScopes.maybeTranslateAuthority(auth);
         }
+        if (t == null) {
+            t = GservicesFlags.maybeTranslateAuthority(auth);
+        }
 
         return t != null ? t : auth;
     }
