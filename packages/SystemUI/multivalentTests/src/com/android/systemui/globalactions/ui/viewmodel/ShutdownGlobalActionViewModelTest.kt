@@ -79,7 +79,7 @@ class ShutdownGlobalActionViewModelTest : SysuiTestCase() {
         kosmos.runTest {
             underTest.state.onLongClick?.invoke()
 
-            verify(kosmos.globalActionsManager).reboot(true)
+            verify(kosmos.globalActionsManager).reboot(true, null)
         }
 
     @Test

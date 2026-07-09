@@ -61,7 +61,7 @@ class RestartGlobalActionViewModelTest : SysuiTestCase() {
         kosmos.runTest {
             underTest.state.onClick()
 
-            verify(kosmos.globalActionsManager).reboot(false)
+            verify(kosmos.globalActionsManager).reboot(false, null)
         }
 
     @Test
@@ -79,7 +79,7 @@ class RestartGlobalActionViewModelTest : SysuiTestCase() {
         kosmos.runTest {
             underTest.state.onLongClick?.invoke()
 
-            verify(kosmos.globalActionsManager).reboot(true)
+            verify(kosmos.globalActionsManager).reboot(true, null)
         }
 
     @Test

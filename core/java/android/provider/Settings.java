@@ -14417,6 +14417,12 @@ public final class Settings {
          * @hide
          */
         public static final String ADVANCED_PROTECTION_MODE = "advanced_protection_mode";
+        /**
+         * Whether to include options in power menu for rebooting into recovery or bootloader.
+         *
+         * @hide
+         */
+        public static final String ADVANCED_REBOOT = "advanced_reboot";
 
         /**
          * Integer property which determines whether advanced protection USB data protection

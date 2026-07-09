@@ -133,7 +133,7 @@ class GlobalActionsInteractorTest : SysuiTestCase() {
         kosmos.runTest {
             underTest.reboot(false)
 
-            verify(globalActionsManager).reboot(false)
+            verify(globalActionsManager).reboot(false, null)
         }
 
     @Test
@@ -153,7 +153,7 @@ class GlobalActionsInteractorTest : SysuiTestCase() {
             val result = underTest.reboot(true)
 
             assertThat(result).isTrue()
-            verify(globalActionsManager).reboot(true)
+            verify(globalActionsManager).reboot(true, null)
         }
 
     @Test
