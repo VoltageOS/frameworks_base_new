@@ -38,6 +38,7 @@ enum class GlobalActionType(val configKey: String) {
     companion object {
         private val KEY_MAP = entries.associateBy { it.configKey }
 
+        @JvmStatic
         fun fromConfigKey(configKey: String): GlobalActionType? {
             return KEY_MAP[configKey]
         }

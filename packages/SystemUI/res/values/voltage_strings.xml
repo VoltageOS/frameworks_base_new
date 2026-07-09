@@ -44,4 +44,7 @@
     <string name="global_action_restart_bootloader_progress">Restarting to bootloader mode\u2026</string>
     <string name="global_action_restart_download_progress">Restarting to download mode\u2026</string>
     <string name="global_action_restart_fastboot_progress">Restarting to fastbootd mode\u2026</string>
+    <!-- Label for current user in power menu options dialog -->
+    <string name="global_action_current_user">Current</string>
+    <string name="global_action_users">Users</string>
 </resources>
