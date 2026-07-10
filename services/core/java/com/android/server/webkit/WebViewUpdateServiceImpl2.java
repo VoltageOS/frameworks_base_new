@@ -608,8 +608,7 @@ class WebViewUpdateServiceImpl2 {
         if (!UserPackage.hasCorrectTargetSdkVersion(packageInfo)) {
             return VALIDITY_INCORRECT_SDK_VERSION;
         }
-        if (!versionCodeGE(packageInfo.getLongVersionCode(), getMinimumVersionCode())
-                && !mSystemInterface.systemIsDebuggable()) {
+        if (!versionCodeGE(packageInfo.getLongVersionCode(), getMinimumVersionCode())) {
             // Webview providers may be downgraded arbitrarily low, prevent that by enforcing
             // minimum version code. This check is only enforced for user builds.
             return VALIDITY_INCORRECT_VERSION_CODE;
