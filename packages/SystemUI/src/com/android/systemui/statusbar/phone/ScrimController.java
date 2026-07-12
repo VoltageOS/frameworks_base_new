@@ -469,7 +469,12 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
                     @Override
                     public void onChange(boolean selfChange) {
                         updateDualTone();
+                        if (mUseDualTone && mNotificationsScrim != null
+                                && mNotificationsScrim.getVisibility() != View.VISIBLE) {
+                            mNotificationsScrim.setVisibility(View.VISIBLE);
+                        }
                         applyAndDispatchState();
+                        scheduleUpdate();
                     }
                 },
                 UserHandle.USER_ALL);
