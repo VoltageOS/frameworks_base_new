@@ -1072,13 +1072,13 @@ public class ComputerEngine implements Computer {
             && !Process.isSdkSandboxUid(callingUid);
     }
     
-    public ParceledListSlice<PackageInfo> recreatePackageList(
-            int callingUid, Context context, int userId, ParceledListSlice<PackageInfo> list) {
-        List<PackageInfo> appList = new ArrayList<>(list.getList());
-        if (!canHideApp(callingUid, null)) return new ParceledListSlice<>(appList);
+    public PackageInfoList recreatePackageList(
+            int callingUid, Context context, int userId, PackageInfoList list) {
+        if (!canHideApp(callingUid, null)) return list;
         Set<String> hiddenApps = HideAppListUtils.getApps(context);
+        List<PackageInfo> appList = new ArrayList<>(list.getList());
         appList.removeIf(info -> hiddenApps.contains(info.packageName));
-        return new ParceledListSlice<>(appList);
+        return new PackageInfoList(appList);
     }
 
     public List<ApplicationInfo> recreateApplicationList(
