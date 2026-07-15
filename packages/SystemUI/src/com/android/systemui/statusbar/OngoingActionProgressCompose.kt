@@ -24,7 +24,11 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -57,6 +61,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -69,14 +74,17 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -93,6 +101,7 @@ import com.android.systemui.statusbar.policy.CaffeineController
 import com.android.systemui.statusbar.policy.NotificationSuppressController
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
@@ -100,10 +109,28 @@ private const val TAG = "OngoingActionProgressCompose"
 
 @Composable
 fun ProgressRing(progressProvider: () -> Int, maxProgressProvider: () -> Int, statusColor: Color, modifier: Modifier = Modifier) {
+    val animatedFraction = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        var first = true
+        snapshotFlow {
+            val max = maxProgressProvider()
+            if (max > 0) (progressProvider().toFloat() / max.toFloat()).coerceIn(0f, 1f) else 0f
+        }.collectLatest { target ->
+            if (first) {
+                first = false
+                animatedFraction.snapTo(target)
+            } else {
+                animatedFraction.animateTo(
+                    target,
+                    spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 170f),
+                )
+            }
+        }
+    }
+
     Canvas(modifier = modifier) {
-        val progressValue = if (maxProgressProvider() > 0) {
-            (progressProvider().toFloat() / maxProgressProvider().toFloat()).coerceIn(0f, 1f)
-        } else 0f
+        val progressValue = animatedFraction.value
         val strokeWidthPx = 2.dp.toPx()
         val diameter = size.minDimension - strokeWidthPx
         val radius = diameter / 2
@@ -137,15 +164,32 @@ fun ProgressBar(progressProvider: () -> Int, maxProgressProvider: () -> Int, sta
     val trackColor = statusColor.copy(alpha = 0.18f)
     val fillColor = statusColor.copy(alpha = 0.9f)
 
+    val animatedFraction = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        var first = true
+        snapshotFlow {
+            val max = maxProgressProvider()
+            if (max > 0) (progressProvider().toFloat() / max.toFloat()).coerceIn(0f, 1f) else 0f
+        }.collectLatest { target ->
+            if (first) {
+                first = false
+                animatedFraction.snapTo(target)
+            } else {
+                animatedFraction.animateTo(
+                    target,
+                    spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 170f),
+                )
+            }
+        }
+    }
+
     Box(
         modifier = modifier.drawBehind {
             val cornerRadius = CornerRadius(1.dp.toPx())
             drawRoundRect(color = trackColor, cornerRadius = cornerRadius)
 
-            val max = maxProgressProvider()
-            val fraction = if (max > 0) {
-                (progressProvider().toFloat() / max.toFloat()).coerceIn(0f, 1f)
-            } else 0f
+            val fraction = animatedFraction.value
 
             if (fraction > 0f) {
                 val minFraction = 4f / 96f
@@ -174,8 +218,13 @@ fun OngoingActionProgress(
 
     AnimatedVisibility(
         visible = state.isVisible,
-        enter = fadeIn(tween(120, easing = FastOutSlowInEasing)) + scaleIn(initialScale = 0.8f, animationSpec = tween(120, easing = FastOutSlowInEasing)),
-        exit = fadeOut(tween(120, easing = FastOutSlowInEasing)) + scaleOut(targetScale = 0.8f, animationSpec = tween(120, easing = FastOutSlowInEasing)),
+        enter = fadeIn(tween(100)) +
+            scaleIn(
+                initialScale = 0.6f,
+                animationSpec = spring(dampingRatio = 0.55f, stiffness = 500f),
+            ),
+        exit = fadeOut(tween(110, easing = FastOutSlowInEasing)) +
+            scaleOut(targetScale = 0.75f, animationSpec = tween(110, easing = FastOutSlowInEasing)),
         modifier = modifier,
     ) {
         Box(
@@ -201,8 +250,8 @@ fun OngoingActionProgress(
             }
 
             val scale by animateFloatAsState(
-                targetValue = if (isPressed) 0.9f else 1f,
-                animationSpec = tween(150, easing = FastOutSlowInEasing),
+                targetValue = if (isPressed) 0.88f else 1f,
+                animationSpec = spring(dampingRatio = 0.55f, stiffness = 600f),
                 label = "ScaleAnimation"
             )
 
@@ -238,59 +287,89 @@ fun OngoingActionProgress(
 
             val isExpandedTransient = state.activeStateType == OnGoingActionProgressController.TYPE_TRANSIENT && !state.isCompactMode
 
-            if (isExpandedTransient) {
-               Row(
-                    modifier = baseModifier
-                        .alpha(state.opacity)
-                        .width(96.dp)
-                        .height(30.dp)
-                        .padding(horizontal = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    val expandedIcon = displayedIcon
-                    if (expandedIcon != null) {
-                        Image(
-                            bitmap = expandedIcon,
-                            contentDescription = "App icon",
-                            modifier = Modifier
-                                .size(20.dp)
-                                .clip(RoundedCornerShape(10.dp)),
-                            colorFilter = null,
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                    }
+            val chipWidth by animateDpAsState(
+                targetValue = if (isExpandedTransient) 96.dp else 30.dp,
+                animationSpec = spring(dampingRatio = 0.85f, stiffness = 450f),
+                label = "ChipWidthMorph"
+            )
 
-                    ProgressBar(
-                        progressProvider = { progressValue.progress },
-                        maxProgressProvider = { progressValue.maxProgress },
-                        statusColor = statusColor,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(2.dp)
-                    )
-                }
-            } else {
+            Box(
+                modifier = baseModifier
+                    .width(chipWidth)
+                    .height(30.dp)
+                    .clip(RoundedCornerShape(15.dp))
+                    .alpha(state.opacity),
+                contentAlignment = Alignment.Center,
+            ) {
                 AnimatedContent(
-                    targetState = state.activeStateType,
+                    targetState = if (isExpandedTransient) -1 else state.activeStateType,
+                    contentAlignment = Alignment.Center,
                     transitionSpec = {
                         (
-                            (fadeIn(tween(250, easing = FastOutSlowInEasing)) + 
-                             scaleIn(initialScale = 0.4f, animationSpec = tween(250, easing = FastOutSlowInEasing)) + 
-                                 slideInVertically(animationSpec = tween(250, easing = FastOutSlowInEasing), initialOffsetY = { it / 2 })) togetherWith 
-                            (fadeOut(tween(150, easing = FastOutSlowInEasing)) + 
-                             scaleOut(targetScale = 0.6f, animationSpec = tween(150, easing = FastOutSlowInEasing)) + 
-                                 slideOutVertically(animationSpec = tween(150, easing = FastOutSlowInEasing), targetOffsetY = { -it / 2 }))
+                            (fadeIn(tween(90)) +
+                             scaleIn(
+                                 initialScale = 0.6f,
+                                 animationSpec = spring(dampingRatio = 0.6f, stiffness = 450f),
+                             ) +
+                             slideInVertically(
+                                 animationSpec = spring(
+                                     dampingRatio = 0.75f,
+                                     stiffness = 450f,
+                                     visibilityThreshold = IntOffset.VisibilityThreshold,
+                                 ),
+                                 initialOffsetY = { it / 3 },
+                             )) togetherWith
+                            (fadeOut(tween(90)) +
+                             scaleOut(targetScale = 0.7f, animationSpec = tween(120, easing = FastOutSlowInEasing)) +
+                             slideOutVertically(
+                                 animationSpec = tween(120, easing = FastOutSlowInEasing),
+                                 targetOffsetY = { -it / 3 },
+                             ))
                         )
                     },
-                    label = "IndicatorTypeCrossfade"
+                    label = "IndicatorTypeMorph"
                 ) { currentType ->
-                    val circleModifier = baseModifier
-                        .size(30.dp)
-                        .alpha(state.opacity)
-                        .clip(RoundedCornerShape(15.dp))
+                    val circleModifier = Modifier.size(30.dp)
 
-                    if (currentType == OnGoingActionProgressController.TYPE_DONE_CHECKMARK) {
+                    if (currentType == -1) {
+                        Row(
+                            modifier = Modifier
+                                .width(96.dp)
+                                .height(30.dp)
+                                .padding(horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            val expandedIcon = displayedIcon
+                            if (expandedIcon != null) {
+                                Image(
+                                    bitmap = expandedIcon,
+                                    contentDescription = "App icon",
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .clip(RoundedCornerShape(10.dp)),
+                                    colorFilter = null,
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                            }
+
+                            ProgressBar(
+                                progressProvider = { progressValue.progress },
+                                maxProgressProvider = { progressValue.maxProgress },
+                                statusColor = statusColor,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(2.dp)
+                            )
+                        }
+                    } else if (currentType == OnGoingActionProgressController.TYPE_DONE_CHECKMARK) {
                         val checkmarkPath = remember { Path() }
+                        val partialPath = remember { Path() }
+                        val pathMeasure = remember { PathMeasure() }
+                        val checkProgress = remember { Animatable(0f) }
+
+                        LaunchedEffect(Unit) {
+                            checkProgress.animateTo(1f, spring(dampingRatio = 0.8f, stiffness = 280f))
+                        }
                         Box(
                             modifier = circleModifier,
                             contentAlignment = Alignment.Center,
@@ -300,7 +379,10 @@ fun OngoingActionProgress(
                                 checkmarkPath.moveTo(size.width * 0.15f, size.height * 0.5f)
                                 checkmarkPath.lineTo(size.width * 0.4f, size.height * 0.75f)
                                 checkmarkPath.lineTo(size.width * 0.85f, size.height * 0.25f)
-                                drawPath(checkmarkPath, color = statusColor, style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+                                pathMeasure.setPath(checkmarkPath, false)
+                                partialPath.reset()
+                                pathMeasure.getSegment(0f, pathMeasure.length * checkProgress.value, partialPath, true)
+                                drawPath(partialPath, color = statusColor, style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
                             }
                         }
                     } else if (currentType == OnGoingActionProgressController.TYPE_LOGO) {
@@ -401,8 +483,8 @@ fun OngoingActionProgress(
                             AnimatedContent(
                                 targetState = displayedIcon != null,
                                 transitionSpec = {
-                                    (fadeIn(tween(200, easing = FastOutSlowInEasing)) + scaleIn(initialScale = 0.8f, animationSpec = tween(200, easing = FastOutSlowInEasing))) togetherWith
-                                    (fadeOut(tween(150, easing = FastOutSlowInEasing)) + scaleOut(targetScale = 0.8f, animationSpec = tween(150, easing = FastOutSlowInEasing)))
+                                    (fadeIn(tween(120)) + scaleIn(initialScale = 0.5f, animationSpec = spring(dampingRatio = 0.6f, stiffness = 450f))) togetherWith
+                                    (fadeOut(tween(100)) + scaleOut(targetScale = 0.6f, animationSpec = tween(120, easing = FastOutSlowInEasing)))
                                 },
                                 label = "CompactAppIconPresence"
                             ) { hasIcon ->
@@ -426,8 +508,20 @@ fun OngoingActionProgress(
                     alignment = Alignment.BottomCenter,
                     onDismissRequest = { controller.onMediaMenuDismiss() },
                 ) {
+                    val menuScale = remember { Animatable(0.7f) }
+                    val menuAlpha = remember { Animatable(0f) }
+                    LaunchedEffect(Unit) {
+                        launch { menuAlpha.animateTo(1f, tween(110)) }
+                        menuScale.animateTo(1f, spring(dampingRatio = 0.6f, stiffness = 500f))
+                    }
                     Row(
                         modifier = Modifier
+                            .graphicsLayer {
+                                alpha = menuAlpha.value
+                                scaleX = menuScale.value
+                                scaleY = menuScale.value
+                                transformOrigin = TransformOrigin(0.5f, 0f)
+                            }
                             .padding(top = 8.dp)
                             .width(140.dp)
                             .height(48.dp)
