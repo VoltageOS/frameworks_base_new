@@ -203,8 +203,6 @@ import android.os.Message;
 import android.os.PowerManager;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
-import android.os.UserHandle;
-import android.provider.Settings;
 import android.os.Trace;
 import android.os.UserHandle;
 import android.os.UserManager;
@@ -3316,8 +3314,9 @@ class DisplayContent extends RootDisplayArea implements WindowManagerPolicy.Disp
 
         final int orientation = super.getOrientation();
 
-        final ActivityRecord top = topRunningActivity();
-        if (top != null && top.packageName != null && !top.finishing) {
+        final ActivityRecord top = topRunningActivity(/* considerKeyguardState= */ true);
+        if (top != null && top.packageName != null && !top.finishing
+                && !top.inMultiWindowMode()) {
             final int perAppOrientation = mDisplayRotation.peekPerAppRotationAsOrientation(
                     top.packageName, orientation);
             if (perAppOrientation != orientation) {
@@ -7230,12 +7229,7 @@ class DisplayContent extends RootDisplayArea implements WindowManagerPolicy.Disp
             return super.getIgnoreOrientationRequest();
         }
 
-        final boolean forceRespectOrientation = Settings.System.getIntForUser(
-                mWmService.mContext.getContentResolver(),
-                "per_app_rotation_enabled", 0,
-                UserHandle.USER_CURRENT) == 1;
-
-        if (forceRespectOrientation) {
+        if (mDisplayRotation != null && mDisplayRotation.isPerAppRotationEnabled()) {
             return false;
         }
 

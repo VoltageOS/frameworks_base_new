@@ -16,8 +16,11 @@
 
 package com.android.internal.util.voltage.rotation;
 
+import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.ContentObserver;
 import android.os.Handler;
 import android.os.Looper;
@@ -50,6 +53,12 @@ public class RotationController {
         mContext = context;
         SettingsObserver observer = new SettingsObserver(new Handler(Looper.getMainLooper()));
         observer.observe();
+        mContext.registerReceiverAsUser(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                update();
+            }
+        }, UserHandle.ALL, new IntentFilter(Intent.ACTION_USER_SWITCHED), null, null);
     }
 
     public int getRotationForApp(String packageName) {

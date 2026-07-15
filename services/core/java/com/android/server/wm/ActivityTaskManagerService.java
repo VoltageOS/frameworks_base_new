@@ -834,7 +834,7 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
     private Set<Integer> mProfileOwnerUids = new ArraySet<Integer>();
 
     private CutoutFullscreenController mCutoutFullscreenController;
-    private RotationController mRotationController;
+    private volatile RotationController mRotationController;
 
     private final class SettingObserver extends ContentObserver {
         private final Uri mFontScaleUri = Settings.System.getUriFor(FONT_SCALE);
@@ -8470,8 +8470,8 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
     }
 
     public int getRotationForApp(String packageName) {
-        synchronized (this) {
-            return mRotationController.getRotationForApp(packageName);
-        }
+        final RotationController controller = mRotationController;
+        return controller == null ? RotationController.ROTATION_DEFAULT
+                : controller.getRotationForApp(packageName);
     }
 }
