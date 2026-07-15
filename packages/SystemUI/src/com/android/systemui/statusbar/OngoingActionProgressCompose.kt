@@ -18,6 +18,7 @@ package com.android.systemui.statusbar
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.os.SystemClock
 import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -42,9 +43,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -63,7 +61,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -134,27 +134,30 @@ fun ProgressRing(progressProvider: () -> Int, maxProgressProvider: () -> Int, st
 
 @Composable
 fun ProgressBar(progressProvider: () -> Int, maxProgressProvider: () -> Int, statusColor: Color, modifier: Modifier = Modifier) {
-    val progressValue = if (maxProgressProvider() > 0) {
-        (progressProvider().toFloat() / maxProgressProvider().toFloat()).coerceIn(0f, 1f)
-    } else 0f
+    val trackColor = statusColor.copy(alpha = 0.18f)
+    val fillColor = statusColor.copy(alpha = 0.9f)
 
     Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(1.dp))
-            .background(statusColor.copy(alpha = 0.18f)),
-    ) {
-        if (progressValue > 0f) {
-            val minFraction = 4f / 96f
-            val clampedFraction = progressValue.coerceAtLeast(minFraction)
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .fillMaxWidth(clampedFraction)
-                    .clip(RoundedCornerShape(1.dp))
-                    .background(statusColor.copy(alpha = 0.9f)),
-            )
-        }
-    }
+        modifier = modifier.drawBehind {
+            val cornerRadius = CornerRadius(1.dp.toPx())
+            drawRoundRect(color = trackColor, cornerRadius = cornerRadius)
+
+            val max = maxProgressProvider()
+            val fraction = if (max > 0) {
+                (progressProvider().toFloat() / max.toFloat()).coerceIn(0f, 1f)
+            } else 0f
+
+            if (fraction > 0f) {
+                val minFraction = 4f / 96f
+                val clampedFraction = fraction.coerceAtLeast(minFraction)
+                drawRoundRect(
+                    color = fillColor,
+                    size = Size(size.width * clampedFraction, size.height),
+                    cornerRadius = cornerRadius,
+                )
+            }
+        },
+    )
 }
 
 @Composable
@@ -163,6 +166,7 @@ fun OngoingActionProgress(
     modifier: Modifier = Modifier,
 ) {
     val state by controller.state.collectAsStateWithLifecycle()
+    val progressValue by controller.progress.collectAsStateWithLifecycle()
 
     val rawAccentColor = MaterialTheme.colorScheme.primary
     val errorColor = MaterialTheme.colorScheme.error
@@ -186,13 +190,13 @@ fun OngoingActionProgress(
 
             LaunchedEffect(state.icon) {
                 if (state.icon !== displayedIcon) {
-                    val now = System.currentTimeMillis()
+                    val now = SystemClock.elapsedRealtime()
                     val timeSinceLast = now - lastIconChangeTime
                     if (timeSinceLast < 400) {
                         delay(400 - timeSinceLast)
                     }
                     displayedIcon = state.icon
-                    lastIconChangeTime = System.currentTimeMillis()
+                    lastIconChangeTime = SystemClock.elapsedRealtime()
                 }
             }
 
@@ -202,13 +206,13 @@ fun OngoingActionProgress(
                 label = "ScaleAnimation"
             )
 
-            var dragOffset = 0f
             val baseModifier = Modifier
                 .graphicsLayer {
                     scaleX = scale
                     scaleY = scale
                 }
                 .pointerInput(Unit) {
+                    var dragOffset = 0f
                     detectHorizontalDragGestures(
                         onDragStart = { dragOffset = 0f },
                         onDragEnd = {
@@ -243,9 +247,10 @@ fun OngoingActionProgress(
                         .padding(horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (displayedIcon != null) {
+                    val expandedIcon = displayedIcon
+                    if (expandedIcon != null) {
                         Image(
-                            bitmap = displayedIcon!!,
+                            bitmap = expandedIcon,
                             contentDescription = "App icon",
                             modifier = Modifier
                                 .size(20.dp)
@@ -256,8 +261,8 @@ fun OngoingActionProgress(
                     }
 
                     ProgressBar(
-                        progressProvider = { state.progress },
-                        maxProgressProvider = { state.maxProgress },
+                        progressProvider = { progressValue.progress },
+                        maxProgressProvider = { progressValue.maxProgress },
                         statusColor = statusColor,
                         modifier = Modifier
                             .weight(1f)
@@ -331,19 +336,18 @@ fun OngoingActionProgress(
                                 tint = iconTint,
                                 modifier = Modifier.size(20.dp)
                             )
-                            if (sparkAlpha.value > 0f) {
-                                Icon(
-                                    painter = painterResource(id = com.android.systemui.res.R.drawable.ic_voltage_logo),
-                                    contentDescription = null,
-                                    tint = rawAccentColor.copy(alpha = sparkAlpha.value),
-                                    modifier = Modifier
-                                        .size(20.dp)
-                                        .graphicsLayer {
-                                            scaleX = sparkScale.value
-                                            scaleY = sparkScale.value
-                                        }
-                                )
-                            }
+                            Icon(
+                                painter = painterResource(id = com.android.systemui.res.R.drawable.ic_voltage_logo),
+                                contentDescription = null,
+                                tint = rawAccentColor,
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .graphicsLayer {
+                                        alpha = sparkAlpha.value
+                                        scaleX = sparkScale.value
+                                        scaleY = sparkScale.value
+                                    }
+                            )
                         }
                     } else if (currentType != OnGoingActionProgressController.TYPE_TRANSIENT) {
                         val iconRes = when (currentType) {
@@ -388,8 +392,8 @@ fun OngoingActionProgress(
                             contentAlignment = Alignment.Center,
                         ) {
                             ProgressRing(
-                                progressProvider = { state.progress },
-                                maxProgressProvider = { state.maxProgress },
+                                progressProvider = { progressValue.progress },
+                                maxProgressProvider = { progressValue.maxProgress },
                                 statusColor = statusColor,
                                 modifier = Modifier.size(26.dp) // Sized down from fillMaxSize (30dp)
                             )
@@ -402,9 +406,10 @@ fun OngoingActionProgress(
                                 },
                                 label = "CompactAppIconPresence"
                             ) { hasIcon ->
-                                if (hasIcon && displayedIcon != null) {
+                                val compactIcon = displayedIcon
+                                if (hasIcon && compactIcon != null) {
                                     Image(
-                                        bitmap = displayedIcon!!,
+                                        bitmap = compactIcon,
                                         contentDescription = "App icon",
                                         modifier = Modifier.size(16.dp).clip(RoundedCornerShape(8.dp)),
                                         colorFilter = null,
@@ -478,10 +483,13 @@ private fun MediaControlButton(
     }
 }
 
-data class ProgressState(
-    val isVisible: Boolean = false,
+data class ProgressValue(
     val progress: Int = 0,
     val maxProgress: Int = 100,
+)
+
+data class ProgressState(
+    val isVisible: Boolean = false,
     val icon: ImageBitmap? = null,
     val packageName: String? = null,
     val isIconAdaptive: Boolean = false,
@@ -512,6 +520,9 @@ class OnGoingActionProgressComposeController(
     private val _state = MutableStateFlow(ProgressState())
     val state: StateFlow<ProgressState> = _state
 
+    private val _progress = MutableStateFlow(ProgressValue())
+    val progress: StateFlow<ProgressValue> = _progress
+
     private var lastBitmap: Bitmap? = null
     private var lastImageBitmap: ImageBitmap? = null
 
@@ -539,10 +550,9 @@ class OnGoingActionProgressComposeController(
                     lastBitmap = iconBitmap
                     lastImageBitmap = iconBitmap?.asImageBitmap()
                 }
+                _progress.value = ProgressValue(progress, maxProgress)
                 _state.value = ProgressState(
                     isVisible = isVisible,
-                    progress = progress,
-                    maxProgress = maxProgress,
                     icon = lastImageBitmap,
                     packageName = packageName,
                     isIconAdaptive = isAdaptive,

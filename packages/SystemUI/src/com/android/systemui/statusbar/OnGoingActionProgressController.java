@@ -63,8 +63,8 @@ import com.android.systemui.statusbar.policy.ZenModeController;
 import com.android.systemui.util.MediaSessionManagerHelper;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -94,6 +94,21 @@ public class OnGoingActionProgressController
   private static final int STALE_PROGRESS_CHECK_INTERVAL_MS = 5000;
   private static final long STUCK_THRESHOLD_MS = 10 * 60 * 1000;
   private static final int PROGRESS_TIMEOUT_MS = 30000;
+
+  private static final Uri URI_CHIP_ENABLED =
+      Settings.System.getUriFor(ONGOING_ACTION_CHIP_ENABLED);
+  private static final Uri URI_SHOW_MEDIA_PROGRESS =
+      Settings.System.getUriFor(SHOW_MEDIA_PROGRESS);
+  private static final Uri URI_PROGRESS_BAR_OPACITY =
+      Settings.System.getUriFor(PROGRESS_BAR_OPACITY);
+  private static final Uri URI_SMART_ACTIONS =
+      Settings.System.getUriFor(ONGOING_SMART_ACTIONS_ENABLED);
+  private static final Uri URI_COMPACT_MODE =
+      Settings.System.getUriFor(COMPACT_MODE_ENABLED);
+  private static final Uri URI_NIRVANA_MODE =
+      Settings.Secure.getUriFor(NIRVANA_MODE_ACTIVE);
+  private static final Uri URI_SHOW_VOLTAGE_LOGO =
+      Settings.System.getUriFor(SHOW_VOLTAGE_LOGO);
 
   public interface StateCallback {
     void onStateChanged(
@@ -139,6 +154,7 @@ public class OnGoingActionProgressController
   private final NextAlarmController mNextAlarmController;
   private final AudioManager mAudioManager;
   private final Vibrator mVibrator;
+  private final boolean mHasVibrator;
   private final BroadcastDispatcher mBroadcastDispatcher;
   private DarkIconDispatcher mDarkIconDispatcher;
   private final DarkIconDispatcher.DarkReceiver mDarkReceiver;
@@ -150,7 +166,7 @@ public class OnGoingActionProgressController
       new ConcurrentHashMap<>();
 
   private boolean mShowMediaProgress = true;
-  private boolean mIsTrackingProgress = false;
+  private volatile boolean mIsTrackingProgress = false;
   private boolean mIsForceHidden = false;
   private boolean mHeadsUpPinned = false;
   private long mLastProgressUpdateTime = 0;
@@ -185,6 +201,7 @@ public class OnGoingActionProgressController
   private long mLastUpdateTime = 0;
 
   private boolean mIs5gConnected = false;
+  private long mSupportedRafCache = -1;
   public static final int TYPE_NONE = 0;
   public static final int TYPE_TRANSIENT = 1;
   public static final int TYPE_FLASHLIGHT = 2;
@@ -202,7 +219,7 @@ public class OnGoingActionProgressController
   public static final int TYPE_FIVEG = 14;
 
   private int mCurrentDisplayState = TYPE_NONE;
-  private final ArrayList<Integer> mActiveStatesHistory = new ArrayList<>();
+  private int mActiveStatesMask = 0;
 
   private boolean mHasTransient = false;
   private boolean mIsTransientGracePending = false;
@@ -214,6 +231,13 @@ public class OnGoingActionProgressController
   private long mLastTransientTime = 0;
   private final Runnable mTransientBufferRunnable = this::requestUiUpdate;
   private final Runnable mFinishAnimRunnable = this::requestUiUpdate;
+
+  private final Runnable mDebouncedUpdateRunnable =
+      () -> {
+        mUpdatePending = false;
+        mLastUpdateTime = SystemClock.elapsedRealtime();
+        updateViews();
+      };
 
   private int mOverrideState = TYPE_NONE;
   private long mOverrideEndTime = 0;
@@ -247,6 +271,7 @@ public class OnGoingActionProgressController
           if (Intent.ACTION_CONFIGURATION_CHANGED.equals(intent.getAction())) {
             mDefaultMediaBitmapFull = null;
             mDefaultMediaBitmapCompact = null;
+            mIconCache.evictAll();
           }
         }
       };
@@ -290,8 +315,11 @@ public class OnGoingActionProgressController
     if (mTelephonyManager == null) return;
     try {
       boolean hasSim = mTelephonyManager.getSimState() != TelephonyManager.SIM_STATE_ABSENT;
-      long supported = mTelephonyManager.getSupportedRadioAccessFamily();
-      boolean hardwareSupports5g = (supported & TelephonyManager.NETWORK_TYPE_BITMASK_NR) != 0;
+      if (mSupportedRafCache < 0) {
+        mSupportedRafCache = mTelephonyManager.getSupportedRadioAccessFamily();
+      }
+      boolean hardwareSupports5g =
+          (mSupportedRafCache & TelephonyManager.NETWORK_TYPE_BITMASK_NR) != 0;
       long allowed = mTelephonyManager.getAllowedNetworkTypesForReason(TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_USER);
       boolean userAllows5g = (allowed & TelephonyManager.NETWORK_TYPE_BITMASK_NR) != 0;
 
@@ -410,7 +438,13 @@ public class OnGoingActionProgressController
     mContentResolver = context.getContentResolver();
     mHandler = new Handler(Looper.getMainLooper());
     mSettingsObserver = new SettingsObserver(mHandler);
-    mBackgroundExecutor = Executors.newSingleThreadExecutor();
+    mBackgroundExecutor =
+        Executors.newSingleThreadExecutor(
+            r -> {
+              Thread t = new Thread(r, "OngoingActionProgress.bg");
+              t.setPriority(Thread.NORM_PRIORITY - 1);
+              return t;
+            });
     mBroadcastDispatcher = broadcastDispatcher;
 
     mDarkIconDispatcher = Dependency.get(DarkIconDispatcher.class);
@@ -420,6 +454,7 @@ public class OnGoingActionProgressController
 
     mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
     mVibrator = mContext.getSystemService(Vibrator.class);
+    mHasVibrator = mVibrator != null && mVibrator.hasVibrator();
 
     mFlashlightController = flashlightController;
     if (mFlashlightController != null) {
@@ -492,6 +527,9 @@ public class OnGoingActionProgressController
 
     mBroadcastDispatcher.registerReceiver(
         mRingerReceiver, new IntentFilter(AudioManager.RINGER_MODE_CHANGED_ACTION));
+    updateStateHistory(
+        TYPE_SILENT,
+        mAudioManager.getRingerModeInternal() == AudioManager.RINGER_MODE_SILENT);
     mBroadcastDispatcher.registerReceiver(
         mConfigurationReceiver, new IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED));
 
@@ -521,7 +559,6 @@ public class OnGoingActionProgressController
               for (StatusBarNotification sbn : sbns) {
                 if (sbn != null) {
                   mActiveNotificationsCache.put(sbn.getKey(), sbn);
-                  mActiveNotificationsCache.putIfAbsent(sbn.getKey(), sbn);
                 }
               }
             }
@@ -532,7 +569,7 @@ public class OnGoingActionProgressController
   }
 
   private void triggerHaptic(int effectId) {
-    if (mVibrator != null && mVibrator.hasVibrator()) {
+    if (mHasVibrator) {
       mVibrator.vibrate(VibrationEffect.createPredefined(effectId));
     }
   }
@@ -551,42 +588,50 @@ public class OnGoingActionProgressController
     notifyStateCallback();
   }
 
+  private static final int[] STATE_PRIORITY_ORDER = {
+      TYPE_FLASHLIGHT,
+      TYPE_HOTSPOT,
+      TYPE_NIRVANA,
+      TYPE_DND,
+      TYPE_SILENT,
+      TYPE_SAVER,
+      TYPE_CAFFEINE,
+      TYPE_NOTIF_SUPPRESS,
+      TYPE_FIVEG,
+      TYPE_ALARM,
+      TYPE_STUCK_NOTIF
+  };
+
   private boolean isHardware(int type) {
       return type == TYPE_FLASHLIGHT;
   }
 
-  private int getPriority(int type) {
-      switch(type) {
-          case TYPE_FLASHLIGHT: return 1;
-          case TYPE_HOTSPOT: return 2;
-          case TYPE_NIRVANA: return 3;
-          case TYPE_DND: return 4;
-          case TYPE_SILENT: return 5;
-          case TYPE_SAVER: return 6;
-          case TYPE_CAFFEINE: return 7;
-          case TYPE_NOTIF_SUPPRESS: return 8;
-          case TYPE_FIVEG: return 9;
-          case TYPE_ALARM: return 10;
-          case TYPE_STUCK_NOTIF: return 11;
-          default: return 99;
+  private static boolean isStateActive(int mask, int type) {
+      return (mask & (1 << type)) != 0;
+  }
+
+  private int topActiveState() {
+      for (int type : STATE_PRIORITY_ORDER) {
+          if (isStateActive(mActiveStatesMask, type)) return type;
       }
+      return TYPE_NONE;
   }
 
   private void updateStateHistory(int type, boolean active) {
       boolean changed = false;
       if (active) {
-          if (!mActiveStatesHistory.contains(type)) {
-              mActiveStatesHistory.add(type);
+          if (!isStateActive(mActiveStatesMask, type)) {
+              mActiveStatesMask |= (1 << type);
               changed = true;
           }
           mOverrideState = type;
           long duration = isHardware(type) ? 2500 : 4500;
-          mOverrideEndTime = System.currentTimeMillis() + duration;
+          mOverrideEndTime = SystemClock.elapsedRealtime() + duration;
           mHandler.removeCallbacks(mClearOverrideRunnable);
           mHandler.postDelayed(mClearOverrideRunnable, duration);
       } else {
-          if (mActiveStatesHistory.contains((Integer) type)) {
-              mActiveStatesHistory.remove((Integer) type);
+          if (isStateActive(mActiveStatesMask, type)) {
+              mActiveStatesMask &= ~(1 << type);
               changed = true;
           }
           if (mOverrideState == type) {
@@ -596,8 +641,7 @@ public class OnGoingActionProgressController
       }
 
       if (changed) {
-          mActiveStatesHistory.sort((a, b) -> Integer.compare(getPriority(a), getPriority(b)));
-          mLastStateChangeTime = System.currentTimeMillis();
+          mLastStateChangeTime = SystemClock.elapsedRealtime();
           requestUiUpdate();
       } else if (active) {
           requestUiUpdate();
@@ -634,13 +678,18 @@ public class OnGoingActionProgressController
 
   @Override
   public void onBatteryLevelChanged(int level, boolean pluggedIn, boolean charging) {
+    boolean crossedThreshold = (mBatteryLevel <= 15) != (level <= 15);
+    boolean chargingChanged = mIsCharging != charging;
     mBatteryLevel = level;
     mIsCharging = charging;
-    notifyStateCallback();
+    if (crossedThreshold || chargingChanged) {
+      notifyStateCallback();
+    }
   }
 
   @Override
   public void onPowerSaveChanged(boolean isPowerSave) {
+    mIsPowerSave = isPowerSave;
     updateStateHistory(TYPE_SAVER, isPowerSave);
   }
 
@@ -651,20 +700,13 @@ public class OnGoingActionProgressController
   }
 
   private void requestUiUpdate() {
-    long currentTime = System.currentTimeMillis();
+    long currentTime = SystemClock.elapsedRealtime();
     if (!mUpdatePending && (currentTime - mLastUpdateTime > DEBOUNCE_DELAY_MS)) {
-      mUpdatePending = false;
       mLastUpdateTime = currentTime;
       updateViews();
     } else if (!mUpdatePending) {
       mUpdatePending = true;
-      mHandler.postDelayed(
-          () -> {
-            mUpdatePending = false;
-            mLastUpdateTime = System.currentTimeMillis();
-            updateViews();
-          },
-          DEBOUNCE_DELAY_MS);
+      mHandler.postDelayed(mDebouncedUpdateRunnable, DEBOUNCE_DELAY_MS);
     }
   }
 
@@ -733,7 +775,7 @@ public class OnGoingActionProgressController
 
     boolean isDownloadNow = mIsEnabled && mIsTrackingProgress && !mIsStuck;
     boolean isMediaNow = mShowMediaProgress && mMediaSessionHelper.isMediaPlaying();
-    long now = System.currentTimeMillis();
+    long now = SystemClock.elapsedRealtime();
 
     boolean isTransientNow = isDownloadNow || isMediaNow;
     if (isTransientNow) {
@@ -757,11 +799,8 @@ public class OnGoingActionProgressController
       mHandler.removeCallbacks(mTransientGraceRunnable);
     }
 
-    boolean isOverrideActive = mOverrideState != TYPE_NONE && mActiveStatesHistory.contains(mOverrideState);
-    List<Integer> hardwareStates = new ArrayList<>();
-    for (int state : mActiveStatesHistory) {
-        if (isHardware(state)) hardwareStates.add(state);
-    }
+    boolean isOverrideActive = mOverrideState != TYPE_NONE && isStateActive(mActiveStatesMask, mOverrideState);
+    boolean hasHardwareState = isStateActive(mActiveStatesMask, TYPE_FLASHLIGHT);
 
     if (isDownloadNow) {
       mCurrentDisplayState = TYPE_TRANSIENT;
@@ -769,8 +808,8 @@ public class OnGoingActionProgressController
         mCurrentDisplayState = mOverrideState;
         mHandler.removeCallbacks(mClearOverrideRunnable);
         mHandler.postDelayed(mClearOverrideRunnable, mOverrideEndTime - now + 50);
-    } else if (!hardwareStates.isEmpty()) {
-        mCurrentDisplayState = hardwareStates.get(0);
+    } else if (hasHardwareState) {
+        mCurrentDisplayState = TYPE_FLASHLIGHT;
     } else if (isMediaNow) {
         mCurrentDisplayState = TYPE_TRANSIENT;
     } else if (now < mFinishAnimationEndTime) {
@@ -779,8 +818,8 @@ public class OnGoingActionProgressController
         mHandler.postDelayed(mFinishAnimRunnable, mFinishAnimationEndTime - now + 50);
     } else if (isTransientBuffered && !mIsTransientGracePending) {
         mCurrentDisplayState = TYPE_TRANSIENT;
-    } else if (!mActiveStatesHistory.isEmpty()) {
-        mCurrentDisplayState = mActiveStatesHistory.get(0);
+    } else if (mActiveStatesMask != 0) {
+        mCurrentDisplayState = topActiveState();
     } else {
         mCurrentDisplayState = mShowVoltageLogo ? TYPE_LOGO : TYPE_NONE;
     }
@@ -803,7 +842,16 @@ public class OnGoingActionProgressController
       }
 
       if (isMediaNow) {
-        updateMediaProgressCompact();
+        if (mNeedsFullUiUpdate) {
+          updateMediaProgressCompact();
+          mNeedsFullUiUpdate = false;
+        } else {
+          mHandler.removeCallbacks(mMediaProgressRunnable);
+          if (!mIsForceHidden) {
+            mHandler.post(mMediaProgressRunnable);
+          }
+          updateMediaProgressOnly();
+        }
       } else {
         updateNotificationProgressCompact();
       }
@@ -887,10 +935,11 @@ public class OnGoingActionProgressController
 
     if (mediaAppIcon != null) {
       boolean isAdaptive = mediaAppIcon instanceof AdaptiveIconDrawable;
+      final Drawable iconDrawable = mediaAppIcon.mutate();
       final int sizePx = drawableSizePx();
       mBackgroundExecutor.execute(
           () -> {
-            Bitmap bmp = drawableToBitmap(mediaAppIcon, sizePx);
+            Bitmap bmp = drawableToBitmap(iconDrawable, sizePx);
             mHandler.post(
                 () -> {
                   mCurrentIconBitmap = bmp;
@@ -1003,10 +1052,11 @@ public class OnGoingActionProgressController
 
     if (mediaAppIcon != null) {
       boolean isAdaptive = mediaAppIcon instanceof AdaptiveIconDrawable;
+      final Drawable iconDrawable = mediaAppIcon.mutate();
       final int sizePx = drawableSizePx();
       mBackgroundExecutor.execute(
           () -> {
-            Bitmap bmp = drawableToBitmap(mediaAppIcon, sizePx);
+            Bitmap bmp = drawableToBitmap(iconDrawable, sizePx);
             mHandler.post(
                 () -> {
                   mCurrentIconBitmap = bmp;
@@ -1125,6 +1175,10 @@ public class OnGoingActionProgressController
 
             mHandler.post(
                 () -> {
+                  if (!mIsViewAttached) {
+                    mInFlightIconLoads.remove(packageName);
+                    return;
+                  }
                   if (finalResult != null && finalResult.bitmap != null) {
                     mIconCache.put(packageName, finalResult);
                   }
@@ -1151,7 +1205,7 @@ public class OnGoingActionProgressController
     int newProgress = extras.getInt(Notification.EXTRA_PROGRESS, 0);
     int newMax = extras.getInt(Notification.EXTRA_PROGRESS_MAX, 100);
     if (newProgress != mCurrentProgress || newMax != mCurrentProgressMax) {
-      mLastProgressChangeTime = System.currentTimeMillis();
+      mLastProgressChangeTime = SystemClock.elapsedRealtime();
       if (mIsStuck) {
         mIsStuck = false;
         updateStateHistory(TYPE_STUCK_NOTIF, false);
@@ -1168,7 +1222,8 @@ public class OnGoingActionProgressController
     mHandler.postDelayed(mStaleProgressChecker, STALE_PROGRESS_CHECK_INTERVAL_MS);
     mTrackedNotificationKey = sbn.getKey();
     mTrackedPackageName = sbn.getPackageName();
-    mLastProgressChangeTime = System.currentTimeMillis();
+    mLastProgressChangeTime = SystemClock.elapsedRealtime();
+    mLastProgressUpdateTime = SystemClock.elapsedRealtime();
     mIsStuck = false;
     extractProgress(sbn.getNotification());
     requestUiUpdate();
@@ -1184,7 +1239,7 @@ public class OnGoingActionProgressController
     updateStateHistory(TYPE_STUCK_NOTIF, false);
 
     if (showSuccess && mCurrentDisplayState == TYPE_TRANSIENT) {
-      mFinishAnimationEndTime = System.currentTimeMillis() + 800;
+      mFinishAnimationEndTime = SystemClock.elapsedRealtime() + 800;
       mLastTransientTime = 0;
     }
     requestUiUpdate();
@@ -1204,11 +1259,12 @@ public class OnGoingActionProgressController
       return;
     }
 
-    if (System.currentTimeMillis() - mLastProgressUpdateTime > PROGRESS_TIMEOUT_MS) {
+    if (SystemClock.elapsedRealtime() - mLastProgressUpdateTime > PROGRESS_TIMEOUT_MS) {
       clearProgressTracking(false);
+      return;
     }
 
-    if (System.currentTimeMillis() - mLastProgressChangeTime > STUCK_THRESHOLD_MS) {
+    if (SystemClock.elapsedRealtime() - mLastProgressChangeTime > STUCK_THRESHOLD_MS) {
       if (!mIsStuck) {
         mIsStuck = true;
         updateStateHistory(TYPE_STUCK_NOTIF, true);
@@ -1225,7 +1281,7 @@ public class OnGoingActionProgressController
         return;
       }
 
-      mLastProgressUpdateTime = System.currentTimeMillis();
+      mLastProgressUpdateTime = SystemClock.elapsedRealtime();
       extractProgress(sbn.getNotification());
       requestUiUpdate();
     }
@@ -1246,29 +1302,30 @@ public class OnGoingActionProgressController
   private void cancelTrackedTask() {
     if (mTrackedNotificationKey != null && mNotificationListener != null) {
       try {
-        for (StatusBarNotification sbn : mActiveNotificationsCache.values()) {
-          if (sbn.getKey().equals(mTrackedNotificationKey)) {
-            Notification n = sbn.getNotification();
-            if (n.actions != null) {
-              for (Notification.Action action : n.actions) {
-                String title = String.valueOf(action.title).toLowerCase();
-                if (title.contains("cancel") || title.contains("stop")) {
-                  try {
-                    action.actionIntent.send();
-                    clearProgressTracking(true);
-                    return;
-                  } catch (Exception e) {
-                  }
+        StatusBarNotification sbn = mActiveNotificationsCache.get(mTrackedNotificationKey);
+        if (sbn != null) {
+          Notification n = sbn.getNotification();
+          if (n.actions != null) {
+            for (Notification.Action action : n.actions) {
+              String title = String.valueOf(action.title).toLowerCase(Locale.ROOT);
+              if ((title.contains("cancel") || title.contains("stop"))
+                  && action.actionIntent != null) {
+                try {
+                  action.actionIntent.send();
+                  clearProgressTracking(true);
+                  return;
+                } catch (Exception e) {
+                  Log.w(TAG, "Failed to send cancel action", e);
                 }
               }
             }
+          }
 
-            if (mNotificationListener instanceof NotificationListenerService) {
-              ((NotificationListenerService) mNotificationListener)
-                  .cancelNotification(mTrackedNotificationKey);
-              clearProgressTracking(true);
-              return;
-            }
+          if (mNotificationListener instanceof NotificationListenerService) {
+            ((NotificationListenerService) mNotificationListener)
+                .cancelNotification(mTrackedNotificationKey);
+            clearProgressTracking(true);
+            return;
           }
         }
       } catch (Exception e) {
@@ -1326,7 +1383,7 @@ public class OnGoingActionProgressController
             Notification n = sbn.getNotification();
             if (n.actions != null) {
               for (Notification.Action action : n.actions) {
-                String title = String.valueOf(action.title).toLowerCase();
+                String title = String.valueOf(action.title).toLowerCase(Locale.ROOT);
                 if (title.contains("dismiss")
                     || title.contains("cancel")
                     || title.contains("turn off")) {
@@ -1352,13 +1409,13 @@ public class OnGoingActionProgressController
     }
     mNextAlarm = null;
     updateStateHistory(TYPE_ALARM, false);
-    mFinishAnimationEndTime = System.currentTimeMillis() + 800;
+    mFinishAnimationEndTime = SystemClock.elapsedRealtime() + 800;
     requestUiUpdate();
   }
 
   public void onInteraction() {
     if (mCurrentDisplayState != TYPE_TRANSIENT && mCurrentDisplayState != TYPE_NONE) {
-      if (System.currentTimeMillis() - mLastStateChangeTime < 500) {
+      if (SystemClock.elapsedRealtime() - mLastStateChangeTime < 500) {
         return;
       }
     }
@@ -1536,9 +1593,11 @@ public class OnGoingActionProgressController
 
     mActiveNotificationsCache.put(sbn.getKey(), sbn);
 
+    final boolean hasValidProgress = hasProgress(notification);
+    if (!hasValidProgress && !mIsTrackingProgress) return;
+
     mHandler.post(
         () -> {
-          boolean hasValidProgress = hasProgress(notification);
           String currentKey = mTrackedNotificationKey;
 
           if (!hasValidProgress) {
@@ -1690,39 +1749,26 @@ public class OnGoingActionProgressController
     @Override
     public void onChange(boolean selfChange, Uri uri) {
       super.onChange(selfChange, uri);
-      if (uri.equals(Settings.System.getUriFor(ONGOING_ACTION_CHIP_ENABLED))
-          || uri.equals(Settings.System.getUriFor(SHOW_MEDIA_PROGRESS))
-          || uri.equals(Settings.System.getUriFor(PROGRESS_BAR_OPACITY))
-          || uri.equals(Settings.System.getUriFor(ONGOING_SMART_ACTIONS_ENABLED))
-          || uri.equals(Settings.System.getUriFor(COMPACT_MODE_ENABLED))) {
-        updateSettings();
-      } else if (uri.equals(Settings.System.getUriFor(SHOW_VOLTAGE_LOGO))) {
-        updateSettings();
-      } else if (uri.equals(Settings.Secure.getUriFor(NIRVANA_MODE_ACTIVE))) {
+      if (URI_NIRVANA_MODE.equals(uri)) {
         boolean nirvanaActive =
             Settings.Secure.getInt(mContext.getContentResolver(), NIRVANA_MODE_ACTIVE, 0) == 1;
         updateStateHistory(TYPE_NIRVANA, nirvanaActive);
+      } else {
+        updateSettings();
       }
     }
 
     public void register() {
+      mContentResolver.registerContentObserver(URI_CHIP_ENABLED, false, this, UserHandle.USER_ALL);
       mContentResolver.registerContentObserver(
-          Settings.System.getUriFor(ONGOING_ACTION_CHIP_ENABLED), false, this, UserHandle.USER_ALL);
+          URI_SHOW_MEDIA_PROGRESS, false, this, UserHandle.USER_ALL);
       mContentResolver.registerContentObserver(
-          Settings.System.getUriFor(SHOW_MEDIA_PROGRESS), false, this, UserHandle.USER_ALL);
+          URI_PROGRESS_BAR_OPACITY, false, this, UserHandle.USER_ALL);
+      mContentResolver.registerContentObserver(URI_SMART_ACTIONS, false, this, UserHandle.USER_ALL);
+      mContentResolver.registerContentObserver(URI_COMPACT_MODE, false, this, UserHandle.USER_ALL);
+      mContentResolver.registerContentObserver(URI_NIRVANA_MODE, false, this, UserHandle.USER_ALL);
       mContentResolver.registerContentObserver(
-          Settings.System.getUriFor(PROGRESS_BAR_OPACITY), false, this, UserHandle.USER_ALL);
-      mContentResolver.registerContentObserver(
-          Settings.System.getUriFor(ONGOING_SMART_ACTIONS_ENABLED),
-          false,
-          this,
-          UserHandle.USER_ALL);
-      mContentResolver.registerContentObserver(
-          Settings.System.getUriFor(COMPACT_MODE_ENABLED), false, this, UserHandle.USER_ALL);
-      mContentResolver.registerContentObserver(
-          Settings.Secure.getUriFor(NIRVANA_MODE_ACTIVE), false, this, UserHandle.USER_ALL);
-      mContentResolver.registerContentObserver(
-          Settings.System.getUriFor(SHOW_VOLTAGE_LOGO), false, this, UserHandle.USER_ALL);
+          URI_SHOW_VOLTAGE_LOGO, false, this, UserHandle.USER_ALL);
       updateSettings();
     }
 
@@ -1800,6 +1846,7 @@ public class OnGoingActionProgressController
     mHandler.removeCallbacks(mCompactCollapseRunnable);
     mHandler.removeCallbacks(mMenuCollapseRunnable);
     mHandler.removeCallbacks(mMediaProgressRunnable);
+    mHandler.removeCallbacks(mDebouncedUpdateRunnable);
 
     mBroadcastDispatcher.unregisterReceiver(mRingerReceiver);
     mBroadcastDispatcher.unregisterReceiver(mConfigurationReceiver);
