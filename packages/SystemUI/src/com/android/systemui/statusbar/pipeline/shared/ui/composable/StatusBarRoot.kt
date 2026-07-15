@@ -91,6 +91,9 @@ import com.android.systemui.plugins.DarkIconDispatcher
 import com.android.systemui.res.R
 import com.android.systemui.scene.ui.view.WindowRootView
 import com.android.systemui.shade.ui.composable.VariableDayDate
+import com.android.systemui.statusbar.NotificationListener
+import com.android.systemui.statusbar.OnGoingActionProgressComposeController
+import com.android.systemui.statusbar.OngoingActionProgress
 import com.android.systemui.statusbar.StatusBarAlwaysUseRegionSampling
 import com.android.systemui.statusbar.chips.ui.compose.OngoingActivityChips
 import com.android.systemui.statusbar.core.NewStatusBarIcons
@@ -98,6 +101,7 @@ import com.android.systemui.statusbar.core.StatusBarEventForwardingModernization
 import com.android.systemui.statusbar.core.StatusBarForDesktop
 import com.android.systemui.statusbar.events.domain.interactor.SystemStatusEventAnimationInteractor
 import com.android.systemui.statusbar.layout.ui.viewmodel.AppHandlesViewModel
+import com.android.systemui.statusbar.notification.headsup.HeadsUpManager
 import com.android.systemui.statusbar.notification.icon.ui.viewbinder.ConnectedDisplaysStatusBarNotificationIconViewStore
 import com.android.systemui.statusbar.notification.icon.ui.viewbinder.NotificationIconContainerStatusBarViewBinder
 import com.android.systemui.statusbar.notification.icon.ui.viewbinder.NotificationIconContainerViewBinder
@@ -119,6 +123,7 @@ import com.android.systemui.statusbar.pipeline.shared.ui.view.SystemStatusIconsL
 import com.android.systemui.statusbar.pipeline.shared.ui.viewmodel.HomeStatusBarViewModel
 import com.android.systemui.statusbar.pipeline.shared.ui.viewmodel.HomeStatusBarViewModel.HomeStatusBarViewModelFactory
 import com.android.systemui.statusbar.policy.Clock
+import com.android.systemui.statusbar.policy.KeyguardStateController
 import com.android.systemui.statusbar.systemstatusicons.SystemStatusIconsInCompose
 import com.android.systemui.statusbar.systemstatusicons.domain.interactor.SystemStatusIconBlocklistInteractor
 import com.android.systemui.statusbar.systemstatusicons.ui.compose.SystemStatusIcons
@@ -149,6 +154,9 @@ constructor(
     @DisplayAware private val headlineViewModelFactory: HeadlineViewModel.Factory,
     private val statusBarRegionSamplingViewModelFactory: StatusBarRegionSamplingViewModel.Factory,
     private val shadeWindowRootView: WindowRootView,
+    private val notificationListener: NotificationListener,
+    private val keyguardStateController: KeyguardStateController,
+    private val headsUpManager: HeadsUpManager,
 ) {
     fun create(root: ViewGroup, andThen: (ViewGroup) -> Unit): ComposeView {
         val composeView = ComposeView(root.context)
@@ -173,6 +181,9 @@ constructor(
                         statusBarRegionSamplingViewModelFactory =
                             statusBarRegionSamplingViewModelFactory,
                         onViewCreated = andThen,
+                        notificationListener = notificationListener,
+                        keyguardStateController = keyguardStateController,
+                        headsUpManager = headsUpManager,
                         modifier = Modifier.sysUiResTagContainer(),
                     )
                 }
@@ -211,6 +222,9 @@ fun StatusBarRoot(
     eventAnimationInteractor: SystemStatusEventAnimationInteractor,
     statusBarRegionSamplingViewModelFactory: StatusBarRegionSamplingViewModel.Factory,
     onViewCreated: (ViewGroup) -> Unit,
+    notificationListener: NotificationListener,
+    keyguardStateController: KeyguardStateController,
+    headsUpManager: HeadsUpManager,
     modifier: Modifier = Modifier,
 ) {
     val displayId = parent.context.displayId
@@ -268,6 +282,9 @@ fun StatusBarRoot(
                     statusBarViewModel = statusBarViewModel,
                     iconViewStore = iconViewStore,
                     appHandlesViewModel = appHandlesViewModel,
+                    notificationListener = notificationListener,
+                    keyguardStateController = keyguardStateController,
+                    headsUpManager = headsUpManager,
                     context = context,
                 )
 
@@ -396,6 +413,9 @@ private fun addStartSideComposable(
     statusBarViewModel: HomeStatusBarViewModel,
     iconViewStore: NotificationIconContainerViewBinder.IconViewStore?,
     appHandlesViewModel: AppHandlesViewModel,
+    notificationListener: NotificationListener,
+    keyguardStateController: KeyguardStateController,
+    headsUpManager: HeadsUpManager,
     context: Context,
 ) {
     val startSideExceptHeadsUp =
@@ -414,9 +434,7 @@ private fun addStartSideComposable(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                     )
                     .apply {
-                        if (showDate || ClockModernization.isEnabled) {
                             gravity = android.view.Gravity.CENTER_VERTICAL
-                        }
                     }
 
             setContent {
@@ -509,7 +527,22 @@ private fun addStartSideComposable(
                         )
                     }
 
+                val progressController = remember {
+                    OnGoingActionProgressComposeController(
+                        context,
+                        notificationListener,
+                        keyguardStateController,
+                        headsUpManager,
+                    )
+                }
+                DisposableEffect(Unit) { onDispose { progressController.destroy() } }
+
                 val chipsVisibilityModel = statusBarViewModel.ongoingActivityChips
+                val hasSystemChips = chipsVisibilityModel.chips.active.isNotEmpty()
+                progressController.setSystemChipVisible(hasSystemChips)
+
+                OngoingActionProgress(controller = progressController)
+
                 if (chipsVisibilityModel.areChipsAllowed) {
                     OngoingActivityChips(
                         chips = chipsVisibilityModel.chips,

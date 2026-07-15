@@ -42,11 +42,13 @@ import com.android.systemui.shade.display.domain.interactor.ShadeExpansionTarget
 import com.android.systemui.shade.domain.interactor.PanelExpansionInteractor
 import com.android.systemui.shade.domain.interactor.ShadeModeInteractor
 import com.android.systemui.statusbar.core.StatusBarEventForwardingModernization
+import com.android.systemui.statusbar.core.StatusBarRootModernization
 import com.android.systemui.statusbar.data.repository.StatusBarConfigurationController
 import com.android.systemui.statusbar.gesture.StatusBarLongPressGestureDetector
 import com.android.systemui.statusbar.layout.StatusBarContentInsetsProvider
 import com.android.systemui.statusbar.notification.headsup.HeadsUpManager
 import com.android.systemui.statusbar.NotificationListener
+import com.android.systemui.statusbar.OnGoingActionProgressController
 import com.android.systemui.statusbar.OnGoingActionProgressGroup
 import com.android.systemui.statusbar.policy.Clock
 import com.android.systemui.statusbar.policy.ConfigurationController
@@ -211,7 +213,7 @@ private constructor(
         progressProvider?.setReadyToHandleTransition(true)
         configurationController.addCallback(configurationListener)
 
-        if (ongoingActionProgressController == null) {
+        if (!StatusBarRootModernization.isEnabled && ongoingActionProgressController == null) {
             ongoingActionProgressController = OnGoingActionProgressController(
                 mView.context,
                 getOngoingActionProgressGroup(),
@@ -345,6 +347,8 @@ private constructor(
             mView.findViewById(R.id.circular_progress) as ProgressBar
         )
     }
+
+    fun getPhoneStatusBarView(): View = mView
 
     private fun addDarkReceivers() {
         darkIconDispatcher.addDarkReceiver(clock)
