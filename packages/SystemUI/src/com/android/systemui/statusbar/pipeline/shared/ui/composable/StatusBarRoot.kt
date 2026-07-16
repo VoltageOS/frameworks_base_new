@@ -586,7 +586,9 @@ private fun addStartSideComposable(
                 DisposableEffect(Unit) { onDispose { progressController.destroy() } }
 
                 val chipsVisibilityModel = statusBarViewModel.ongoingActivityChips
-                val hasSystemChips = chipsVisibilityModel.chips.active.isNotEmpty()
+                val hasSystemChips =
+                    chipsVisibilityModel.areChipsAllowed &&
+                        chipsVisibilityModel.chips.active.isNotEmpty()
                 progressController.setSystemChipVisible(hasSystemChips)
 
                 OngoingActionProgress(controller = progressController)

@@ -1202,8 +1202,18 @@ public class OnGoingActionProgressController
 
   private void extractProgress(Notification notification) {
     Bundle extras = notification.extras;
-    int newProgress = extras.getInt(Notification.EXTRA_PROGRESS, 0);
-    int newMax = extras.getInt(Notification.EXTRA_PROGRESS_MAX, 100);
+    int newProgress;
+    int newMax;
+    if (extras.containsKey(Notification.EXTRA_PROGRESS)
+        && extras.getInt(Notification.EXTRA_PROGRESS_MAX, 0) > 0) {
+      newProgress = extras.getInt(Notification.EXTRA_PROGRESS, 0);
+      newMax = extras.getInt(Notification.EXTRA_PROGRESS_MAX, 100);
+    } else {
+      int[] styleProgress = extractProgressStyle(notification);
+      if (styleProgress == null) return;
+      newProgress = styleProgress[0];
+      newMax = styleProgress[1];
+    }
     if (newProgress != mCurrentProgress || newMax != mCurrentProgressMax) {
       mLastProgressChangeTime = SystemClock.elapsedRealtime();
       if (mIsStuck) {
@@ -1287,16 +1297,48 @@ public class OnGoingActionProgressController
     }
   }
 
-  private static boolean hasProgress(@NonNull final Notification notification) {
+  private boolean hasProgress(@NonNull final Notification notification) {
     Bundle extras = notification.extras;
     if (extras == null) return false;
 
     boolean indeterminate = extras.getBoolean(Notification.EXTRA_PROGRESS_INDETERMINATE, false);
     boolean maxProgressValid = extras.getInt(Notification.EXTRA_PROGRESS_MAX, 0) > 0;
-    return extras.containsKey(Notification.EXTRA_PROGRESS)
+    if (extras.containsKey(Notification.EXTRA_PROGRESS)
         && extras.containsKey(Notification.EXTRA_PROGRESS_MAX)
         && !indeterminate
-        && maxProgressValid;
+        && maxProgressValid) {
+      return true;
+    }
+
+    int[] styleProgress = extractProgressStyle(notification);
+    return styleProgress != null;
+  }
+
+  private int[] extractProgressStyle(@NonNull final Notification notification) {
+    Bundle extras = notification.extras;
+    if (extras == null) return null;
+
+    String template = extras.getString(Notification.EXTRA_TEMPLATE);
+    if (template == null || !template.contains("ProgressStyle")) return null;
+
+    try {
+      Notification.Builder builder = Notification.Builder.recoverBuilder(mContext, notification);
+      Notification.Style style = builder.getStyle();
+      if (!(style instanceof Notification.ProgressStyle)) return null;
+
+      Notification.ProgressStyle progressStyle = (Notification.ProgressStyle) style;
+      if (progressStyle.isProgressIndeterminate()) return null;
+
+      int max = 0;
+      for (Notification.ProgressStyle.Segment segment : progressStyle.getProgressSegments()) {
+        max += segment.getLength();
+      }
+      if (max <= 0) return null;
+
+      return new int[] {progressStyle.getProgress(), max};
+    } catch (Throwable t) {
+      return null;
+    }
   }
 
   private void cancelTrackedTask() {
@@ -1593,11 +1635,9 @@ public class OnGoingActionProgressController
 
     mActiveNotificationsCache.put(sbn.getKey(), sbn);
 
-    final boolean hasValidProgress = hasProgress(notification);
-    if (!hasValidProgress && !mIsTrackingProgress) return;
-
     mHandler.post(
         () -> {
+          boolean hasValidProgress = hasProgress(notification);
           String currentKey = mTrackedNotificationKey;
 
           if (!hasValidProgress) {
