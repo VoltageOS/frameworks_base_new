@@ -17,6 +17,8 @@
 package com.android.systemui.screencapture.record.smallscreen.ui.compose
 
 import android.content.res.Resources
+import android.media.MediaCodecList
+import android.media.MediaFormat
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
@@ -165,6 +167,45 @@ fun RecordDetailsSettings(
                 label = stringResource(R.string.screen_record_should_show_touches_label),
                 checked = parametersViewModel.shouldShowTaps,
                 onCheckedChange = { parametersViewModel.shouldShowTaps = it },
+                modifier = Modifier,
+            )
+            RichSwitch(
+                visible = true,
+                icon =
+                    loadIcon(
+                        viewModel = drawableLoaderViewModel,
+                        resId = R.drawable.ic_sr_quality,
+                        contentDescription = null,
+                    ),
+                label = stringResource(R.string.screenrecord_lowquality_label),
+                checked = parametersViewModel.lowQuality,
+                onCheckedChange = { parametersViewModel.setLowQuality(it) },
+                modifier = Modifier,
+            )
+            RichSwitch(
+                visible = true,
+                icon =
+                    loadIcon(
+                        viewModel = drawableLoaderViewModel,
+                        resId = R.drawable.ic_storage,
+                        contentDescription = null,
+                    ),
+                label = stringResource(R.string.screenrecord_longer_timeout_switch_label),
+                checked = parametersViewModel.longerDuration,
+                onCheckedChange = { parametersViewModel.setLongerDuration(it) },
+                modifier = Modifier,
+            )
+            RichSwitch(
+                visible = hasHevcHwEncoder(),
+                icon =
+                    loadIcon(
+                        viewModel = drawableLoaderViewModel,
+                        resId = R.drawable.ic_hevc,
+                        contentDescription = null,
+                    ),
+                label = stringResource(R.string.screenrecord_hevc_switch_label),
+                checked = parametersViewModel.hevc,
+                onCheckedChange = { parametersViewModel.setHevc(it) },
                 modifier = Modifier,
             )
             SettingsRow(visible = true, modifier = Modifier.padding(top = 4.dp)) {
@@ -324,4 +365,19 @@ private fun SettingsRow(
             content = content,
         )
     }
+}
+
+private fun hasHevcHwEncoder(): Boolean {
+    val mediaCodecList = MediaCodecList(MediaCodecList.REGULAR_CODECS)
+    for (codecInfo in mediaCodecList.codecInfos) {
+        if (!codecInfo.isEncoder || !codecInfo.isHardwareAccelerated) {
+            continue
+        }
+        for (type in codecInfo.supportedTypes) {
+            if (type.equals(MediaFormat.MIMETYPE_VIDEO_HEVC, ignoreCase = true)) {
+                return true
+            }
+        }
+    }
+    return false
 }

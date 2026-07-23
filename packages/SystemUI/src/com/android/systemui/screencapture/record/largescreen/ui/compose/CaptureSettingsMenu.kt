@@ -16,6 +16,8 @@
 
 package com.android.systemui.screencapture.record.largescreen.ui.compose
 
+import android.media.MediaCodecList
+import android.media.MediaFormat
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -149,6 +151,49 @@ fun CaptureSettingsMenu(viewModel: PreCaptureToolbarViewModel, screenRecordingSe
                 )
             }
 
+            val lowQualityIcon by
+                loadIcon(
+                    viewModel = viewModel,
+                    resId = R.drawable.ic_sr_quality,
+                    contentDescription = null,
+                )
+            val storageIcon by
+                loadIcon(
+                    viewModel = viewModel,
+                    resId = R.drawable.ic_storage,
+                    contentDescription = null,
+                )
+            val hevcIcon by
+                loadIcon(
+                    viewModel = viewModel,
+                    resId = R.drawable.ic_hevc,
+                    contentDescription = null,
+                )
+
+            SettingsMenuItem(
+                text = stringResource(R.string.screenrecord_lowquality_label),
+                leadingIcon = lowQualityIcon,
+                checked = recordParameters.lowQuality,
+                onCheckedChange = { recordParameters.setLowQuality(it) },
+                enabled = screenRecordingSelected,
+            )
+            SettingsMenuItem(
+                text = stringResource(R.string.screenrecord_longer_timeout_switch_label),
+                leadingIcon = storageIcon,
+                checked = recordParameters.longerDuration,
+                onCheckedChange = { recordParameters.setLongerDuration(it) },
+                enabled = screenRecordingSelected,
+            )
+            if (hasHevcHwEncoder()) {
+                SettingsMenuItem(
+                    text = stringResource(R.string.screenrecord_hevc_switch_label),
+                    leadingIcon = hevcIcon,
+                    checked = recordParameters.hevc,
+                    onCheckedChange = { recordParameters.setHevc(it) },
+                    enabled = screenRecordingSelected,
+                )
+            }
+
             if (viewModel.customSaveLocationSupported) {
                 SaveLocationDropdown(
                     viewModel = viewModel,
@@ -184,4 +229,19 @@ private fun SettingsMenuItem(
         },
         enabled = enabled,
     )
+}
+
+private fun hasHevcHwEncoder(): Boolean {
+    val mediaCodecList = MediaCodecList(MediaCodecList.REGULAR_CODECS)
+    for (codecInfo in mediaCodecList.codecInfos) {
+        if (!codecInfo.isEncoder || !codecInfo.isHardwareAccelerated) {
+            continue
+        }
+        for (type in codecInfo.supportedTypes) {
+            if (type.equals(MediaFormat.MIMETYPE_VIDEO_HEVC, ignoreCase = true)) {
+                return true
+            }
+        }
+    }
+    return false
 }
