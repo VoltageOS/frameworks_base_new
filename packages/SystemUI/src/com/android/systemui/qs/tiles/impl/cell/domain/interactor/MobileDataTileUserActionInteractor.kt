@@ -19,6 +19,8 @@ package com.android.systemui.qs.tiles.impl.cell.domain.interactor
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
+import android.view.LayoutInflater
+import android.widget.CheckBox
 import com.android.systemui.animation.DialogTransitionAnimator
 import com.android.systemui.animation.Expandable
 import com.android.systemui.animation.TransitionAnimator
@@ -82,7 +84,17 @@ constructor(
         val activeRepo = getDataRepo() ?: return
         // If mobile data is disabled, show a confirmation dialog to turn it on.
         if (!activeRepo.dataEnabled.value) {
-            withContext(mainDispatcher) { showEnableConfirmationDialog(expandable) }
+            val suppressDialog = Settings.Secure.getInt(
+                context.contentResolver,
+                PREF_KEY_SUPPRESS_MOBILE_DATA_DIALOG,
+                0,
+            ) == 1
+
+            if (suppressDialog) {
+                activeRepo.setDataEnabled(true)
+            } else {
+                withContext(mainDispatcher) { showEnableConfirmationDialog(expandable) }
+            }
         } else {
             // Otherwise, just turn it off without a dialog.
             activeRepo.setDataEnabled(false)
@@ -94,7 +106,27 @@ constructor(
         dialog.setTitle(context.getString(R.string.mobile_data_enable_title))
         dialog.setMessage(context.getString(R.string.mobile_data_enable_message))
 
+        val customLayout =
+            LayoutInflater.from(context).inflate(
+                R.layout.mobile_data_enable_dialog,
+                null,
+            )
+
+        val checkBox = customLayout.requireViewById<CheckBox>(
+            R.id.do_not_ask_again,
+        )
+
+        dialog.setView(customLayout)
+
         dialog.setPositiveButton(R.string.mobile_data_enable_turn_on) { _, _ ->
+            if (checkBox.isChecked) {
+                Settings.Secure.putInt(
+                    context.contentResolver,
+                    PREF_KEY_SUPPRESS_MOBILE_DATA_DIALOG,
+                    1,
+                )
+            }
+
             getDataRepo()?.setDataEnabled(true)
         }
 
@@ -122,5 +154,9 @@ constructor(
         return mobileConnectionsRepository.defaultDataSubId.value?.let {
             mobileConnectionsRepository.getRepoForSubId(it)
         }
+    }
+
+    companion object {
+        private const val PREF_KEY_SUPPRESS_MOBILE_DATA_DIALOG = "suppress_mobile_data_enable_dialog"
     }
 }
