@@ -28,12 +28,14 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
+import android.os.Process;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.provider.Settings;
 import android.util.Slog;
 
 import com.android.internal.util.voltage.VoltageUtils.SleepModeController;
+import com.android.server.ServiceThread;
 import com.android.server.SystemService;
 import com.android.server.twilight.TwilightListener;
 import com.android.server.twilight.TwilightManager;
@@ -46,6 +48,7 @@ public class SleepModeService extends SystemService {
 
     private static final String TAG = "SleepModeService";
     private static final int WAKELOCK_TIMEOUT_MS = 3000;
+    private static final long RETRY_DELAY_MS = 60000L;
 
     /**
      * Disabled state (default)
@@ -72,7 +75,10 @@ public class SleepModeService extends SystemService {
     private final SleepModeIdleController mSleepModeIdleController;
     private final AlarmManager mAlarmManager;
     private final Context mContext;
-    private final Handler mHandler = new Handler(Looper.getMainLooper());
+    private final ServiceThread mThread;
+    private final Handler mHandler;
+    private final WakeLock mWakeLock;
+    private final Runnable mRetryRunnable = () -> maybeActivateSleepMode();
     private TwilightManager mTwilightManager;
     private TwilightState mTwilightState;
 
@@ -131,12 +137,18 @@ public class SleepModeService extends SystemService {
     private class Alarm implements AlarmManager.OnAlarmListener {
         @Override
         public void onAlarm() {
-            Slog.v(TAG, "onAlarm");
-            mHandler.post(() -> setAutoSleepModeActive(mIsNextActivate));
-            if (mMode == MODE_TIME || mMode >= MODE_MIXED_SUNSET)
-                mHandler.post(() -> maybeActivateTime(false));
-            else
-                maybeActivateNight(false);
+            final boolean activate = mIsNextActivate;
+            Slog.v(TAG, "onAlarm activate=" + activate);
+            mWakeLock.acquire(WAKELOCK_TIMEOUT_MS);
+            try {
+                setAutoSleepModeActive(activate);
+                if (mMode == MODE_TIME || mMode >= MODE_MIXED_SUNSET)
+                    maybeActivateTime(false);
+                else
+                    maybeActivateNight(false);
+            } finally {
+                if (mWakeLock.isHeld()) mWakeLock.release();
+            }
         }
 
         /**
@@ -153,9 +165,11 @@ public class SleepModeService extends SystemService {
          */
         public void set(long time) {
             cancel();
+            final long now = System.currentTimeMillis();
+            final long trigger = time > now ? time : now + 1000L;
             mAlarmManager.setExact(AlarmManager.RTC_WAKEUP,
-                    time, TAG, this, mHandler);
-            Slog.v(TAG, "new alarm set to " + time
+                    trigger, TAG, this, mHandler);
+            Slog.v(TAG, "new alarm set to " + trigger
                     + " mIsNextActivate=" + mIsNextActivate);
         }
 
@@ -210,7 +224,13 @@ public class SleepModeService extends SystemService {
     public SleepModeService(Context context) {
         super(context);
         mContext = context;
+        mThread = new ServiceThread(TAG, Process.THREAD_PRIORITY_BACKGROUND, true);
+        mThread.start();
+        mHandler = new Handler(mThread.getLooper());
         mAlarmManager = (AlarmManager) mContext.getSystemService(Context.ALARM_SERVICE);
+        mWakeLock = mContext.getSystemService(PowerManager.class)
+                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+        mWakeLock.setReferenceCounted(false);
         mSettingsObserver = new SettingsObserver(mHandler);
         mSleepModeController = new SleepModeController(mContext);
         mSleepModeIdleController = new SleepModeIdleController(mContext);
@@ -290,6 +310,7 @@ public class SleepModeService extends SystemService {
                 Settings.Secure.SLEEP_MODE_AUTO_MODE, MODE_DISABLED,
                 UserHandle.USER_CURRENT);
         mAlarm.cancel();
+        mHandler.removeCallbacks(mRetryRunnable);
         switch (mMode) {
             default:
             case MODE_DISABLED:
@@ -364,12 +385,19 @@ public class SleepModeService extends SystemService {
     private void maybeActivateNight(boolean setActive) {
         if (mTwilightState == null) {
             Slog.e(TAG, "aborting maybeActivateNight(). mTwilightState is null");
+            scheduleRetry();
             return;
         }
-        mIsNextActivate = !mTwilightState.isNight();
+        final boolean isNight = mTwilightState.isNight();
+        mIsNextActivate = !isNight;
         mAlarm.set(mIsNextActivate ? mTwilightState.sunsetTimeMillis()
                 : mTwilightState.sunriseTimeMillis());
-        if (setActive) mHandler.post(() -> setAutoSleepModeActive(!mIsNextActivate));
+        if (setActive) setAutoSleepModeActive(isNight);
+    }
+
+    private void scheduleRetry() {
+        mHandler.removeCallbacks(mRetryRunnable);
+        mHandler.postDelayed(mRetryRunnable, RETRY_DELAY_MS);
     }
 
     /**
@@ -386,26 +414,42 @@ public class SleepModeService extends SystemService {
      *                  When false only updates the alarm
      */
     private void maybeActivateTime(boolean setActive) {
+        final long now = System.currentTimeMillis();
         Calendar currentTime = Calendar.getInstance();
+        currentTime.setTimeInMillis(now);
         Calendar since = Calendar.getInstance();
+        since.setTimeInMillis(now);
         Calendar till = Calendar.getInstance();
+        till.setTimeInMillis(now);
         String value = Settings.Secure.getStringForUser(mContext.getContentResolver(),
                 Settings.Secure.SLEEP_MODE_AUTO_TIME, UserHandle.USER_CURRENT);
         if (value == null || value.equals("")) value = "22:00,07:00";
-        String[] times = value.split(",", 0);
-        String[] sinceValues = times[0].split(":", 0);
-        String[] tillValues = times[1].split(":", 0);
-        since.set(Calendar.HOUR_OF_DAY, Integer.parseInt(sinceValues[0]));
-        since.set(Calendar.MINUTE, Integer.parseInt(sinceValues[1]));
+        int sinceHour = 22, sinceMinute = 0, tillHour = 7, tillMinute = 0;
+        try {
+            String[] times = value.split(",", 0);
+            String[] sinceValues = times[0].split(":", 0);
+            String[] tillValues = times[1].split(":", 0);
+            sinceHour = Integer.parseInt(sinceValues[0].trim());
+            sinceMinute = Integer.parseInt(sinceValues[1].trim());
+            tillHour = Integer.parseInt(tillValues[0].trim());
+            tillMinute = Integer.parseInt(tillValues[1].trim());
+        } catch (RuntimeException e) {
+            Slog.e(TAG, "invalid SLEEP_MODE_AUTO_TIME: " + value, e);
+        }
+        since.set(Calendar.HOUR_OF_DAY, sinceHour);
+        since.set(Calendar.MINUTE, sinceMinute);
         since.set(Calendar.SECOND, 0);
-        till.set(Calendar.HOUR_OF_DAY, Integer.parseInt(tillValues[0]));
-        till.set(Calendar.MINUTE, Integer.parseInt(tillValues[1]));
+        since.set(Calendar.MILLISECOND, 0);
+        till.set(Calendar.HOUR_OF_DAY, tillHour);
+        till.set(Calendar.MINUTE, tillMinute);
         till.set(Calendar.SECOND, 0);
+        till.set(Calendar.MILLISECOND, 0);
 
         // Handle mixed modes
         if (mMode >= MODE_MIXED_SUNSET) {
             if (mTwilightState == null) {
                 Slog.e(TAG, "aborting maybeActivateTime(). mTwilightState is null");
+                scheduleRetry();
                 return;
             }
             if (mMode == MODE_MIXED_SUNSET) {

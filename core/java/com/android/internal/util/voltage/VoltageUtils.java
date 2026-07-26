@@ -32,6 +32,7 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothManager;
 import android.content.ContentResolver;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
@@ -429,6 +430,7 @@ public class VoltageUtils {
         private WifiManager mWifiManager;
         private SensorPrivacyManager mSensorPrivacyManager;
         private BluetoothAdapter mBluetoothAdapter;
+        private Context mBluetoothContext;
         private int mSubscriptionId;
         private Toast mToast;
         private boolean mSleepModeEnabled;
@@ -438,6 +440,7 @@ public class VoltageUtils {
         private static int mRingerState;
         private static int mZenState;
         private static final String TAG = "SleepModeController";
+        private static final String BT_ATTRIBUTION_TAG = "SleepMode";
         private static final int SLEEP_NOTIFICATION_ID = 727;
         public static final String SLEEP_MODE_TURN_OFF = "android.intent.action.SLEEP_MODE_TURN_OFF";
         private Handler mHandler = new Handler(Looper.getMainLooper());
@@ -448,7 +451,6 @@ public class VoltageUtils {
             mNotificationManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
             mWifiManager = (WifiManager) mContext.getSystemService(Context.WIFI_SERVICE);
             mSensorPrivacyManager = (SensorPrivacyManager) mContext.getSystemService(Context.SENSOR_PRIVACY_SERVICE);
-            mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
             mSubscriptionId = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
             mResources = mContext.getResources();
             mSleepModeEnabled = Settings.Secure.getIntForUser(mContext.getContentResolver(),
@@ -492,24 +494,61 @@ public class VoltageUtils {
             } catch (Exception e) {
             }
         }
-        private boolean isBluetoothEnabled() {
-            if (mBluetoothAdapter == null) {
-                mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        private Context getBluetoothContext() {
+            if (mBluetoothContext == null) {
+                if (mContext.getAttributionTag() != null) {
+                    mBluetoothContext = mContext;
+                } else {
+                    try {
+                        mBluetoothContext = mContext.createAttributionContext(BT_ATTRIBUTION_TAG);
+                    } catch (Exception e) {
+                        Log.w(TAG, "createAttributionContext failed", e);
+                        mBluetoothContext = mContext;
+                    }
+                }
             }
+            return mBluetoothContext;
+        }
+        private BluetoothAdapter getBluetoothAdapter() {
+            if (mBluetoothAdapter == null) {
+                final Context btContext = getBluetoothContext();
+                final BluetoothManager bm = btContext.getSystemService(BluetoothManager.class);
+                if (bm != null) mBluetoothAdapter = bm.getAdapter();
+                if (mBluetoothAdapter == null) {
+                    Log.w(TAG, "BluetoothAdapter unavailable");
+                } else {
+                    Log.i(TAG, "BluetoothAdapter acquired, attributionTag="
+                            + btContext.getAttributionTag());
+                }
+            }
+            return mBluetoothAdapter;
+        }
+        private int getBluetoothState() {
+            final BluetoothAdapter adapter = getBluetoothAdapter();
+            if (adapter == null) return BluetoothAdapter.ERROR;
             try {
-                return mBluetoothAdapter.isEnabled();
+                return adapter.getState();
             } catch (Exception e) {
-                return false;
+                Log.w(TAG, "getBluetoothState failed", e);
+                return BluetoothAdapter.ERROR;
             }
         }
+        private boolean isBluetoothEnabled() {
+            final int state = getBluetoothState();
+            return state == BluetoothAdapter.STATE_ON
+                    || state == BluetoothAdapter.STATE_TURNING_ON;
+        }
         private void setBluetoothEnabled(boolean enable) {
-            if (mBluetoothAdapter == null) {
-                mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-            }
+            final BluetoothAdapter adapter = getBluetoothAdapter();
+            if (adapter == null) return;
             try {
-                if (enable) mBluetoothAdapter.enable();
-                else mBluetoothAdapter.disable();
+                final boolean ok = enable ? adapter.enable() : adapter.disable();
+                if (!ok) {
+                    Log.w(TAG, "setBluetoothEnabled(" + enable + ") rejected, state="
+                            + adapter.getState());
+                }
             } catch (Exception e) {
+                Log.w(TAG, "setBluetoothEnabled(" + enable + ") failed", e);
             }
         }
         private boolean isSensorEnabled() {
@@ -582,8 +621,12 @@ public class VoltageUtils {
             final boolean disableBluetooth = Settings.Secure.getIntForUser(mContext.getContentResolver(),
                     Settings.Secure.SLEEP_MODE_BLUETOOTH_TOGGLE, 1, UserHandle.USER_CURRENT) == 1;
             if (disableBluetooth) {
-                mBluetoothState = isBluetoothEnabled();
-                setBluetoothEnabled(false);
+                final int btState = getBluetoothState();
+                if (btState != BluetoothAdapter.ERROR) {
+                    mBluetoothState = btState == BluetoothAdapter.STATE_ON
+                            || btState == BluetoothAdapter.STATE_TURNING_ON;
+                    if (mBluetoothState) setBluetoothEnabled(false);
+                }
             }
             // Disable Mobile Data
             final boolean disableData = Settings.Secure.getIntForUser(mContext.getContentResolver(),
@@ -629,8 +672,8 @@ public class VoltageUtils {
             // Enable Bluetooth
             final boolean disableBluetooth = Settings.Secure.getIntForUser(mContext.getContentResolver(),
                     Settings.Secure.SLEEP_MODE_BLUETOOTH_TOGGLE, 1, UserHandle.USER_CURRENT) == 1;
-            if (disableBluetooth && mBluetoothState != isBluetoothEnabled()) {
-                setBluetoothEnabled(mBluetoothState);
+            if (disableBluetooth && mBluetoothState && !isBluetoothEnabled()) {
+                setBluetoothEnabled(true);
             }
             // Enable Mobile Data
             final boolean disableData = Settings.Secure.getIntForUser(mContext.getContentResolver(),
