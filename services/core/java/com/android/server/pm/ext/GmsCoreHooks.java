@@ -9,7 +9,9 @@ import android.ext.PackageId;
 import android.os.SystemProperties;
 
 import com.android.internal.gmscompat.GmcMediaProjectionService;
+import com.android.internal.gmscompat.GmsCompatApp;
 import com.android.internal.gmscompat.GmsHooks;
+import com.android.internal.gmscompat.client.GmsCorePersistentService;
 import com.android.internal.pm.pkg.component.ParsedPermission;
 import com.android.internal.pm.pkg.component.ParsedService;
 import com.android.internal.pm.pkg.component.ParsedServiceImpl;
@@ -17,7 +19,6 @@ import com.android.internal.pm.pkg.component.ParsedUsesPermissionImpl;
 import com.android.internal.pm.pkg.parsing.ParsingPackage;
 import com.android.server.LocalServices;
 
-import java.util.Collections;
 import java.util.List;
 
 class GmsCoreHooks extends PackageHooks {
@@ -91,12 +92,17 @@ class GmsCoreHooks extends PackageHooks {
 
         @Override
         public List<ParsedService> addServices(ParsingPackage pkg) {
-            ParsedServiceImpl s = createService(pkg, GmcMediaProjectionService.class.getName());
-            s.setProcessName(GmsHooks.PERSISTENT_GmsCore_PROCESS);
-            s.setForegroundServiceType(ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION);
-            s.setExported(false);
+            ParsedServiceImpl mp = createService(pkg, GmcMediaProjectionService.class.getName());
+            mp.setProcessName(GmsHooks.PERSISTENT_GmsCore_PROCESS);
+            mp.setForegroundServiceType(ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION);
+            mp.setExported(false);
 
-            return Collections.singletonList(s);
+            ParsedServiceImpl persistent = createService(pkg, GmsCorePersistentService.class.getName());
+            persistent.setDirectBootAware(true);
+            persistent.setProcessName(GmsHooks.PERSISTENT_GmsCore_PROCESS);
+            persistent.setPermission(GmsCompatApp.SIGNATURE_PROTECTED_PERMISSION);
+
+            return List.of(mp, persistent);
         }
     }
 }
