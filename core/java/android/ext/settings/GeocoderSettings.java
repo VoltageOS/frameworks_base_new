@@ -11,7 +11,7 @@ public class GeocoderSettings {
 
     public static final IntSetting GEOCODER_SETTING = new IntSetting(
             Setting.Scope.GLOBAL, Settings.Global.GEOCODER,
-            GEOCODER_DISABLED, // default
+            GEOCODER_SERVER_GRAPHENEOS, // default
             GEOCODER_SERVER_GRAPHENEOS, GEOCODER_SERVER_OPENSTREETMAP, GEOCODER_DISABLED // valid values
     );
 }
