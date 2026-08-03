@@ -430,7 +430,10 @@ public final class GmsHooks {
     }
 
     public static void activityOnCreate(Activity activity) {
-        // Hook placeholder
+        if (GmsCompat.isGmsCore() && activity.getClass().getName().contains(".fido.")) {
+            Log.i(TAG, "calling setTranslucent(false) for " + activity.getClass().getName());
+            activity.setTranslucent(false);
+        }
     }
 
     public static void filterContentValues(Uri url, ContentValues values) {
