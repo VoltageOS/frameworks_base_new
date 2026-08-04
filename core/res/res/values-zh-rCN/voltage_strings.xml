@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2024 VoltageOS
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- SystemUI Restart -->
+    <string name="systemui_restart_title">需要重启系统界面</string>
+    <string name="systemui_restart_message">为使所有更改生效，需要重启系统界面。立即重启吗？</string>
+
+    <!-- Settings Restart -->
+    <string name="settings_restart_title">需要重启设置应用</string>
+    <string name="settings_restart_message">为使所有更改生效，需要重启设置应用。立即重启吗？</string>
+
+    <!-- System Reboot -->
+    <string name="system_restart_title">需要重启系统</string>
+    <string name="system_restart_message">为使所有更改生效，需要重启系统。立即重启吗？</string>
+
+    <!-- Launcher Restart -->
+    <string name="launcher_restart_title">需要重启启动器</string>
+    <string name="launcher_restart_message">为使所有更改生效，需要重启启动器。立即重启吗？</string>
+
+    <!-- Cycle through ringer modes -->
+    <string name="volume_dialog_ringer_guidance_normal">来电和通知将响铃</string>
+
+    <!-- Pocket Lock -->
+    <string name="pocket_mode_title">口袋模式已激活</string>
+    <string name="pocket_mode_illustration_description">手机在口袋中的示意图</string>
+    <string name="pocket_mode_instructions_header">使用手机前：</string>
+    <string name="pocket_mode_instruction_step1">1. 确保上图中蓝色区域（接近传感器）无遮挡且无灰尘污垢。</string>
+    <string name="pocket_mode_instruction_step2">2. 长按电源键退出口袋模式。</string>
+
+    <!-- Lock gesture -->
+    <string name="gesture_locked_warning">再次滑动以解锁手势</string>
+
+    <!-- GameSpace -->
+    <string name="gamespace_new_game_added"><xliff:g id="name" example="MyApp">%s</xliff:g> 已添加到游戏空间</string>
+
+    <!-- Charging speed strings -->
+    <string name="charging_speed">充电速度</string>
+    <string name="charging_speed_slow">慢速</string>
+    <string name="charging_speed_fast">快速</string>
+    <string name="charging_speed_super_fast">极速</string>
+
+    <!-- LiveDisplay strings -->
+    <string name="live_display_title" translatable="false">LiveDisplay</string>
+    <string name="live_display_auto">自动</string>
+    <string name="live_display_auto_summary">日落后和日出前自动调节屏幕色温</string>
+    <string name="live_display_off">关闭</string>
+    <string name="live_display_off_summary">停用所有调节</string>
+    <string name="live_display_day">白天</string>
+    <string name="live_display_day_summary">仅使用白天设置</string>
+    <string name="live_display_night">夜间</string>
+    <string name="live_display_night_summary">仅使用夜间设置</string>
+    <string name="live_display_outdoor">户外（强光）</string>
+    <string name="live_display_outdoor_summary">仅使用户外设置</string>
+    <string name="live_display_hint">LiveDisplay 有助于减轻眼睛疲劳并帮助您在夜间入睡。点击此处立即体验！</string>
+    <string name="accessibility_quick_settings_live_display_off">LiveDisplay 已关闭。</string>
+    <string name="accessibility_quick_settings_live_display_auto">LiveDisplay：自动模式。</string>
+    <string name="accessibility_quick_settings_live_display_day">LiveDisplay：白天模式。</string>
+    <string name="accessibility_quick_settings_live_display_night">LiveDisplay：夜间模式。</string>
+    <string name="accessibility_quick_settings_live_display_outdoor">LiveDisplay：户外模式。</string>
+    <string name="accessibility_quick_settings_live_display_changed_off">LiveDisplay 已关闭。</string>
+    <string name="accessibility_quick_settings_live_display_changed_auto">LiveDisplay 已切换为自动模式。</string>
+    <string name="accessibility_quick_settings_live_display_changed_day">LiveDisplay 已切换为白天模式。</string>
+    <string name="accessibility_quick_settings_live_display_changed_night">LiveDisplay 已切换为夜间模式。</string>
+    <string name="accessibility_quick_settings_live_display_changed_outdoor">LiveDisplay 已切换为户外模式。</string>
+
+    <!-- Health interface -->
+    <string name="charging_control_notification_channel">充电控制</string>
+    <string name="charging_control_notification_title">充电控制</string>
+    <string name="charging_control_notification_cancel_once">取消</string>
+    <string name="charging_control_notification_content_limit">电池将充电至 %1$d%%</string>
+    <string name="charging_control_notification_content_limit_reached">电池已充电至 %1$d%%</string>
+    <string name="charging_control_notification_content_target">电池将在 %1$s 充满</string>
+    <string name="charging_control_notification_content_target_reached">电池已充满</string>
+
+    <!-- Sleep Mode -->
+    <string name="notification_channel_sleep">睡眠模式</string>
+    <string name="sleep_mode_notification_title">睡眠模式已启用</string>
+    <string name="sleep_mode_notification_content">点击关闭睡眠模式</string>
+    <string name="sleep_mode_enabled_toast">睡眠模式已开启</string>
+    <string name="sleep_mode_disabled_toast">睡眠模式已关闭</string>
+
+    <!-- App lock -->
+    <string name="unlock_application">解锁 <xliff:g id="label" example="Telegram">%1$s</xliff:g></string>
+
+</resources>

@@ -372,6 +372,10 @@
     <string name="permgroupdesc_xr_tracking" msgid="812429788288001595">"追踪眼球、面部、身体，并扫描周围区域"</string>
     <string name="permgrouplab_xr_tracking_sensitive" msgid="6574264227123545314">"精确的动作和区域数据"</string>
     <string name="permgroupdesc_xr_tracking_sensitive" msgid="2480835734248509848">"精确扫描区域并追踪头部动作"</string>
+    <string name="permgrouplab_otherSensors">位置传感器</string>
+    <string name="permgroupdesc_otherSensors">访问有关方向、移动等的传感器数据</string>
+    <string name="permgrouplab_network">网络</string>
+    <string name="permgroupdesc_network">访问网络</string>
     <string name="capability_title_canRetrieveWindowContent" msgid="7554282892101587296">"检索窗口内容"</string>
     <string name="capability_desc_canRetrieveWindowContent" msgid="6195610527625237661">"检测您与之互动的窗口的内容。"</string>
     <string name="capability_title_canRequestTouchExploration" msgid="327598364696316213">"启用触摸浏览"</string>
@@ -514,6 +518,9 @@
     <string name="permdesc_bodySensors" product="default" msgid="7652650410295512140">"允许应用在使用期间访问身体传感器数据，如心率、体温和血氧浓度。"</string>
     <string name="permlab_bodySensors_background" msgid="4912560779957760446">"在后台运行时可访问身体传感器数据，如心率"</string>
     <string name="permdesc_bodySensors_background" product="default" msgid="8870726027557749417">"允许应用在后台运行时访问身体传感器数据，如心率、体温和血氧浓度。"</string>
+    <string name="permlab_otherSensors">访问传感器（如指南针）</string>
+    <string name="permdesc_otherSensors" product="default">允许应用程序访问传感器数据
+    监测方向、运动、振动（包括低频声音）以及环境数据</string>
     <string name="permlab_readCalendar" msgid="6408654259475396200">"读取日历活动和详情"</string>
     <string name="permdesc_readCalendar" product="tablet" msgid="515452384059803326">"此应用可读取您平板电脑上存储的所有日历活动，并分享或保存您的日历数据。"</string>
     <string name="permdesc_readCalendar" product="tv" msgid="5811726712981647628">"此应用可读取您的 Android TV 设备上存储的所有日历活动，以及分享或保存您的日历数据。"</string>
