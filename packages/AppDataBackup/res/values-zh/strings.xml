@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2026 VoltageOS
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<resources>
+    <string name="app_name">应用数据备份</string>
+    <string name="tab_apps">应用</string>
+    <string name="tab_backups">备份</string>
+    <string name="backup_selected">备份所选</string>
+    <string name="restore">恢复</string>
+    <string name="verify">验证</string>
+    <string name="delete">删除</string>
+    <string name="backup_complete">备份完成</string>
+    <string name="restore_complete">恢复完成 - 请重新启动应用</string>
+    <string name="cancel">取消</string>
+    <string name="select_at_least_one">请至少选择一个应用</string>
+    <string name="confirm_restore_title">恢复 %1$s？</string>
+    <string name="confirm_restore_message">这将重新安装 APK 并覆盖所有应用数据。\n恢复过程中应用将被强制停止。</string>
+    <string name="confirm_delete_title">删除备份？</string>
+    <string name="confirm_delete_message">删除 %1$s 的备份？\n此操作不可撤销。</string>
+
+    <string name="backup_headline">备份您的应用</string>
+    <string name="backup_subheadline">对应用及其数据进行快照，可随时恢复。</string>
+    <string name="summary_empty_count">未选择应用</string>
+    <string name="summary_empty_size">选择要备份的应用</string>
+    <string name="summary_count">已选择 %1$d 个应用</string>
+    <string name="summary_count_one">已选择 1 个应用</string>
+    <string name="summary_size">约 %1$s 将归档</string>
+    <string name="chip_exclude_cache">排除缓存</string>
+    <string name="action_select_all">全选</string>
+    <string name="action_clear">清除</string>
+    <string name="fab_backup_count">备份（%1$d）</string>
+
+    <string name="backup_options_title">备份选项</string>
+    <string name="section_encryption">加密</string>
+    <string name="section_include">包含</string>
+    <string name="section_retention">保留</string>
+    <string name="hint_passphrase">密码短语（留空表示不加密）</string>
+    <string name="hint_keep">保留最近 N 个备份（留空表示保留全部）</string>
+    <string name="comp_apk">APK</string>
+    <string name="comp_app_data">应用数据</string>
+    <string name="comp_de_data">设备保护数据</string>
+    <string name="comp_external">外部存储</string>
+    <string name="select_one_component">请至少选择一个组件</string>
+    <string name="action_back_up">备份</string>
+    <string name="content_includes">包含 %1$s</string>
+    <string name="content_apk">应用（APK）</string>
+    <string name="content_app_data">应用数据</string>
+    <string name="content_device_data">受保护的数据</string>
+    <string name="content_external">外部存储</string>
+    <string name="content_permissions">权限和设置</string>
+    <string name="content_encrypted">已加密</string>
+</resources>
