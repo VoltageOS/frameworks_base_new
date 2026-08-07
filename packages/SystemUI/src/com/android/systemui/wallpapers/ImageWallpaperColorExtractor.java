@@ -352,13 +352,6 @@ public class ImageWallpaperColorExtractor {
         }
     }
 
-    public Bitmap getMiniBitmap() {
-        synchronized (mLock) {
-            if (mMiniBitmap == null || mMiniBitmap.isRecycled()) return null;
-            return mMiniBitmap.copy(Bitmap.Config.ARGB_8888, false);
-        }
-    }
-
     private Bitmap createMiniBitmap(@NonNull Bitmap bitmap) {
         Trace.beginSection("ImageWallpaperColorExtractor#createMiniBitmap");
         // if the area of the image is greater than MINI_BITMAP_MAX_AREA, downscale the bitmap.

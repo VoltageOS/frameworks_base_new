@@ -24,7 +24,6 @@ import android.annotation.Nullable;
 import android.app.WallpaperColors;
 import android.app.WallpaperManager;
 import android.content.Context;
-import android.database.ContentObserver;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.RecordingCanvas;
@@ -33,12 +32,10 @@ import android.graphics.RectF;
 import android.graphics.Paint;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.DisplayManager.DisplayListener;
-import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.SystemProperties;
 import android.os.Trace;
-import android.provider.Settings;
 import android.service.wallpaper.WallpaperService;
 import android.util.Log;
 import android.view.Surface;
@@ -48,13 +45,9 @@ import androidx.annotation.NonNull;
 
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.systemui.dagger.qualifiers.LongRunning;
-import com.android.systemui.keyguard.WakefulnessLifecycle;
 import com.android.systemui.settings.UserTracker;
-import com.android.systemui.statusbar.policy.KeyguardStateController;
 import com.android.systemui.util.concurrency.DelayableExecutor;
 import com.android.systemui.utils.windowmanager.WindowManagerProvider;
-import com.android.systemui.wallpapers.haze.HazeRenderThread;
-import com.android.systemui.wallpapers.haze.HazeSettings;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
@@ -77,8 +70,6 @@ public class ImageWallpaper extends WallpaperService {
 
     private final UserTracker mUserTracker;
     private final WindowManagerProvider mWindowManagerProvider;
-    private final KeyguardStateController mKeyguardStateController;
-    private final WakefulnessLifecycle mWakefulnessLifecycle;
 
     // used to handle WallpaperService messages (e.g. DO_ATTACH, MSG_UPDATE_SURFACE)
     // and to receive WallpaperService callbacks (e.g. onCreateEngine, onSurfaceRedrawNeeded)
@@ -93,15 +84,11 @@ public class ImageWallpaper extends WallpaperService {
 
     @Inject
     public ImageWallpaper(@LongRunning DelayableExecutor longExecutor, UserTracker userTracker,
-            WindowManagerProvider windowManagerProvider,
-            KeyguardStateController keyguardStateController,
-            WakefulnessLifecycle wakefulnessLifecycle) {
+            WindowManagerProvider windowManagerProvider) {
         super();
         mLongExecutor = longExecutor;
         mUserTracker = userTracker;
         mWindowManagerProvider = windowManagerProvider;
-        mKeyguardStateController = keyguardStateController;
-        mWakefulnessLifecycle = wakefulnessLifecycle;
     }
 
     @Override
@@ -125,8 +112,7 @@ public class ImageWallpaper extends WallpaperService {
         return new CanvasEngine();
     }
 
-    class CanvasEngine extends WallpaperService.Engine implements DisplayListener,
-            HazeRenderThread.Callbacks {
+    class CanvasEngine extends WallpaperService.Engine implements DisplayListener {
         private WallpaperManager mWallpaperManager;
         private final ImageWallpaperColorExtractor mColorExtractor;
         private SurfaceHolder mSurfaceHolder;
@@ -155,60 +141,6 @@ public class ImageWallpaper extends WallpaperService {
          * Lock for SurfaceHolder operations. Should only be acquired after the main lock.
          */
         private final Object mSurfaceLock = new Object();
-
-        private final Object mHazeLock = new Object();
-        private volatile HazeRenderThread mHazeThread;
-        private volatile boolean mIsHazeEnabled;
-        private volatile boolean mHazeUnsupported;
-
-        private final ContentObserver mHazeObserver =
-                new ContentObserver(new Handler(Looper.getMainLooper())) {
-                    @Override
-                    public void onChange(boolean selfChange) {
-                        updateHazeState();
-                    }
-                };
-
-        private final KeyguardStateController.Callback mKeyguardCallback =
-                new KeyguardStateController.Callback() {
-                    @Override
-                    public void onKeyguardGoingAwayChanged() {
-                        if (mKeyguardStateController.isKeyguardGoingAway()) {
-                            triggerHazeTransition(HazeRenderThread.STATE_UNLOCKED);
-                        }
-                    }
-
-                    @Override
-                    public void onKeyguardShowingChanged() {
-                        if (mKeyguardStateController.isShowing()) {
-                            triggerHazeTransition(HazeRenderThread.STATE_KEYGUARD);
-                        } else if (!mKeyguardStateController.isKeyguardGoingAway()) {
-                            triggerHazeTransition(HazeRenderThread.STATE_UNLOCKED);
-                        }
-                    }
-                };
-
-        private final WakefulnessLifecycle.Observer mWakefulnessObserver =
-                new WakefulnessLifecycle.Observer() {
-                    @Override
-                    public void onFinishedGoingToSleep() {
-                        triggerHazeTransition(HazeRenderThread.STATE_SCREEN_OFF);
-                    }
-
-                    @Override
-                    public void onStartedWakingUp() {
-                        if (mKeyguardStateController.isShowing()) {
-                            triggerHazeTransition(HazeRenderThread.STATE_KEYGUARD);
-                        }
-                    }
-                };
-
-        private void triggerHazeTransition(int state) {
-            HazeRenderThread thread = mHazeThread;
-            if (thread != null) {
-                thread.triggerTransition(state);
-            }
-        }
 
         CanvasEngine() {
             super();
@@ -269,57 +201,7 @@ public class ImageWallpaper extends WallpaperService {
             getDisplayContext().getSystemService(DisplayManager.class)
                     .registerDisplayListener(this, null);
             getDisplaySizeAndUpdateColorExtractor();
-
-            getDisplayContext().getContentResolver().registerContentObserver(
-                    Settings.System.getUriFor(HazeSettings.KEY_ENABLED), false, mHazeObserver);
-            getDisplayContext().getContentResolver().registerContentObserver(
-                    Settings.System.getUriFor(HazeSettings.KEY_STYLE), false, mHazeObserver);
-            getDisplayContext().getContentResolver().registerContentObserver(
-                    Settings.System.getUriFor(HazeSettings.KEY_INTENSITY), false, mHazeObserver);
-            mKeyguardStateController.addCallback(mKeyguardCallback);
-            mWakefulnessLifecycle.addObserver(mWakefulnessObserver);
-            updateHazeState();
             Trace.endSection();
-        }
-
-        private void updateHazeState() {
-            boolean wasHazeEnabled = mIsHazeEnabled;
-            mIsHazeEnabled = !mHazeUnsupported && Settings.System.getInt(
-                    getDisplayContext().getContentResolver(), HazeSettings.KEY_ENABLED, 0) == 1;
-
-            if (wasHazeEnabled != mIsHazeEnabled) {
-                synchronized (mLock) {
-                    mDrawn = false;
-                }
-                boolean surfaceValid;
-                synchronized (mSurfaceLock) {
-                    surfaceValid = mSurfaceHolder != null
-                            && mSurfaceHolder.getSurface().isValid();
-                }
-                if (surfaceValid) {
-                    drawFrame();
-                }
-            } else if (mIsHazeEnabled) {
-                HazeRenderThread thread = mHazeThread;
-                if (thread != null) {
-                    thread.updateSettings();
-                    thread.requestRender();
-                }
-            }
-        }
-
-        @Override
-        public void onVisibilityChanged(boolean visible) {
-            super.onVisibilityChanged(visible);
-            HazeRenderThread thread = mHazeThread;
-            if (thread != null) {
-                thread.onVisibilityChanged(visible);
-                if (mIsHazeEnabled && visible) {
-                    thread.triggerTransition(mKeyguardStateController.isShowing()
-                            ? HazeRenderThread.STATE_KEYGUARD
-                            : HazeRenderThread.STATE_UNLOCKED);
-                }
-            }
         }
 
         @Override
@@ -328,12 +210,8 @@ public class ImageWallpaper extends WallpaperService {
             if (context != null) {
                 DisplayManager displayManager = context.getSystemService(DisplayManager.class);
                 if (displayManager != null) displayManager.unregisterDisplayListener(this);
-                context.getContentResolver().unregisterContentObserver(mHazeObserver);
             }
             mColorExtractor.cleanUp();
-            mKeyguardStateController.removeCallback(mKeyguardCallback);
-            mWakefulnessLifecycle.removeObserver(mWakefulnessObserver);
-            stopHazeThread(500);
         }
 
         @Override
@@ -351,10 +229,6 @@ public class ImageWallpaper extends WallpaperService {
             if (DEBUG) {
                 Log.d(TAG, "onSurfaceChanged: width=" + width + ", height=" + height);
             }
-            HazeRenderThread thread = mHazeThread;
-            if (thread != null) {
-                thread.resize(width, height);
-            }
         }
 
         @Override
@@ -365,7 +239,6 @@ public class ImageWallpaper extends WallpaperService {
             synchronized (mSurfaceLock) {
                 mSurfaceHolder = null;
             }
-            stopHazeThread(250);
         }
 
         @Override
@@ -381,54 +254,6 @@ public class ImageWallpaper extends WallpaperService {
                 Log.d(TAG, "onSurfaceRedrawNeeded");
             }
             drawFrame();
-        }
-
-        @Override
-        public void onContextLost() {
-            mLongExecutor.execute(() -> {
-                Log.i(TAG, "Re-initializing haze thread after context loss");
-                stopHazeThread(0);
-                synchronized (mLock) {
-                    mDrawn = false;
-                }
-                drawFrame();
-            });
-        }
-
-        @Override
-        public void onUnsupported() {
-            Log.w(TAG, "Haze rendering unsupported, falling back to static path");
-            mHazeUnsupported = true;
-            mIsHazeEnabled = false;
-            mLongExecutor.execute(() -> {
-                stopHazeThread(0);
-                synchronized (mLock) {
-                    mDrawn = false;
-                }
-                drawFrame();
-            });
-        }
-
-        @Override
-        public void onBitmapConsumed() {
-            unloadBitmapIfNotUsed();
-        }
-
-        private void stopHazeThread(long joinMillis) {
-            synchronized (mHazeLock) {
-                HazeRenderThread thread = mHazeThread;
-                if (thread == null) return;
-                mHazeThread = null;
-                thread.quitSafely();
-                if (joinMillis > 0) {
-                    try {
-                        thread.join(joinMillis);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        Log.e(TAG, "Interrupted while waiting for haze thread to quit");
-                    }
-                }
-            }
         }
 
         private void drawFrame() {
@@ -463,29 +288,6 @@ public class ImageWallpaper extends WallpaperService {
         @VisibleForTesting
         void drawFrameOnCanvas(Bitmap bitmap) {
             Trace.beginSection("ImageWallpaper.CanvasEngine#drawFrame");
-            if (mIsHazeEnabled) {
-                if (bitmap != null && mSurfaceHolder != null
-                        && mSurfaceHolder.getSurface().isValid()) {
-                    mBitmapUsages++;
-                    synchronized (mHazeLock) {
-                        if (mHazeThread == null) {
-                            mHazeThread = new HazeRenderThread(getDisplayContext(), mSurfaceHolder,
-                                    bitmap, mColorExtractor.getMiniBitmap(), this);
-                            mHazeThread.start();
-                            mHazeThread.triggerTransition(mKeyguardStateController.isShowing()
-                                    ? HazeRenderThread.STATE_KEYGUARD
-                                    : HazeRenderThread.STATE_UNLOCKED);
-                        } else {
-                            mHazeThread.setBitmap(bitmap);
-                        }
-                    }
-                    mDrawn = true;
-                }
-                Trace.endSection();
-                return;
-            }
-
-            stopHazeThread(250);
             Surface surface = mSurfaceHolder.getSurface();
             Canvas canvas = null;
             try {
@@ -672,10 +474,6 @@ public class ImageWallpaper extends WallpaperService {
 
         @VisibleForTesting
         void onMiniBitmapUpdated() {
-            HazeRenderThread thread = mHazeThread;
-            if (thread != null) {
-                thread.setMiniBitmap(mColorExtractor.getMiniBitmap());
-            }
             unloadBitmapIfNotUsed();
         }
 
@@ -777,10 +575,6 @@ public class ImageWallpaper extends WallpaperService {
             out.println(mBitmap == null ? "null"
                     : mBitmap.isRecycled() ? "recycled"
                     : mBitmap.getWidth() + "x" + mBitmap.getHeight());
-
-            out.print(prefix); out.print("mIsHazeEnabled="); out.println(mIsHazeEnabled);
-            out.print(prefix); out.print("mHazeUnsupported="); out.println(mHazeUnsupported);
-            out.print(prefix); out.print("mHazeThread="); out.println(mHazeThread);
 
             mColorExtractor.dump(prefix, fd, out, args);
         }
