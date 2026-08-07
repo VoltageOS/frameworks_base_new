@@ -924,11 +924,34 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
 
-        View scrimInFront = root.findViewById(R.id.scrim_in_front);
-        int scrimIndex = Math.max(root.indexOfChild(scrimInFront) - 3, 0);
-        root.addView(container, scrimIndex);
+        root.addView(container, getScrimOverlayIndex(root));
 
         return container;
+    }
+
+    private int getScrimOverlayIndex(ViewGroup root) {
+        boolean anchorIsScrim = false;
+        View anchor = root.findViewById(R.id.notification_container_parent);
+        if (anchor == null) {
+            anchor = root.findViewById(R.id.scrim_behind);
+            anchorIsScrim = true;
+        }
+
+        while (anchor != null && anchor.getParent() != root) {
+            ViewParent parent = anchor.getParent();
+            anchor = (parent instanceof View) ? (View) parent : null;
+        }
+
+        if (anchor == null) {
+            return 0;
+        }
+
+        int index = root.indexOfChild(anchor);
+        if (index < 0) {
+            return 0;
+        }
+
+        return anchorIsScrim ? Math.min(index + 1, root.getChildCount()) : index;
     }
 
     private void attachCustomOverlays() {
@@ -945,6 +968,8 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
                 new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
+        overlay.setClipChildren(false);
+        overlay.setClipToPadding(false);
     }
 
     private static void detachFromParent(View v) {
