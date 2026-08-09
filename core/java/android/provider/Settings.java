@@ -15834,11 +15834,13 @@ public final class Settings {
         public static final String WIDEVINE_PROVISIONING_SERVER = "widevine_provisioner_server";
 
         /** @hide */
-        @Protected(restrictReads = false, readWrite = KnownSystemPackage.SETTINGS)
+        @Protected(restrictReads = false,
+                readWrite = {KnownSystemPackage.SETTINGS, KnownSystemPackage.SETUP_WIZARD})
         public static final String NETWORK_LOCATION = "network_location";
 
         /** @hide */
-        @Protected(restrictReads = false, readWrite = KnownSystemPackage.SETTINGS)
+        @Protected(restrictReads = false,
+                readWrite = {KnownSystemPackage.SETTINGS, KnownSystemPackage.SETUP_WIZARD})
         public static final String GEOCODER = "geocoder";
 
         /** @hide */
@@ -15846,11 +15848,13 @@ public final class Settings {
         public static final String CERT_TRANSPARENCY_DOWNLOADER = "cert_transparency_downloader";
 
 	/** @hide */
-        @Protected(restrictReads = false, readWrite = KnownSystemPackage.SETTINGS)
+        @Protected(restrictReads = false,
+                readWrite = {KnownSystemPackage.SETTINGS, KnownSystemPackage.SETUP_WIZARD})
         public static final String GNSS_SUPL = "force_disable_supl"; // historical name
 
         /** @hide */
-        @Protected(restrictReads = false, readWrite = KnownSystemPackage.SETTINGS)
+        @Protected(restrictReads = false,
+                readWrite = {KnownSystemPackage.SETTINGS, KnownSystemPackage.SETUP_WIZARD})
         public static final String GNSS_PSDS_STANDARD = "psds_server"; // historical name
 
         // ExtSettings END
