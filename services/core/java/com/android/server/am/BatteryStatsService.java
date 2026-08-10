@@ -212,6 +212,9 @@ public final class BatteryStatsService extends IBatteryStats.Stub
     /** Cached handle to the suspend-control service; populated lazily on first use. */
     private volatile ISuspendControlServiceInternal mSuspendControlService;
 
+    /** Maximum number of entries returned by any list-based stats accessor. */
+    private static final int TOP_N_STATS = 25;
+
     private native void getRailEnergyPowerStats(RailStats railStats);
     private CharsetDecoder mDecoderStat = StandardCharsets.UTF_8
                     .newDecoder()
@@ -1444,9 +1447,6 @@ public final class BatteryStatsService extends IBatteryStats.Stub
             return top.toArray(new WakeupSourceStats[0]);
         }
     }
-
-    /** Maximum number of entries returned by any list-based stats accessor. */
-    private static final int TOP_N_STATS = 25;
 
     @Override
     @EnforcePermission(BATTERY_STATS)

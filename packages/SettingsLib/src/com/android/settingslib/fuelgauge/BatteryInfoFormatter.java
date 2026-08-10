@@ -23,11 +23,10 @@ public final class BatteryInfoFormatter {
     private BatteryInfoFormatter() {}
 
     public static String formatCurrent(long milliAmps) {
-        long abs = Math.abs(milliAmps);
-        if (abs >= 1_000L) {
-            return String.format(Locale.ROOT, "%.1f A", abs / 1_000.0);
+        if (Math.abs(milliAmps) >= 1_000L) {
+            return String.format(Locale.ROOT, "%+.1f A", milliAmps / 1_000.0);
         }
-        return abs + " mA";
+        return String.format(Locale.ROOT, "%+d mA", milliAmps);
     }
 
     public static String formatPower(long milliAmps, int milliVolts) {
@@ -36,7 +35,7 @@ public final class BatteryInfoFormatter {
     }
 
     public static String formatTemp(int tenthsOfCelsius) {
-        return String.format(Locale.ROOT, "%.1f\u00b0", tenthsOfCelsius / 10.0);
+        return String.format(Locale.ROOT, "%.1f\u00b0C", tenthsOfCelsius / 10.0);
     }
 
     public static String formatDuration(long ms) {
