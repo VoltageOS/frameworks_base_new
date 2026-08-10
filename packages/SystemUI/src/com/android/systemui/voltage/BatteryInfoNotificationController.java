@@ -88,6 +88,17 @@ public class BatteryInfoNotificationController implements CoreStartable {
     private volatile String mIdleRateText = "\u2013";
     private final java.util.ArrayDeque<CurrentSample> mCurrentSamples = new java.util.ArrayDeque<>();
 
+    private boolean mChargeSessionActive;
+    private long mChargeLastToggleElapsed;
+    private long mChargeScreenOnMs;
+    private long mChargeScreenOffMs;
+    private int mChargeScreenOnPercent;
+    private int mChargeScreenOffPercent;
+    private long mChargeScreenOnMah;
+    private long mChargeScreenOffMah;
+    private int mChargeLastLevel;
+    private long mChargeLastChargeUah;
+
     private static final class CurrentSample {
         final long t;
         final long mA;
@@ -126,10 +137,12 @@ public class BatteryInfoNotificationController implements CoreStartable {
                     mLevel       = readLevel(intent);
                     mStatus      = intent.getIntExtra(BatteryManager.EXTRA_STATUS, BatteryManager.BATTERY_STATUS_UNKNOWN);
                     mPlugged     = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
-                    mBatteryController.getEstimatedTimeRemainingString(est -> {
-                        mCachedEstimate = est != null ? est : "";
-                        refreshNotification();
-                    });
+                    syncChargeSession(SystemClock.elapsedRealtime());
+                    mMainHandler.post(() ->
+                            mBatteryController.getEstimatedTimeRemainingString(est -> {
+                                mCachedEstimate = est != null ? est : "";
+                                refreshNotification();
+                            }));
                     final long now = SystemClock.uptimeMillis();
                     if (now - mLastStatsFetch > STATS_THROTTLE_MS) {
                         mLastStatsFetch = now;
@@ -137,11 +150,13 @@ public class BatteryInfoNotificationController implements CoreStartable {
                     }
                     break;
                 case Intent.ACTION_SCREEN_ON:
+                    accumulateChargeTime(SystemClock.elapsedRealtime());
                     mScreenOn = true;
                     mLastStatsFetch = 0;
                     startPolling();
                     break;
                 case Intent.ACTION_SCREEN_OFF:
+                    accumulateChargeTime(SystemClock.elapsedRealtime());
                     mScreenOn = false;
                     stopPolling();
                     refreshNotification();
@@ -204,9 +219,11 @@ public class BatteryInfoNotificationController implements CoreStartable {
         filter.addAction(Intent.ACTION_BATTERY_CHANGED);
         filter.addAction(Intent.ACTION_SCREEN_ON);
         filter.addAction(Intent.ACTION_SCREEN_OFF);
-        mContext.registerReceiver(mReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        mContext.registerReceiver(mReceiver, filter, null, mBgHandler,
+                Context.RECEIVER_NOT_EXPORTED);
         mReceiverRegistered = true;
         mLastStatsFetch = 0;
+        mBgHandler.post(() -> syncChargeSession(SystemClock.elapsedRealtime()));
         startPolling();
         fetchStatsAsync();
     }
@@ -220,6 +237,7 @@ public class BatteryInfoNotificationController implements CoreStartable {
         mBgHandler.post(() -> {
             mNotifManager.cancel(NOTIF_ID);
             mLastNotifText = "";
+            mChargeSessionActive = false;
         });
     }
 
@@ -279,6 +297,80 @@ public class BatteryInfoNotificationController implements CoreStartable {
         if (avgMa <= 0) return;
         final double pctPerH = (avgMa / capMah) * 100.0;
         mActiveRateText = String.format(java.util.Locale.ROOT, "%.1f%%/h", pctPerH);
+    }
+
+    private void syncChargeSession(long now) {
+        if (mPlugged != 0) {
+            if (mChargeSessionActive) {
+                advanceChargeSession(now);
+            } else {
+                startChargeSession(now);
+            }
+        } else if (mChargeSessionActive) {
+            accumulateChargeTime(now);
+            mChargeSessionActive = false;
+        }
+    }
+
+    private void startChargeSession(long now) {
+        mChargeSessionActive = true;
+        mChargeLastToggleElapsed = now;
+        mChargeScreenOnMs = 0;
+        mChargeScreenOffMs = 0;
+        mChargeScreenOnPercent = 0;
+        mChargeScreenOffPercent = 0;
+        mChargeScreenOnMah = 0;
+        mChargeScreenOffMah = 0;
+        mChargeLastLevel = mLevel;
+        mChargeLastChargeUah = readChargeCounterUah();
+    }
+
+    private void advanceChargeSession(long now) {
+        accumulateChargeTime(now);
+        final int levelDelta = mLevel - mChargeLastLevel;
+        if (levelDelta > 0) {
+            if (mScreenOn) {
+                mChargeScreenOnPercent += levelDelta;
+            } else {
+                mChargeScreenOffPercent += levelDelta;
+            }
+            mChargeLastLevel = mLevel;
+        }
+        final long chargeUah = readChargeCounterUah();
+        if (chargeUah <= 0) return;
+        if (mChargeLastChargeUah <= 0) {
+            mChargeLastChargeUah = chargeUah;
+            return;
+        }
+        final long mahDelta = (chargeUah - mChargeLastChargeUah) / 1000;
+        if (mahDelta > 0) {
+            if (mScreenOn) {
+                mChargeScreenOnMah += mahDelta;
+            } else {
+                mChargeScreenOffMah += mahDelta;
+            }
+            mChargeLastChargeUah = chargeUah;
+        }
+    }
+
+    private void accumulateChargeTime(long now) {
+        if (!mChargeSessionActive) return;
+        final long delta = now - mChargeLastToggleElapsed;
+        if (delta > 0) {
+            if (mScreenOn) {
+                mChargeScreenOnMs += delta;
+            } else {
+                mChargeScreenOffMs += delta;
+            }
+        }
+        mChargeLastToggleElapsed = now;
+    }
+
+    private long readChargeCounterUah() {
+        if (mBatteryManager == null) return 0;
+        final long chargeUah = mBatteryManager.getLongProperty(
+                BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
+        return chargeUah > 0 ? chargeUah : 0;
     }
 
     private double batteryCapacityMah(BatterySummaryStats s) {
@@ -345,6 +437,7 @@ public class BatteryInfoNotificationController implements CoreStartable {
                 .setColor(Utils.getColorAttrDefaultColor(mContext, android.R.attr.colorAccent))
                 .setColorized(false)
                 .setOngoing(true)
+                .setOnlyAlertOnce(true)
                 .setShowWhen(false)
                 .setVisibility(Notification.VISIBILITY_PUBLIC);
         if (hasBody) {
@@ -354,12 +447,11 @@ public class BatteryInfoNotificationController implements CoreStartable {
     }
 
     private String buildNowLine() {
-        String nowLine = BatteryInfoFormatter.formatCurrent(mCurrentMa)
-                + "  \u00b7  " + BatteryInfoFormatter.formatTemp(mTemperature);
-        final String status = statusLabel();
-        if (!status.isEmpty()) {
-            nowLine = status + "  \u00b7  " + nowLine;
-        }
+        String nowLine = statusLabel() + "  \u00b7  " + mContext.getString(
+                R.string.battery_info_notif_now,
+                BatteryInfoFormatter.formatCurrent(mCurrentMa),
+                BatteryInfoFormatter.formatPower(mCurrentMa, mVoltageMv),
+                BatteryInfoFormatter.formatTemp(mTemperature));
         final String estimate = mCachedEstimate;
         if (!estimate.isEmpty()) {
             nowLine += " \u00b7 " + estimate;
@@ -369,15 +461,18 @@ public class BatteryInfoNotificationController implements CoreStartable {
 
     private String statusLabel() {
         if (mPlugged == 0) {
-            return "Discharging";
+            return mContext.getString(R.string.battery_info_status_discharging);
         }
         if (mStatus == BatteryManager.BATTERY_STATUS_FULL) {
-            return "Full";
+            return mContext.getString(R.string.battery_info_status_full);
         }
-        return "Charging";
+        return mContext.getString(R.string.battery_info_status_charging);
     }
 
     private String buildNotifText() {
+        if (mChargeSessionActive) {
+            return buildChargeText();
+        }
         final StringBuilder sb = new StringBuilder();
         final BatterySummaryStats s = mCachedStats;
         if (s != null) {
@@ -398,25 +493,48 @@ public class BatteryInfoNotificationController implements CoreStartable {
             sb.append('\n');
             sb.append(mContext.getString(R.string.battery_info_notif_deep_sleep,
                     BatteryInfoFormatter.formatDuration(s.deepSleepTimeMs),
-                    screenOffFraction(s.deepSleepTimeMs, liveScreenOff)));
+                    screenOffFraction(s.deepSleepTimeMs, s.screenOffTimeMs)));
             sb.append('\n');
             sb.append(mContext.getString(R.string.battery_info_notif_awake,
                     BatteryInfoFormatter.formatDuration(s.screenOffAwakeTimeMs),
-                    screenOffFraction(s.screenOffAwakeTimeMs, liveScreenOff)));
+                    screenOffFraction(s.screenOffAwakeTimeMs, s.screenOffTimeMs)));
         }
         return sb.toString().trim();
+    }
+
+    private String buildChargeText() {
+        final long liveDelta = Math.max(0,
+                SystemClock.elapsedRealtime() - mChargeLastToggleElapsed);
+        final long onMs = mChargeScreenOnMs + (mScreenOn ? liveDelta : 0);
+        final long offMs = mChargeScreenOffMs + (mScreenOn ? 0 : liveDelta);
+        final int percent = mChargeScreenOnPercent + mChargeScreenOffPercent;
+        final long mah = mChargeScreenOnMah + mChargeScreenOffMah;
+        return mContext.getString(R.string.battery_info_notif_charge_total,
+                        BatteryInfoFormatter.formatDuration(onMs + offMs),
+                        BatteryInfoFormatter.formatPercent(percent),
+                        BatteryInfoFormatter.formatMah(mah),
+                        BatteryInfoFormatter.formatDischargeRate(percent, onMs + offMs))
+                + "\n"
+                + mContext.getString(R.string.battery_info_notif_charge_screen_on,
+                        BatteryInfoFormatter.formatDuration(onMs),
+                        BatteryInfoFormatter.formatPercent(mChargeScreenOnPercent),
+                        BatteryInfoFormatter.formatMah(mChargeScreenOnMah))
+                + "\n"
+                + mContext.getString(R.string.battery_info_notif_charge_screen_off,
+                        BatteryInfoFormatter.formatDuration(offMs),
+                        BatteryInfoFormatter.formatPercent(mChargeScreenOffPercent),
+                        BatteryInfoFormatter.formatMah(mChargeScreenOffMah));
     }
 
     private long readCurrentMa() {
         if (mBatteryManager == null) return mCurrentMa;
         final long raw = mBatteryManager.getLongProperty(
                 BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
-        if (raw == Long.MIN_VALUE || raw == 0) return mCurrentMa;
+        if (raw == Long.MIN_VALUE) return mCurrentMa;
         final long divisor = mCurrentDivisor != 0 ? mCurrentDivisor : 1;
         final long mA = (raw * mCurrentSign) / divisor;
         if (Math.abs(mA) > MAX_PLAUSIBLE_MA) return mCurrentMa;
-        final long rounded = Math.round((double) mA / CURRENT_ROUND_MA) * CURRENT_ROUND_MA;
-        return rounded == 0 ? mCurrentMa : rounded;
+        return Math.round((double) mA / CURRENT_ROUND_MA) * CURRENT_ROUND_MA;
     }
 
     private int readLevel(Intent intent) {
