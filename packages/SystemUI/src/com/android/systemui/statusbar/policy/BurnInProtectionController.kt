@@ -65,7 +65,7 @@ class BurnInProtectionController @Inject constructor(
 
     private var statusBarStartOffsetsX = Pair(0, 0)
     private var statusBarEndOffsetsX = Pair(0, 0)
-    private var maxStatusBarOffsetY = 0
+    private var statusBarOffsetsY = Pair(0, 0)
     private var maxNavBarOffsetX = 0
     private var maxNavBarOffsetY = 0
 
@@ -97,17 +97,18 @@ class BurnInProtectionController @Inject constructor(
                 )
             )
 
-            maxStatusBarOffsetY = minOf(
+            val maxStatusBarOffsetY = minOf(
                 SystemBarUtils.getStatusBarHeight(context) -
                 getDimensionPixelSize(com.android.internal.R.dimen.status_bar_height_default),
                 getDimensionPixelSize(R.dimen.vertical_max_shift)
             ) / 2
+            statusBarOffsetsY = Pair(-maxStatusBarOffsetY, maxStatusBarOffsetY)
         }
         calculateNavBarMaxOffset()
         logD {
             "statusBarStartOffsetsX = $statusBarStartOffsetsX, " +
             "statusBarEndOffsetsX = $statusBarEndOffsetsX, " +
-            "maxStatusBarOffsetY = $maxStatusBarOffsetY"
+            "statusBarOffsetsY = $statusBarOffsetsY"
         }
     }
 
@@ -148,9 +149,9 @@ class BurnInProtectionController @Inject constructor(
                 val sbOffset = Pair(
                     Offset(
                         getBurnInOffset(statusBarStartOffsetsX),
-                        getBurnInOffset(maxStatusBarOffsetY)
+                        getBurnInOffset(statusBarOffsetsY)
                     ), Offset(
-                        getBurnInOffset(statusBarEndOffsetsX), getBurnInOffset(maxStatusBarOffsetY)
+                        getBurnInOffset(statusBarEndOffsetsX), getBurnInOffset(statusBarOffsetsY)
                     )
                 )
                 val nbOffset = Offset(
