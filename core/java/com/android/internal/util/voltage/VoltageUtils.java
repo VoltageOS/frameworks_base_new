@@ -181,17 +181,34 @@ public class VoltageUtils {
     }
 
     public static String getCPUTemp(Context context) {
-        String value;
-        if (fileExists(context.getResources().getString(
-            com.android.internal.R.string.config_cpu_temp_path))) {
-               value = readOneLine(context.getResources().getString(
-                  com.android.internal.R.string.config_cpu_temp_path));
-        } else {
-            value = "Error";
+        String path = context.getResources().getString(
+                com.android.internal.R.string.config_cpu_temp_path);
+        if (!fileExists(path)) {
+            return "N/A";
+        }
+        String value = readOneLine(path);
+        if (value == null) {
+            return "N/A";
+        }
+        value = value.trim();
+        int separator = value.indexOf('.');
+        if (separator >= 0) {
+            value = value.substring(0, separator);
+        }
+        if (value.isEmpty()) {
+            return "N/A";
         }
         int cpuTempMultiplier = context.getResources().getInteger(
                 com.android.internal.R.integer.config_sysCPUTempMultiplier);
-        return value == "Error" ? "N/A" : String.format("%s", Integer.parseInt(value) / cpuTempMultiplier) + "°C";
+        if (cpuTempMultiplier <= 0) {
+            cpuTempMultiplier = 1;
+        }
+        try {
+            return Integer.parseInt(value) / cpuTempMultiplier + "°C";
+        } catch (NumberFormatException e) {
+            Log.w(TAG, "Unparsable CPU temperature \"" + value + "\" from " + path);
+            return "N/A";
+        }
     }
     public static boolean fileExists(String filename) {
         if (filename == null) {
