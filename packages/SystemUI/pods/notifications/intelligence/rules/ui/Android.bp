@@ -61,9 +61,11 @@ java_library {
     name: "com.android.systemui.notifications.intelligence.rules.ui_dagger",
     defaults: ["sysui_dagger"],
     static_libs: [
+        "com.android.systemui.notifications.intelligence.rules.ui_main",
+    ],
+    libs: [
         "com.android.systemui.notifications.intelligence.rules_main",
         "com.android.systemui.notifications.intelligence.rules_dagger",
-        "com.android.systemui.notifications.intelligence.rules.ui_main",
     ],
 }
 
