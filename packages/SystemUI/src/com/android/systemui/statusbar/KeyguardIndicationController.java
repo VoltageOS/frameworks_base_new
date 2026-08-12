@@ -1318,7 +1318,6 @@ public class KeyguardIndicationController {
             } else {
                 String batteryLevel = NumberFormat.getPercentInstance().format(mBatteryLevel / 100f);
                 String batteryTemp = com.android.internal.util.voltage.VoltageUtils.batteryTemperature(mContext, false);
-                String cpuTemp = com.android.internal.util.voltage.VoltageUtils.getCPUTemp(mContext);
 
                 Drawable batteryIcon = mContext.getDrawable(R.drawable.ic_ambient_battery);
                 Drawable cpuIcon = mContext.getDrawable(R.drawable.ic_ambient_cpu);
@@ -1352,6 +1351,7 @@ public class KeyguardIndicationController {
                         break;
 
                     case 3: // Battery level, battery temperature & CPU temperature
+                        String cpuTemp = com.android.internal.util.voltage.VoltageUtils.getCPUTemp(mContext);
                         appendIcons(indicationBuilder, batteryLevel, batteryIcon, ambientShowSettingsIcon());
                         appendWithSeparator(indicationBuilder, " | ");
                         appendIcons(indicationBuilder, batteryTemp, temperatureIcon, ambientShowSettingsIcon());
