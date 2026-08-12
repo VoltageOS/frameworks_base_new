@@ -191,7 +191,14 @@ public class VoltageUtils {
         }
         int cpuTempMultiplier = context.getResources().getInteger(
                 com.android.internal.R.integer.config_sysCPUTempMultiplier);
-        return value == "Error" ? "N/A" : String.format("%s", Integer.parseInt(value) / cpuTempMultiplier) + "°C";
+        if (value == null || value.trim().isEmpty() || "Error".equals(value)) {
+            return "N/A";
+        }
+        try {
+            return String.format("%s", Integer.parseInt(value.trim()) / cpuTempMultiplier) + "°C";
+        } catch (NumberFormatException e) {
+            return "N/A";
+        }
     }
     public static boolean fileExists(String filename) {
         if (filename == null) {
