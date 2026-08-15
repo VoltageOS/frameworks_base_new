@@ -67,6 +67,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManagerInternal;
 import android.content.pm.UserInfo;
+import android.ext.settings.ExtSettings;
 import android.graphics.drawable.Drawable;
 import android.hardware.display.DisplayManager;
 import android.net.Uri;
@@ -163,6 +164,8 @@ public class ClipboardService extends SystemService {
             CLIPBOARD_GET_EVENT_REPORTED__CLIP_DATA_TYPE__MIMETYPE_UNKNOWN
     };
     private static final long ACCESS_NOTIFICATION_SUPPRESSION_TIMEOUT_MILLIS = 1000L;
+    private static final long ACCESS_DENIED_NOTIFICATION_MIN_INTERVAL_MILLIS =
+            TimeUnit.MINUTES.toMillis(1);
 
     private final ActivityManagerInternal mAmInternal;
     private final IUriGrantsManager mUgm;
@@ -193,6 +196,9 @@ public class ClipboardService extends SystemService {
      */
     @GuardedBy("mLock")
     private final SparseLongArray mUserAuthorizedClipAccesses = new SparseLongArray();
+
+    @GuardedBy("mLock")
+    private final SparseLongArray mLastAccessDeniedNotificationTimes = new SparseLongArray();
 
     @GuardedBy("mLock")
     private boolean mShowAccessNotifications =
@@ -335,6 +341,9 @@ public class ClipboardService extends SystemService {
 
         /** Uids that have already triggered a toast notification for {@link #primaryClip} */
         final SparseBooleanArray mNotifiedUids = new SparseBooleanArray();
+
+        /** Uids that have already been notified of denied access to {@link #primaryClip}. */
+        final SparseBooleanArray mAccessDeniedNotifiedUids = new SparseBooleanArray();
 
         /**
          * Uids that have already triggered a notification to text classifier for
@@ -700,11 +709,18 @@ public class ClipboardService extends SystemService {
             }
             final boolean readAllowedForPackage = mAccess.clipboardReadAllowedForPackage(
                     pkg, intendingUid, intendingUserId, isDefaultIme);
+            final boolean showAccessDeniedNotifications = !readAllowedForPackage
+                    && ExtSettings.SHOW_CLIPBOARD_ACCESS_DENIAL_NOTIFICATIONS.get(
+                            getContext(), intendingUserId);
             synchronized (mLock) {
                 final ClipboardAccess.PayloadReadAccess readAccess =
                         mAccess.getPayloadReadAccessLocked(readAllowedForPackage,
                                 intendingUid, intendingUserId, intendingDeviceId);
                 if (readAccess == ClipboardAccess.PayloadReadAccess.DENIED) {
+                    if (showAccessDeniedNotifications) {
+                        showAccessDeniedNotificationLocked(pkg, intendingUid, intendingUserId,
+                                intendingDeviceId, deviceId);
+                    }
                     return null;
                 }
 
@@ -1129,6 +1145,7 @@ public class ClipboardService extends SystemService {
         clipboard.primaryClip = clip;
         clipboard.primaryClipGeneration++;
         clipboard.mNotifiedUids.clear();
+        clipboard.mAccessDeniedNotifiedUids.clear();
         clipboard.mNotifiedTextClassifierUids.clear();
         if (clip != null) {
             clipboard.primaryClipUid = uid;
@@ -1559,6 +1576,47 @@ public class ClipboardService extends SystemService {
         }
         mUserAuthorizedClipAccesses.removeAt(index);
         return false;
+    }
+
+    @GuardedBy("mLock")
+    private void showAccessDeniedNotificationLocked(String callingPackage, int uid,
+            @UserIdInt int userId, int clipboardDeviceId, int accessDeviceId) {
+        final Clipboard clipboard = mClipboards.get(userId, clipboardDeviceId);
+        if (clipboard == null
+                || clipboard.primaryClip == null
+                || clipboard.mAccessDeniedNotifiedUids.get(uid)) {
+            return;
+        }
+
+        final long elapsedRealtime = SystemClock.elapsedRealtime();
+        final int lastNotificationIndex = mLastAccessDeniedNotificationTimes.indexOfKey(uid);
+        // Per-clip suppression handles repeated reads of one clip. The independent interval stops
+        // an app from resetting that suppression by replacing the clipboard before each read.
+        if (lastNotificationIndex >= 0
+                && elapsedRealtime - mLastAccessDeniedNotificationTimes.valueAt(
+                        lastNotificationIndex) < ACCESS_DENIED_NOTIFICATION_MIN_INTERVAL_MILLIS) {
+            return;
+        }
+
+        showClipboardToastLocked(callingPackage, userId, clipboard, accessDeviceId,
+                R.string.clipboard_access_blocked);
+        clipboard.mAccessDeniedNotifiedUids.put(uid, true);
+        mLastAccessDeniedNotificationTimes.put(uid, elapsedRealtime);
+        mWorkerHandler.postDelayed(PooledLambda.obtainRunnable(
+                        ClipboardService::pruneAccessDeniedNotificationTimes, this),
+                ACCESS_DENIED_NOTIFICATION_MIN_INTERVAL_MILLIS + 1);
+    }
+
+    private void pruneAccessDeniedNotificationTimes() {
+        final long elapsedRealtime = SystemClock.elapsedRealtime();
+        synchronized (mLock) {
+            for (int i = mLastAccessDeniedNotificationTimes.size() - 1; i >= 0; i--) {
+                if (elapsedRealtime - mLastAccessDeniedNotificationTimes.valueAt(i)
+                        >= ACCESS_DENIED_NOTIFICATION_MIN_INTERVAL_MILLIS) {
+                    mLastAccessDeniedNotificationTimes.removeAt(i);
+                }
+            }
+        }
     }
 
     /**

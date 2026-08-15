@@ -8472,6 +8472,11 @@ public final class Settings {
 
         /** @hide */
         @Protected(readWrite = KnownSystemPackage.SETTINGS)
+        public static final String CLIPBOARD_SHOW_ACCESS_DENIAL_NOTIFICATIONS =
+                "clipboard_show_access_denial_notifications";
+
+        /** @hide */
+        @Protected(readWrite = KnownSystemPackage.SETTINGS)
         public static final String DISALLOW_DELAYED_LOCKING_ON_USER_STOP = "disallow_delayed_locking_on_user_stop";
 
         // ExtSettings END

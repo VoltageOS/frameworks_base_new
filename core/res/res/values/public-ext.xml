@@ -83,5 +83,7 @@
         <public name="notif_hmalloc_crash_title"/>
         <!-- @hide -->
         <public name="usb_port_security_error_title"/>
+        <!-- @hide -->
+        <public name="clipboard_access_blocked"/>
     </staging-public-group>
 </resources>
