@@ -110,11 +110,8 @@ import org.mockito.kotlin.times
     com.android.hardware.input.Flags.FLAG_ENABLE_TALKBACK_KEY_GESTURES,
     com.android.hardware.input.Flags.FLAG_ENABLE_NEW_26Q2_KEYCODES,
     com.android.hardware.input.Flags.FLAG_ENABLE_QUICK_SETTINGS_PANEL_SHORTCUT,
-    com.android.hardware.input.Flags.FLAG_KEYBOARD_BACKLIGHT_SHORTCUTS,
     com.android.hardware.input.Flags.FLAG_ENABLE_CONTEXTUAL_SEARCH_DESKTOP_ENTRYPOINTS,
     com.android.hardware.input.Flags.FLAG_ENABLE_NOTE_TAKING_KEYBOARD_SHORTCUT,
-    com.android.hardware.input.Flags.FLAG_ENABLE_CONTEXTUAL_INPUT_TRIGGER,
-    com.android.hardware.input.Flags.FLAG_ENABLE_CONTEXTUAL_CURSOR_DESKTOP_ENTRYPOINTS,
 )
 @DisabledOnRavenwood(reason = "Static mocking in bivalent tests is tricky", bug = 310268946)
 class KeyGestureControllerTests {
@@ -357,7 +354,12 @@ class KeyGestureControllerTests {
 
     @Test
     @Parameters(method = "systemGesturesTestArguments")
-    @EnableFlags(com.android.hardware.input.Flags.FLAG_ENABLE_PARTIAL_SCREENSHOT_KEYBOARD_SHORTCUT)
+    @EnableFlags(
+        com.android.hardware.input.Flags.FLAG_ENABLE_PARTIAL_SCREENSHOT_KEYBOARD_SHORTCUT,
+        com.android.hardware.input.Flags.FLAG_KEYBOARD_BACKLIGHT_SHORTCUTS,
+        com.android.hardware.input.Flags.FLAG_ENABLE_CONTEXTUAL_INPUT_TRIGGER,
+        com.android.hardware.input.Flags.FLAG_ENABLE_CONTEXTUAL_CURSOR_DESKTOP_ENTRYPOINTS,
+    )
     fun testKeyGestures(test: KeyGestureData) {
         setupKeyGestureController()
         testKeyGestureProduced(test, PASS_THROUGH_APP)
@@ -376,7 +378,12 @@ class KeyGestureControllerTests {
     }
 
     @Test
-    @EnableFlags(com.android.hardware.input.Flags.FLAG_ENABLE_PARTIAL_SCREENSHOT_KEYBOARD_SHORTCUT)
+    @EnableFlags(
+        com.android.hardware.input.Flags.FLAG_ENABLE_PARTIAL_SCREENSHOT_KEYBOARD_SHORTCUT,
+        com.android.hardware.input.Flags.FLAG_KEYBOARD_BACKLIGHT_SHORTCUTS,
+        com.android.hardware.input.Flags.FLAG_ENABLE_CONTEXTUAL_INPUT_TRIGGER,
+        com.android.hardware.input.Flags.FLAG_ENABLE_CONTEXTUAL_CURSOR_DESKTOP_ENTRYPOINTS,
+    )
     fun testCustomKeyGesturesNotAllowedForSystemGestures() {
         setupKeyGestureController()
         for (systemGesture in systemGesturesTestArguments()) {
@@ -459,7 +466,11 @@ class KeyGestureControllerTests {
 
     @Test
     @Parameters(method = "nonCapturableKeyGestures")
-    @EnableFlags(com.android.hardware.input.Flags.FLAG_ENABLE_PARTIAL_SCREENSHOT_KEYBOARD_SHORTCUT)
+    @EnableFlags(
+        com.android.hardware.input.Flags.FLAG_ENABLE_PARTIAL_SCREENSHOT_KEYBOARD_SHORTCUT,
+        com.android.hardware.input.Flags.FLAG_KEYBOARD_BACKLIGHT_SHORTCUTS,
+        com.android.hardware.input.Flags.FLAG_ENABLE_CONTEXTUAL_INPUT_TRIGGER,
+    )
     fun testKeyGestures_withKeyCapture_nonCapturableGestures(test: KeyGestureData) {
         setupKeyGestureController()
         enableKeyCaptureForFocussedWindow()
@@ -474,7 +485,10 @@ class KeyGestureControllerTests {
 
     @Test
     @Parameters(method = "capturableKeyGestures")
-    @EnableFlags(com.android.hardware.input.Flags.FLAG_ENABLE_PARTIAL_SCREENSHOT_KEYBOARD_SHORTCUT)
+    @EnableFlags(
+        com.android.hardware.input.Flags.FLAG_ENABLE_PARTIAL_SCREENSHOT_KEYBOARD_SHORTCUT,
+        com.android.hardware.input.Flags.FLAG_ENABLE_CONTEXTUAL_CURSOR_DESKTOP_ENTRYPOINTS,
+    )
     fun testKeyGestures_withKeyCapture_capturableGestures(test: KeyGestureData) {
         setupKeyGestureController()
         enableKeyCaptureForFocussedWindow()
@@ -488,7 +502,10 @@ class KeyGestureControllerTests {
 
     @Test
     @Parameters(method = "capturableKeyGestures_handledAsFallback")
-    @EnableFlags(com.android.hardware.input.Flags.FLAG_ENABLE_PARTIAL_SCREENSHOT_KEYBOARD_SHORTCUT)
+    @EnableFlags(
+        com.android.hardware.input.Flags.FLAG_ENABLE_PARTIAL_SCREENSHOT_KEYBOARD_SHORTCUT,
+        com.android.hardware.input.Flags.FLAG_ENABLE_CONTEXTUAL_CURSOR_DESKTOP_ENTRYPOINTS,
+    )
     fun testKeyGestures_withKeyCapture_capturableGesturesHandledAsFallback(test: KeyGestureData) {
         setupKeyGestureController()
         enableKeyCaptureForFocussedWindow()
