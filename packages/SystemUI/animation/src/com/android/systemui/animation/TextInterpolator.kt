@@ -157,9 +157,27 @@ class TextInterpolator(
      * used for interpolation.
      */
     fun onTargetPaintModified() {
+        targetPaint.typeface =
+            typefaceCache.getTypefaceForVariant(
+                compatibleVariationSettings(targetPaint.fontVariationSettings)
+            )
+        targetPaint.fontFeatureSettings = basePaint.fontFeatureSettings
         updatePositionsAndFonts(shapeText(layout, targetPaint), updateBase = false)
         listener?.onPaintModified(targetPaint)
     }
+
+    private fun compatibleVariationSettings(settings: String?): String =
+        settings
+            ?.split(",")
+            ?.map { it.trim() }
+            ?.filter {
+                it.startsWith("'wdth'") ||
+                    it.startsWith("'wght'") ||
+                    it.startsWith("'ROND'") ||
+                    it.startsWith("'slnt'")
+            }
+            ?.joinToString(", ")
+            .orEmpty()
 
     /**
      * Recalculate internal text layout for interpolation.
@@ -429,10 +447,9 @@ class TextInterpolator(
                     val newFont = newRun.glyphs.getFont(fontRun.start)
                     for (i in fontRun.start until fontRun.end) {
                         require(
-                            newRun.glyphs.getGlyphId(fontRun.start) ==
-                                baseRun.glyphIds[fontRun.start]
+                            newRun.glyphs.getGlyphId(i) == baseRun.glyphIds[i]
                         ) {
-                            "The new layout has different glyph ID at ${fontRun.start}"
+                            "The new layout has different glyph ID at $i"
                         }
                         require(newFont === newRun.glyphs.getFont(i)) {
                             "The new layout has different font run." +
