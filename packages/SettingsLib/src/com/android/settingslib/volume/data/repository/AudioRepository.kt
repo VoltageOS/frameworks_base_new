@@ -130,8 +130,7 @@ class AudioRepositoryImpl(
             AudioStream(AudioManager.STREAM_ASSISTANT) to Settings.System.VOLUME_ASSISTANT,
         )
 
-    override val volumeControllerEvents: Flow<VolumeControllerEvent> =
-        if (USE_VOLUME_CONTROLLER) volumeController.events else emptyFlow()
+    override val volumeControllerEvents: Flow<VolumeControllerEvent> = emptyFlow()
 
     override val mode: StateFlow<Int> =
         callbackFlow {
@@ -175,16 +174,6 @@ class AudioRepositoryImpl(
                     SharingStarted.WhileSubscribed(),
                     audioManager.communicationDevice,
                 )
-
-    init {
-        if (USE_VOLUME_CONTROLLER) {
-            try {
-                audioManager.volumeController = volumeController
-            } catch (error: SecurityException) {
-                Log.wtf("AudioManager", "Unable to set the volume controller", error)
-            }
-        }
-    }
 
     override fun getAudioStream(audioStream: AudioStream): Flow<AudioStreamModel> {
         return merge(
@@ -292,10 +281,6 @@ class AudioRepositoryImpl(
         }
     }
 }
-
-// Upstream useVolumeController() == false: VolumeDialogControllerImpl registers directly
-// with AudioManager, so this bridge is unused; setting it here too would override that.
-private const val USE_VOLUME_CONTROLLER = false
 
 private class ProducingVolumeController : IVolumeController.Stub() {
 

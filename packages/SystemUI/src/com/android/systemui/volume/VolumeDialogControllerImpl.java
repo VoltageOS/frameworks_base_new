@@ -104,11 +104,6 @@ import javax.inject.Inject;
 @SysUISingleton
 public class VolumeDialogControllerImpl implements VolumeDialogController, Dumpable {
     private static final String TAG = Util.logTag(VolumeDialogControllerImpl.class);
-
-    // Register directly with AudioManager instead of the SettingsLib AudioRepository bridge
-    // (upstream: useVolumeController() == false): the bridge silently stops delivering events
-    // after the media output dialog is used, leaving the panel dead until a SystemUI restart.
-    private static final boolean USE_VOLUME_CONTROLLER_BRIDGE = false;
     private static final boolean DEBUG = Log.isLoggable(TAG, Log.DEBUG);
 
     private static final int TOUCH_FEEDBACK_TIMEOUT_MS = 1000;
@@ -273,14 +268,10 @@ public class VolumeDialogControllerImpl implements VolumeDialogController, Dumpa
     }
 
     protected void setVolumeController() {
-        if (USE_VOLUME_CONTROLLER_BRIDGE) {
-            mVolumeControllerAdapter.collectToController(mVolumeController);
-        } else {
-            try {
-                mAudio.setVolumeController(mVolumeController);
-            } catch (SecurityException e) {
-                Log.w(TAG, "Unable to set the volume controller", e);
-            }
+        try {
+            mAudio.setVolumeController(mVolumeController);
+        } catch (SecurityException e) {
+            Log.w(TAG, "Unable to set the volume controller", e);
         }
     }
 
@@ -484,11 +475,7 @@ public class VolumeDialogControllerImpl implements VolumeDialogController, Dumpa
     }
 
     private void onNotifyVisibleW(boolean visible) {
-        if (USE_VOLUME_CONTROLLER_BRIDGE) {
-            mVolumeControllerAdapter.notifyVolumeControllerVisible(visible);
-        } else {
-            mAudio.notifyVolumeControllerVisible(mVolumeController, visible);
-        }
+        mAudio.notifyVolumeControllerVisible(mVolumeController, visible);
         if (!visible) {
             if (updateActiveStreamW(-1)) {
                 mCallbacks.onStateChanged(mState);

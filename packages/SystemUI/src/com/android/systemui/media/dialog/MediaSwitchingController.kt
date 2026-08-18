@@ -1097,9 +1097,6 @@ constructor(
                     return
                 }
 
-                // Ignore the initial delivery: with a null playbackState at registration
-                // mCurrentState stays STATE_NONE, and dismissing here would close the dialog for a
-                // session already stopped rather than one that stopped while it was open.
                 if (newState == PlaybackState.STATE_STOPPED &&
                         mCurrentState != PlaybackState.STATE_NONE
                 ) {
