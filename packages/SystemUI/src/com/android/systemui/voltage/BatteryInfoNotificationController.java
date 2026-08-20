@@ -19,6 +19,7 @@ package com.android.systemui.voltage;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -49,6 +50,10 @@ public class BatteryInfoNotificationController implements CoreStartable {
 
     private static final String CHANNEL_ID = "battery_info_stats";
     private static final int NOTIF_ID = 0x560000BA;
+    private static final String SETTINGS_PACKAGE = "com.android.settings";
+    private static final String EXTRA_SHOW_FRAGMENT = ":settings:show_fragment";
+    private static final String DETAILED_BATTERY_STATS_FRAGMENT =
+            "com.android.settings.fuelgauge.batteryusage.DetailedBatteryStats";
     private static final long POLL_INTERVAL_MS = 6_000;
     private static final long STATS_THROTTLE_MS = 10_000;
     private static final long MAX_PLAUSIBLE_MA = 30_000L;
@@ -443,11 +448,21 @@ public class BatteryInfoNotificationController implements CoreStartable {
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setShowWhen(false)
-                .setVisibility(Notification.VISIBILITY_PUBLIC);
+                .setVisibility(Notification.VISIBILITY_PUBLIC)
+                .setContentIntent(createDetailedStatsPendingIntent());
         if (hasBody) {
             builder.setStyle(new Notification.BigTextStyle().bigText(body));
         }
         mNotifManager.notify(NOTIF_ID, builder.build());
+    }
+
+    private PendingIntent createDetailedStatsPendingIntent() {
+        final Intent intent = new Intent()
+                .setClassName(SETTINGS_PACKAGE, "com.android.settings.SubSettings")
+                .putExtra(EXTRA_SHOW_FRAGMENT, DETAILED_BATTERY_STATS_FRAGMENT)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        return PendingIntent.getActivity(mContext, 0, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
     private String buildNowLine() {
