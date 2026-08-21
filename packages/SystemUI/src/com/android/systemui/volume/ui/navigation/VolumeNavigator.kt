@@ -37,6 +37,9 @@ import com.android.systemui.utils.coroutines.flow.conflatedCallbackFlow
 import com.android.systemui.volume.VolumePanelDialogManager
 import com.android.systemui.volume.dialog.domain.interactor.ExpandedAudioTileDetailsFeatureInteractor
 import com.android.systemui.volume.domain.model.VolumePanelRoute
+import com.android.systemui.volume.panel.component.appvolume.domain.interactor.AppVolumePanelGlobalStateInteractor
+import com.android.systemui.volume.panel.component.appvolume.ui.composable.AppVolumePanelRoot
+import com.android.systemui.volume.panel.component.appvolume.ui.viewmodel.AppVolumeViewModel
 import com.android.systemui.volume.panel.domain.interactor.VolumePanelGlobalStateInteractor
 import com.android.systemui.volume.panel.ui.VolumePanelUiEvent
 import com.android.systemui.volume.panel.ui.composable.VolumePanelRoot
@@ -65,6 +68,8 @@ constructor(
     private val uiEventLogger: UiEventLogger,
     private val volumePanelGlobalStateInteractor: VolumePanelGlobalStateInteractor,
     private val expandedAudioTileDetailsFeatureInteractor: ExpandedAudioTileDetailsFeatureInteractor,
+    private val appVolumePanelGlobalStateInteractor: AppVolumePanelGlobalStateInteractor,
+    private val appVolumeViewModel: AppVolumeViewModel,
 ) {
 
     fun start() {
@@ -76,6 +81,23 @@ constructor(
                     conflatedCallbackFlow<Unit> {
                             val dialog = createNewVolumePanelDialog()
                             uiEventLogger.log(VolumePanelUiEvent.VOLUME_PANEL_SHOWN)
+                            dialog.show()
+                            awaitClose { dialog.dismiss() }
+                        }
+                        .flowOn(mainContext)
+                } else {
+                    emptyFlow()
+                }
+            }
+            .launchIn(applicationScope)
+
+        appVolumePanelGlobalStateInteractor.globalState
+            .map { it.isVisible }
+            .distinctUntilChanged()
+            .flatMapLatest { isVisible ->
+                if (isVisible) {
+                    conflatedCallbackFlow<Unit> {
+                            val dialog = createAppVolumePanelDialog()
                             dialog.show()
                             awaitClose { dialog.dismiss() }
                         }
@@ -97,11 +119,7 @@ constructor(
                 )
             VolumePanelRoute.SYSTEM_UI_VOLUME_PANEL ->
                 volumePanelDialogManager.create(aboveStatusBar = true, view = null)
-            VolumePanelRoute.APP_VOLUME_PANEL ->
-                activityStarter.startActivity(
-                    /* intent= */ Intent(Settings.Panel.ACTION_APP_VOLUME),
-                    /* dismissShade= */ true
-                )
+            VolumePanelRoute.APP_VOLUME_PANEL -> showAppVolumePanel()
         }
     }
 
@@ -109,6 +127,17 @@ constructor(
         activityStarter.dismissKeyguardThenExecute(
             /* action = */ {
                 volumePanelGlobalStateInteractor.setVisible(true)
+                false
+            },
+            /* cancel = */ {},
+            /* afterKeyguardGone = */ true,
+        )
+    }
+
+    private fun showAppVolumePanel() {
+        activityStarter.dismissKeyguardThenExecute(
+            /* action = */ {
+                appVolumePanelGlobalStateInteractor.setVisible(true)
                 false
             },
             /* cancel = */ {},
@@ -137,6 +166,25 @@ constructor(
             // TODO(b/337205027) change maxWidth
             maxWidth = 800.dp,
             containerColorProvider = { MaterialTheme.colorScheme.surface },
+        )
+    }
+
+    private fun createAppVolumePanelDialog(): Dialog {
+        return dialogFactory.createBottomSheet(
+            content = { dialog ->
+                LaunchedEffect(dialog) {
+                    dialog.setOnDismissListener {
+                        appVolumePanelGlobalStateInteractor.setVisible(false)
+                    }
+                }
+
+                AppVolumePanelRoot(
+                    appVolumeViewModel,
+                    Modifier.sysUiResTagContainer(),
+                )
+            },
+            isDraggable = false,
+            maxWidth = 800.dp,
         )
     }
 }

@@ -307,4 +307,8 @@
     <string name="mic_camera_privacy_indicator_title">Mic and camera privacy indicator</string>
     <string name="location_privacy_indicator_title">Location privacy indicator</string>
     <string name="projection_privacy_indicator_title">Media projection privacy indicator</string>
+
+    <!-- Per-app volume -->
+    <string name="app_volume">App volume</string>
+    <string name="app_volume_no_active_apps">No active audio playback</string>
 </resources>

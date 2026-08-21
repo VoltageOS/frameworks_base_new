@@ -24,7 +24,7 @@ import com.android.systemui.haptics.slider.SliderHapticFeedbackFilter
  *
  * @property disabledMessage is shown when [isEnabled] is false
  */
-sealed interface SliderState {
+interface SliderState {
     val value: Float
     val valueRange: ClosedFloatingPointRange<Float>
     val step: Float
