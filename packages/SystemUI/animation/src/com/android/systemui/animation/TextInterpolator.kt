@@ -157,27 +157,25 @@ class TextInterpolator(
      * used for interpolation.
      */
     fun onTargetPaintModified() {
-        targetPaint.typeface =
-            typefaceCache.getTypefaceForVariant(
-                compatibleVariationSettings(targetPaint.fontVariationSettings)
-            )
-        targetPaint.fontFeatureSettings = basePaint.fontFeatureSettings
+        val requested = parseVariationSettings(targetPaint.fontVariationSettings)
+        val compatible = requested.filter(::isInterpolatableAxis)
+        if (compatible.size != requested.size) {
+            targetPaint.typeface =
+                typefaceCache.getTypefaceForVariant(compatible.joinToString(", "))
+            targetPaint.fontFeatureSettings = basePaint.fontFeatureSettings
+        }
         updatePositionsAndFonts(shapeText(layout, targetPaint), updateBase = false)
         listener?.onPaintModified(targetPaint)
     }
 
-    private fun compatibleVariationSettings(settings: String?): String =
-        settings
-            ?.split(",")
-            ?.map { it.trim() }
-            ?.filter {
-                it.startsWith("'wdth'") ||
-                    it.startsWith("'wght'") ||
-                    it.startsWith("'ROND'") ||
-                    it.startsWith("'slnt'")
-            }
-            ?.joinToString(", ")
-            .orEmpty()
+    private fun parseVariationSettings(settings: String?): List<String> =
+        settings?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
+
+    private fun isInterpolatableAxis(setting: String): Boolean =
+        setting.startsWith("'wdth'") ||
+            setting.startsWith("'wght'") ||
+            setting.startsWith("'ROND'") ||
+            setting.startsWith("'slnt'")
 
     /**
      * Recalculate internal text layout for interpolation.
