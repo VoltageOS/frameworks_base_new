@@ -285,26 +285,27 @@ public class BluetoothControllerImpl implements BluetoothController, BluetoothCa
             mHandler.sendEmptyMessage(H.MSG_STATE_CHANGED);
         }
         updateAudioProfile();
+        updateActive();
         updateBattery();
         dispatchLauncherUpdate();
     }
 
     private void updateActive() {
         mLogger.logUpdatingActive();
-        boolean isActive = false;
-
-        for (CachedBluetoothDevice device : getDevices()) {
-            isActive |= device.isActiveDevice(BluetoothProfile.HEADSET)
-                    || device.isActiveDevice(BluetoothProfile.A2DP)
-                    || device.isActiveDevice(BluetoothProfile.HEARING_AID)
-                    || device.isActiveDevice(BluetoothProfile.LE_AUDIO);
-        }
-
-        if (mIsActive != isActive) {
-            mIsActive = isActive;
-            mHandler.sendEmptyMessage(H.MSG_STATE_CHANGED);
-            dispatchLauncherUpdate();
-        }
+        mBackgroundExecutor.execute(() -> {
+            boolean isActive = false;
+            for (CachedBluetoothDevice device : getDevices()) {
+                isActive |= device.isActiveDevice(BluetoothProfile.HEADSET)
+                        || device.isActiveDevice(BluetoothProfile.A2DP)
+                        || device.isActiveDevice(BluetoothProfile.HEARING_AID)
+                        || device.isActiveDevice(BluetoothProfile.LE_AUDIO);
+            }
+            if (mIsActive != isActive) {
+                mIsActive = isActive;
+                mHandler.sendEmptyMessage(H.MSG_STATE_CHANGED);
+                dispatchLauncherUpdate();
+            }
+        });
     }
 
     private void dispatchLauncherUpdate() {
