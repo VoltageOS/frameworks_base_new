@@ -115,6 +115,30 @@ object DeviceEntryIconViewBinder {
         val touchHandlingView = view.touchHandlingView
         val fgIconView = view.iconView
         val bgView = view.bgView
+
+        var blurSupported = false
+        var bgViewVisible = false
+        var bgViewAlpha = 0f
+        var deviceEntryAlpha = 0f
+        val updateBlurRegion = {
+            (bgView.background as? BackgroundBlurDrawable)?.let { blur ->
+                val effectiveAlpha =
+                    if (bgViewVisible) (bgViewAlpha * deviceEntryAlpha).coerceIn(0f, 1f) else 0f
+                val showBlur = blurSupported && effectiveAlpha > 0.01f
+                blur.setVisible(showBlur, /* restart */ false)
+                blur.alpha = (255 * effectiveAlpha).toInt()
+                if (showBlur && bgView.width > 0 && bgView.height > 0) {
+                    blur.setCornerRadius(min(bgView.width, bgView.height).toFloat() / 2f)
+                    blur.setBounds(0, 0, bgView.width, bgView.height)
+                }
+            }
+            Unit
+        }
+        val setBgViewVisible = { visible: Boolean ->
+            bgViewVisible = visible
+            bgView.visibility = if (visible) View.VISIBLE else View.GONE
+            updateBlurRegion()
+        }
         touchHandlingView.listener =
             object : TouchHandlingView.Listener {
                 override fun onLongPressDetected(view: View, x: Int, y: Int) {
@@ -167,20 +191,18 @@ object DeviceEntryIconViewBinder {
                 repeatOnLifecycle(Lifecycle.State.CREATED) {
                     launch("$TAG#viewModel.useBackgroundProtection") {
                         viewModel.useBackgroundProtection.collect { useBackgroundProtection ->
-                            if (shouldUseCustomUdfpsIcon.value && packageInstalled) {
-                                bgView.visibility = View.GONE
-                            } else {
-                                bgView.visibility = if (useBackgroundProtection) View.VISIBLE else View.GONE
-                            }
+                            setBgViewVisible(
+                                useBackgroundProtection &&
+                                    !(shouldUseCustomUdfpsIcon.value && packageInstalled)
+                            )
                         }
                     }
                     launch("$TAG#shouldUseCustomUdfpsIcon") {
                         shouldUseCustomUdfpsIcon.collect { useCustomIcon ->
-                            if (useCustomIcon && packageInstalled) {
-                                bgView.visibility = View.GONE
-                            } else {
-                                bgView.visibility = if (viewModel.useBackgroundProtection.value) View.VISIBLE else View.GONE
-                            }
+                            setBgViewVisible(
+                                viewModel.useBackgroundProtection.value &&
+                                    !(useCustomIcon && packageInstalled)
+                            )
                         }
                     }
                     launch("$TAG#viewModel.burnInOffsets") {
@@ -192,7 +214,11 @@ object DeviceEntryIconViewBinder {
                     }
 
                     launch("$TAG#viewModel.deviceEntryViewAlpha") {
-                        viewModel.deviceEntryViewAlpha.collect { alpha -> view.alpha = alpha }
+                        viewModel.deviceEntryViewAlpha.collect { alpha ->
+                            view.alpha = alpha
+                            deviceEntryAlpha = alpha
+                            updateBlurRegion()
+                        }
                     }
                 }
             }
@@ -326,6 +352,9 @@ object DeviceEntryIconViewBinder {
                     if (enableLockscreenBlur()) {
                         bgView.background =
                             bgView.viewRootImpl.createBackgroundBlurDrawable().apply {
+                                setCornerRadius(
+                                    min(bgView.width, bgView.height).toFloat() / 2f
+                                )
                                 setBlurRadius(
                                     bgView.context.resources.getDimensionPixelOffset(
                                         R.dimen.fingerprint_icon_blur_radius
@@ -333,15 +362,21 @@ object DeviceEntryIconViewBinder {
                                 )
                                 setVisible(false, false)
                             }
+                        updateBlurRegion()
                         bgView.addOnLayoutChangeListener(layoutChangeListener)
                         bgView.doOnDetach {
                             bgView.removeOnLayoutChangeListener(layoutChangeListener)
+                            (bgView.background as? BackgroundBlurDrawable)?.let { blur ->
+                                blur.alpha = 0
+                                blur.setVisible(false, /* restart */ false)
+                            }
+                            blurSupported = false
                         }
-
                         launch("$TAG#windowRootViewBlurInteractor.isBlurCurrentlySupported") {
                             windowRootViewBlurInteractor.isBlurCurrentlySupported.collect {
                                 isSupported ->
-                                bgView.background?.setVisible(isSupported, false)
+                                blurSupported = isSupported
+                                updateBlurRegion()
                             }
                         }
                     }
@@ -349,8 +384,9 @@ object DeviceEntryIconViewBinder {
                     launch("$TAG#bgViewModel.alpha") {
                         bgViewModel.alpha.collect { alpha ->
                             bgView.alpha = alpha
+                            bgViewAlpha = alpha
                             if (enableLockscreenBlur()) {
-                                bgView.background?.alpha = (255 * alpha).toInt()
+                                updateBlurRegion()
                             }
                         }
                     }
