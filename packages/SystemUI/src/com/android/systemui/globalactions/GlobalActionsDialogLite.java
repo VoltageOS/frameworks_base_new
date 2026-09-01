@@ -2971,6 +2971,10 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
         private ListPopupWindow mOverflowPopup;
         private float mInitialWindowDimAmount;
 
+        private static final float BLUR_DIM_AMOUNT = 0.1f;
+        private float mThemeDimAmount;
+        private boolean mBlurRequested;
+
         private final OnBackInvokedCallback mOnBackInvokedCallback;
 
         @VisibleForTesting
@@ -3096,8 +3100,8 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
 
         @Override
         public void onCreate(@NonNull SystemUIDialog dialog, @Nullable Bundle savedInstanceState) {
+            mThemeDimAmount = dialog.getWindow().getAttributes().dimAmount;
             initializeLayout(dialog);
-            mInitialWindowDimAmount = dialog.getWindow().getAttributes().dimAmount;
         }
 
         @Override
@@ -3173,6 +3177,29 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
             mOverflowPopup.show();
         }
 
+        private void applyBackgroundBlur(@NonNull SystemUIDialog dialog, boolean blurSupported) {
+            Window window = dialog.getWindow();
+            if (window == null) {
+                return;
+            }
+            mBlurRequested = blurSupported;
+            window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            WindowManager.LayoutParams attrs = window.getAttributes();
+            if (blurSupported) {
+                window.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
+                int blurBehindRadius = mContext.getResources().getDimensionPixelSize(
+                        com.android.systemui.res.R.dimen.max_window_blur_radius);
+                attrs.setBlurBehindRadius(blurBehindRadius);
+                attrs.dimAmount = BLUR_DIM_AMOUNT;
+            } else {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
+                attrs.setBlurBehindRadius(0);
+                attrs.dimAmount = mThemeDimAmount > 0f ? mThemeDimAmount : 0.88f;
+            }
+            mInitialWindowDimAmount = attrs.dimAmount;
+            window.setAttributes(attrs);
+        }
+
         private void initializeLayout(@NonNull SystemUIDialog dialog) {
             dialog.setContentView(com.android.systemui.res.R.layout.global_actions_grid_lite);
             fixNavBarClipping(dialog);
@@ -3196,6 +3223,8 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
                     mGlobalActionsLayout::setIsBlurSupported);
             mGlobalActionsLayout.setIsBlurSupported(
                     blurInteractor.isBlurCurrentlySupported().getValue());
+            collectFlow(mGlobalActionsLayout, blurInteractor.isBlurCurrentlySupported(),
+                    supported -> applyBackgroundBlur(dialog, Boolean.TRUE.equals(supported)));
             ViewGroup container =
                     dialog.findViewById(com.android.systemui.res.R.id.global_actions_container);
             container.setOnTouchListener((v, event) -> {
@@ -3230,19 +3259,8 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
             window.setType(WindowManager.LayoutParams.TYPE_VOLUME_OVERLAY);
             window.setTitle(""); // prevent Talkback from speaking first item name twice
             window.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
-            window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
-            if (mBlurUtils.supportsBlursOnWindows()) {
-                // Enable blur behind
-                // Enable dim behind since we are setting some amount dim for the blur.
-                window.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
-                // Set blur behind radius
-                int blurBehindRadius = mContext.getResources()
-                        .getDimensionPixelSize(com.android.systemui.res.R.dimen.max_window_blur_radius);
-                window.getAttributes().setBlurBehindRadius(blurBehindRadius);
-                window.setDimAmount(0.54f);
-            } else {
-                window.setDimAmount(0.88f);
-            }
+            applyBackgroundBlur(dialog,
+                    Boolean.TRUE.equals(blurInteractor.isBlurCurrentlySupported().getValue()));
             // If user entered from the lock screen and smart lock was enabled, disable it
             int user = mSelectedUserInteractor.getSelectedUserId();
             boolean userHasTrust = mKeyguardUpdateMonitor.getUserHasTrust(user);
@@ -3436,7 +3454,11 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
 
                 float alpha = isEnter ? progress : 1 - progress;
                 mGlobalActionsLayout.setAlpha(alpha);
-                window.setDimAmount(mInitialWindowDimAmount * alpha);
+                float dimAmount = mInitialWindowDimAmount * alpha;
+                if (mBlurRequested) {
+                    dimAmount = Math.max(dimAmount, BLUR_DIM_AMOUNT);
+                }
+                window.setDimAmount(dimAmount);
 
                 // TODO(b/213872558): Support devices that don't have their power button on the
                 // right.
