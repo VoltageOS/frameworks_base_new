@@ -87,6 +87,8 @@ public class NotificationBackgroundView extends View implements Dumpable,
     // True only if the dismiss button is visible.
     private boolean mDrawDismissButtonCutout = false;
     private boolean mOnKeyguard = true;
+    private boolean mAggregatedVisible = true;
+    private boolean mBlurVisible = true;
 
     public NotificationBackgroundView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -128,7 +130,7 @@ public class NotificationBackgroundView extends View implements Dumpable,
             }
 
             if (!NotificationAddXOnHoverToDismiss.isEnabled()) {
-                if (mBackgroundBlurDrawable != null) {
+                if (mBackgroundBlurDrawable != null && mBlurVisible) {
                     draw(canvas, mBackgroundBlurDrawable);
                 } else {
                     draw(canvas, mBackground);
@@ -146,7 +148,7 @@ public class NotificationBackgroundView extends View implements Dumpable,
             if (mDrawDismissButtonCutout) {
                 canvas.clipPath(calculateDismissButtonCutoutPath(backgroundBounds));
             }
-            if (mBackgroundBlurDrawable != null) {
+            if (mBackgroundBlurDrawable != null && mBlurVisible) {
                 mBackgroundBlurDrawable.setBounds(backgroundBounds);
                 mBackgroundBlurDrawable.draw(canvas);
             } else if (mBackground != null) {
@@ -277,6 +279,38 @@ public class NotificationBackgroundView extends View implements Dumpable,
         // TODO: (b/445495701) - Determine why this value is opposite of expected, then use in #draw
         // to restrict the blurred background to the keyguard only.
         mOnKeyguard = onKeyguard;
+        updateBlurVisibility();
+    }
+
+    @Override
+    public void setAlpha(float alpha) {
+        super.setAlpha(alpha);
+        updateBlurVisibility();
+    }
+
+    @Override
+    public void onVisibilityAggregated(boolean isVisible) {
+        super.onVisibilityAggregated(isVisible);
+        mAggregatedVisible = isVisible;
+        updateBlurVisibility();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (mBackgroundBlurDrawable != null) {
+            mBackgroundBlurDrawable.setVisible(false, false);
+        }
+    }
+
+    private void updateBlurVisibility() {
+        if (mBackgroundBlurDrawable == null) {
+            return;
+        }
+        mBlurVisible = mOnKeyguard && mAggregatedVisible && mDrawableAlpha > 0
+                && getAlpha() > 0f;
+        mBackgroundBlurDrawable.setVisible(mBlurVisible, false);
+        invalidate();
     }
 
     /**
@@ -357,6 +391,7 @@ public class NotificationBackgroundView extends View implements Dumpable,
                                         mTintColor != 0 ? mTintColor : mNormalColor);
 
                                 updateBackgroundRadii();
+                                updateBlurVisibility();
                                 invalidate();
                             }
                             NotificationBackgroundView.this.removeOnAttachStateChangeListener(this);
@@ -377,6 +412,7 @@ public class NotificationBackgroundView extends View implements Dumpable,
                 mOnAttachStateChangeListener = null;
             }
             if (mBackgroundBlurDrawable != null) {
+                mBackgroundBlurDrawable.setVisible(false, false);
                 mBackgroundBlurDrawable.setCallback(null);
             }
             mBackgroundBlurDrawable = null;
@@ -500,6 +536,7 @@ public class NotificationBackgroundView extends View implements Dumpable,
         mBackground.setAlpha(drawableAlpha);
         if (mBackgroundBlurDrawable != null) {
             mBackgroundBlurDrawable.setAlpha(drawableAlpha);
+            updateBlurVisibility();
         }
     }
 
