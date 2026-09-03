@@ -136,12 +136,16 @@ public class FontController {
         return get().getCurrentFont();
     }
 
+    private Resources getEffectiveResources() {
+        return sResources != null ? sResources : Resources.getSystem();
+    }
+
     private String getCurrentFont() {
-        if (sResources == null) return sFontFamily;
         try {
-            int configId = sResources.getIdentifier("config_bodyFontFamily", "string", "android");
+            Resources res = getEffectiveResources();
+            int configId = res.getIdentifier("config_bodyFontFamily", "string", "android");
             if (configId != 0) {
-                String currFont = sResources.getString(configId);
+                String currFont = res.getString(configId);
                 if (!TextUtils.equals(sFontFamily, currFont)) {
                     sFontFamily = currFont;
                     logger("Font changed to: " + sFontFamily);
@@ -169,9 +173,11 @@ public class FontController {
 
         String currentFont = getCurrentFont();
 
-        if (fontToOverride.matches("^" + Pattern.quote(currentFont) + "(-.*)?$")) {
-            logger(fontToOverride + " matches current font root '" + currentFont + "', skipping override!");
-            return null;
+        if (!"sans-serif".equals(currentFont)) {
+            if (fontToOverride.matches("^" + Pattern.quote(currentFont) + "(-.*)?$")) {
+                logger(fontToOverride + " matches current font root '" + currentFont + "', skipping override!");
+                return null;
+            }
         }
 
         // Don't remap variable-* families when the default Google Sans Flex
@@ -224,8 +230,8 @@ public class FontController {
         sResources = res;
         String pkgName = getCurrentPackageName();
         if (pkgName == null || EXCLUDED_APPS.contains(pkgName)) return;
-        logger("handleOnConfiguration: Changing default font to: " + Typeface.getFontName());
-        Typeface.changeFont();
+        getCurrentFont();
+        Typeface.changeFont(res);
     }
 
     private String getCurrentPackageName() {
@@ -239,9 +245,7 @@ public class FontController {
 
     private int getFontWeightAdjustment() {
         try {
-            Resources res = sResources;
-            if (res == null) return 0;
-            Configuration cfg = res.getConfiguration();
+            Configuration cfg = getEffectiveResources().getConfiguration();
             return cfg != null ? cfg.fontWeightAdjustment : 0;
         } catch (Exception e) {
             logger("getFontWeightAdjustment failed: " + e.getMessage());

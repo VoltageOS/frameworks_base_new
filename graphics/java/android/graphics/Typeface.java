@@ -1756,45 +1756,34 @@ public class Typeface {
         systemFontMap.put(familyName, pending);
     }
 
-    /** @hide */
-    public static void changeFont() {
+/** @hide */
+    public static void changeFont(Resources res) {
         synchronized (sDynamicCacheLock) {
             sDynamicTypefaceCache.evictAll();
         }
 
-        String fontFamily = FontController.getCurrentFontFamily();
+        String fontFamily = null;
+        if (res != null) {
+            int configId = res.getIdentifier("config_bodyFontFamily", "string", "android");
+            if (configId != 0) {
+                fontFamily = res.getString(configId);
+            }
+        }
+        if (fontFamily == null || fontFamily.isEmpty()) {
+            fontFamily = FontController.getCurrentFontFamily();
+        }
 
         sFontName = fontFamily;
 
-        // Use FontController's fallback resolver to handle family-list
-        // entries (e.g. google-sans-flex) that may not register in
-        // sSystemFontMap by their list name, falling back through known
-        // aliases to Typeface.DEFAULT.
-        Typeface tf = FontController.resolveBaseTypeface();
+        Typeface tf = getOverrideTypeface(sFontName);
 
         Typeface tfBold = create(tf, BOLD);
         Typeface tfItalic = create(tf, ITALIC);
         Typeface tfItalicBold = create(tf, BOLD_ITALIC);
 
-        boolean repointed = DEFAULT.updatePendingTypeface(tf);
-        repointed &= DEFAULT_BOLD.updatePendingTypeface(tfBold);
-        repointed &= SANS_SERIF.updatePendingTypeface(tf);
-
-        if (!repointed) {
-            // DEFAULT/DEFAULT_BOLD/SANS_SERIF are concrete (non-placeholder) Typeface
-            // instances in this process — most likely because setSystemFontMap() took
-            // the non-Zygote fallback branch. We cannot mutate them in place; fall back
-            // to updating sSystemFontMap and sDefaultTypeface so subsequent lookups by
-            // name still resolve to the new font.
-            synchronized (SYSTEM_FONT_MAP_LOCK) {
-                sSystemFontMap.put(DEFAULT_FAMILY, tf);
-                sSystemFontMap.put("sans-serif", tf);
-                sSystemFontMap.put("sans-serif-bold", tfBold);
-                sDefaultTypeface = tf;
-            }
-            Log.w(TAG, "changeFont: DEFAULT typefaces are not placeholders in this "
-                    + "process; updated sSystemFontMap instead of repointing statics.");
-        }
+        nativeForceSetStaticFinalField("DEFAULT", tf);
+        nativeForceSetStaticFinalField("DEFAULT_BOLD", tfBold);
+        nativeForceSetStaticFinalField("SANS_SERIF", tf);
 
         changeDefaultFontForTest(
                 Arrays.asList(
@@ -1920,6 +1909,8 @@ public class Typeface {
         // Preload Roboto-Regular.ttf in Zygote for improving app launch performance.
         preloadFontFile(SystemFonts.SYSTEM_FONT_DIR + "Roboto-Regular.ttf");
         preloadFontFile(SystemFonts.SYSTEM_FONT_DIR + "RobotoStatic-Regular.ttf");
+        preloadFontFile(SystemFonts.SYSTEM_FONT_DIR + "GoogleSans-Regular.ttf");
+        preloadFontFile(SystemFonts.SYSTEM_FONT_DIR + "GoogleSans-Italic.ttf");
 
         String locale = SystemProperties.get("persist.sys.locale", "en-US");
         String script = ULocale.addLikelySubtags(ULocale.forLanguageTag(locale)).getScript();
