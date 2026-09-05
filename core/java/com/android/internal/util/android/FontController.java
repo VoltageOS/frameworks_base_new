@@ -15,6 +15,7 @@
 package com.android.internal.util.android;
 
 import android.app.ActivityThread;
+import android.app.Application;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Typeface;
@@ -137,7 +138,16 @@ public class FontController {
     }
 
     private Resources getEffectiveResources() {
-        return sResources != null ? sResources : Resources.getSystem();
+        if (sResources != null) {
+            return sResources;
+        }
+        try {
+            Application app = ActivityThread.currentApplication();
+            if (app != null && app.getResources() != null) {
+                return app.getResources();
+            }
+        } catch (Exception ignored) {}
+        return Resources.getSystem();
     }
 
     private String getCurrentFont() {
@@ -207,14 +217,19 @@ public class FontController {
     private Typeface resolveDefaultTypeface() {
         // First try to resolve the currently active custom font directly
         String currentFont = getCurrentFont();
-        if (currentFont != null && !currentFont.isEmpty()) {
+        if (currentFont != null && !currentFont.isEmpty() && !"sans-serif".equals(currentFont)) {
             Typeface tf = Typeface.getSystemDefaultTypeface(currentFont);
             if (tf != null && tf != Typeface.DEFAULT) {
                 logger("resolveDefaultTypeface: resolved current font '" + currentFont + "'");
                 return tf;
             }
         }
-        // Fall back through known default font aliases
+        // If DEFAULT has already been updated by changeFont, use it
+        if (Typeface.DEFAULT != null) {
+            return Typeface.DEFAULT;
+        }
+
+        // Fall back through known default font aliases only if DEFAULT is unavailable
         for (String family : DEFAULT_FONT_FALLBACKS) {
             Typeface tf = Typeface.getSystemDefaultTypeface(family);
             if (tf != null && tf != Typeface.DEFAULT) {
@@ -231,6 +246,7 @@ public class FontController {
         String pkgName = getCurrentPackageName();
         if (pkgName == null || EXCLUDED_APPS.contains(pkgName)) return;
         getCurrentFont();
+        Typeface.changeFont();
         Typeface.changeFont(res);
     }
 
@@ -304,7 +320,7 @@ public class FontController {
         }
 
         private static Typeface resolveNamedVariant(String fontName, int weight, boolean isItalic) {
-            if (fontName == null) return null;
+            if (fontName == null || isItalic || "sans-serif".equals(fontName)) return null;
 
             // Map weight to suffix candidates in priority order
             String[] suffixes;
@@ -334,12 +350,17 @@ public class FontController {
             if (exactMatch != null) {
                 return exactMatch;
             }
+            String bestKey = null;
+            int bestWeight = 400;
             for (Map.Entry<String, Integer> entry : WEIGHT_MAP.entrySet()) {
                 if (familyName.contains(entry.getKey())) {
-                    return entry.getValue();
+                    if (bestKey == null || entry.getKey().length() > bestKey.length()) {
+                        bestKey = entry.getKey();
+                        bestWeight = entry.getValue();
+                    }
                 }
             }
-            return 400;
+            return bestWeight;
         }
     }
 }

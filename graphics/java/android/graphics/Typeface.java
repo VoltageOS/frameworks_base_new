@@ -1405,6 +1405,9 @@ public class Typeface {
 
     /** @hide */
     public static Typeface getOverrideTypeface(@NonNull String familyName) {
+        if (familyName == null) {
+            return getDefault();
+        }
         if (DEFAULT.mPendingTypeface != null && DEFAULT.mPendingTypeface.get() == null) {
             return getSystemDefaultTypeface(familyName);
         }
@@ -1756,7 +1759,12 @@ public class Typeface {
         systemFontMap.put(familyName, pending);
     }
 
-/** @hide */
+    /** @hide */
+    public static void changeFont() {
+        changeFont(null);
+    }
+
+    /** @hide */
     public static void changeFont(Resources res) {
         synchronized (sDynamicCacheLock) {
             sDynamicTypefaceCache.evictAll();
@@ -1781,9 +1789,21 @@ public class Typeface {
         Typeface tfItalic = create(tf, ITALIC);
         Typeface tfItalicBold = create(tf, BOLD_ITALIC);
 
+        if (tf != null) {
+            DEFAULT.updatePendingTypeface(tf);
+            DEFAULT_BOLD.updatePendingTypeface(tfBold);
+            SANS_SERIF.updatePendingTypeface(tf);
+        }
+
         nativeForceSetStaticFinalField("DEFAULT", tf);
         nativeForceSetStaticFinalField("DEFAULT_BOLD", tfBold);
         nativeForceSetStaticFinalField("SANS_SERIF", tf);
+
+        if (tf != null) {
+            synchronized (SYSTEM_FONT_MAP_LOCK) {
+                setDefault(tf);
+            }
+        }
 
         changeDefaultFontForTest(
                 Arrays.asList(
