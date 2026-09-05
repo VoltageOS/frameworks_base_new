@@ -36,6 +36,7 @@ import com.android.systemui.screenrecord.RecordingService
 import com.android.systemui.screenrecord.RecordingServiceStrings
 import com.android.systemui.screenrecord.ScreenMediaRecorder.SavedRecording
 import com.android.systemui.screenrecord.ScreenRecordUxController
+import com.android.systemui.screenrecord.data.repository.ScreenRecordingServiceRepository
 import com.android.systemui.settings.UserContextProvider
 import com.android.systemui.statusbar.phone.KeyguardDismissUtil
 import com.android.traceur.MessageConstants.INTENT_EXTRA_TRACE_TYPE
@@ -60,6 +61,7 @@ constructor(
     traceurConnectionProvider: TraceurConnection.Provider,
     iActivityManager: IActivityManager,
     screenRecordingStartTimeStore: ScreenRecordingStartTimeStore,
+    screenRecordingServiceRepository: ScreenRecordingServiceRepository,
 ) :
     RecordingService(
         controller,
@@ -70,6 +72,7 @@ constructor(
         userContextProvider,
         keyguardDismissUtil,
         screenRecordingStartTimeStore,
+        screenRecordingServiceRepository,
     ) {
 
     private val traceurConnection: TraceurConnection = traceurConnectionProvider.create()

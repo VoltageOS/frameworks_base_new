@@ -53,6 +53,7 @@ import com.android.systemui.res.R;
 import com.android.systemui.screenrecord.ScreenMediaRecorder.SavedRecording;
 import com.android.systemui.screenrecord.ScreenMediaRecorder.ScreenMediaRecorderListener;
 import com.android.systemui.screenrecord.data.repository.ScreenRecordingPreferenceRepository;
+import com.android.systemui.screenrecord.data.repository.ScreenRecordingServiceRepository;
 import com.android.systemui.settings.UserContextProvider;
 import com.android.systemui.statusbar.phone.KeyguardDismissUtil;
 
@@ -103,6 +104,7 @@ public class RecordingService extends Service implements ScreenMediaRecorderList
 
     private final ScreenRecordUxController mController;
     private final RecordingServiceBinder mBinder;
+    private final ScreenRecordingServiceRepository mScreenRecordingServiceRepository;
     protected final KeyguardDismissUtil mKeyguardDismissUtil;
     private final Handler mMainHandler;
     private ScreenRecordingAudioSource mAudioSource = ScreenRecordingAudioSource.NONE;
@@ -127,7 +129,8 @@ public class RecordingService extends Service implements ScreenMediaRecorderList
             @Main Handler handler, UiEventLogger uiEventLogger,
             NotificationManager notificationManager,
             UserContextProvider userContextTracker, KeyguardDismissUtil keyguardDismissUtil,
-            ScreenRecordingStartTimeStore screenRecordingStartTimeStore) {
+            ScreenRecordingStartTimeStore screenRecordingStartTimeStore,
+            ScreenRecordingServiceRepository screenRecordingServiceRepository) {
         mController = controller;
         mLongExecutor = executor;
         mMainHandler = handler;
@@ -136,6 +139,7 @@ public class RecordingService extends Service implements ScreenMediaRecorderList
         mUserContextTracker = userContextTracker;
         mKeyguardDismissUtil = keyguardDismissUtil;
         mScreenRecordingStartTimeStore = screenRecordingStartTimeStore;
+        mScreenRecordingServiceRepository = screenRecordingServiceRepository;
         mBinder = new RecordingServiceBinder();
     }
 
@@ -700,6 +704,7 @@ public class RecordingService extends Service implements ScreenMediaRecorderList
             Intent intent = new Intent(RecordingService.this, RecordingService.class);
             intent.setAction(ACTION_STOP_NOTIF);
             RecordingService.this.startService(intent);
+            mScreenRecordingServiceRepository.stopRecording(StopReason.STOP_HOST_APP);
         }
 
         @Override
