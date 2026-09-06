@@ -330,10 +330,9 @@ public class ImageWallpaper extends WallpaperService {
             Trace.endSection();
         }
 
-	    private boolean isLockScreenWallpaper() {
-		    return (this.getWallpaperFlags() & FLAG_LOCK)
-				    == FLAG_LOCK;
-	    }
+        private boolean isLockScreenWallpaper() {
+            return getWallpaperFlags() == FLAG_LOCK;
+        }
 
         @VisibleForTesting
         boolean isBitmapLoaded() {
