@@ -924,9 +924,11 @@ public interface ImeTracker {
         if (android.tracing.Flags.imetrackerProtolog()) {
             ProtoLog.i(IME_TRACKER, messageString, args);
         } else {
-            // Log only to logcat
+            if (!DEBUG_IME_VISIBILITY && !Log.isLoggable(TAG, Log.DEBUG)) {
+                return;
+            }
             final var message = TextUtils.formatSimple(messageString, args);
-            Log.i(TAG, message);
+            Log.d(TAG, message);
         }
     }
 
