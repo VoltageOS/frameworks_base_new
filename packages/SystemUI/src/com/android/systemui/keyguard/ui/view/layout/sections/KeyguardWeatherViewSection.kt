@@ -50,6 +50,7 @@ constructor(
     private var weatherInlineView: TextView? = null
     private var weatherInlineController: WeatherViewController? = null
     private var preDrawListener: ViewTreeObserver.OnPreDrawListener? = null
+    private var preDrawObserver: ViewTreeObserver? = null
 
     private fun isEnabled() =
         smartspaceController.isOmniWeatherEnabled && !smartspaceController.isEnabled
@@ -64,17 +65,6 @@ constructor(
         ) as TextView
         constraintLayout.addView(weatherInlineView)
 
-        preDrawListener = ViewTreeObserver.OnPreDrawListener {
-            val sliceView = constraintLayout.findViewById<View>(R.id.keyguard_slice_view)
-            sliceView?.let {
-                weatherInlineView?.translationX = it.translationX
-                weatherInlineView?.translationY = it.translationY
-                weatherInlineView?.alpha = it.alpha
-            }
-            true
-        }
-        weatherInlineView?.viewTreeObserver?.addOnPreDrawListener(preDrawListener)
-
         weatherView = layoutInflater.inflate(
             R.layout.keyguard_weather_area, null, false,
         ) as WeatherInfoView
@@ -86,19 +76,23 @@ constructor(
 
         if (isModern()) {
             val inlineView = weatherInlineView ?: return
-            weatherInlineController = WeatherViewController(
-                context = context,
-                weatherIcon = null,
-                weatherTemp = null,
-                weatherInfoView = null,
-                weatherInlineView = inlineView,
-            )
-            weatherInlineController?.init()
+            if (weatherInlineController == null) {
+                weatherInlineController = WeatherViewController(
+                    context = context,
+                    weatherIcon = null,
+                    weatherTemp = null,
+                    weatherInfoView = null,
+                    weatherInlineView = inlineView,
+                )
+                weatherInlineController?.init()
+            }
+            installPreDrawListener(constraintLayout)
 
             weatherView?.cleanup()
             weatherView?.visibility = View.GONE
 
         } else {
+            removePreDrawListener()
             weatherView?.init()
 
             weatherInlineController?.removeObserver()
@@ -106,6 +100,35 @@ constructor(
             weatherInlineView?.visibility = View.GONE
 
         }
+    }
+
+    private fun installPreDrawListener(constraintLayout: ConstraintLayout) {
+        removePreDrawListener()
+        val listener = ViewTreeObserver.OnPreDrawListener {
+            val inlineView = weatherInlineView
+            if (inlineView != null && inlineView.visibility == View.VISIBLE) {
+                constraintLayout.findViewById<View>(R.id.keyguard_slice_view)?.let {
+                    inlineView.translationX = it.translationX
+                    inlineView.translationY = it.translationY
+                    inlineView.alpha = it.alpha
+                }
+            }
+            true
+        }
+        val observer = constraintLayout.viewTreeObserver
+        preDrawListener = listener
+        preDrawObserver = observer
+        observer.addOnPreDrawListener(listener)
+    }
+
+    private fun removePreDrawListener() {
+        preDrawListener?.let { listener ->
+            preDrawObserver?.takeIf { it.isAlive }?.removeOnPreDrawListener(listener)
+            weatherInlineView?.viewTreeObserver?.takeIf { it.isAlive }
+                ?.removeOnPreDrawListener(listener)
+        }
+        preDrawListener = null
+        preDrawObserver = null
     }
 
     override fun applyConstraints(constraintSet: ConstraintSet) {
@@ -164,14 +187,8 @@ constructor(
         }
 
     override fun removeViews(constraintLayout: ConstraintLayout) {
-        if (!isEnabled()) return
 
-        preDrawListener?.let {
-            if (weatherInlineView?.viewTreeObserver?.isAlive == true) {
-                weatherInlineView?.viewTreeObserver?.removeOnPreDrawListener(it)
-            }
-            preDrawListener = null
-        }
+        removePreDrawListener()
 
         weatherInlineController?.removeObserver()
         weatherInlineController = null

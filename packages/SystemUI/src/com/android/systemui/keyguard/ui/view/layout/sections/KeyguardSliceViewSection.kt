@@ -21,9 +21,6 @@ package com.android.systemui.keyguard.ui.view.layout.sections
 import android.content.Context
 import android.os.Handler
 import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewTreeObserver
-import android.widget.TextView
 import androidx.constraintlayout.widget.Barrier
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
@@ -33,7 +30,6 @@ import com.android.systemui.keyguard.domain.interactor.KeyguardBlueprintInteract
 import com.android.systemui.lifecycle.repeatWhenAttached
 import dagger.Lazy
 import kotlinx.coroutines.launch
-import kotlin.math.ceil
 import com.android.keyguard.KeyguardSliceView
 import com.android.keyguard.KeyguardSliceViewController
 import com.android.systemui.dagger.qualifiers.Background
@@ -78,8 +74,6 @@ constructor(
 ) : KeyguardSection() {
     private lateinit var sliceView: KeyguardSliceView
     private var disposableHandle: DisposableHandle? = null
-    private var clockWidthWatcher: ViewTreeObserver.OnPreDrawListener? = null
-    private var lastClockWidth = -1
 
     override fun addViews(constraintLayout: ConstraintLayout) {
         if (smartspaceController.isEnabled) return
@@ -114,8 +108,6 @@ constructor(
                 aodBurnInViewModel,
             )
 
-        installClockWidthWatcher(constraintLayout)
-
         sliceView.repeatWhenAttached {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
@@ -124,38 +116,6 @@ constructor(
                 }
             }
         }
-    }
-
-    private fun installClockWidthWatcher(constraintLayout: ConstraintLayout) {
-        removeClockWidthWatcher()
-        lastClockWidth = -1
-        val watcher =
-            ViewTreeObserver.OnPreDrawListener {
-                val clock =
-                    constraintLayout.findViewById<View>(
-                        ClockViewIds.LOCKSCREEN_CLOCK_VIEW_SMALL
-                    )
-                val width = clock?.let { paintedWidth(it) } ?: -1
-                if (width >= 0 && width != lastClockWidth) {
-                    lastClockWidth = width
-                    constraintLayout.requestLayout()
-                }
-                true
-            }
-        clockWidthWatcher = watcher
-        constraintLayout.viewTreeObserver.addOnPreDrawListener(watcher)
-    }
-
-    private fun paintedWidth(clock: View): Int =
-        (clock as? TextView)?.let { tv ->
-            ceil(tv.paint.measureText(tv.text?.toString().orEmpty())).toInt() +
-                tv.paddingStart + tv.paddingEnd
-        } ?: clock.width
-
-    private fun removeClockWidthWatcher() {
-        clockWidthWatcher?.let { sliceView.viewTreeObserver?.takeIf { vto -> vto.isAlive }
-            ?.removeOnPreDrawListener(it) }
-        clockWidthWatcher = null
     }
 
     override fun applyConstraints(constraintSet: ConstraintSet) {
@@ -288,7 +248,6 @@ constructor(
     override fun removeViews(constraintLayout: ConstraintLayout) {
         if (smartspaceController.isEnabled) return
 
-        removeClockWidthWatcher()
         disposableHandle?.dispose()
         disposableHandle = null
         constraintLayout.removeView(R.id.keyguard_slice_view)

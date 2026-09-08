@@ -22,6 +22,7 @@ import android.graphics.ColorMatrixColorFilter
 import android.os.UserHandle
 import android.provider.Settings
 import android.graphics.drawable.Drawable
+import android.text.TextUtils
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
@@ -72,7 +73,8 @@ class WeatherViewController(
             }
             delay(5000)
         }
-    }.stateIn(scope, SharingStarted.Eagerly, getWeatherSettings())
+    }.flowOn(Dispatchers.IO)
+        .stateIn(scope, SharingStarted.Eagerly, getWeatherSettings())
 
     fun init() {
         scope.launch {
@@ -146,8 +148,13 @@ class WeatherViewController(
                 } else {
                     weatherIcon?.setImageDrawable(
                         OmniJawsClient.get().getWeatherConditionImage(context, info.conditionCode))
-                    weatherTemp?.text = buildWeatherText(info)
-                    weatherTemp?.isSelected = true
+                    val text = buildWeatherText(info)
+                    weatherTemp?.let { view ->
+                        if (!TextUtils.equals(view.text, text)) {
+                            view.text = text
+                        }
+                        if (!view.isSelected) view.isSelected = true
+                    }
                 }
             } ?: run {
                 if (bootRetryCount < maxBootRetries) {
@@ -167,9 +174,11 @@ class WeatherViewController(
         val view = weatherInlineView ?: return
         val icon: Drawable? =
             OmniJawsClient.get().getWeatherConditionImage(context, info.conditionCode)
-       val text = buildInlineWeatherText(info)
+        val text = buildInlineWeatherText(info)
         scope.launch(Dispatchers.Main) {
-            view.text = text
+            if (!TextUtils.equals(view.text, text)) {
+                view.text = text
+            }
             if (icon != null) {
                 val size = (view.textSize * 1.15f).toInt()
                 icon.setBounds(0, 0, size, size)
