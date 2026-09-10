@@ -300,9 +300,6 @@
     <string name="tristate_rotation_90">Landscape (90°)</string>
     <string name="tristate_rotation_270">Landscape (270°)</string>
 
-    <!-- Mobile data confirmation dialog -->
-    <string name="do_not_ask_again">Do not ask again</string>
-
     <!-- Privacy Indicator -->
     <string name="mic_camera_privacy_indicator_title">Mic and camera privacy indicator</string>
     <string name="location_privacy_indicator_title">Location privacy indicator</string>
