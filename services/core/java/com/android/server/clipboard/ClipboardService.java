@@ -67,7 +67,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManagerInternal;
 import android.content.pm.UserInfo;
-import android.ext.settings.ExtSettings;
 import android.graphics.drawable.Drawable;
 import android.hardware.display.DisplayManager;
 import android.net.Uri;
@@ -707,17 +706,15 @@ public class ClipboardService extends SystemService {
                     || isDeviceLocked(intendingUserId, deviceId)) {
                 return null;
             }
-            final boolean readAllowedForPackage = mAccess.clipboardReadAllowedForPackage(
-                    pkg, intendingUid, intendingUserId, isDefaultIme);
-            final boolean showAccessDeniedNotifications = !readAllowedForPackage
-                    && ExtSettings.SHOW_CLIPBOARD_ACCESS_DENIAL_NOTIFICATIONS.get(
-                            getContext(), intendingUserId);
+            final ClipboardAccess.ClipboardReadPolicy readPolicy =
+                    mAccess.getClipboardReadPolicyForPackage(pkg, intendingUid,
+                            intendingUserId, isDefaultIme);
             synchronized (mLock) {
                 final ClipboardAccess.PayloadReadAccess readAccess =
-                        mAccess.getPayloadReadAccessLocked(readAllowedForPackage,
+                        mAccess.getPayloadReadAccessLocked(readPolicy.readAllowed,
                                 intendingUid, intendingUserId, intendingDeviceId);
                 if (readAccess == ClipboardAccess.PayloadReadAccess.DENIED) {
-                    if (showAccessDeniedNotifications) {
+                    if (readPolicy.showAccessDeniedNotification) {
                         showAccessDeniedNotificationLocked(pkg, intendingUid, intendingUserId,
                                 intendingDeviceId, deviceId);
                     }

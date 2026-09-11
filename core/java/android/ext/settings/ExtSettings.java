@@ -65,10 +65,6 @@ public class ExtSettings {
     public static final BoolSetting DISALLOW_DELAYED_LOCKING_ON_USER_STOP = new BoolSetting(
             Setting.Scope.PER_USER, Settings.Secure.DISALLOW_DELAYED_LOCKING_ON_USER_STOP, false);
 
-    public static final BoolSetting SHOW_CLIPBOARD_ACCESS_DENIAL_NOTIFICATIONS = new BoolSetting(
-            Setting.Scope.PER_USER,
-            Settings.Secure.CLIPBOARD_SHOW_ACCESS_DENIAL_NOTIFICATIONS, true);
-
     public static final BoolSetting ALLOW_CLIPBOARD_READ_BY_DEFAULT = new BoolSetting(
             Setting.Scope.GLOBAL, Settings.Global.ALLOW_CLIPBOARD_READ_BY_DEFAULT,
             defaultBool(R.bool.setting_default_allow_clipboard_read));

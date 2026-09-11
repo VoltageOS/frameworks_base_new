@@ -215,19 +215,40 @@ final class ClipboardAccess {
 
     boolean clipboardReadAllowedForPackage(String packageName, int intendingUid,
             int intendingUserId, boolean isDefaultIme) {
+        return getClipboardReadPolicyForPackage(packageName, intendingUid, intendingUserId,
+                isDefaultIme).readAllowed;
+    }
+
+    ClipboardReadPolicy getClipboardReadPolicyForPackage(String packageName, int intendingUid,
+            int intendingUserId, boolean isDefaultIme) {
         final PackageStateInternal packageState = mPmi.getPackageStateInternal(packageName);
         if (packageState == null
                 || packageState.getAppId() != UserHandle.getAppId(intendingUid)) {
-            return false;
+            return ClipboardReadPolicy.DENIED;
         }
         final PackageUserStateInternal userState =
                 packageState.getUserStateOrDefault(intendingUserId);
         if (!userState.isInstalled() || userState.isHidden()) {
-            return false;
+            return ClipboardReadPolicy.DENIED;
         }
         final GosPackageState gosPackageState = userState.getGosPackageState();
-        return AswAllowClipboardRead.I.get(mContext, intendingUserId, packageState.isSystem(),
-                isDefaultIme, gosPackageState);
+        final AswAllowClipboardRead appSwitch = AswAllowClipboardRead.I;
+        final boolean readAllowed = appSwitch.get(mContext, intendingUserId,
+                packageState.isSystem(), isDefaultIme, gosPackageState);
+        return new ClipboardReadPolicy(readAllowed,
+                !readAllowed && appSwitch.isNotificationEnabled(gosPackageState));
+    }
+
+    static final class ClipboardReadPolicy {
+        static final ClipboardReadPolicy DENIED = new ClipboardReadPolicy(false, false);
+
+        final boolean readAllowed;
+        final boolean showAccessDeniedNotification;
+
+        ClipboardReadPolicy(boolean readAllowed, boolean showAccessDeniedNotification) {
+            this.readAllowed = readAllowed;
+            this.showAccessDeniedNotification = showAccessDeniedNotification;
+        }
     }
 
     private void registerUidObserver() {

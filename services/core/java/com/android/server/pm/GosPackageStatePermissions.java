@@ -43,6 +43,7 @@ import static android.content.pm.GosPackageStateFlag.RESTRICT_STORAGE_DYN_CODE_L
 import static android.content.pm.GosPackageStateFlag.RESTRICT_WEBVIEW_DYN_CODE_LOADING;
 import static android.content.pm.GosPackageStateFlag.RESTRICT_WEBVIEW_DYN_CODE_LOADING_NON_DEFAULT;
 import static android.content.pm.GosPackageStateFlag.STORAGE_SCOPES_ENABLED;
+import static android.content.pm.GosPackageStateFlag.SUPPRESS_CLIPBOARD_ACCESS_DENIAL_NOTIF;
 import static android.content.pm.GosPackageStateFlag.SUPPRESS_PLAY_INTEGRITY_API_NOTIF;
 import static android.content.pm.GosPackageStateFlag.USE_EXTENDED_VA_SPACE;
 import static android.content.pm.GosPackageStateFlag.USE_EXTENDED_VA_SPACE_NON_DEFAULT;
@@ -145,6 +146,7 @@ class GosPackageStatePermissions {
                 ENABLE_EXPLOIT_PROTECTION_COMPAT_MODE,
                 ALLOW_CLIPBOARD_READ_NON_DEFAULT,
                 ALLOW_CLIPBOARD_READ,
+                SUPPRESS_CLIPBOARD_ACCESS_DENIAL_NOTIF,
         };
         builder()
                 .readWriteFlags(settingsReadWriteFlags)

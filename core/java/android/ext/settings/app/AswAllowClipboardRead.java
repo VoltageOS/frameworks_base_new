@@ -16,6 +16,7 @@ public class AswAllowClipboardRead extends AppSwitch {
     private AswAllowClipboardRead() {
         gosPsFlag = GosPackageStateFlag.ALLOW_CLIPBOARD_READ;
         gosPsFlagNonDefault = GosPackageStateFlag.ALLOW_CLIPBOARD_READ_NON_DEFAULT;
+        gosPsFlagSuppressNotif = GosPackageStateFlag.SUPPRESS_CLIPBOARD_ACCESS_DENIAL_NOTIF;
     }
 
     @Override
