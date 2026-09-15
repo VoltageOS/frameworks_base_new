@@ -76,13 +76,27 @@ public final class VibratorHelper {
     @Nullable
     public static VibrationEffect createWaveformVibration(@Nullable long[] pattern,
             boolean insistent) {
+        if (pattern == null || pattern.length == 0) {
+            return null;
+        }
+        boolean hasNonZeroTiming = false;
+        for (long timing : pattern) {
+            if (timing < 0) {
+                return null;
+            }
+            if (timing != 0) {
+                hasNonZeroTiming = true;
+                break;
+            }
+        }
+        if (!hasNonZeroTiming) {
+            return null;
+        }
         try {
-            if (pattern != null) {
-            	if (pattern.length == 1) {
-            		return VibrationEffect.createOneShot(pattern[0], VibrationEffect.DEFAULT_AMPLITUDE);
-            	} else {
-                	return VibrationEffect.createWaveform(pattern, /* repeat= */ insistent ? 0 : -1);
-                }
+            if (pattern.length == 1) {
+                return VibrationEffect.createOneShot(pattern[0], VibrationEffect.DEFAULT_AMPLITUDE);
+            } else {
+                return VibrationEffect.createWaveform(pattern, /* repeat= */ insistent ? 0 : -1);
             }
         } catch (IllegalArgumentException e) {
             Slog.e(TAG, "Error creating vibration waveform with pattern: "

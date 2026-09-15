@@ -82,6 +82,9 @@ public class VibratorHelperTest extends UiServiceTestCase {
         assertNull(VibratorHelper.createWaveformVibration(null, false));
         assertNull(VibratorHelper.createWaveformVibration(new long[0], false));
         assertNull(VibratorHelper.createWaveformVibration(new long[] { 0, 0 }, false));
+        assertNull(VibratorHelper.createWaveformVibration(new long[] { 0 }, false));
+        assertNull(VibratorHelper.createWaveformVibration(new long[] { 0, 0, 0 }, true));
+        assertNull(VibratorHelper.createWaveformVibration(new long[] { -1 }, false));
     }
 
     @Test
