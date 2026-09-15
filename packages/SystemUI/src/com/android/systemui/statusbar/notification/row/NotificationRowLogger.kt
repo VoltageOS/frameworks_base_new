@@ -144,6 +144,7 @@ constructor(
     }
 
     fun logCancelAppearDrawing(entry: String, wasDrawing: Boolean) {
+        if (!wasDrawing) return
         notificationRenderBuffer.log(
             TAG,
             LogLevel.WARNING,

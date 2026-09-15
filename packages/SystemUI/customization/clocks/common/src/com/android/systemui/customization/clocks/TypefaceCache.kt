@@ -98,7 +98,7 @@ class TypefaceCache<TKey>(
 
     private fun logMiss(key: CacheKey<TKey>) {
         totalMisses++
-        logger.w({ "MISS: $str1; Total: $int1" }) {
+        logger.d({ "MISS: $str1; Total: $int1" }) {
             str1 = "$key"
             int1 = totalMisses
         }

@@ -477,7 +477,7 @@ object KeyguardRootViewBinder {
                 val transition = blueprintViewModel.currentTransition.value
                 val shouldAnimate = transition != null && transition.config.type.animateNotifChanges
                 if (prevTransition == transition && shouldAnimate && !smartspaceVisibilityChanged) {
-                    logger.w("Skipping onNotificationContainerBoundsChanged during transition")
+                    logger.d("Skipping onNotificationContainerBoundsChanged during transition")
                     return
                 }
 
