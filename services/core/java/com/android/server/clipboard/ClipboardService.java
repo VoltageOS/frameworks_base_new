@@ -164,7 +164,7 @@ public class ClipboardService extends SystemService {
     };
     private static final long ACCESS_NOTIFICATION_SUPPRESSION_TIMEOUT_MILLIS = 1000L;
     private static final long ACCESS_DENIED_NOTIFICATION_MIN_INTERVAL_MILLIS =
-            TimeUnit.MINUTES.toMillis(1);
+            TimeUnit.SECONDS.toMillis(6);
 
     private final ActivityManagerInternal mAmInternal;
     private final IUriGrantsManager mUgm;
