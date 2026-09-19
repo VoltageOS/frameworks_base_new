@@ -107,9 +107,7 @@ public class KeyguardPinViewController
         mView.onDevicePostureChanged(mPostureController.getDevicePosture());
         mPostureController.addCallback(mPostureCallback);
         mPasswordEntry.setUsePinShapes(true);
-        if (isAutoPinConfirmEnabledInSettings()) {
-            updateAutoConfirmationState();
-        }
+        updateAutoConfirmationState();
         mView.updatePinScrambling(
                 Settings.System.getIntForUser(getContext().getContentResolver(),
                         Settings.System.LOCKSCREEN_PIN_SCRAMBLE_LAYOUT, 0,
@@ -118,13 +116,12 @@ public class KeyguardPinViewController
 
     protected void onUserInput() {
         super.onUserInput();
-        if (isAutoPinConfirmEnabledInSettings()) {
-            updateAutoConfirmationState();
-            if (mPasswordEntry.getText().length() == mPinLength
-                    && mOkButton.getVisibility() == View.INVISIBLE) {
-                mUiEventLogger.log(PinBouncerUiEvent.ATTEMPT_UNLOCK_WITH_AUTO_CONFIRM_FEATURE);
-                verifyPasswordAndUnlock();
-            }
+        updateAutoConfirmationState();
+        if (isAutoPinConfirmEnabledInSettings()
+                && mPasswordEntry.getText().length() == mPinLength
+                && mOkButton.getVisibility() == View.INVISIBLE) {
+            mUiEventLogger.log(PinBouncerUiEvent.ATTEMPT_UNLOCK_WITH_AUTO_CONFIRM_FEATURE);
+            verifyPasswordAndUnlock();
         }
     }
 
@@ -152,9 +149,7 @@ public class KeyguardPinViewController
     @Override
     protected void handleAttemptLockout(Duration lockoutEndTime) {
         super.handleAttemptLockout(lockoutEndTime);
-        if (isAutoPinConfirmEnabledInSettings()) {
-            updateAutoConfirmationState();
-        }
+        updateAutoConfirmationState();
     }
 
     private void updateAutoConfirmationState() {
