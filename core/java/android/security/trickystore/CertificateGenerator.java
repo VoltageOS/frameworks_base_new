@@ -55,7 +55,8 @@ import javax.security.auth.x500.X500Principal;
  */
 public final class CertificateGenerator {
     private static final String TAG = "CertificateGenerator";
-    
+    private static final int MAX_ATTESTATION_CHALLENGE_SIZE = 128;
+
     public static final ASN1ObjectIdentifier ATTESTATION_OID = 
         new ASN1ObjectIdentifier("1.3.6.1.4.1.11129.2.1.17");
 
@@ -74,6 +75,8 @@ public final class CertificateGenerator {
         public String ecCurveName;
         public List<Integer> purpose = new ArrayList<>();
         public List<Integer> digest = new ArrayList<>();
+        public List<Integer> padding = new ArrayList<>();
+        public List<Integer> rsaOaepMgfDigest = new ArrayList<>();
         public byte[] attestationChallenge;
         public byte[] brand;
         public byte[] device;
@@ -121,7 +124,14 @@ public final class CertificateGenerator {
             KeyGenParameters params,
             int securityLevel,
             int uid) {
-        
+        // Validate attestation challenge size (real TEE rejects oversized challenges)
+        if (params.attestationChallenge != null &&
+            params.attestationChallenge.length > MAX_ATTESTATION_CHALLENGE_SIZE) {
+            Log.e(TAG, "Attestation challenge too large: " + params.attestationChallenge.length +
+                  " bytes (max " + MAX_ATTESTATION_CHALLENGE_SIZE + ")");
+            return null;
+        }
+
         KeyBoxManager keyboxManager = TrickyStoreService.getInstance().getKeyBoxManager();
         String algorithm = params.algorithm == 3 ? "EC" : "RSA";
         KeyBoxManager.KeyBox keybox = keyboxManager.getKeybox(algorithm);
@@ -195,6 +205,13 @@ public final class CertificateGenerator {
     }
 
     private static Extension buildAttestExtension(KeyGenParameters params, int securityLevel, int uid) {
+        // Validate attestation challenge size (real TEE rejects oversized challenges)
+        if (params.attestationChallenge != null &&
+            params.attestationChallenge.length > MAX_ATTESTATION_CHALLENGE_SIZE) {
+            Log.e(TAG, "Attestation challenge too large: " + params.attestationChallenge.length +
+                  " bytes (max " + MAX_ATTESTATION_CHALLENGE_SIZE + ")");
+            return null;
+        }
         try {
             byte[] bootKey = AttestationUtils.getBootKey();
             byte[] bootHash = AttestationUtils.getBootHash();
@@ -223,7 +240,32 @@ public final class CertificateGenerator {
             }
             teeEnforced.add(new DERTaggedObject(true, 5, new DERSet(digests)));
 
-            teeEnforced.add(new DERTaggedObject(true, 10, new ASN1Integer(params.ecCurve)));
+            if (!params.padding.isEmpty()) {
+                ASN1Integer[] paddings = new ASN1Integer[params.padding.size()];
+                for (int i = 0; i < params.padding.size(); i++) {
+                    paddings[i] = new ASN1Integer(params.padding.get(i));
+                }
+                teeEnforced.add(new DERTaggedObject(true, 6, new DERSet(paddings)));
+            }
+
+            if (params.algorithm == 3) {
+                teeEnforced.add(new DERTaggedObject(true, 10, new ASN1Integer(params.ecCurve)));
+            }
+            if (params.algorithm == 1) {
+                BigInteger publicExponent = params.rsaPublicExponent != null
+                        ? params.rsaPublicExponent : RSAKeyGenParameterSpec.F4;
+                teeEnforced.add(new DERTaggedObject(true, 200, new ASN1Integer(publicExponent)));
+
+                // Tag 203 is present in Key Attestation version 100 and later.
+                if (AttestationUtils.getAttestVersion() >= 100
+                        && !params.rsaOaepMgfDigest.isEmpty()) {
+                    ASN1Integer[] mgfDigests = new ASN1Integer[params.rsaOaepMgfDigest.size()];
+                    for (int i = 0; i < params.rsaOaepMgfDigest.size(); i++) {
+                        mgfDigests[i] = new ASN1Integer(params.rsaOaepMgfDigest.get(i));
+                    }
+                    teeEnforced.add(new DERTaggedObject(true, 203, new DERSet(mgfDigests)));
+                }
+            }
             teeEnforced.add(new DERTaggedObject(true, 503, DERNull.INSTANCE));
             teeEnforced.add(new DERTaggedObject(true, 702, new ASN1Integer(0)));
             teeEnforced.add(new DERTaggedObject(true, 704, rootOfTrust));
