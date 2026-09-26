@@ -40,6 +40,7 @@ import android.hardware.TriggerEvent;
 import android.hardware.TriggerEventListener;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.os.SystemClock;
@@ -148,6 +149,21 @@ public class GestureLauncherService extends SystemService {
     private Context mContext;
     private final MetricsLogger mMetricsLogger;
     private PowerManager mPowerManager;
+    private final Handler mHandler = new Handler(Looper.getMainLooper());
+    private boolean mTorchWakePending;
+    private final Runnable mWakeForUnmatchedTorchTap = () -> {
+        synchronized (this) {
+            if (!mTorchWakePending) {
+                return;
+            }
+            mTorchWakePending = false;
+        }
+        if (!mPowerManager.isInteractive()) {
+            mPowerManager.wakeUp(SystemClock.uptimeMillis(),
+                    PowerManager.WAKE_REASON_POWER_BUTTON,
+                    "GestureLauncherService: unmatched torch tap");
+        }
+    };
 
     private WindowManagerInternal mWindowManagerInternal;
 
@@ -688,6 +704,7 @@ public class GestureLauncherService extends SystemService {
         boolean launchEmergencyGesture = false;
         boolean intercept = false;
         boolean toggleFlashlight = false;
+        boolean deferTorchWake = false;
         long powerTapInterval;
         synchronized (this) {
             powerTapInterval = event.getEventTime() - mLastPowerDown;
@@ -741,6 +758,13 @@ public class GestureLauncherService extends SystemService {
                     }
                 }
             }
+            if (!interactive && mTorchDoubleTapPowerEnabled && !mCameraDoubleTapPowerEnabled
+                    && mPowerButtonConsecutiveTaps == 1) {
+                // Keep the display off until the double-tap window expires. If this was only a
+                // single power press, restore the normal wake behavior after the timeout.
+                deferTorchWake = true;
+                intercept = true;
+            }
             if (powerTapInterval < POWER_DOUBLE_TAP_MAX_TIME_MS
                     && mPowerButtonConsecutiveTaps == DOUBLE_POWER_TAP_COUNT_THRESHOLD) {
                 if (mCameraDoubleTapPowerEnabled) {
@@ -748,12 +772,28 @@ public class GestureLauncherService extends SystemService {
                     intercept = interactive;
                 } else if (mTorchDoubleTapPowerEnabled) {
                     toggleFlashlight = true;
-                    intercept = interactive;
+                    // Consume the power-key gesture even when the display is asleep.
+                    intercept = true;
+                    deferTorchWake = false;
                 } else if (launchWalletOptionOnPowerDoubleTap() && mWalletDoubleTapPowerEnabled) {
                     launchWallet = true;
                     intercept = interactive;
                 }
             }
+        }
+
+        if (deferTorchWake) {
+            synchronized (this) {
+                mTorchWakePending = true;
+            }
+            mHandler.removeCallbacks(mWakeForUnmatchedTorchTap);
+            mHandler.postDelayed(mWakeForUnmatchedTorchTap, POWER_DOUBLE_TAP_MAX_TIME_MS);
+        }
+        if (toggleFlashlight) {
+            synchronized (this) {
+                mTorchWakePending = false;
+            }
+            mHandler.removeCallbacks(mWakeForUnmatchedTorchTap);
         }
 
         if (mPowerButtonConsecutiveTaps > 1 || mPowerButtonSlowConsecutiveTaps > 1) {
@@ -797,7 +837,9 @@ public class GestureLauncherService extends SystemService {
                 mPowerButtonSlowConsecutiveTaps);
         mMetricsLogger.histogram("power_double_tap_interval", (int) powerTapInterval);
 
-        outLaunched.value = launchCamera || toggleFlashlight || launchEmergencyGesture || launchWallet;
+        // A torch toggle is not an activity launch and must not trigger the camera gesture's
+        // explicit wake-up path in PhoneWindowManager.
+        outLaunched.value = launchCamera || launchEmergencyGesture || launchWallet;
         // Intercept power key event if the press is part of a gesture (camera, eGesture) and the
         // user has completed setup.
         return intercept && isUserSetupComplete();

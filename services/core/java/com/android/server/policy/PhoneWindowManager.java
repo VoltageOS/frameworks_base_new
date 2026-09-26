@@ -604,6 +604,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     boolean mShouldEarlyShortPressOnStemPrimary;
     int mLongPressOnPowerBehavior;
     private boolean mTorchLongPressPowerEnabled;
+    private KeyEvent mPendingTorchLongPressWakeEvent;
     long mLongPressOnPowerAssistantTimeoutMs;
     int mVeryLongPressOnPowerBehavior;
     int mDoublePressOnPowerBehavior;
@@ -1180,7 +1181,13 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
         if (!mPowerKeyHandled) {
             if (!interactive) {
-                wakeUpFromWakeKey(event);
+                if (mTorchLongPressPowerEnabled) {
+                    // Wait to see whether this is the configured long-press torch gesture.
+                    // A regular short press is woken from onPress() when the key is released.
+                    mPendingTorchLongPressWakeEvent = event;
+                } else {
+                    wakeUpFromWakeKey(event);
+                }
             }
         } else {
             // handled by another power key policy.
@@ -1192,6 +1199,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     }
 
     private void interceptPowerKeyUp(KeyEvent event, boolean canceled) {
+        if (canceled) {
+            mPendingTorchLongPressWakeEvent = null;
+        }
         // Inform the StatusBar; but do not allow it to consume the event.
         sendSystemKeyToStatusBarAsync(event);
         finishPowerKeyPress();
@@ -1640,6 +1650,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             performHapticFeedback(HapticFeedbackConstants.LONG_PRESS,
                     "Power - Long Press - Toggle flashlight");
             VoltageUtils.toggleCameraFlash();
+            mPendingTorchLongPressWakeEvent = null;
             mPowerKeyHandled = true;
             return true;
         }
@@ -2733,6 +2744,12 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         }
 
         private void onPress(long downTime, int displayId) {
+            if (mPendingTorchLongPressWakeEvent != null) {
+                final KeyEvent wakeEvent = mPendingTorchLongPressWakeEvent;
+                mPendingTorchLongPressWakeEvent = null;
+                wakeUpFromWakeKey(wakeEvent);
+                return;
+            }
             if (mShouldEarlyShortPressOnPower) {
                 return;
             }
@@ -2753,6 +2770,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             final boolean nonInteractive = mSingleKeyGestureDetector.beganFromNonInteractive();
             if (nonInteractive && !mSupportLongPressPowerWhenNonInteractive) {
                 Slog.v(TAG, "Not support long press power when device is not interactive.");
+                if (mPendingTorchLongPressWakeEvent != null) {
+                    final KeyEvent wakeEvent = mPendingTorchLongPressWakeEvent;
+                    mPendingTorchLongPressWakeEvent = null;
+                    wakeUpFromWakeKey(wakeEvent);
+                }
                 return;
             }
 
@@ -2788,7 +2810,13 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         @Override
         public void onKeyUp(int count, KeyEvent event) {
             if (mShouldEarlyShortPressOnPower && count == 1) {
-                powerPress(event.getDownTime(), 1 /*pressCount*/, event.getDisplayId());
+                if (mPendingTorchLongPressWakeEvent != null) {
+                    final KeyEvent wakeEvent = mPendingTorchLongPressWakeEvent;
+                    mPendingTorchLongPressWakeEvent = null;
+                    wakeUpFromWakeKey(wakeEvent);
+                } else {
+                    powerPress(event.getDownTime(), 1 /*pressCount*/, event.getDisplayId());
+                }
             }
         }
     }
