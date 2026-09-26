@@ -45,20 +45,37 @@ public class RotationController {
 
     private final Context mContext;
     private final ConcurrentHashMap<String, Integer> mRotationMap = new ConcurrentHashMap<>();
+    private final SettingsObserver mSettingsObserver;
+    private final BroadcastReceiver mUserSwitchReceiver;
+    private volatile boolean mClosed;
 
     private static final String SEPARATOR = ",";
     private static final String VALUE_SEPARATOR = "=";
 
     public RotationController(Context context) {
         mContext = context;
-        SettingsObserver observer = new SettingsObserver(new Handler(Looper.getMainLooper()));
-        observer.observe();
-        mContext.registerReceiverAsUser(new BroadcastReceiver() {
+        mSettingsObserver = new SettingsObserver(new Handler(Looper.getMainLooper()));
+        mSettingsObserver.observe();
+        mUserSwitchReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                update();
+                if (!mClosed) {
+                    update();
+                }
             }
-        }, UserHandle.ALL, new IntentFilter(Intent.ACTION_USER_SWITCHED), null, null);
+        };
+        mContext.registerReceiverAsUser(mUserSwitchReceiver, UserHandle.ALL,
+                new IntentFilter(Intent.ACTION_USER_SWITCHED), null, null);
+    }
+
+    /** Unregisters the settings observer and user-switch receiver. */
+    public synchronized void close() {
+        if (mClosed) {
+            return;
+        }
+        mClosed = true;
+        mContext.getContentResolver().unregisterContentObserver(mSettingsObserver);
+        mContext.unregisterReceiver(mUserSwitchReceiver);
     }
 
     public int getRotationForApp(String packageName) {
@@ -126,7 +143,9 @@ public class RotationController {
 
         @Override
         public void onChange(boolean selfChange) {
-            update();
+            if (!mClosed) {
+                update();
+            }
         }
     }
 }
