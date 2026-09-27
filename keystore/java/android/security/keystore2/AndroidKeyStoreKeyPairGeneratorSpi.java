@@ -850,6 +850,7 @@ public abstract class AndroidKeyStoreKeyPairGeneratorSpi extends KeyPairGenerato
                 params.rsaPublicExponent = mRSAPublicExponent == null ? null : BigInteger.valueOf(mRSAPublicExponent);
                 params.ecCurveName = mEcCurveName;
                 params.attestationChallenge = mSpec.getAttestationChallenge();
+                params.maxUsageCount = mSpec.getMaxUsageCount();
 
                 if (mKeymasterPurposes != null) {
                     for (int p : mKeymasterPurposes) params.purpose.add(p);
@@ -1285,6 +1286,23 @@ public abstract class AndroidKeyStoreKeyPairGeneratorSpi extends KeyPairGenerato
             params.add(KeyStore2ParameterUtils.makeEnum(
                     KeymasterDefs.KM_TAG_PADDING, padding
             ));
+            if (padding == KeymasterDefs.KM_PAD_RSA_OAEP) {
+                ArrayUtils.forEach(mKeymasterMgf1Digests, (mgf1Digest) -> {
+                    params.add(KeyStore2ParameterUtils.makeEnum(
+                            KeymasterDefs.KM_TAG_RSA_OAEP_MGF_DIGEST, mgf1Digest
+                    ));
+                });
+                if (!getMgf1DigestSetterFlag()) {
+                    final int defaultMgf1Digest = KeyProperties.Digest.toKeymaster(
+                            DEFAULT_MGF1_DIGEST);
+                    ArrayUtils.forEach(mKeymasterDigests, (digest) -> {
+                        if (digest != defaultMgf1Digest) {
+                            params.add(KeyStore2ParameterUtils.makeEnum(
+                                    KeymasterDefs.KM_TAG_RSA_OAEP_MGF_DIGEST, digest));
+                        }
+                    });
+                }
+            }
         });
         ArrayUtils.forEach(mKeymasterSignaturePaddings, (padding) -> {
             params.add(KeyStore2ParameterUtils.makeEnum(
@@ -1296,6 +1314,12 @@ public abstract class AndroidKeyStoreKeyPairGeneratorSpi extends KeyPairGenerato
                     KeymasterDefs.KM_TAG_DIGEST, digest
             ));
         });
+        if (mSpec.getMaxUsageCount() != KeyProperties.UNRESTRICTED_USAGE_COUNT) {
+            params.add(KeyStore2ParameterUtils.makeInt(
+                    KeymasterDefs.KM_TAG_USAGE_COUNT_LIMIT,
+                    mSpec.getMaxUsageCount()
+            ));
+        }
 
         KeyStore2ParameterUtils.addUserAuthArgs(params, mSpec);
 

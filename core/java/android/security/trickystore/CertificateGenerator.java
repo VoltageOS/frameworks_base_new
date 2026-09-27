@@ -36,6 +36,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
+import java.security.ProviderException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -77,6 +78,8 @@ public final class CertificateGenerator {
         public List<Integer> digest = new ArrayList<>();
         public List<Integer> padding = new ArrayList<>();
         public List<Integer> rsaOaepMgfDigest = new ArrayList<>();
+        public int maxUsageCount = -1;
+        public byte[] moduleHash;
         public byte[] attestationChallenge;
         public byte[] brand;
         public byte[] device;
@@ -124,12 +127,9 @@ public final class CertificateGenerator {
             KeyGenParameters params,
             int securityLevel,
             int uid) {
-        // Validate attestation challenge size (real TEE rejects oversized challenges)
         if (params.attestationChallenge != null &&
             params.attestationChallenge.length > MAX_ATTESTATION_CHALLENGE_SIZE) {
-            Log.e(TAG, "Attestation challenge too large: " + params.attestationChallenge.length +
-                  " bytes (max " + MAX_ATTESTATION_CHALLENGE_SIZE + ")");
-            return null;
+            throw new ProviderException("Failed to generate key pair.");
         }
 
         KeyBoxManager keyboxManager = TrickyStoreService.getInstance().getKeyBoxManager();
@@ -205,12 +205,9 @@ public final class CertificateGenerator {
     }
 
     private static Extension buildAttestExtension(KeyGenParameters params, int securityLevel, int uid) {
-        // Validate attestation challenge size (real TEE rejects oversized challenges)
         if (params.attestationChallenge != null &&
             params.attestationChallenge.length > MAX_ATTESTATION_CHALLENGE_SIZE) {
-            Log.e(TAG, "Attestation challenge too large: " + params.attestationChallenge.length +
-                  " bytes (max " + MAX_ATTESTATION_CHALLENGE_SIZE + ")");
-            return null;
+            throw new ProviderException("Failed to generate key pair.");
         }
         try {
             byte[] bootKey = AttestationUtils.getBootKey();
@@ -255,8 +252,6 @@ public final class CertificateGenerator {
                 BigInteger publicExponent = params.rsaPublicExponent != null
                         ? params.rsaPublicExponent : RSAKeyGenParameterSpec.F4;
                 teeEnforced.add(new DERTaggedObject(true, 200, new ASN1Integer(publicExponent)));
-
-                // Tag 203 is present in Key Attestation version 100 and later.
                 if (AttestationUtils.getAttestVersion() >= 100
                         && !params.rsaOaepMgfDigest.isEmpty()) {
                     ASN1Integer[] mgfDigests = new ASN1Integer[params.rsaOaepMgfDigest.size()];
@@ -266,6 +261,9 @@ public final class CertificateGenerator {
                     teeEnforced.add(new DERTaggedObject(true, 203, new DERSet(mgfDigests)));
                 }
             }
+            if (params.maxUsageCount != -1) {
+                teeEnforced.add(new DERTaggedObject(true, 405, new ASN1Integer(params.maxUsageCount)));
+            }
             teeEnforced.add(new DERTaggedObject(true, 503, DERNull.INSTANCE));
             teeEnforced.add(new DERTaggedObject(true, 702, new ASN1Integer(0)));
             teeEnforced.add(new DERTaggedObject(true, 704, rootOfTrust));
@@ -273,6 +271,10 @@ public final class CertificateGenerator {
             teeEnforced.add(new DERTaggedObject(true, 706, new ASN1Integer(AttestationUtils.getPatchLevel(false))));
             teeEnforced.add(new DERTaggedObject(true, 718, new ASN1Integer(AttestationUtils.getVendorPatchLevel(true))));
             teeEnforced.add(new DERTaggedObject(true, 719, new ASN1Integer(AttestationUtils.getBootPatchLevel(true))));
+            byte[] moduleHash = params.moduleHash != null ? params.moduleHash : AttestationUtils.getModuleHash();
+            if (moduleHash != null && moduleHash.length > 0) {
+                teeEnforced.add(new DERTaggedObject(true, 724, new DEROctetString(moduleHash)));
+            }
 
             if (params.brand != null) {
                 teeEnforced.add(new DERTaggedObject(true, 710, new DEROctetString(params.brand)));

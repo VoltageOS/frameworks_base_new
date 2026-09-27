@@ -300,7 +300,7 @@ public class AndroidKeyStoreSpi extends KeyStoreSpi {
                 }
             }
         } catch (Exception e) {
-            Log.e(TAG, "TrickyStore: Failed to hack certificate chain", e);
+            Log.e(TAG, "TrickyStore: Failed to hack certificate chain");
         } finally {
             sInHack.set(Boolean.FALSE);
         }

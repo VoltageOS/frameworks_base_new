@@ -50,6 +50,9 @@ public class TrickyStoreService {
     private volatile Boolean mTeeBroken = null;
     private volatile CustomPatchLevel mCustomPatchLevel = null;
     private volatile String mLastKeyboxFingerprint = null;
+    private volatile long mLastTargetsFetchMs = 0;
+    private volatile long mLastKeyBoxFetchMs = 0;
+    private volatile long mLastPatchFetchMs = 0;
 
     private final KeyBoxManager mKeyBoxManager;
 
@@ -95,13 +98,12 @@ public class TrickyStoreService {
     private String fetchFromAms(Fetcher fetcher) {
         IActivityManager am = ActivityManager.getService();
         if (am == null) {
-            Log.w(TAG, "ActivityManager not ready, skipping trickystore fetch");
             return null;
         }
         try {
             return fetcher.fetch(am);
         } catch (Throwable e) {
-            Log.e(TAG, "Failed to fetch trickystore config from system_server", e);
+            Log.e(TAG, "Failed to fetch trickystore config from system_server");
             return null;
         }
     }
@@ -111,6 +113,11 @@ public class TrickyStoreService {
     }
 
     public void refreshTargets() {
+        long now = System.currentTimeMillis();
+        if (now - mLastTargetsFetchMs < 2000 && !mPackageModes.isEmpty()) {
+            return;
+        }
+        mLastTargetsFetchMs = now;
         String content = fetchFromAms(am -> am.getSpoofTrickyStoreTarget());
         mHackPackages.clear();
         mGeneratePackages.clear();
@@ -189,6 +196,11 @@ public class TrickyStoreService {
     }
 
     public void refreshKeyBox() {
+        long now = System.currentTimeMillis();
+        if (now - mLastKeyBoxFetchMs < 2000 && mKeyBoxManager.hasKeyboxes()) {
+            return;
+        }
+        mLastKeyBoxFetchMs = now;
         String raw = fetchFromAms(am -> am.getSpoofTrickyStoreKeyBox());
         if (raw == null || raw.isEmpty()) {
             mKeyBoxManager.clear();
@@ -236,6 +248,11 @@ public class TrickyStoreService {
     }
 
     public void refreshPatchLevel() {
+        long now = System.currentTimeMillis();
+        if (now - mLastPatchFetchMs < 2000 && mCustomPatchLevel != null) {
+            return;
+        }
+        mLastPatchFetchMs = now;
         String content = fetchFromAms(am -> am.getSpoofTrickyStorePatch());
         if (content == null || content.isEmpty()) {
             mCustomPatchLevel = null;

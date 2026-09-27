@@ -2,6 +2,8 @@ package android.security.trickystore;
 
 import android.os.Build;
 import android.os.SystemProperties;
+import android.security.KeyStore2;
+import android.security.keymaster.KeymasterDefs;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.util.Log;
@@ -20,6 +22,7 @@ public final class AttestationUtils {
 
     private static byte[] sBootKey;
     private static byte[] sBootHash;
+    private static volatile byte[] sModuleHash;
     private static volatile boolean sTeeBroken = false;
 
     private AttestationUtils() {}
@@ -265,13 +268,24 @@ public final class AttestationUtils {
     }
 
     public static byte[] computeModuleHash() {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return digest.digest(new byte[0]);
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to compute module hash", e);
-            return new byte[32];
+        return getModuleHash();
+    }
+
+    public static byte[] getModuleHash() {
+        if (sModuleHash != null) {
+            return sModuleHash;
         }
+        try {
+            byte[] info = KeyStore2.getInstance().getSupplementaryAttestationInfo(
+                    KeymasterDefs.KM_TAG_MODULE_HASH);
+            if (info != null && info.length > 0) {
+                sModuleHash = info;
+                return sModuleHash;
+            }
+        } catch (Exception e) {
+            return null;
+        }
+        return null;
     }
 
     private static byte[] generateRandomBytes(int length) {
