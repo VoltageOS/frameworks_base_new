@@ -214,6 +214,7 @@ import com.android.modules.expresslog.Counter;
 import com.android.server.AccessibilityManagerInternal;
 import com.android.server.LocalServices;
 import com.android.server.SystemService;
+import com.android.server.spoof.VoltageAppSpoofCache;
 import com.android.server.accessibility.magnification.MagnificationConnectionManager;
 import com.android.server.accessibility.magnification.MagnificationController;
 import com.android.server.accessibility.magnification.MagnificationProcessor;
@@ -1522,6 +1523,17 @@ public class AccessibilityManagerService extends IAccessibilityManager.Stub
     @Override
     @RequiresNoPermission
     public long addClient(IAccessibilityManagerClient callback, int userId) {
+        int callingUid = Binder.getCallingUid();
+        if (callingUid != android.os.Process.SYSTEM_UID) {
+            String[] pkgs = mPackageManager.getPackagesForUid(callingUid);
+            if (pkgs != null) {
+                for (String pkg : pkgs) {
+                    if (VoltageAppSpoofCache.isIsolated(pkg)) {
+                        return 0;
+                    }
+                }
+            }
+        }
         if (mTraceManager.isA11yTracingEnabledForTypes(FLAGS_ACCESSIBILITY_MANAGER)) {
             mTraceManager.logTrace(LOG_TAG + ".addClient", FLAGS_ACCESSIBILITY_MANAGER,
                     "callback=" + callback + ";userId=" + userId);
@@ -1779,6 +1791,9 @@ public class AccessibilityManagerService extends IAccessibilityManager.Stub
     @RequiresNoPermission
     public ParceledListSlice<AccessibilityServiceInfo> getInstalledAccessibilityServiceList(
             int userId) {
+        if (voltageShouldHideForCaller()) {
+            return new ParceledListSlice<>(Collections.emptyList());
+        }
         if (mTraceManager.isA11yTracingEnabledForTypes(FLAGS_ACCESSIBILITY_MANAGER)) {
             mTraceManager.logTrace(LOG_TAG + ".getInstalledAccessibilityServiceList",
                     FLAGS_ACCESSIBILITY_MANAGER, "userId=" + userId);
@@ -1819,10 +1834,31 @@ public class AccessibilityManagerService extends IAccessibilityManager.Stub
         return new ParceledListSlice<>(serviceInfos);
     }
 
+    private boolean voltageShouldHideForCaller() {
+        int callingUid = Binder.getCallingUid();
+        if (callingUid == android.os.Process.SYSTEM_UID) {
+            return false;
+        }
+        String[] pkgs = mPackageManager.getPackagesForUid(callingUid);
+        if (pkgs == null) {
+            return false;
+        }
+        for (String pkg : pkgs) {
+            if (VoltageAppSpoofCache.isAccessibilityHidden(pkg)
+                    || VoltageAppSpoofCache.isIsolated(pkg)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     @RequiresNoPermission
     public List<AccessibilityServiceInfo> getEnabledAccessibilityServiceList(int feedbackType,
             int userId) {
+        if (voltageShouldHideForCaller()) {
+            return Collections.emptyList();
+        }
         if (mTraceManager.isA11yTracingEnabledForTypes(FLAGS_ACCESSIBILITY_MANAGER)) {
             mTraceManager.logTrace(LOG_TAG + ".getEnabledAccessibilityServiceList",
                     FLAGS_ACCESSIBILITY_MANAGER,

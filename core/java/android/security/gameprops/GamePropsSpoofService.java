@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2025-2026 AxionOS
+ * Copyright (C) 2026 VoltageOS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +28,9 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.lang.reflect.Field;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -41,6 +44,9 @@ public final class GamePropsSpoofService {
     private volatile boolean mEnabled = false;
     private volatile boolean mDebug = false;
     private final Map<String, Map<String, String>> mGameConfigs = new ConcurrentHashMap<>();
+    private final Set<String> mHideAccessibility = ConcurrentHashMap.newKeySet();
+    private final Set<String> mIsolated = ConcurrentHashMap.newKeySet();
+    private final Set<String> mShowRealSettings = ConcurrentHashMap.newKeySet();
     private volatile boolean mConfigLoaded = false;
 
     private GamePropsSpoofService() {}
@@ -61,6 +67,9 @@ public final class GamePropsSpoofService {
      */
     public void loadConfig() {
         mGameConfigs.clear();
+        mHideAccessibility.clear();
+        mIsolated.clear();
+        mShowRealSettings.clear();
         mEnabled = false;
         mConfigLoaded = false;
 
@@ -121,12 +130,30 @@ public final class GamePropsSpoofService {
         while (reader.hasNext()) {
             String packageName = reader.nextName();
             Map<String, String> gameProps = new HashMap<>();
+            boolean hideA11y = false;
+            boolean isolation = false;
+            boolean showReal = false;
 
             reader.beginObject();
             while (reader.hasNext()) {
                 String propKey = reader.nextName();
-                String propValue = reader.nextString();
-                gameProps.put(propKey, propValue);
+                if ("props".equals(propKey)) {
+                    reader.beginObject();
+                    while (reader.hasNext()) {
+                        String k = reader.nextName();
+                        gameProps.put(k, reader.nextString());
+                    }
+                    reader.endObject();
+                } else if ("hideAccessibility".equals(propKey)) {
+                    hideA11y = nextBoolLenient(reader);
+                } else if ("isolation".equals(propKey)) {
+                    isolation = nextBoolLenient(reader);
+                } else if ("showRealSettings".equals(propKey)) {
+                    showReal = nextBoolLenient(reader);
+                } else {
+                    String propValue = reader.nextString();
+                    gameProps.put(propKey, propValue);
+                }
             }
             reader.endObject();
 
@@ -136,8 +163,31 @@ public final class GamePropsSpoofService {
                     Log.d(TAG, "Loaded config for " + packageName + ": " + gameProps.size() + " props");
                 }
             }
+            if (hideA11y) mHideAccessibility.add(packageName);
+            if (isolation) mIsolated.add(packageName);
+            if (showReal) mShowRealSettings.add(packageName);
         }
         reader.endObject();
+    }
+
+    private boolean nextBoolLenient(JsonReader reader) throws IOException {
+        switch (reader.peek()) {
+            case BOOLEAN:
+                return reader.nextBoolean();
+            case STRING:
+                String s = reader.nextString();
+                return "1".equals(s) || "true".equalsIgnoreCase(s);
+            case NUMBER:
+                try {
+                    return reader.nextInt() != 0;
+                } catch (Exception e) {
+                    reader.skipValue();
+                    return false;
+                }
+            default:
+                reader.skipValue();
+                return false;
+        }
     }
 
     /**
@@ -229,6 +279,18 @@ public final class GamePropsSpoofService {
      */
     public boolean isEnabled() {
         return mEnabled && mConfigLoaded;
+    }
+
+    public boolean isAccessibilityHidden(String packageName) {
+        return packageName != null && mHideAccessibility.contains(packageName);
+    }
+
+    public boolean isIsolated(String packageName) {
+        return packageName != null && mIsolated.contains(packageName);
+    }
+
+    public boolean isShowRealSettings(String packageName) {
+        return packageName != null && mShowRealSettings.contains(packageName);
     }
 
     /**

@@ -46,6 +46,7 @@ public class AxSpoofManager implements IAxSpoofManager {
             Settings.Secure.SPOOF_PIF_SIGNATURE,
             Settings.Secure.SPOOF_PIF_VENDING_BUILD,
             Settings.Secure.SPOOF_GAMEPROPS_CONFIG,
+            Settings.Secure.SPOOF_APPSTATE_CONFIG,
             Settings.Secure.SPOOF_TRICKYSTORE_TARGET,
             Settings.Secure.SPOOF_TRICKYSTORE_KEYBOX,
             Settings.Secure.SPOOF_TRICKYSTORE_PATCH,
@@ -218,6 +219,11 @@ public class AxSpoofManager implements IAxSpoofManager {
     @Override
     public String getGamePropsConfig() {
         return getCached(Settings.Secure.SPOOF_GAMEPROPS_CONFIG);
+    }
+
+    @Override
+    public String getAppStateConfig() {
+        return getCached(Settings.Secure.SPOOF_APPSTATE_CONFIG);
     }
 
     @Override

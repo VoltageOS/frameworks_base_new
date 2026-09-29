@@ -1826,6 +1826,28 @@ public final class ProcessList extends ProcessListInternal
         return gidArray;
     }
 
+    private int[] voltageStripStorageGids(int[] gids) {
+        if (gids == null || gids.length == 0) {
+            return gids;
+        }
+        int[] out = new int[gids.length];
+        int n = 0;
+        for (int gid : gids) {
+            if (gid == android.os.Process.SDCARD_RW_GID
+                    || gid == android.os.Process.MEDIA_RW_GID
+                    || gid == android.os.Process.EXTERNAL_STORAGE_GID
+                    || gid == android.os.Process.EXT_DATA_RW_GID
+                    || gid == android.os.Process.EXT_OBB_RW_GID) {
+                continue;
+            }
+            out[n++] = gid;
+        }
+        if (n == gids.length) {
+            return gids;
+        }
+        return java.util.Arrays.copyOf(out, n);
+    }
+
     /**
      * @return {@code true} if process start is successful, false otherwise.
      */
@@ -1906,6 +1928,12 @@ public final class ProcessList extends ProcessListInternal
                 }
 
                 gids = computeGidsForProcess(mountExternal, uid, permGids, externalStorageAccess);
+                if (com.android.server.spoof.VoltageAppSpoofCache
+                        .isIsolatedForPackages(app.getProcessPackageNames())) {
+                    mountExternal = Zygote.MOUNT_EXTERNAL_NONE;
+                    externalStorageAccess = false;
+                    gids = voltageStripStorageGids(gids);
+                }
             }
             app.setMountMode(mountExternal);
             checkSlow(startUptime, "startProcess: building args");
@@ -2500,7 +2528,9 @@ public final class ProcessList extends ProcessListInternal
     private boolean needsStorageDataIsolation(StorageManagerInternal storageManagerInternal,
             ProcessRecord app) {
         final int mountMode = app.getMountMode();
-        return mVoldAppDataIsolationEnabled && UserHandle.isApp(app.uid)
+        boolean voltageIsolated = com.android.server.spoof.VoltageAppSpoofCache
+                .isIsolatedForPackages(app.getProcessPackageNames());
+        return (mVoldAppDataIsolationEnabled || voltageIsolated) && UserHandle.isApp(app.uid)
                 && !storageManagerInternal.isExternalStorageService(app.uid)
                 // Special mounting mode doesn't need to have data isolation as they won't
                 // access /mnt/user anyway.
@@ -2529,11 +2559,15 @@ public final class ProcessList extends ProcessListInternal
             Map<String, Pair<String, Long>> pkgDataInfoMap;
             Map<String, Pair<String, Long>> allowlistedAppDataInfoMap;
             boolean bindMountAppStorageDirs = false;
-            boolean bindMountAppsData = mAppDataIsolationEnabled
+            boolean voltageIsolated = com.android.server.spoof.VoltageAppSpoofCache
+                    .isIsolatedForPackages(app.getProcessPackageNames());
+            boolean bindMountAppsData = (mAppDataIsolationEnabled || voltageIsolated)
                     && (UserHandle.isApp(app.uid) || UserHandle.isIsolated(app.uid)
                         || app.isSdkSandbox
                         || (enablePccFrameworkSupport() && Process.isPrivateComputeCoreUid(uid)))
-                    && mPlatformCompat.isChangeEnabled(APP_DATA_DIRECTORY_ISOLATION, app.info);
+                    && (voltageIsolated
+                        || mPlatformCompat.isChangeEnabled(APP_DATA_DIRECTORY_ISOLATION,
+                            app.info));
 
             // Get all packages belongs to the same shared uid. sharedPackages is empty array
             // if it doesn't have shared uid.

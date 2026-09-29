@@ -21113,6 +21113,11 @@ public class ActivityManagerService extends IActivityManager.Stub
     }
 
     @Override
+    public String getSpoofAppStateConfig() {
+        return AxExtServiceFactory.getSpoofManager().getAppStateConfig();
+    }
+
+    @Override
     public String getSpoofTrickyStoreTarget() {
         return AxExtServiceFactory.getSpoofManager().getTrickyStoreTarget();
     }

@@ -399,6 +399,11 @@ public class SettingsProvider extends ContentProvider {
     private final Object mLock = new Object();
 
     @GuardedBy("mLock")
+    private String mVoltageRaw = null;
+    @GuardedBy("mLock")
+    private final ArrayMap<String, Integer> mVoltageFlags = new ArrayMap<>();
+
+    @GuardedBy("mLock")
     private RemoteCallback mConfigMonitorCallback;
 
     @GuardedBy("mLock")
@@ -676,6 +681,14 @@ public class SettingsProvider extends ContentProvider {
             case TABLE_GLOBAL -> {
                 if (args.name != null) {
                     Setting setting = getGlobalSetting(args.name);
+                    String override = voltageOverrideForQuery(args.name, setting);
+                    if (override != null) {
+                        MatrixCursor cursor = new MatrixCursor(normalizedProjection, 1);
+                        appendSettingToCursor(cursor, String.valueOf(setting.getId()),
+                                setting.getName(), override,
+                                String.valueOf(setting.isValuePreservedInRestore()));
+                        return cursor;
+                    }
                     return packageSettingForQuery(setting, normalizedProjection,
                             sReadableGlobalSettingsWithRedactedValue);
                 } else {
@@ -686,6 +699,14 @@ public class SettingsProvider extends ContentProvider {
                 final int userId = UserHandle.getCallingUserId();
                 if (args.name != null) {
                     Setting setting = getSecureSetting(args.name, userId, callingDeviceId);
+                    String override = voltageOverrideForQuery(args.name, setting);
+                    if (override != null) {
+                        MatrixCursor cursor = new MatrixCursor(normalizedProjection, 1);
+                        appendSettingToCursor(cursor, String.valueOf(setting.getId()),
+                                setting.getName(), override,
+                                String.valueOf(setting.isValuePreservedInRestore()));
+                        return cursor;
+                    }
                     return packageSettingForQuery(setting, normalizedProjection,
                             sReadableSecureSettingsWithRedactedValue);
                 } else {
@@ -696,6 +717,14 @@ public class SettingsProvider extends ContentProvider {
                 final int userId = UserHandle.getCallingUserId();
                 if (args.name != null) {
                     Setting setting = getSystemSetting(args.name, userId, callingDeviceId);
+                    String override = voltageOverrideForQuery(args.name, setting);
+                    if (override != null) {
+                        MatrixCursor cursor = new MatrixCursor(normalizedProjection, 1);
+                        appendSettingToCursor(cursor, String.valueOf(setting.getId()),
+                                setting.getName(), override,
+                                String.valueOf(setting.isValuePreservedInRestore()));
+                        return cursor;
+                    }
                     return packageSettingForQuery(setting, normalizedProjection,
                             sReadableSystemSettingsWithRedactedValue);
                 } else {
@@ -1553,6 +1582,11 @@ public class SettingsProvider extends ContentProvider {
         if (DEBUG) {
             Slog.v(LOG_TAG, "getAllGlobalSettings()");
         }
+        String voltagePkg = null;
+        try {
+            voltagePkg = getCallingPackage();
+        } catch (Exception ignored) {
+        }
 
         synchronized (mLock) {
             // Get the settings.
@@ -1584,7 +1618,9 @@ public class SettingsProvider extends ContentProvider {
                 if (setting == null || setting.isNull()) {
                     continue;
                 }
-                String value = getEffectiveValue(setting, sReadableGlobalSettingsWithRedactedValue);
+                String voltage = voltageFilterSecureForPackageLocked(name, setting, voltagePkg);
+                String value = voltage != null ? voltage
+                        : getEffectiveValue(setting, sReadableGlobalSettingsWithRedactedValue);
                 appendSettingToCursor(result, String.valueOf(setting.getId()), setting.getName(),
                         value, String.valueOf(setting.isValuePreservedInRestore()));
             }
@@ -1746,6 +1782,11 @@ public class SettingsProvider extends ContentProvider {
         final int ssaidUserId = resolveOwningUserIdForSecureSetting(callingUserId,
                 Settings.Secure.ANDROID_ID);
         final PackageInfo ssaidCallingPkg = getCallingPackageInfo(ssaidUserId);
+        String voltagePkg = null;
+        try {
+            voltagePkg = getCallingPackage();
+        } catch (Exception ignored) {
+        }
 
         synchronized (mLock) {
             List<String> names = getSettingsNamesLocked(SETTINGS_TYPE_SECURE, callingUserId,
@@ -1789,7 +1830,9 @@ public class SettingsProvider extends ContentProvider {
                     continue;
                 }
 
-                String value = getEffectiveValue(setting, sReadableSecureSettingsWithRedactedValue);
+                String voltage = voltageFilterSecureForPackageLocked(name, setting, voltagePkg);
+                String value = voltage != null ? voltage
+                        : getEffectiveValue(setting, sReadableSecureSettingsWithRedactedValue);
                 appendSettingToCursor(result, String.valueOf(setting.getId()), setting.getName(),
                         value, String.valueOf(setting.isValuePreservedInRestore()));
             }
@@ -2045,6 +2088,11 @@ public class SettingsProvider extends ContentProvider {
 
         // Resolve the userId on whose behalf the call is made.
         final int callingUserId = resolveCallingUserIdEnforcingPermissions(userId);
+        String voltagePkg = null;
+        try {
+            voltagePkg = getCallingPackage();
+        } catch (Exception ignored) {
+        }
 
         synchronized (mLock) {
             List<String> names = getSettingsNamesLocked(SETTINGS_TYPE_SYSTEM, callingUserId,
@@ -2072,7 +2120,9 @@ public class SettingsProvider extends ContentProvider {
                 if (setting == null || setting.isNull()) {
                     continue;
                 }
-                String value = getEffectiveValue(setting, sReadableSystemSettingsWithRedactedValue);
+                String voltage = voltageFilterSecureForPackageLocked(name, setting, voltagePkg);
+                String value = voltage != null ? voltage
+                        : getEffectiveValue(setting, sReadableSystemSettingsWithRedactedValue);
                 appendSettingToCursor(result, String.valueOf(setting.getId()), setting.getName(),
                         value, String.valueOf(setting.isValuePreservedInRestore()));
             }
@@ -2480,6 +2530,138 @@ public class SettingsProvider extends ContentProvider {
         // Don't enforce the instant app allowlist for now -- its too prone to unintended breakage
         // in the current form.
         return mSettingsRegistry.getSettingsNamesLocked(settingsType, userId, deviceId);
+    }
+
+    private int voltageFlagsForCallerLocked() {
+        String pkg = null;
+        try {
+            pkg = getCallingPackage();
+        } catch (Exception ignored) {
+        }
+        return voltageFlagsForPackageLocked(pkg);
+    }
+
+    @GuardedBy("mLock")
+    private int voltageFlagsForPackageLocked(String pkg) {
+        if (pkg == null) {
+            return 0;
+        }
+        Setting cfg = mSettingsRegistry.getSettingLocked(SETTINGS_TYPE_SECURE,
+                UserHandle.USER_SYSTEM, Context.DEVICE_ID_DEFAULT,
+                Settings.Secure.SPOOF_APPSTATE_CONFIG);
+        String raw = cfg == null || cfg.isNull() ? "" : cfg.getValue();
+        if (raw == null) {
+            raw = "";
+        }
+        Setting legacyCfg = mSettingsRegistry.getSettingLocked(SETTINGS_TYPE_SECURE,
+                UserHandle.USER_SYSTEM, Context.DEVICE_ID_DEFAULT,
+                Settings.Secure.SPOOF_GAMEPROPS_CONFIG);
+        String legacy = legacyCfg == null || legacyCfg.isNull() ? "" : legacyCfg.getValue();
+        if (legacy == null) {
+            legacy = "";
+        }
+        String combined = raw + "\n" + legacy;
+        if (!combined.equals(mVoltageRaw)) {
+            mVoltageRaw = combined;
+            mVoltageFlags.clear();
+            try {
+                org.json.JSONObject root = new org.json.JSONObject(raw);
+                org.json.JSONObject games = root.optJSONObject("apps");
+                if (games != null) {
+                    java.util.Iterator<String> keys = games.keys();
+                    while (keys.hasNext()) {
+                        String p = keys.next();
+                        org.json.JSONObject entry = games.optJSONObject(p);
+                        if (entry == null) {
+                            continue;
+                        }
+                        int f = 0;
+                        if (entry.optBoolean("hideAccessibility", false)) {
+                            f |= 1;
+                        }
+                        if (entry.optBoolean("isolation", false)) {
+                            f |= 2;
+                        }
+                        if (entry.optBoolean("showRealSettings", false)) {
+                            f |= 4;
+                        }
+                        if (f != 0) {
+                            mVoltageFlags.put(p, f);
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+            try {
+                org.json.JSONObject root = new org.json.JSONObject(legacy);
+                org.json.JSONObject games = root.optJSONObject("games");
+                if (games != null) {
+                    java.util.Iterator<String> keys = games.keys();
+                    while (keys.hasNext()) {
+                        String p = keys.next();
+                        if (mVoltageFlags.containsKey(p)) {
+                            continue;
+                        }
+                        org.json.JSONObject entry = games.optJSONObject(p);
+                        if (entry == null || !entry.has("props")) {
+                            continue;
+                        }
+                        int f = 0;
+                        if (entry.optBoolean("hideAccessibility", false)) {
+                            f |= 1;
+                        }
+                        if (entry.optBoolean("isolation", false)) {
+                            f |= 2;
+                        }
+                        if (entry.optBoolean("showRealSettings", false)) {
+                            f |= 4;
+                        }
+                        if (f != 0) {
+                            mVoltageFlags.put(p, f);
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        Integer v = mVoltageFlags.get(pkg);
+        return v == null ? 0 : v;
+    }
+
+    private String voltageFilterSecureLocked(String name, Setting setting) {
+        String pkg = null;
+        try {
+            pkg = getCallingPackage();
+        } catch (Exception ignored) {
+        }
+        return voltageFilterSecureForPackageLocked(name, setting, pkg);
+    }
+
+    @GuardedBy("mLock")
+    private String voltageFilterSecureForPackageLocked(String name, Setting setting,
+            String pkg) {
+        int flags = voltageFlagsForPackageLocked(pkg);
+        if ((flags & 1) != 0) {
+            if (Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES.equals(name)
+                    || Settings.Secure.ACCESSIBILITY_ENABLED.equals(name)) {
+                return "";
+            }
+        }
+        if ((flags & 4) != 0) {
+            return setting == null || setting.isNull() ? null : setting.getValue();
+        }
+        return null;
+    }
+
+    private String voltageOverrideForQuery(String name, Setting setting) {
+        String pkg = null;
+        try {
+            pkg = getCallingPackage();
+        } catch (Exception ignored) {
+        }
+        synchronized (mLock) {
+            return voltageFilterSecureForPackageLocked(name, setting, pkg);
+        }
     }
 
     private static String getEffectiveValue(Setting setting,
@@ -2966,16 +3148,30 @@ public class SettingsProvider extends ContentProvider {
 
     private Bundle packageValueForCallResult(int type, @NonNull String name, int userId,
             int deviceId, @Nullable Setting setting, boolean trackingGeneration) {
+        String voltagePkg = null;
+        try {
+            voltagePkg = getCallingPackage();
+        } catch (Exception ignored) {
+        }
         if (!trackingGeneration) {
             if (setting == null || setting.isNull()) {
                 return NULL_SETTING_BUNDLE;
+            }
+            synchronized (mLock) {
+                String voltage = voltageFilterSecureForPackageLocked(name, setting, voltagePkg);
+                if (voltage != null) {
+                    return Bundle.forPair(Settings.NameValueTable.VALUE, voltage);
+                }
             }
             return Bundle.forPair(Settings.NameValueTable.VALUE, setting.getValue());
         }
         Bundle result = new Bundle();
         ArrayMap<String, String> redactedSettingsMap = getRedactedSettingsMap(type);
-
-        String value = getEffectiveValue(setting, redactedSettingsMap);
+        String voltage;
+        synchronized (mLock) {
+            voltage = voltageFilterSecureForPackageLocked(name, setting, voltagePkg);
+        }
+        String value = voltage != null ? voltage : getEffectiveValue(setting, redactedSettingsMap);
         result.putString(Settings.NameValueTable.VALUE, value);
 
         synchronized (mLock) {

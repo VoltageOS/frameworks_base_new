@@ -1078,6 +1078,29 @@ public class ComputerEngine implements Computer {
                 && !Process.isSdkSandboxUid(callingUid);
     }
 
+    private boolean voltageIsCallerIsolated(int callingUid) {
+        String[] pkgs = mContext.getPackageManager().getPackagesForUid(callingUid);
+        return com.android.server.spoof.VoltageAppSpoofCache.isIsolatedForPackages(pkgs);
+    }
+
+    private boolean voltageIsExemptTarget(PackageStateInternal ps, int userId) {
+        int flags = ps.getFlags();
+        if (((flags & ApplicationInfo.FLAG_SYSTEM) != 0)
+                || ((flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0)) {
+            return true;
+        }
+        String name = ps.getPackageName();
+        if (name == null) {
+            return false;
+        }
+        if (name.startsWith("com.android.")
+                || name.startsWith("com.google.android.inputmethod.")
+                || name.equals("android")) {
+            return true;
+        }
+        return false;
+    }
+
     private boolean shouldHideFromCaller(int callingUid, String packageName) {
         if (!HideAppListCache.shouldHide(packageName)) return false;
         return canHideApp(callingUid, packageName);
@@ -2779,6 +2802,12 @@ public class ComputerEngine implements Computer {
                 // if the caller is the current default home, skip
                 || isCallerHome(callingUid, userId)) {
             return false;
+        }
+        if (voltageIsCallerIsolated(callingUid)) {
+            if (voltageIsExemptTarget(ps, userId)) {
+                return false;
+            }
+            return true;
         }
         // if the target is hidden app, do filter
         if (ps.getUserStateOrDefault(userId).isHidden()) {

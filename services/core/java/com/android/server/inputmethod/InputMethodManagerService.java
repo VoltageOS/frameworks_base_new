@@ -6063,6 +6063,10 @@ public final class InputMethodManagerService implements IInputMethodManagerImpl.
                 && selectedImeComponent.getPackageName().equals(targetPkgName)) {
             return true;
         }
+        String[] callerPkgs = mContext.getPackageManager().getPackagesForUid(callingUid);
+        if (com.android.server.spoof.VoltageAppSpoofCache.isIsolatedForPackages(callerPkgs)) {
+            return false;
+        }
         final boolean canAccess = !mPackageManagerInternal.filterAppAccess(
                 targetPkgName, callingUid, userId);
         if (DEBUG && !canAccess) {

@@ -15778,6 +15778,11 @@ public final class Settings {
          * @hide
          */
         public static final String SPOOF_TRICKYSTORE_PATCH = "spoof_trickystore_patch";
+
+        /**
+         * @hide
+         */
+        public static final String SPOOF_APPSTATE_CONFIG = "spoof_appstate_config";
     }
 
     /**
