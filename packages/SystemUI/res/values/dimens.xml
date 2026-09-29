@@ -2307,4 +2307,10 @@
     <dimen name="usb_device_dialog_button_background_radius_full">360dp</dimen>
     <!-- Usb Device Dialog values end -->
 
+    <dimen name="pie_menu_radius">132dp</dimen>
+    <dimen name="pie_menu_icon_size">48dp</dimen>
+    <dimen name="pie_menu_dead_zone">36dp</dimen>
+    <dimen name="pie_menu_edge_inset">24dp</dimen>
+    <item name="pie_menu_arc_degrees" format="float" type="dimen">160</item>
+
 </resources>

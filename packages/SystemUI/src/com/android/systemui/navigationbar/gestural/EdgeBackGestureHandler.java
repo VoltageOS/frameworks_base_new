@@ -33,6 +33,8 @@ import static java.util.stream.Collectors.joining;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.app.ActivityManager;
+import android.app.ActivityOptions;
+import android.app.KeyguardManager;
 import android.companion.virtualdevice.flags.Flags;
 import android.content.ComponentName;
 import android.content.Context;
@@ -94,6 +96,10 @@ import com.android.systemui.model.SysUiState;
 import com.android.systemui.navigationbar.NavigationModeController;
 import com.android.systemui.navigationbar.gestural.domain.GestureInteractor;
 import com.android.systemui.navigationbar.gestural.domain.TaskMatcher;
+import com.android.systemui.navigationbar.gestural.pie.PieItem;
+import com.android.systemui.navigationbar.gestural.pie.PieItemRepository;
+import com.android.systemui.navigationbar.gestural.pie.PieMenuController;
+import com.android.systemui.plugins.ActivityStarter;
 import com.android.systemui.plugins.FalsingManager;
 import com.android.systemui.plugins.NavigationEdgeBackPlugin;
 import com.android.systemui.res.R;
@@ -155,6 +161,7 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
 
     public static final boolean DEBUG_MISSING_GESTURE = false;
     public static final String DEBUG_MISSING_GESTURE_TAG = "NoBackGesture";
+    public static final int LONG_SWIPE_ACTION_PIE = 18;
 
     private ISystemGestureExclusionListener mGestureExclusionListener =
             new ISystemGestureExclusionListener.Stub() {
@@ -288,6 +295,12 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
     private boolean mIsExtendedSwipe;
     private int mLeftVerticalSwipeAction;
     private int mRightVerticalSwipeAction;
+    private final PieItemRepository mPieRepository;
+    private final PieMenuController mPieController;
+    private boolean mPieEnabled;
+    private boolean mPieHaptic;
+    private boolean mPieShowing;
+    private boolean mPieIsVertical;
     private Handler mHandler;
     private boolean mImeVisible;
     private float mStartX;
@@ -340,6 +353,7 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
     private final DisplayManager mDisplayManager;
     private final DisplayBackGestureHandlerImpl.Factory mDisplayBackGestureHandlerFactory;
     private final DesktopState mDesktopState;
+    private final Provider<ActivityStarter> mActivityStarterProvider;
 
     private final GestureNavigationSettingsObserver mGestureNavigationSettingsObserver;
     private final TopUiController mTopUiController;
@@ -504,7 +518,8 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
             JavaAdapter javaAdapter,
             DisplayManager displayManager,
             DisplayBackGestureHandlerImpl.Factory displayBackGestureHandlerFactory,
-            DesktopState desktopState) {
+            DesktopState desktopState,
+            Provider<ActivityStarter> activityStarterProvider) {
         mContext = context;
         mMainDisplayId = context.getDisplayId();
         mVibrator = context.getSystemService(Vibrator.class);
@@ -576,6 +591,11 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
                 this::onNavigationSettingsChanged);
 
         mHandler = new Handler();
+        mPieRepository = new PieItemRepository(context, backgroundExecutor);
+        mPieController = new PieMenuController(context, windowManager,
+                mUiThreadContext.getHandler(), backgroundExecutor, mPieRepository);
+        mPieController.setLaunchHandler((item, vertical) -> launchPieItem(item, vertical));
+        mActivityStarterProvider = activityStarterProvider;
         updateCurrentUserResources();
         mTopUiController = topUiController;
     }
@@ -618,6 +638,9 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
         mIsExtendedSwipe = mGestureNavigationSettingsObserver.getIsExtendedSwipe();
         mLeftVerticalSwipeAction = mGestureNavigationSettingsObserver.getLeftLSwipeAction();
         mRightVerticalSwipeAction = mGestureNavigationSettingsObserver.getRightLSwipeAction();
+        mPieEnabled = mGestureNavigationSettingsObserver.getIsPieEnabled();
+        mPieHaptic = mGestureNavigationSettingsObserver.getIsPieHaptic();
+        mPieRepository.invalidate();
 
         final DisplayMetrics dm = res.getDisplayMetrics();
         final float defaultGestureHeight = res.getDimension(
@@ -695,6 +718,14 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
      */
     public void onNavBarDetached() {
         mIsAttached = false;
+        if (mPieShowing) {
+            try {
+                mPieController.dismiss(false);
+            } catch (Exception e) {
+                Log.w(TAG, "pie dismiss failed", e);
+            }
+            mPieShowing = false;
+        }
         mLauncherProxyService.removeCallback(mQuickSwitchListener);
         mSysUiState.removeCallback(mSysUiStateCallback);
         mInputManager.unregisterInputDeviceListener(mInputDeviceListener);
@@ -1167,6 +1198,15 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
 
     public void setImeVisible(boolean visible) {
         mImeVisible = visible;
+        if (visible && mPieShowing) {
+            try {
+                mPieController.dismiss(false);
+            } catch (Exception e) {
+                Log.w(TAG, "pie dismiss failed", e);
+            }
+            mPieShowing = false;
+            mHandler.removeCallbacksAndMessages(null);
+        }
     }
 
     private void cancelGesture(MotionEvent ev) {
@@ -1209,6 +1249,10 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
 
     private void onMotionEvent(MotionEvent ev) {
         int action = ev.getActionMasked();
+        if (mPieShowing) {
+            handlePieMotion(ev);
+            return;
+        }
         DisplayBackGestureHandler displayBackGestureHandler = mDisplayBackGestureHandlers.get(
                 ev.getDisplayId());
         if (displayBackGestureHandler == null) {
@@ -1343,8 +1387,13 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
                         return;
                     } else if (dx > dy && dx > mTouchSlop) {
                         if (mAllowGesture) {
-                            if (!mIsExtendedSwipe && ((mLeftLongSwipeAction != 0 && mIsOnLeftEdge)
-                                || (mRightLongSwipeAction != 0 && !mIsOnLeftEdge))) {
+                            int edgeAction = getActionForEdge(false);
+                            if (edgeAction == LONG_SWIPE_ACTION_PIE) {
+                                mPieOpenAction.setIsVertical(false);
+                                mHandler.postDelayed(mPieOpenAction, (mLongPressTimeout
+                                        - elapsedTime) + PIE_HOLD_DELAY_EXTRA_MS);
+                                // mThresholdCrossed is now set to true so on next move event the handler won't get triggered again
+                            } else if (edgeAction != 0 && !mIsExtendedSwipe) {
                                 mLongSwipeAction.setIsVertical(false);
                                 mHandler.postDelayed(mLongSwipeAction, (mLongPressTimeout  - elapsedTime));
                                 // mThresholdCrossed is now set to true so on next move event the handler won't get triggered again
@@ -1376,9 +1425,24 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
                 if (deltaY  > (mDisplaySize.y / 4)) {
                     mLongSwipeAction.setIsVertical(true);
                 }
+                if (!mPieShowing) {
+                    boolean hCrossed = deltaX > (int) ((mDisplaySize.x / 4) * 2.5f);
+                    boolean vCrossed = deltaY > (mDisplaySize.y / 4);
+                    if (vCrossed && getActionForEdge(true) == LONG_SWIPE_ACTION_PIE) {
+                        if (tryOpenPie(ev, true)) {
+                            return;
+                        }
+                    } else if (hCrossed && getActionForEdge(false) == LONG_SWIPE_ACTION_PIE) {
+                        if (tryOpenPie(ev, false)) {
+                            return;
+                        }
+                    }
+                }
             }
             if (isUp && almostLongSwipe) {
-                mLongSwipeAction.run();
+                if (getActionForEdge(mLongSwipeAction.isVertical()) != LONG_SWIPE_ACTION_PIE) {
+                    mLongSwipeAction.run();
+                }
                 mHandler.removeCallbacksAndMessages(null);
             } else if (isUp || isCancel) {
                 mHandler.removeCallbacksAndMessages(null);
@@ -1429,7 +1493,27 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
     }
 
     private SwipeRunnable mLongSwipeAction = new SwipeRunnable();
+    private PieOpenRunnable mPieOpenAction = new PieOpenRunnable();
+    private static final int PIE_HOLD_DELAY_EXTRA_MS = 250;
+
     private class SwipeRunnable implements Runnable {
+        private boolean mIsVertical;
+
+        public void setIsVertical(boolean vertical) {
+            mIsVertical = vertical;
+        }
+
+        public boolean isVertical() {
+            return mIsVertical;
+        }
+
+        @Override
+        public void run() {
+            triggerAction(mIsVertical);
+        }
+    }
+
+    private class PieOpenRunnable implements Runnable {
         private boolean mIsVertical;
 
         public void setIsVertical(boolean vertical) {
@@ -1438,7 +1522,14 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
 
         @Override
         public void run() {
-            triggerAction(mIsVertical);
+            if (mPieShowing) {
+                return;
+            }
+            int action = getActionForEdge(mIsVertical);
+            if (action != LONG_SWIPE_ACTION_PIE) {
+                return;
+            }
+            openPieFromTrigger(mIsVertical);
         }
     }
 
@@ -1455,69 +1546,239 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
         }
     }
 
-    private void triggerAction(boolean isVertical) {
-        int action = mIsOnLeftEdge ? (isVertical ? mLeftVerticalSwipeAction : mLeftLongSwipeAction)
+    private int getActionForEdge(boolean isVertical) {
+        return mIsOnLeftEdge ? (isVertical ? mLeftVerticalSwipeAction : mLeftLongSwipeAction)
                 : (isVertical ? mRightVerticalSwipeAction : mRightLongSwipeAction);
+    }
+
+    private void triggerAction(boolean isVertical) {
+        int action = getActionForEdge(isVertical);
 
         if (action == 0) return;
 
+        if (action == LONG_SWIPE_ACTION_PIE) {
+            if (!mPieEnabled || mPieShowing) {
+                return;
+            }
+            openPieFromTrigger(isVertical);
+            return;
+        }
+
         prepareForAction();
 
+        if (action == 4) {
+            launchApp(mContext, mIsOnLeftEdge, isVertical);
+            return;
+        }
+        runAction(action, isVertical);
+    }
+
+    private void runAction(int action, boolean isVertical) {
         switch (action) {
-            case 0: // No action
+            case 0:
             default:
                 break;
-            case 1: // Voice search
+            case 1:
                 VoltageUtils.launchVoiceSearch(mContext);
                 break;
-            case 2: // Camera
+            case 2:
                 VoltageUtils.launchCamera(mContext);
                 break;
-            case 3: // Flashlight
+            case 3:
                 VoltageUtils.toggleCameraFlash();
                 break;
-            case 4: // Application
-                launchApp(mContext, mIsOnLeftEdge, isVertical);
-                break;
-            case 5: // Volume panel
+            case 5:
                 VoltageUtils.toggleVolumePanel(mContext);
                 break;
-            case 6: // Screen off
+            case 6:
                 VoltageUtils.switchScreenOff(mContext);
                 break;
-            case 7: // Screenshot
+            case 7:
                 VoltageUtils.takeScreenshot();
                 break;
-            case 8: // Notification panel
+            case 8:
                 VoltageUtils.toggleNotifications();
                 break;
-            case 9: // QS panel
+            case 9:
                 VoltageUtils.toggleQsPanel();
                 break;
-            case 10: // Clear notifications
+            case 10:
                 VoltageUtils.clearAllNotifications();
                 break;
-            case 11: // Ringer modes
+            case 11:
                 VoltageUtils.toggleRingerModes(mContext);
                 break;
-            case 12: // Kill app
+            case 12:
                 VoltageUtils.killForegroundApp();
                 break;
-            case 13: // Switch recent app
+            case 13:
                 VoltageUtils.switchToLastApp(mContext);
                 break;
-            case 14: // Powermenu
+            case 14:
                 VoltageUtils.showPowerMenu();
                 break;
-            case 15: // Recents
+            case 15:
                 VoltageUtils.sendKeycode(mContext, KeyEvent.KEYCODE_APP_SWITCH);
                 break;
-            case 16: // Go forward
+            case 16:
                 VoltageUtils.sendKeycode(mContext, KeyEvent.KEYCODE_FORWARD);
                 break;
-            case 17: // Menu
+            case 17:
                 VoltageUtils.sendKeycode(mContext, KeyEvent.KEYCODE_MENU);
                 break;
+        }
+    }
+
+    private boolean tryOpenPie(MotionEvent ev, boolean isVertical) {
+        if (!mPieEnabled || mImeVisible || mPieShowing) {
+            return false;
+        }
+        if (ev.getDisplayId() != mMainDisplayId) {
+            Log.w(TAG, "pie not supported on secondary display");
+            return false;
+        }
+        return openPieAt(pieAnchorX(), mDownPoint.y, isVertical);
+    }
+
+    private float pieAnchorX() {
+        return mIsOnLeftEdge ? 0 : mDisplaySize.x;
+    }
+
+    private void openPieFromTrigger(boolean isVertical) {
+        if (!mPieEnabled || mImeVisible) {
+            return;
+        }
+        openPieAt(pieAnchorX(), mDownPoint.y, isVertical);
+    }
+
+    private boolean openPieAt(float x, float y, boolean isVertical) {
+        if (!mPieEnabled || mImeVisible) {
+            return false;
+        }
+        if (mLastDownEventDisplayId != mMainDisplayId) {
+            Log.w(TAG, "pie not supported on secondary display");
+            return false;
+        }
+        prepareForAction();
+        mPieIsVertical = isVertical;
+        boolean shown = false;
+        try {
+            shown = mPieController.show((int) x, (int) y, mIsOnLeftEdge, isVertical,
+                    mLastDownEventDisplayId, mPieHaptic);
+        } catch (Exception e) {
+            Log.w(TAG, "pie show failed", e);
+            shown = false;
+        }
+        if (!shown) {
+            mPieShowing = false;
+            mHandler.removeCallbacksAndMessages(null);
+            return false;
+        }
+        mPieShowing = true;
+        return true;
+    }
+
+    private void handlePieMotion(MotionEvent ev) {
+        int action = ev.getActionMasked();
+        if (action == MotionEvent.ACTION_MOVE) {
+            try {
+                mPieController.onMotionEvent(ev);
+            } catch (Exception e) {
+                Log.w(TAG, "pie motion failed", e);
+            }
+            return;
+        }
+        if (action == MotionEvent.ACTION_UP) {
+            PieItem launched = null;
+            try {
+                launched = mPieController.dismiss(true);
+            } catch (Exception e) {
+                Log.w(TAG, "pie dismiss failed", e);
+            }
+            mPieShowing = false;
+            mHandler.removeCallbacksAndMessages(null);
+            if (launched != null) {
+                launchPieItem(launched, mPieIsVertical);
+            }
+            return;
+        }
+        if (action == MotionEvent.ACTION_DOWN) {
+            try {
+                mPieController.dismiss(false);
+            } catch (Exception e) {
+                Log.w(TAG, "pie dismiss failed", e);
+            }
+            mPieShowing = false;
+            mHandler.removeCallbacksAndMessages(null);
+            onMotionEvent(ev);
+            return;
+        }
+        try {
+            mPieController.dismiss(false);
+        } catch (Exception e) {
+            Log.w(TAG, "pie dismiss failed", e);
+        }
+        mPieShowing = false;
+        mHandler.removeCallbacksAndMessages(null);
+    }
+
+    private void launchPieItem(PieItem item, boolean isVertical) {
+        if (item == null) {
+            return;
+        }
+        try {
+            if (item.type == PieItem.TYPE_ACTION) {
+                runAction(item.actionId, isVertical);
+                if (mPieHaptic) {
+                    vibrateBack(false);
+                }
+                return;
+            }
+            Intent intent;
+            if (item.type == PieItem.TYPE_ACTIVITY) {
+                intent = new Intent(Intent.ACTION_MAIN);
+                intent.setClassName(item.packageName, item.className);
+            } else {
+                intent = mContext.getPackageManager().getLaunchIntentForPackage(
+                        item.packageName);
+                if (intent == null) {
+                    Log.w(TAG, "pie launch null intent: " + item.toString());
+                    return;
+                }
+            }
+            launchPieIntent(intent);
+            if (mPieHaptic) {
+                vibrateBack(false);
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "pie launch failed: " + item.toString(), e);
+        }
+    }
+
+    private void launchPieIntent(Intent intent) {
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        ActivityOptions opts = ActivityOptions.makeBasic()
+                .setLaunchDisplayId(mLastDownEventDisplayId);
+        ActivityStarter starter = null;
+        try {
+            starter = mActivityStarterProvider != null ? mActivityStarterProvider.get() : null;
+        } catch (Exception e) {
+            starter = null;
+        }
+        try {
+            KeyguardManager km = mContext.getSystemService(KeyguardManager.class);
+            if (km != null && km.isKeyguardLocked() && starter != null) {
+                starter.startActivityDismissingKeyguard(intent, true, false, false, null, 0,
+                        null, UserHandle.CURRENT);
+                return;
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "keyguard dismiss failed", e);
+        }
+        try {
+            mContext.startActivityAsUser(intent, opts.toBundle(), UserHandle.CURRENT);
+        } catch (Exception e) {
+            Log.w(TAG, "pie start failed", e);
         }
     }
 
@@ -1551,6 +1812,15 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
     }
 
     public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        if (mPieShowing) {
+            try {
+                mPieController.dismiss(false);
+            } catch (Exception e) {
+                Log.w(TAG, "pie dismiss failed", e);
+            }
+            mPieShowing = false;
+            mHandler.removeCallbacksAndMessages(null);
+        }
         if (mStartingQuickstepRotation > -1) {
             updateDisabledForQuickstep(newConfig);
         }
@@ -1646,6 +1916,11 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
         pw.println("  mTrackpadsConnected=" + mTrackpadsConnected.stream().map(
                 String::valueOf).collect(joining()));
         pw.println("  mUsingThreeButtonNav=" + mUsingThreeButtonNav);
+        pw.println("  mPieEnabled=" + mPieEnabled);
+        pw.println("  mPieHaptic=" + mPieHaptic);
+        pw.println("  mPieShowing=" + mPieShowing);
+        mPieRepository.dump(pw);
+        mPieController.dump("  ", pw);
         pw.println("  mDisplayBackGestureHandlers:");
         for (Map.Entry<Integer, DisplayBackGestureHandler> displayBackGestureHandlers :
                 mDisplayBackGestureHandlers.entrySet()) {

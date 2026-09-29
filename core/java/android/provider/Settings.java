@@ -7747,6 +7747,36 @@ public final class Settings {
         /**
          * @hide
          */
+        public static final String LEFT_LONG_BACK_SWIPE_PIE_ITEMS = "left_long_back_swipe_pie_items";
+
+        /**
+         * @hide
+         */
+        public static final String RIGHT_LONG_BACK_SWIPE_PIE_ITEMS = "right_long_back_swipe_pie_items";
+
+        /**
+         * @hide
+         */
+        public static final String LEFT_VERTICAL_BACK_SWIPE_PIE_ITEMS = "left_vertical_back_swipe_pie_items";
+
+        /**
+         * @hide
+         */
+        public static final String RIGHT_VERTICAL_BACK_SWIPE_PIE_ITEMS = "right_vertical_back_swipe_pie_items";
+
+        /**
+         * @hide
+         */
+        public static final String BACK_SWIPE_PIE_ENABLED = "back_swipe_pie_enabled";
+
+        /**
+         * @hide
+         */
+        public static final String BACK_SWIPE_PIE_HAPTIC = "back_swipe_pie_haptic";
+
+        /**
+         * @hide
+         */
         public static final String LOCKSCREEN_WEATHER_ENABLED = "lockscreen_weather_enabled";
 
         /**

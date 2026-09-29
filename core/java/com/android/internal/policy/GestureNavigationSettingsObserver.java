@@ -110,6 +110,9 @@ public class GestureNavigationSettingsObserver extends ContentObserver {
                     // The long application action has to be reset
                     resetApplicationAction(false, true);
                 }
+                if (packageName != null && !packageName.isEmpty()) {
+                    prunePieItemsFromPackage(packageName);
+                }
             }
         }
     };
@@ -137,6 +140,60 @@ public class GestureNavigationSettingsObserver extends ContentObserver {
                     UserHandle.USER_CURRENT);
         }
         // the observer will trigger EdgeBackGestureHandler.updateCurrentUserResources and update settings there too
+    }
+
+    private void prunePieItemsFromPackage(String packageName) {
+        String[] keys = new String[]{
+                Settings.System.LEFT_LONG_BACK_SWIPE_PIE_ITEMS,
+                Settings.System.RIGHT_LONG_BACK_SWIPE_PIE_ITEMS,
+                Settings.System.LEFT_VERTICAL_BACK_SWIPE_PIE_ITEMS,
+                Settings.System.RIGHT_VERTICAL_BACK_SWIPE_PIE_ITEMS};
+        for (int k = 0; k < keys.length; k++) {
+            String raw = Settings.System.getStringForUser(mContext.getContentResolver(),
+                    keys[k], UserHandle.USER_CURRENT);
+            if (raw == null || raw.isEmpty()) {
+                continue;
+            }
+            String filtered = filterPieItemsOutPackage(raw, packageName);
+            if (!filtered.equals(raw)) {
+                Settings.System.putStringForUser(mContext.getContentResolver(),
+                        keys[k], filtered, UserHandle.USER_CURRENT);
+            }
+        }
+    }
+
+    static String filterPieItemsOutPackage(String raw, String packageName) {
+        if (raw == null || raw.isEmpty() || packageName == null || packageName.isEmpty()) {
+            return raw == null ? "" : raw;
+        }
+        String[] slots = raw.split(";", -1);
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < slots.length; i++) {
+            String slot = slots[i];
+            if (slot == null || slot.isEmpty()) {
+                continue;
+            }
+            String[] parts = slot.split(":", 3);
+            if (parts.length < 2) {
+                continue;
+            }
+            String type = parts[0];
+            String payload = parts[1];
+            boolean drop = false;
+            if (type.equals("app")) {
+                drop = payload.equals(packageName);
+            } else if (type.equals("activity")) {
+                String[] comp = payload.split("/", 2);
+                drop = comp.length > 0 && comp[0].equals(packageName);
+            }
+            if (!drop) {
+                if (out.length() > 0) {
+                    out.append(";");
+                }
+                out.append(slot);
+            }
+        }
+        return out.toString();
     }
 
     /**
@@ -178,6 +235,29 @@ public class GestureNavigationSettingsObserver extends ContentObserver {
         r.registerContentObserver(
                 Settings.System.getUriFor(Settings.System.RIGHT_VERTICAL_BACK_SWIPE_ACTION),
                 false, this, UserHandle.USER_ALL);
+        r.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.LEFT_LONG_BACK_SWIPE_PIE_ITEMS),
+                false, this, UserHandle.USER_ALL);
+        r.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.RIGHT_LONG_BACK_SWIPE_PIE_ITEMS),
+                false, this, UserHandle.USER_ALL);
+        r.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.LEFT_VERTICAL_BACK_SWIPE_PIE_ITEMS),
+                false, this, UserHandle.USER_ALL);
+        r.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.RIGHT_VERTICAL_BACK_SWIPE_PIE_ITEMS),
+                false, this, UserHandle.USER_ALL);
+        r.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.BACK_SWIPE_PIE_ENABLED),
+                false, this, UserHandle.USER_ALL);
+        r.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.BACK_SWIPE_PIE_HAPTIC),
+                false, this, UserHandle.USER_ALL);
+            try {
+                mContext.registerReceiverAsUser(mBroadcastReceiver, UserHandle.ALL,
+                        mIntentFilter, null, mBgHandler);
+            } catch (Exception e) {
+            }
             DeviceConfig.addOnPropertiesChangedListener(
                     DeviceConfig.NAMESPACE_SYSTEMUI,
                     runnable -> mMainHandler.post(runnable),
@@ -215,6 +295,10 @@ public class GestureNavigationSettingsObserver extends ContentObserver {
 
     public void unregister() {
         mBgHandler.post(() -> {
+            try {
+                mContext.unregisterReceiver(mBroadcastReceiver);
+            } catch (Exception e) {
+            }
             mContext.getContentResolver().unregisterContentObserver(this);
             DeviceConfig.removeOnPropertiesChangedListener(mOnPropertiesChangedListener);
         });
@@ -332,5 +416,31 @@ public class GestureNavigationSettingsObserver extends ContentObserver {
         return Settings.System.getIntForUser(mContext.getContentResolver(),
             Settings.System.RIGHT_VERTICAL_BACK_SWIPE_ACTION, 0,
             UserHandle.USER_CURRENT);
+    }
+
+    public String getPieItemsRaw(boolean left, boolean vertical) {
+        String key;
+        if (left) {
+            key = vertical ? Settings.System.LEFT_VERTICAL_BACK_SWIPE_PIE_ITEMS
+                    : Settings.System.LEFT_LONG_BACK_SWIPE_PIE_ITEMS;
+        } else {
+            key = vertical ? Settings.System.RIGHT_VERTICAL_BACK_SWIPE_PIE_ITEMS
+                    : Settings.System.RIGHT_LONG_BACK_SWIPE_PIE_ITEMS;
+        }
+        String raw = Settings.System.getStringForUser(mContext.getContentResolver(),
+                key, UserHandle.USER_CURRENT);
+        return raw == null ? "" : raw;
+    }
+
+    public boolean getIsPieEnabled() {
+        return Settings.System.getIntForUser(mContext.getContentResolver(),
+            Settings.System.BACK_SWIPE_PIE_ENABLED, 1,
+            UserHandle.USER_CURRENT) != 0;
+    }
+
+    public boolean getIsPieHaptic() {
+        return Settings.System.getIntForUser(mContext.getContentResolver(),
+            Settings.System.BACK_SWIPE_PIE_HAPTIC, 1,
+            UserHandle.USER_CURRENT) != 0;
     }
 }

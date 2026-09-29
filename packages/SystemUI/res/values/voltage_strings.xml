@@ -314,4 +314,8 @@
     <!-- Per-app volume -->
     <string name="app_volume">App volume</string>
     <string name="app_volume_no_active_apps">No active audio playback</string>
+
+    <string name="pie_menu_title">Pie menu</string>
+    <string name="pie_menu_hint">Slide to an icon and release to launch</string>
+    <string name="pie_menu_empty">No apps configured</string>
 </resources>
