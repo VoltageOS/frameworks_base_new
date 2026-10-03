@@ -87,7 +87,9 @@ import static android.view.WindowManager.LayoutParams.TYPE_VOICE_INTERACTION_STA
 import static android.view.WindowManager.LayoutParams.TYPE_WALLPAPER;
 import static android.view.WindowManager.LayoutParams.isSystemAlertWindowType;
 import static android.view.WindowManager.ScreenshotSource.SCREENSHOT_KEY_OTHER;
+import static android.view.WindowManager.ScreenshotSource.SCREENSHOT_VENDOR_GESTURE;
 import static android.view.WindowManager.TAKE_SCREENSHOT_FULLSCREEN;
+import static android.view.WindowManager.TAKE_SCREENSHOT_SELECTED_REGION;
 import static android.view.WindowManagerGlobal.ADD_OKAY;
 import static android.view.WindowManagerGlobal.ADD_PERMISSION_DENIED;
 import static android.view.contentprotection.flags.Flags.createAccessibilityOverlayAppOpEnabled;
@@ -6859,6 +6861,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                                 .setAction(KeyGestureEvent.ACTION_GESTURE_COMPLETE)
                                 .setDisplayId(DEFAULT_DISPLAY)
                                 .build());
+            } else if (VoltageUtils.INTENT_REGION_SCREENSHOT.equals(action)) {
+                takeScreenshot(TAKE_SCREENSHOT_SELECTED_REGION, SCREENSHOT_VENDOR_GESTURE);
             }
         }
     }

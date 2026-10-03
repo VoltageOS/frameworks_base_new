@@ -117,6 +117,7 @@ import com.android.systemui.util.concurrency.BackPanelUiThread;
 import com.android.systemui.util.concurrency.UiThreadContext;
 import com.android.systemui.util.kotlin.JavaAdapter;
 import com.android.wm.shell.back.BackAnimation;
+import com.android.wm.shell.bubbles.BubbleController;
 import com.android.wm.shell.desktopmode.api.DesktopMode;
 import com.android.wm.shell.pip.Pip;
 import com.android.wm.shell.shared.desktopmode.DesktopState;
@@ -233,6 +234,7 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
     private final InputManager mInputManager;
     private final Optional<Pip> mPipOptional;
     private final Optional<DesktopMode> mDesktopModeOptional;
+    private final Optional<BubbleController> mBubbleControllerOptional;
     private final FalsingManager mFalsingManager;
     private final Configuration mLastReportedConfig = new Configuration();
 
@@ -510,6 +512,7 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
             InputManager inputManager,
             Optional<Pip> pipOptional,
             Optional<DesktopMode> desktopModeOptional,
+            Optional<BubbleController> bubbleControllerOptional,
             FalsingManager falsingManager,
             Provider<BackGestureTfClassifierProvider> backGestureTfClassifierProviderProvider,
             Provider<LightBarController> lightBarControllerProvider,
@@ -537,6 +540,7 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
         mInputManager = inputManager;
         mPipOptional = pipOptional;
         mDesktopModeOptional = desktopModeOptional;
+        mBubbleControllerOptional = bubbleControllerOptional;
         mFalsingManager = falsingManager;
         mBackGestureTfClassifierProviderProvider = backGestureTfClassifierProviderProvider;
         mLightBarControllerProvider = lightBarControllerProvider;
@@ -1626,6 +1630,61 @@ public class EdgeBackGestureHandler implements TunerService.Tunable {
             case 17:
                 VoltageUtils.sendKeycode(mContext, KeyEvent.KEYCODE_MENU);
                 break;
+            case 19:
+                VoltageUtils.openSidebar(mContext);
+                break;
+            case 20:
+                VoltageUtils.launchForegroundAppInFreeform(mContext);
+                break;
+            case 21:
+                VoltageUtils.toggleNirvanaMode(mContext);
+                break;
+            case 22:
+                VoltageUtils.takeRegionScreenshot();
+                break;
+            case 23:
+                VoltageUtils.closeTopFreeform(mContext);
+                break;
+            case 24:
+                VoltageUtils.launchLastAppInFreeform(mContext);
+                break;
+            case 25:
+                VoltageUtils.toggleSleepMode(mContext);
+                break;
+            case 26:
+                VoltageUtils.launchAssist(mContext);
+                break;
+            case 27:
+                VoltageUtils.lockNow();
+                break;
+            case 28:
+                VoltageUtils.clearAllNotificationsAndCollapse();
+                break;
+            case 29:
+                VoltageUtils.toggleDnd(mContext);
+                break;
+            case 30:
+                bubbleForegroundApp();
+                break;
+        }
+    }
+
+    private void bubbleForegroundApp() {
+        try {
+            ActivityManager.RunningTaskInfo task = VoltageUtils.getForegroundTask(mContext);
+            if (task == null || task.topActivity == null) return;
+            if (!mBubbleControllerOptional.isPresent()) return;
+            String pkg = task.topActivity.getPackageName();
+            String cls = task.topActivity.getClassName();
+            Intent intent = new Intent(Intent.ACTION_MAIN);
+            intent.setClassName(pkg, cls);
+            intent.setPackage(pkg);
+            intent.addCategory(Intent.CATEGORY_LAUNCHER);
+            UserHandle user = UserHandle.of(task.userId);
+            BubbleController controller = mBubbleControllerOptional.get();
+            controller.getRemoteCallExecutor().execute(() ->
+                    controller.expandStackAndSelectBubble(intent, user, null, null));
+        } catch (Exception e) {
         }
     }
 

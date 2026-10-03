@@ -23,8 +23,10 @@ import static android.content.Context.VIBRATOR_SERVICE;
 
 import android.Manifest;
 import android.app.ActivityManager;
+import android.app.ActivityTaskManager;
 import android.app.ActivityThread;
 import android.app.ActivityOptions;
+import android.app.WindowConfiguration;
 import android.app.AlertDialog;
 import android.app.IActivityManager;
 import android.app.role.RoleManager;
@@ -44,6 +46,7 @@ import android.net.wifi.WifiManager;
 import android.telephony.SubscriptionManager;
 import android.widget.Toast;
 import android.content.Context;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.DialogInterface;
@@ -855,6 +858,126 @@ public class VoltageUtils {
         }
     }
 
+    public static void takeRegionScreenshot() {
+        IWindowManager wm = WindowManagerGlobal.getWindowManagerService();
+        try {
+            wm.sendCustomAction(new Intent(INTENT_REGION_SCREENSHOT));
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void closeTopFreeform(Context context) {
+        try {
+            ActivityManager am =
+                    (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+            List<ActivityManager.RunningTaskInfo> tasks = am.getRunningTasks(20);
+            for (int i = 0; i < tasks.size(); i++) {
+                ActivityManager.RunningTaskInfo t = tasks.get(i);
+                if (t == null || t.topActivity == null) continue;
+                boolean isFreeform = t.getWindowingMode()
+                        == WindowConfiguration.WINDOWING_MODE_FREEFORM;
+                boolean isLmoDisplay = t.displayId != Display.DEFAULT_DISPLAY;
+                if (!isFreeform && !isLmoDisplay) continue;
+                String pkg = t.topActivity.getPackageName();
+                if (pkg.equals(context.getPackageName())
+                        || pkg.equals(SYSTEMUI_PACKAGE_NAME)) continue;
+                try {
+                    android.app.ActivityTaskManager.getService().removeTask(t.taskId);
+                } catch (RemoteException e) {
+                }
+                return;
+            }
+        } catch (Exception e) {
+        }
+    }
+
+    public static void launchLastAppInFreeform(Context context) {
+        try {
+            ActivityManager am =
+                    (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+            ActivityManager.RunningTaskInfo lastTask = getLastTask(context, am);
+            if (lastTask == null || lastTask.topActivity == null) return;
+            Intent intent = new Intent("com.libremobileos.freeform.START_FREEFORM");
+            intent.setPackage("com.libremobileos.freeform");
+            intent.putExtra("packageName", lastTask.topActivity.getPackageName());
+            intent.putExtra("activityName", lastTask.topActivity.getClassName());
+            intent.putExtra("userId", lastTask.userId);
+            intent.putExtra("taskId", lastTask.taskId);
+            context.sendBroadcastAsUser(intent, UserHandle.CURRENT);
+        } catch (Exception e) {
+        }
+    }
+
+    public static void toggleSleepMode(Context context) {
+        try {
+            int cur = Settings.Secure.getIntForUser(context.getContentResolver(),
+                    Settings.Secure.SLEEP_MODE_ENABLED, 0, UserHandle.USER_CURRENT);
+            Settings.Secure.putIntForUser(context.getContentResolver(),
+                    Settings.Secure.SLEEP_MODE_ENABLED, cur == 1 ? 0 : 1,
+                    UserHandle.USER_CURRENT);
+        } catch (Exception e) {
+        }
+    }
+
+    public static void launchAssist(Context context) {
+        try {
+            FireActions.startAssist();
+        } catch (Exception e) {
+            sendKeycode(context, KeyEvent.KEYCODE_ASSIST);
+        }
+    }
+
+    public static void lockNow() {
+        try {
+            WindowManagerGlobal.getWindowManagerService().lockNow(null);
+        } catch (RemoteException e) {
+        }
+    }
+
+    public static void collapsePanels() {
+        FireActions.collapsePanels();
+    }
+
+    public static void clearAllNotificationsAndCollapse() {
+        FireActions.clearAllNotifications();
+        FireActions.collapsePanels();
+    }
+
+    public static void toggleDnd(Context context) {
+        try {
+            NotificationManager nm =
+                    (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
+            int zen = nm.getZenMode();
+            if (zen == ZEN_MODE_OFF) {
+                nm.setZenMode(ZEN_MODE_IMPORTANT_INTERRUPTIONS, null, TAG);
+            } else {
+                nm.setZenMode(ZEN_MODE_OFF, null, TAG);
+            }
+        } catch (Exception e) {
+        }
+    }
+
+    public static ActivityManager.RunningTaskInfo getForegroundTask(Context context) {
+        try {
+            ActivityManager am =
+                    (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+            List<ActivityManager.RunningTaskInfo> tasks = am.getRunningTasks(5);
+            List<String> launchers = getCurrentLauncherPackages(context);
+            for (int i = 0; i < tasks.size(); i++) {
+                ActivityManager.RunningTaskInfo t = tasks.get(i);
+                if (t == null || t.topActivity == null) continue;
+                String pkg = t.topActivity.getPackageName();
+                if (pkg.equals(context.getPackageName())
+                        || pkg.equals(SYSTEMUI_PACKAGE_NAME)
+                        || launchers.contains(pkg)) continue;
+                return t;
+            }
+        } catch (Exception e) {
+        }
+        return null;
+    }
+
     /**
      * Keep FireAction methods below this point.
      * Place calls to methods above this point.
@@ -923,6 +1046,28 @@ public class VoltageUtils {
             if (service != null) {
                 try {
                     service.toggleCameraFlash();
+                } catch (RemoteException e) {
+                    // do nothing.
+                }
+            }
+        }
+
+        public static void collapsePanels() {
+            IStatusBarService service = getStatusBarService();
+            if (service != null) {
+                try {
+                    service.collapsePanels();
+                } catch (RemoteException e) {
+                    // do nothing.
+                }
+            }
+        }
+
+        public static void startAssist() {
+            IStatusBarService service = getStatusBarService();
+            if (service != null) {
+                try {
+                    service.startAssist(null);
                 } catch (RemoteException e) {
                     // do nothing.
                 }
@@ -1085,6 +1230,59 @@ public class VoltageUtils {
         if (lastTask != null) {
             am.moveTaskToFront(lastTask.id, ActivityManager.MOVE_TASK_NO_USER_ACTION,
                     getAnimation(context).toBundle());
+        }
+    }
+
+    public static void openSidebar(Context context) {
+        try {
+            Intent intent = new Intent("com.libremobileos.sidebar.action.SHOW_SIDEBAR");
+            intent.setComponent(new ComponentName("com.libremobileos.sidebar",
+                    "com.libremobileos.sidebar.service.SidebarService"));
+            context.startServiceAsUser(intent, UserHandle.CURRENT);
+        } catch (Exception e) {
+        }
+    }
+
+    public static void launchForegroundAppInFreeform(Context context) {
+        try {
+            ActivityManager am =
+                    (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+            List<ActivityManager.RunningTaskInfo> tasks = am.getRunningTasks(5);
+            List<String> launchers = getCurrentLauncherPackages(context);
+            ActivityManager.RunningTaskInfo target = null;
+            for (int i = 0; i < tasks.size(); i++) {
+                ActivityManager.RunningTaskInfo t = tasks.get(i);
+                if (t == null || t.topActivity == null) continue;
+                String pkg = t.topActivity.getPackageName();
+                if (pkg.equals(context.getPackageName())
+                        || pkg.equals(SYSTEMUI_PACKAGE_NAME)
+                        || launchers.contains(pkg)) continue;
+                target = t;
+                break;
+            }
+            if (target == null) return;
+            Intent intent = new Intent("com.libremobileos.freeform.START_FREEFORM");
+            intent.setPackage("com.libremobileos.freeform");
+            intent.putExtra("packageName", target.topActivity.getPackageName());
+            intent.putExtra("activityName", target.topActivity.getClassName());
+            intent.putExtra("userId", target.userId);
+            intent.putExtra("taskId", target.taskId);
+            context.sendBroadcastAsUser(intent, UserHandle.CURRENT);
+        } catch (Exception e) {
+        }
+    }
+
+    public static void toggleNirvanaMode(Context context) {
+        try {
+            int cur = Settings.Secure.getIntForUser(context.getContentResolver(),
+                    "nirvana_mode_manual_active", 0, UserHandle.USER_CURRENT);
+            Settings.Secure.putIntForUser(context.getContentResolver(),
+                    "nirvana_mode_manual_active", cur == 1 ? 0 : 1,
+                    UserHandle.USER_CURRENT);
+            Intent intent = new Intent("com.power.hub.action.UPDATE_NIRVANA_SCHEDULE");
+            intent.setPackage("com.android.settings");
+            context.sendBroadcastAsUser(intent, UserHandle.CURRENT);
+        } catch (Exception e) {
         }
     }
 

@@ -207,7 +207,7 @@ public class PieItemRepository {
                 return new PieItem(PieItem.TYPE_ACTIVITY, comp[0], comp[1], -1, label);
             } else if (type.equals("action")) {
                 int id = Integer.parseInt(payload);
-                if (id < 0 || id > 17) {
+                if (id < 0 || id > 30) {
                     return null;
                 }
                 if (label.isEmpty()) {

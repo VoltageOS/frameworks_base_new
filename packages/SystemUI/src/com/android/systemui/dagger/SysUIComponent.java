@@ -44,6 +44,7 @@ import com.android.systemui.util.StartBinderLoggerModule;
 import com.android.systemui.wallpapers.dagger.WallpaperModule;
 import com.android.wm.shell.appzoomout.AppZoomOut;
 import com.android.wm.shell.back.BackAnimation;
+import com.android.wm.shell.bubbles.BubbleController;
 import com.android.wm.shell.bubbles.Bubbles;
 import com.android.wm.shell.desktopmode.api.DesktopMode;
 import com.android.wm.shell.displayareahelper.DisplayAreaHelper;
@@ -112,6 +113,9 @@ public interface SysUIComponent {
 
         @BindsInstance
         Builder setBubbles(Optional<Bubbles> b);
+
+        @BindsInstance
+        Builder setBubbleController(Optional<BubbleController> b);
 
         @BindsInstance
         Builder setTaskViewFactory(Optional<TaskViewFactory> t);

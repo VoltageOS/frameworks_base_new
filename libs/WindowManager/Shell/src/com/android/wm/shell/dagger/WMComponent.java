@@ -22,6 +22,7 @@ import androidx.annotation.Nullable;
 
 import com.android.wm.shell.appzoomout.AppZoomOut;
 import com.android.wm.shell.back.BackAnimation;
+import com.android.wm.shell.bubbles.BubbleController;
 import com.android.wm.shell.bubbles.Bubbles;
 import com.android.wm.shell.bubbles.bar.BubbleBarExpandedView;
 import com.android.wm.shell.desktopmode.api.DesktopMode;
@@ -91,6 +92,9 @@ public interface WMComponent {
 
     @WMSingleton
     Optional<Bubbles> getBubbles();
+
+    @WMSingleton
+    Optional<BubbleController> getBubbleController();
 
     @WMSingleton
     Optional<TaskViewFactory> getTaskViewFactory();
