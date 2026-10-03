@@ -211,6 +211,12 @@
 
     <!-- Nirvana QS tile -->
     <string name="quick_settings_nirvana_label">Nirvana Mode</string>
+    <string name="status_bar_nirvana">Nirvana Mode</string>
+    <string name="status_bar_nirvana_slot" translatable="false">nirvana</string>
+    <string name="nirvana_mode_dialog_title">Nirvana Mode is active</string>
+    <string name="nirvana_mode_dialog_message">This app is paused while Nirvana Mode is on.</string>
+    <string name="nirvana_time_limit_dialog_title">Daily limit reached</string>
+    <string name="nirvana_time_limit_dialog_message">You\'ve reached your daily limit for %1$s. It will be available again tomorrow.</string>
 
     <!-- QS button to enable adaptive brightness -->
     <string name="accessibility_adaptive_brightness">Adaptive brightness</string>

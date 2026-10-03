@@ -33,6 +33,12 @@
         android:key="firewall"
         android:title="@string/status_bar_firewall" />
 
+    <com.android.systemui.tuner.TunerSwitch
+        android:icon="@drawable/ic_qs_nirvana"
+        android:key="show_nirvana_statusbar_icon"
+        android:title="@string/status_bar_nirvana"
+        sysui:defValue="false" />
+
     <com.android.systemui.tuner.StatusBarSwitch
         android:icon="@drawable/ic_statusbar_work"
         android:key="managed_profile"
