@@ -85,8 +85,7 @@ public class OnGoingActionProgressController
   private static final String PROGRESS_BAR_OPACITY = "progress_bar_opacity";
   private static final String ONGOING_SMART_ACTIONS_ENABLED = "ongoing_smart_actions";
   private static final String COMPACT_MODE_ENABLED = "compact_progress_mode";
-  private static final String NIRVANA_MODE_ACTIVE =
-      com.android.internal.util.voltage.nirvana.NirvanaConstants.KEY_MANUAL_ACTIVE;
+  private static final String NIRVANA_MODE_ACTIVE = "nirvana_mode_manual_active";
   private static final String SHOW_VOLTAGE_LOGO = "show_voltage_logo";
   private static final int DEFAULT_OPACITY = 255;
   private static final int DEFAULT_OPACITY_PERCENTAGE = 100;
@@ -1478,9 +1477,7 @@ public class OnGoingActionProgressController
         if (mBatteryController != null) mBatteryController.setPowerSaveMode(false);
         break;
       case TYPE_NIRVANA:
-        com.android.internal.util.voltage.nirvana.NirvanaState.setManualActive(
-                mContext.getContentResolver(), false);
-        com.android.internal.util.voltage.nirvana.NirvanaState.sendUpdateBroadcast(mContext);
+        Settings.Secure.putInt(mContext.getContentResolver(), NIRVANA_MODE_ACTIVE, 0);
         break;
       case TYPE_ALARM:
         dismissAlarm();

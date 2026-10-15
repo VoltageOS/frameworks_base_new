@@ -108,7 +108,6 @@ import com.android.systemui.privacy.PrivacyModule;
 import com.android.systemui.process.condition.SystemProcessCondition;
 import com.android.systemui.qs.FgsManagerController;
 import com.android.systemui.qs.FgsManagerControllerImpl;
-import com.android.systemui.nirvana.NirvanaModule;
 import com.android.systemui.qs.dagger.voltage.VoltageModule;
 import com.android.systemui.qs.footer.dagger.FooterActionsModule;
 import com.android.systemui.qs.tiles.impl.qr.ui.model.QRCodeScannerModule;
@@ -245,7 +244,6 @@ import javax.inject.Named;
         DreamModule.class,
         EventLogModule.class,
         VoltageModule.class,
-        NirvanaModule.class,
         FalsingModule.class,
         FlagsModule.class,
         FlagDependenciesModule.class,

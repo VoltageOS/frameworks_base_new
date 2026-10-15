@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.android.systemui.qs.tiles
 
 import android.app.usage.UsageStatsManager
@@ -22,12 +23,11 @@ import android.content.Intent
 import android.database.ContentObserver
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.service.quicksettings.Tile
+import android.view.View
 import com.android.internal.logging.MetricsLogger
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent
-import com.android.internal.util.voltage.nirvana.NirvanaConstants
-import com.android.internal.util.voltage.nirvana.NirvanaState
-import com.android.internal.util.voltage.nirvana.NirvanaUsage
 import com.android.systemui.animation.Expandable
 import com.android.systemui.dagger.qualifiers.Background
 import com.android.systemui.dagger.qualifiers.Main
@@ -40,6 +40,7 @@ import com.android.systemui.qs.QSHost
 import com.android.systemui.qs.logging.QSLogger
 import com.android.systemui.qs.tileimpl.QSTileImpl
 import com.android.systemui.res.R
+import java.util.Calendar
 import javax.inject.Inject
 
 class NirvanaTile @Inject constructor(
@@ -56,6 +57,7 @@ class NirvanaTile @Inject constructor(
     host, uiEventLogger, backgroundLooper, mainHandler, falsingManager, metricsLogger,
     statusBarStateController, activityStarter, qsLogger
 ) {
+
     private val settingsObserver = object : ContentObserver(mainHandler) {
         override fun onChange(selfChange: Boolean) {
             refreshState()
@@ -69,10 +71,10 @@ class NirvanaTile @Inject constructor(
     override fun handleSetListening(listening: Boolean) {
         if (listening) {
             mContext.contentResolver.registerContentObserver(
-                android.provider.Settings.Secure.getUriFor(NirvanaConstants.KEY_MANUAL_ACTIVE), false, settingsObserver
+                Settings.Secure.getUriFor(KEY_MANUAL_ACTIVE), false, settingsObserver
             )
             mContext.contentResolver.registerContentObserver(
-                android.provider.Settings.Secure.getUriFor(NirvanaConstants.KEY_SCHEDULE_ENABLED), false, settingsObserver
+                Settings.Secure.getUriFor(KEY_SCHEDULE_ENABLED), false, settingsObserver
             )
             refreshState()
         } else {
@@ -89,7 +91,13 @@ class NirvanaTile @Inject constructor(
     }
 
     override fun handleClick(expandable: Expandable?) {
-        NirvanaState.toggleManualActive(mContext)
+        val currentState = isManualActive()
+        Settings.Secure.putInt(mContext.contentResolver, KEY_MANUAL_ACTIVE, if (currentState) 0 else 1)
+        
+        val intent = Intent(ACTION_UPDATE_NIRVANA_SCHEDULE)
+        intent.setPackage("com.android.settings")
+        mContext.sendBroadcast(intent)
+        
         refreshState()
     }
 
@@ -98,19 +106,69 @@ class NirvanaTile @Inject constructor(
     }
 
     override fun handleUpdateState(state: BooleanState, arg: Any?) {
-        val isActive = NirvanaState.shouldBeActive(mContext.contentResolver)
+        val isManual = isManualActive()
+        val isScheduled = isScheduleActive()
+        
+        val isActive = isManual || isScheduled
+
         state.value = isActive
         state.state = if (isActive) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
         state.label = mContext.getString(R.string.quick_settings_nirvana_label)
         state.icon = ResourceIcon.get(R.drawable.ic_qs_nirvana)
-        state.secondaryLabel = NirvanaUsage.formatDurationShort(
-            NirvanaUsage.getDailyScreenTimeMillis(mContext, usageStatsManager)
-        )
+        
+        val screenTime = getDailyScreenTime()
+        state.secondaryLabel = formatDuration(screenTime)
     }
 
     override fun getMetricsCategory(): Int = MetricsEvent.VOLTAGE
 
+    private fun isManualActive(): Boolean {
+        return Settings.Secure.getInt(mContext.contentResolver, KEY_MANUAL_ACTIVE, 0) == 1
+    }
+
+    private fun isScheduleActive(): Boolean {
+        val enabled = Settings.Secure.getInt(mContext.contentResolver, KEY_SCHEDULE_ENABLED, 0) == 1
+        if (!enabled) return false
+
+        val start = Settings.Secure.getInt(mContext.contentResolver, KEY_START_TIME, 540) // 9:00 AM
+        val end = Settings.Secure.getInt(mContext.contentResolver, KEY_END_TIME, 1020) // 5:00 PM
+        
+        val now = Calendar.getInstance()
+        val currentMinutes = (now.get(Calendar.HOUR_OF_DAY) * 60) + now.get(Calendar.MINUTE)
+
+        return if (end < start) {
+            currentMinutes >= start || currentMinutes < end
+        } else {
+            currentMinutes in start until end
+        }
+    }
+
+    private fun getDailyScreenTime(): Long {
+        return try {
+            NirvanaUsageStats.getDailyScreenTimeMillis(mContext, usageStatsManager)
+        } catch (e: Exception) {
+            0L
+        }
+    }
+            
+    private fun formatDuration(millis: Long): String {
+        if (millis < 60000) return "0m"
+        val h = millis / 3600000
+        val m = (millis % 3600000) / 60000
+        return if (h > 0) {
+            String.format("%dh %dm", h, m)
+        } else {
+            String.format("%dm", m)
+        }
+    }
+
     companion object {
         const val TILE_SPEC = "nirvana"
+        
+        private const val KEY_MANUAL_ACTIVE = "nirvana_mode_manual_active"
+        private const val KEY_SCHEDULE_ENABLED = "nirvana_mode_schedule_enabled"
+        private const val KEY_START_TIME = "nirvana_mode_start_time"
+        private const val KEY_END_TIME = "nirvana_mode_end_time"
+        private const val ACTION_UPDATE_NIRVANA_SCHEDULE = "com.power.hub.action.UPDATE_NIRVANA_SCHEDULE"
     }
 }
