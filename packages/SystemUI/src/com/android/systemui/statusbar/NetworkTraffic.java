@@ -40,6 +40,8 @@ import android.text.TextUtils;
 import android.text.style.RelativeSizeSpan;
 import android.util.AttributeSet;
 import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.android.systemui.Dependency;
@@ -113,6 +115,10 @@ public class NetworkTraffic extends TextView implements TunerService.Tunable {
 
     protected boolean mVisible = true;
     protected boolean mSpaceTooSmall = false;
+    private int mRecoveryHeadroom;
+    private static final long SPACE_SETTLE_DELAY_MS = 3000;
+    private final Handler mSpaceHandler = new Handler(android.os.Looper.getMainLooper());
+    private Boolean mPendingSpaceTooSmall;
 
     private ConnectivityManager mConnectivityManager;
     private final Handler mTrafficHandler;
@@ -140,6 +146,8 @@ public class NetworkTraffic extends TextView implements TunerService.Tunable {
     public NetworkTraffic(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         mContext = context;
+        mRecoveryHeadroom = getResources().getDimensionPixelSize(
+                com.android.internal.R.dimen.status_bar_icon_size_sp);
         mConnectivityManager =
                 (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
         mTrafficHandler = new Handler(mContext.getMainLooper()) {
@@ -389,6 +397,10 @@ public class NetworkTraffic extends TextView implements TunerService.Tunable {
             filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
             mContext.registerReceiver(mIntentReceiver, filter, null, mTrafficHandler);
 
+            if (getParent() instanceof ViewGroup) {
+                ((ViewGroup) getParent()).addOnLayoutChangeListener(mParentLayoutListener);
+            }
+
             updateViews();
         }
     }
@@ -402,9 +414,23 @@ public class NetworkTraffic extends TextView implements TunerService.Tunable {
             mConnectivityManager.unregisterNetworkCallback(mDefaultNetworkCallback);
             mConnectivityManager.unregisterNetworkCallback(mNetworkCallback);
             Dependency.get(TunerService.class).removeTunable(this);
+            if (getParent() instanceof ViewGroup) {
+                ((ViewGroup) getParent()).removeOnLayoutChangeListener(mParentLayoutListener);
+            }
             mAttached = false;
         }
     }
+
+    private final Runnable mSpaceCheckRunnable = new Runnable() {
+        @Override
+        public void run() {
+            updateSpaceTooSmall();
+        }
+    };
+
+    private final View.OnLayoutChangeListener mParentLayoutListener =
+            (v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) ->
+                    post(mSpaceCheckRunnable);
 
     public void setChipVisibility(boolean enable) {
         if (mEnabled && mChipVisible != enable) {
@@ -429,12 +455,82 @@ public class NetworkTraffic extends TextView implements TunerService.Tunable {
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
-        final int assignedWidth = right - left;
-        final int requiredWidth = getMeasuredWidth();
-        final boolean tooSmall = assignedWidth > 0 && assignedWidth < requiredWidth;
-        if (tooSmall != mSpaceTooSmall) {
-            mSpaceTooSmall = tooSmall;
+        post(mSpaceCheckRunnable);
+    }
+
+    protected void updateSpaceTooSmall() {
+        final ViewGroup parent = (ViewGroup) getParent();
+        if (parent == null || parent.getWidth() <= 0) {
+            return;
+        }
+
+        final int contentLeft = parent.getPaddingLeft();
+        final int contentRight = parent.getWidth() - parent.getPaddingRight();
+        final int availableWidth = contentRight - contentLeft;
+
+        final int widthSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+        final int heightSpec = MeasureSpec.makeMeasureSpec(parent.getHeight(),
+                MeasureSpec.AT_MOST);
+        measure(widthSpec, heightSpec);
+        final int naturalWidth = getMeasuredWidth();
+
+        int siblingsWidth = 0;
+        for (int i = 0; i < parent.getChildCount(); i++) {
+            final View sibling = parent.getChildAt(i);
+            if (sibling == this || sibling.getVisibility() == GONE) {
+                continue;
+            }
+            siblingsWidth += sibling.getMeasuredWidth();
+        }
+
+        final boolean laidOut = getVisibility() != GONE && getWidth() > 0;
+        final boolean positionClipped = laidOut
+                && (getX() < contentLeft || (getX() + getWidth()) > contentRight);
+
+        final boolean fits = naturalWidth <= availableWidth
+                && (siblingsWidth + naturalWidth) <= availableWidth;
+
+        final boolean tooSmall;
+        if (mSpaceTooSmall) {
+            tooSmall = !(naturalWidth <= availableWidth
+                    && (siblingsWidth + naturalWidth) <= availableWidth - mRecoveryHeadroom);
+        } else {
+            tooSmall = !fits || positionClipped;
+        }
+
+        if (tooSmall == mSpaceTooSmall) {
+            cancelPendingSpaceChange();
+        } else if (mPendingSpaceTooSmall == null || mPendingSpaceTooSmall != tooSmall) {
+            scheduleSpaceChange(tooSmall);
+        }
+    }
+
+    private final Runnable mApplySpaceChange = new Runnable() {
+        @Override
+        public void run() {
+            final Boolean pending = mPendingSpaceTooSmall;
+            mPendingSpaceTooSmall = null;
+            if (pending == null || pending == mSpaceTooSmall) {
+                return;
+            }
+            mSpaceTooSmall = pending;
             updateVisibility();
+            if (getParent() instanceof ViewGroup) {
+                ((ViewGroup) getParent()).requestLayout();
+            }
+        }
+    };
+
+    private void scheduleSpaceChange(boolean tooSmall) {
+        mPendingSpaceTooSmall = tooSmall;
+        mSpaceHandler.removeCallbacks(mApplySpaceChange);
+        mSpaceHandler.postDelayed(mApplySpaceChange, SPACE_SETTLE_DELAY_MS);
+    }
+
+    private void cancelPendingSpaceChange() {
+        if (mPendingSpaceTooSmall != null) {
+            mPendingSpaceTooSmall = null;
+            mSpaceHandler.removeCallbacks(mApplySpaceChange);
         }
     }
 
@@ -521,6 +617,7 @@ public class NetworkTraffic extends TextView implements TunerService.Tunable {
     private void clearHandlerCallbacks() {
         mTrafficHandler.removeMessages(MESSAGE_TYPE_PERIODIC_REFRESH);
         mTrafficHandler.removeMessages(MESSAGE_TYPE_UPDATE_VIEW);
+        cancelPendingSpaceChange();
     }
 
     private void setTrafficDrawable() {
