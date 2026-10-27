@@ -81,46 +81,6 @@ public final class PlayStoreHooks {
         }
     }
 
-    public static void adjustSessionParams(PackageInstaller.SessionParams params) {
-        if (params == null) return;
-        String pkg = params.appPackageName;
-        if (pkg == null) return; // Or requireNonNull(params.appPackageName);
-
-        switch (pkg) {
-            case GmsInfo.PACKAGE_GMS_CORE:
-            case GmsInfo.PACKAGE_PLAY_STORE:
-                String updateRequestReason = "Play Store created PackageInstaller SessionParams for " + pkg;
-                GmsCompatConfig newConfig = null;
-                try {
-                    IGms2Gca gmsInterface = GmsCompatApp.iGms2Gca();
-                    if (gmsInterface != null) {
-                        newConfig = gmsInterface.requestConfigUpdate(updateRequestReason);
-                    }
-                } catch (RemoteException e) {
-                }
-
-                if (newConfig != null) {
-                    GmsCompatConfig currentConfig = GmsHooks.config();
-                    if (currentConfig == null || currentConfig.version != newConfig.version) {
-                        GmsHooks.setConfig(newConfig);
-                    }
-                }
-                break;
-        }
-
-        GmsCompatConfig configForLimits = GmsHooks.config();
-        if (configForLimits != null) {
-            switch (pkg) {
-                case GmsInfo.PACKAGE_GMS_CORE:
-                    params.maxAllowedVersion = configForLimits.maxGmsCoreVersion;
-                    break;
-                case GmsInfo.PACKAGE_PLAY_STORE:
-                    params.maxAllowedVersion = configForLimits.maxPlayStoreVersion;
-                    break;
-            }
-        }
-    }
-
     public static IntentSender wrapCommitStatusReceiver(PackageInstaller.Session session, IntentSender statusReceiver) {
         if (statusReceiver == null) return null;
         PendingIntent pi = PackageInstallerStatusForwarder.register((intent, extras) -> sendIntent(intent, statusReceiver));
@@ -129,14 +89,7 @@ public final class PlayStoreHooks {
 
     public static void onActivityResumed(Activity activity) {
         if (activity == null) return;
-        Intent pendingActionIntent = null;
-        try {
-            IGms2Gca gmsInterface = GmsCompatApp.iGms2Gca();
-            if (gmsInterface != null) {
-                pendingActionIntent = gmsInterface.maybeGetPlayStorePendingUserActionIntent();
-            }
-        } catch (RemoteException e) {
-        }
+        Intent pendingActionIntent = GmsCompatApp.call(i -> i.maybeGetPlayStorePendingUserActionIntent());
         if (pendingActionIntent != null) {
             try {
                 activity.startActivity(pendingActionIntent);
@@ -216,13 +169,8 @@ public final class PlayStoreHooks {
                     }
                 }
 
-                try {
-                    IGms2Gca gmsInterface = GmsCompatApp.iGms2Gca();
-                    if (gmsInterface != null) {
-                        gmsInterface.onPlayStorePendingUserAction(confirmationIntent, packageName);
-                    }
-                } catch (RemoteException e) {
-                }
+                String packageName_ = packageName;
+                GmsCompatApp.voidCall(i -> i.onPlayStorePendingUserAction(confirmationIntent, packageName_));
                 return;
             }
 
@@ -474,13 +422,7 @@ public final class PlayStoreHooks {
             boolean hasObbAccess = ps.hasFlag(GosPackageStateFlag.ALLOW_ACCESS_TO_OBB_DIRECTORY);
 
             if (!hasObbAccess) {
-                try {
-                    IGms2Gca gmsInterface = GmsCompatApp.iGms2Gca();
-                    if (gmsInterface != null) {
-                        gmsInterface.showPlayStoreMissingObbPermissionNotification();
-                    }
-                } catch (RemoteException e) {
-                }
+                GmsCompatApp.voidCall(i -> i.showPlayStoreMissingObbPermissionNotification());
             }
         }
     }

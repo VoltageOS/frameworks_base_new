@@ -4,7 +4,6 @@ import android.app.Notification;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
-import android.os.RemoteException;
 import android.util.ArrayMap;
 import android.util.Log;
 
@@ -52,16 +51,9 @@ public class GmcMediaProjectionService extends Service {
 
         Notification n;
         try {
-            IGms2Gca iGms2Gca = GmsCompatApp.iGms2Gca();
-            if (iGms2Gca != null) {
-                // notification icon and text are stored in GmsCompat app
-                n = iGms2Gca.getMediaProjectionNotification();
-            } else {
-                // GmsCompat app not available, create a basic notification
-                Log.w(TAG, "GmsCompat app not available, using fallback notification");
-                n = createFallbackNotification();
-            }
-        } catch (RemoteException e) {
+            // notification icon and text are stored in GmsCompat app
+            n = GmsCompatApp.call(i -> i.getMediaProjectionNotification());
+        } catch (Throwable e) {
             Log.e(TAG, "Failed to get notification from GmsCompat app, using fallback", e);
             n = createFallbackNotification();
         }
