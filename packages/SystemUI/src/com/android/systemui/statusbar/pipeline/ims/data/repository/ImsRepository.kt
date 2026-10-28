@@ -34,6 +34,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.callbackFlow
@@ -52,7 +53,7 @@ interface ImsRepository {
 @OptIn(ExperimentalCoroutinesApi::class)
 class ImsRepositoryImpl(
     override val subId: Int,
-    imsManager: ImsManager,
+    imsManager: ImsManager?,
     subscriptionManager: SubscriptionManager,
     bgDispatcher: CoroutineDispatcher,
     scope: CoroutineScope,
@@ -60,7 +61,10 @@ class ImsRepositoryImpl(
 
     private val imsCallback: StateFlow<ImsCallbackState> = run {
         val initial = ImsCallbackState()
-        val imsMmTelManager = imsManager.getImsMmTelManager(subId)
+        val imsMmTelManager = imsManager?.getImsMmTelManager(subId)
+        if (imsMmTelManager == null) {
+            return@run MutableStateFlow(initial)
+        }
         callbackFlow {
             val registrationCallback = object : RegistrationCallback() {
                 override fun onRegistered(attributes: ImsRegistrationAttributes) {
@@ -143,7 +147,7 @@ class ImsRepositoryImpl(
     class Factory
     @Inject
     constructor(
-        private val imsManager: ImsManager,
+        private val imsManager: ImsManager?,
         private val subscriptionManager: SubscriptionManager,
         @Background private val bgDispatcher: CoroutineDispatcher,
         @Application private val scope: CoroutineScope,
