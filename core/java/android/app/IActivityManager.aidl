@@ -1090,6 +1090,7 @@ interface IActivityManager {
     String getSpoofPifConfig();
     String getSpoofPifSpoofPhotos();
     String getSpoofGamePropsConfig();
+    String getSpoofAppStateConfig();
     String getSpoofTrickyStoreTarget();
     String getSpoofTrickyStoreKeyBox();
     String getSpoofTrickyStorePatch();

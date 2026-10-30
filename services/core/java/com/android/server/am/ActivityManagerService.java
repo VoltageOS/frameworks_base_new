@@ -9788,6 +9788,8 @@ public class ActivityManagerService extends IActivityManager.Stub
         retrieveSettings();
         t.traceEnd();
 
+        com.android.server.spoof.VoltageAppSpoofCache.init(mContext);
+
         t.traceBegin("Ugm.onSystemReady");
         mUgmInternal.onSystemReady();
         t.traceEnd();
@@ -21080,7 +21082,7 @@ public class ActivityManagerService extends IActivityManager.Stub
 
     @Override
     public String getSpoofAppStateConfig() {
-        return AxExtServiceFactory.getSpoofManager().getAppStateConfig();
+        return com.android.server.spoof.VoltageAppSpoofCache.getRawConfig();
     }
 
     // Set of IntentCreatorToken objects that are currently active.

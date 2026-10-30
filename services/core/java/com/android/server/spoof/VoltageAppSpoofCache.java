@@ -15,30 +15,87 @@
  */
 package com.android.server.spoof;
 
-import com.android.server.NtServiceInjector;
-import com.android.server.AxExtServiceFactory;
+import android.content.ContentResolver;
+import android.content.Context;
+import android.database.ContentObserver;
+import android.os.Handler;
+import android.os.UserHandle;
+import android.provider.Settings;
+import android.util.Slog;
+
+import com.android.internal.os.BackgroundThread;
 
 import org.json.JSONObject;
 
-import android.content.Context;
-import android.os.UserHandle;
-import android.provider.Settings;
+import java.util.Collections;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public final class VoltageAppSpoofCache {
+    private static final String TAG = "VoltageAppSpoofCache";
+
     private static final int FLAG_HIDE_A11Y = 1;
     private static final int FLAG_ISOLATION = 2;
     private static final int FLAG_SHOW_REAL = 4;
 
-    private static final Map<String, Integer> sFlags = new ConcurrentHashMap<>();
+    private static volatile Map<String, Integer> sFlags = Collections.emptyMap();
     private static volatile String sRaw = null;
-    private static volatile String sLegacyRaw = null;
+
+    private static Context sContext;
+    private static boolean sInitialized;
 
     private VoltageAppSpoofCache() {
+    }
+
+    /** Call once from AMS.systemReady(), after the settings provider is installed. */
+    public static synchronized void init(Context context) {
+        if (sInitialized) {
+            return;
+        }
+        sInitialized = true;
+        sContext = context;
+
+        Handler handler = BackgroundThread.getHandler();
+        ContentObserver observer = new ContentObserver(handler) {
+            @Override
+            public void onChange(boolean selfChange) {
+                reload();
+            }
+        };
+        ContentResolver cr = context.getContentResolver();
+        cr.registerContentObserver(
+                Settings.Secure.getUriFor(Settings.Secure.SPOOF_APPSTATE_CONFIG),
+                false, observer, UserHandle.USER_ALL);
+        cr.registerContentObserver(
+                Settings.Secure.getUriFor(Settings.Secure.SPOOF_GAMEPROPS_CONFIG),
+                false, observer, UserHandle.USER_ALL);
+        handler.post(VoltageAppSpoofCache::reload);
+    }
+
+    private static void reload() {
+        try {
+            ContentResolver cr = sContext.getContentResolver();
+            String raw = Settings.Secure.getStringForUser(cr,
+                    Settings.Secure.SPOOF_APPSTATE_CONFIG, UserHandle.USER_SYSTEM);
+            String legacy = Settings.Secure.getStringForUser(cr,
+                    Settings.Secure.SPOOF_GAMEPROPS_CONFIG, UserHandle.USER_SYSTEM);
+
+            Map<String, Integer> next = new HashMap<>(parse(raw));
+            for (Map.Entry<String, Integer> e : parseLegacy(legacy).entrySet()) {
+                next.putIfAbsent(e.getKey(), e.getValue());
+            }
+            sFlags = next;
+            sRaw = raw;
+        } catch (Exception e) {
+            Slog.w(TAG, "reload failed, keeping previous snapshot", e);
+        }
+    }
+
+    /** Raw appstate JSON, for the AMS binder getter. */
+    public static String getRawConfig() {
+        return sRaw;
     }
 
     public static boolean isAccessibilityHidden(String packageName) {
@@ -69,58 +126,8 @@ public final class VoltageAppSpoofCache {
         if (packageName == null) {
             return 0;
         }
-        refreshIfNeeded();
         Integer v = sFlags.get(packageName);
         return v == null ? 0 : v;
-    }
-
-    private static void refreshIfNeeded() {
-        String raw = null;
-        String legacy = null;
-        try {
-            IAxSpoofManager mgr = AxExtServiceFactory.getSpoofManager();
-            if (mgr != null) {
-                raw = mgr.getAppStateConfig();
-                legacy = mgr.getGamePropsConfig();
-            }
-        } catch (Throwable ignored) {
-        }
-        if (raw == null) {
-            try {
-                Context ctx = NtServiceInjector.getCtx();
-                if (ctx != null) {
-                    raw = Settings.Secure.getStringForUser(ctx.getContentResolver(),
-                            Settings.Secure.SPOOF_APPSTATE_CONFIG, UserHandle.USER_SYSTEM);
-                    legacy = Settings.Secure.getStringForUser(ctx.getContentResolver(),
-                            Settings.Secure.SPOOF_GAMEPROPS_CONFIG, UserHandle.USER_SYSTEM);
-                }
-            } catch (Throwable ignored) {
-            }
-        }
-        if (raw == null) {
-            raw = "";
-        }
-        if (legacy == null) {
-            legacy = "";
-        }
-        if (raw.equals(sRaw) && legacy.equals(sLegacyRaw)) {
-            return;
-        }
-        synchronized (VoltageAppSpoofCache.class) {
-            if (raw.equals(sRaw) && legacy.equals(sLegacyRaw)) {
-                return;
-            }
-            sRaw = raw;
-            sLegacyRaw = legacy;
-            sFlags.clear();
-            sFlags.putAll(parse(raw));
-            Map<String, Integer> legacyFlags = parseLegacy(legacy);
-            for (Map.Entry<String, Integer> e : legacyFlags.entrySet()) {
-                if (!sFlags.containsKey(e.getKey())) {
-                    sFlags.put(e.getKey(), e.getValue());
-                }
-            }
-        }
     }
 
     static Map<String, Integer> parse(String raw) {
