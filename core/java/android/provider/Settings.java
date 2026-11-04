@@ -15735,56 +15735,6 @@ public final class Settings {
         /**
          * @hide
          */
-        public static final String SPOOF_PIF_CONFIG = "spoof_pif_config";
-
-        /**
-         * @hide
-         */
-        public static final String SPOOF_PIF_PHOTOS = "spoof_pif_photos";
-
-        /**
-         * @hide
-         */
-        public static final String SPOOF_PIF_PROPS = "pif_spoof_props";
-
-        /**
-         * @hide
-         */
-        public static final String SPOOF_PIF_PROVIDER = "pif_spoof_provider";
-
-        /**
-         * @hide
-         */
-        public static final String SPOOF_PIF_SIGNATURE = "pif_spoof_signature";
-
-        /**
-         * @hide
-         */
-        public static final String SPOOF_PIF_VENDING_BUILD = "pif_spoof_vending_build";
-
-        /**
-         * @hide
-         */
-        public static final String SPOOF_GAMEPROPS_CONFIG = "spoof_gameprops_config";
-
-        /**
-         * @hide
-         */
-        public static final String SPOOF_TRICKYSTORE_TARGET = "spoof_trickystore_target";
-
-        /**
-         * @hide
-         */
-        public static final String SPOOF_TRICKYSTORE_KEYBOX = "spoof_trickystore_keybox";
-
-        /**
-         * @hide
-         */
-        public static final String SPOOF_TRICKYSTORE_PATCH = "spoof_trickystore_patch";
-
-        /**
-         * @hide
-         */
         public static final String SPOOF_APPSTATE_CONFIG = "spoof_appstate_config";
     }
 

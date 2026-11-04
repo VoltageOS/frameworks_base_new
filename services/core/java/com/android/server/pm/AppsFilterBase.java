@@ -23,14 +23,8 @@ import static com.android.server.pm.AppsFilterUtils.canQueryViaComponents;
 import static com.android.server.pm.AppsFilterUtils.requestsQueryAllPackages;
 
 import android.annotation.NonNull;
-import java.util.Set;
 import android.annotation.Nullable;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.SigningDetails;
-import com.android.internal.pm.pkg.component.ParsedActivity;
-import com.android.internal.pm.pkg.component.ParsedIntentInfo;
-import com.android.server.pm.pkg.AndroidPackage;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.Process;
@@ -334,78 +328,6 @@ public abstract class AppsFilterBase implements AppsFilterSnapshot {
      * {@link AppsFilterSnapshot#shouldFilterApplication(PackageDataSnapshot, int, Object,
      * PackageStateInternal, int)}
      */
-    private static final java.util.Set<String> ROOT_PACKAGES = java.util.Set.of(
-            "com.topjohnwu.magisk",
-            "eu.chainfire.supersu",
-            "com.koushikdutta.superuser",
-            "com.noshufou.android.su",
-            "com.noshufou.android.su.elite",
-            "com.thirdparty.superuser",
-            "com.yellowes.su",
-            "me.weishu.kernelsu",
-            "com.kingroot.kinguser",
-            "com.kingo.root",
-            "com.smedialink.oneclickroot",
-            "com.zhiqupk.root.global",
-            "com.alephzain.framaroot",
-            "com.devadvance.rootcloak",
-            "com.devadvance.rootcloakplus",
-            "de.robv.android.xposed.installer",
-            "com.saurik.substrate",
-            "com.amphoras.hidemyroot",
-            "com.amphoras.hidemyrootadfree",
-            "com.formyhm.hiderootPremium",
-            "com.formyhm.hideroot",
-            "com.koushikdutta.rommanager",
-            "com.koushikdutta.rommanager.license",
-            "com.dimonvideo.luckypatcher",
-            "com.chelpus.lackypatch",
-            "com.chelpus.luckypatcher",
-            "com.solohsu.android.edxp.manager",
-            "org.meowcat.edxposed.manager",
-            "org.lsposed.manager",
-            "cc.madkite.freedom",
-            "com.ramdroid.appquarantine",
-            "com.ramdroid.appquarantinepro",
-            "com.zachspong.temprootremovejb",
-            "org.lineageos.lineageparts",
-            "org.lineageos.settings",
-            "org.lineageos.setupwizard",
-            "org.lineageos.updater"
-    );
-
-    private static boolean isRomPackage(String pkg) {
-        return pkg.startsWith("org.lineageos.")
-                || pkg.startsWith("org.omnirom.")
-                || pkg.startsWith("org.protonaosp.");
-    }
-
-    private static boolean isCallerSystemApp(Object callingSetting) {
-        if (callingSetting instanceof PackageStateInternal) {
-            return ((PackageStateInternal) callingSetting).isSystem();
-        }
-        return true;
-    }
-
-    private static boolean isCallerLauncher(Object callingSetting) {
-        if (!(callingSetting instanceof PackageStateInternal)) {
-            return false;
-        }
-        AndroidPackage pkg = ((PackageStateInternal) callingSetting).getAndroidPackage();
-        if (pkg == null) {
-            return false;
-        }
-        for (ParsedActivity activity : pkg.getActivities()) {
-            for (ParsedIntentInfo intentInfo : activity.getIntents()) {
-                IntentFilter filter = intentInfo.getIntentFilter();
-                if (filter != null && filter.hasCategory(Intent.CATEGORY_HOME)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     @Override
     public boolean shouldFilterApplication(PackageDataSnapshot snapshot, int callingUid,
             @Nullable Object callingSetting, PackageStateInternal targetPkgSetting, int userId) {
@@ -414,13 +336,6 @@ public abstract class AppsFilterBase implements AppsFilterSnapshot {
         }
         try {
             int callingAppId = UserHandle.getAppId(callingUid);
-            String targetPkg = targetPkgSetting.getPackageName();
-            if (callingAppId >= Process.FIRST_APPLICATION_UID
-                    && !isCallerSystemApp(callingSetting)
-                    && (ROOT_PACKAGES.contains(targetPkg) || isRomPackage(targetPkg))
-                    && !isCallerLauncher(callingSetting)) {
-                return true;
-            }
             if (callingAppId < Process.FIRST_APPLICATION_UID
                     || targetPkgSetting.getAppId() < Process.FIRST_APPLICATION_UID
                     || callingAppId == targetPkgSetting.getAppId()) {
