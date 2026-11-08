@@ -13,6 +13,8 @@ package com.android.appdatabackup
 
 import android.app.appbackup.BackupRecord
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -61,6 +63,17 @@ fun BackupScreen(viewModel: BackupViewModel, onBack: () -> Unit) {
     var showDeleteSelected by rememberSaveable { mutableStateOf(false) }
     var showVerifyAll by rememberSaveable { mutableStateOf(false) }
     var exportRecord by rememberSaveable { mutableStateOf<BackupRecord?>(null) }
+    var showSwiftImport by rememberSaveable { mutableStateOf(false) }
+    var swiftExportRecord by rememberSaveable { mutableStateOf<BackupRecord?>(null) }
+    var showSwiftExport by rememberSaveable { mutableStateOf(false) }
+    val importPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) {
+        if (it != null) viewModel.importSwift(it)
+    }
+    val exportPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) {
+        val selected = swiftExportRecord
+        if (it != null && selected != null) viewModel.exportSwift(selected, it)
+        swiftExportRecord = null
+    }
     val appList = rememberLazyListState()
     val backupList = rememberLazyListState()
     val snackbar = remember { SnackbarHostState() }
@@ -230,6 +243,16 @@ fun BackupScreen(viewModel: BackupViewModel, onBack: () -> Unit) {
                                     if (library) archivedBytes else selectedBytes, library)
                             }
                         }
+                        if (library) {
+                            item(key = "swift_import") {
+                                OutlinedButton(onClick = { showSwiftImport = true }, enabled = !state.busy,
+                                    modifier = Modifier.padding(bottom = 12.dp)) {
+                                    Icon(Icons.Rounded.FolderOpen, null)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(stringResource(R.string.swift_import))
+                                }
+                            }
+                        }
                         if (!allEmpty || query.isNotEmpty()) {
                             item(key = "search") {
                                 OutlinedTextField(value = query, onValueChange = {
@@ -329,7 +352,8 @@ fun BackupScreen(viewModel: BackupViewModel, onBack: () -> Unit) {
                                         onVerify = { chooseAction(entry, BackupAction.Verify) },
                                         onDelete = { chooseAction(entry, BackupAction.Delete) },
                                         onToggle = { viewModel.toggleBackup(entry.id) },
-                                        onExport = { exportRecord = entry })
+                                        onExport = { exportRecord = entry },
+                                        onSwiftExport = { swiftExportRecord = entry; showSwiftExport = true })
                                 }
                             }
                             else -> itemsIndexed(apps, key = { _, app -> app.packageName }) { index, app ->
@@ -345,6 +369,28 @@ fun BackupScreen(viewModel: BackupViewModel, onBack: () -> Unit) {
                 }
             }
         }
+    }
+    if (showSwiftImport && !state.busy) {
+        AlertDialog(onDismissRequest = { showSwiftImport = false },
+            title = { Text(stringResource(R.string.swift_import)) },
+            text = { Text(stringResource(R.string.swift_import_help)) },
+            confirmButton = { TextButton(onClick = { showSwiftImport = false; importPicker.launch(null) }) {
+                Text(stringResource(R.string.swift_choose_folder))
+            } },
+            dismissButton = { TextButton(onClick = { showSwiftImport = false }) {
+                Text(stringResource(R.string.cancel))
+            } })
+    }
+    if (showSwiftExport && swiftExportRecord != null && !state.busy) {
+        AlertDialog(onDismissRequest = { showSwiftExport = false; swiftExportRecord = null },
+            title = { Text(stringResource(R.string.swift_export)) },
+            text = { Text(stringResource(R.string.swift_export_help)) },
+            confirmButton = { TextButton(onClick = { showSwiftExport = false; exportPicker.launch(null) }) {
+                Text(stringResource(R.string.swift_choose_folder))
+            } },
+            dismissButton = { TextButton(onClick = { showSwiftExport = false; swiftExportRecord = null }) {
+                Text(stringResource(R.string.cancel))
+            } })
     }
     if (showOptions && !state.busy) {
         BackupOptionsSheet(state.selected.size, onDismiss = { showOptions = false }, onConfirm = {

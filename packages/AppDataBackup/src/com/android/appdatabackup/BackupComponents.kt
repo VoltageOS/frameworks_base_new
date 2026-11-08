@@ -257,7 +257,7 @@ private fun appMeta(lastBackupMs: Long?, optOut: Boolean): String {
 @Composable
 fun SavedBackupCard(record: BackupRecord, enabled: Boolean, selected: Boolean, corrupted: Boolean,
     onRestore: () -> Unit, onVerify: () -> Unit, onDelete: () -> Unit, onToggle: () -> Unit,
-    onExport: () -> Unit, modifier: Modifier = Modifier) {
+    onExport: () -> Unit, onSwiftExport: () -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val date = remember(record.timestampMs, context.resources.configuration) {
         val value = Date(record.timestampMs)
@@ -312,6 +312,9 @@ fun SavedBackupCard(record: BackupRecord, enabled: Boolean, selected: Boolean, c
                     Icon(Icons.Rounded.VerifiedUser, null, Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.verify))
+                }
+                if (!record.isEncrypted) TextButton(onClick = onSwiftExport, enabled = enabled) {
+                    Text(stringResource(R.string.swift_export))
                 }
             }
         }
@@ -412,5 +415,6 @@ private fun backupContents(record: BackupRecord): String {
         AppDataBackupRestoreManager.COMPONENT_EXTERNAL to R.string.content_external,
     ).filter { (flag, _) -> record.components and flag != 0 }.map { (_, text) -> stringResource(text) }
     return stringResource(R.string.content_includes,
-        (parts + stringResource(R.string.content_permissions)).joinToString(" · "))
+        (if (record.id.startsWith("swift_")) parts else
+            parts + stringResource(R.string.content_permissions)).joinToString(" · "))
 }
