@@ -18,6 +18,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -56,6 +57,8 @@ fun BackupScreen(viewModel: BackupViewModel, onBack: () -> Unit) {
     var backupQuery by rememberSaveable { mutableStateOf("") }
     var sortBySize by rememberSaveable { mutableStateOf(false) }
     var showOptions by rememberSaveable { mutableStateOf(false) }
+    var systemType by rememberSaveable { mutableIntStateOf(0) }
+    var swiftType by rememberSaveable { mutableIntStateOf(0) }
     var action by rememberSaveable { mutableStateOf<BackupAction?>(null) }
     var record by rememberSaveable { mutableStateOf<BackupRecord?>(null) }
     var restoreRecord by rememberSaveable { mutableStateOf<BackupRecord?>(null) }
@@ -68,6 +71,9 @@ fun BackupScreen(viewModel: BackupViewModel, onBack: () -> Unit) {
     var showSwiftExport by rememberSaveable { mutableStateOf(false) }
     val importPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) {
         if (it != null) viewModel.importSwift(it)
+    }
+    val systemImportPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
+        if (it != null) viewModel.importSwiftSystemData(swiftType, it)
     }
     val exportPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) {
         val selected = swiftExportRecord
@@ -243,6 +249,9 @@ fun BackupScreen(viewModel: BackupViewModel, onBack: () -> Unit) {
                                     if (library) archivedBytes else selectedBytes, library)
                             }
                         }
+                        if (!library) item(key = "system_data") {
+                            SystemDataCards(enabled = !state.busy, onBackup = { systemType = it })
+                        }
                         if (library) {
                             item(key = "swift_import") {
                                 OutlinedButton(onClick = { showSwiftImport = true }, enabled = !state.busy,
@@ -348,7 +357,7 @@ fun BackupScreen(viewModel: BackupViewModel, onBack: () -> Unit) {
                                     SavedBackupCard(entry, !state.busy,
                                         selected = entry.id in state.selectedBackups,
                                         corrupted = entry.id in state.corruptedBackups,
-                                        onRestore = { restoreRecord = entry },
+                                        onRestore = { if (entry.isSystemData) chooseAction(entry, BackupAction.Restore) else restoreRecord = entry },
                                         onVerify = { chooseAction(entry, BackupAction.Verify) },
                                         onDelete = { chooseAction(entry, BackupAction.Delete) },
                                         onToggle = { viewModel.toggleBackup(entry.id) },
@@ -373,9 +382,24 @@ fun BackupScreen(viewModel: BackupViewModel, onBack: () -> Unit) {
     if (showSwiftImport && !state.busy) {
         AlertDialog(onDismissRequest = { showSwiftImport = false },
             title = { Text(stringResource(R.string.swift_import)) },
-            text = { Text(stringResource(R.string.swift_import_help)) },
-            confirmButton = { TextButton(onClick = { showSwiftImport = false; importPicker.launch(null) }) {
-                Text(stringResource(R.string.swift_choose_folder))
+            text = {
+                Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(if (swiftType == 0) R.string.swift_import_help else R.string.swift_system_import_help))
+                    (listOf(0) + systemDataTypes).forEach { type ->
+                        TextButton(onClick = { swiftType = type }) {
+                            RadioButton(selected = swiftType == type, onClick = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(if (type == 0) R.string.tab_apps else systemDataLabel(type)))
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = {
+                showSwiftImport = false
+                if (swiftType == 0) importPicker.launch(null) else systemImportPicker.launch(arrayOf("*/*"))
+            }) {
+                Text(stringResource(if (swiftType == 0) R.string.swift_choose_folder else R.string.swift_choose_file))
             } },
             dismissButton = { TextButton(onClick = { showSwiftImport = false }) {
                 Text(stringResource(R.string.cancel))
@@ -398,10 +422,17 @@ fun BackupScreen(viewModel: BackupViewModel, onBack: () -> Unit) {
             viewModel.backup(it)
         })
     }
+    if (systemType != 0 && !state.busy) {
+        BackupOptionsSheet(1, dataType = systemType, onDismiss = { systemType = 0 }, onConfirm = {
+            viewModel.backupSystemData(systemType, it)
+            systemType = 0
+        })
+    }
     if (currentRecord != null && action != null && !state.busy) {
         BackupActionDialog(currentRecord, action!!, onDismiss = { action = null; record = null },
             onConfirm = { passphrase ->
                 when (action) {
+                    BackupAction.Restore -> viewModel.restore(currentRecord, passphrase)
                     BackupAction.Verify -> viewModel.verify(currentRecord, passphrase)
                     BackupAction.Delete -> viewModel.delete(currentRecord)
                     else -> Unit
