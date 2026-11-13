@@ -78,6 +78,7 @@ import com.android.systemui.statusbar.policy.ZenModeController
 import com.android.systemui.statusbar.policy.domain.interactor.ZenModeInteractor
 import com.android.systemui.util.annotations.DeprecatedSysuiVisibleForTesting
 import com.android.systemui.util.concurrency.DelayableExecutor
+import com.android.systemui.weather.OmniJawsClockWeatherBridge
 import dagger.Lazy
 import java.util.Locale
 import java.util.TimeZone
@@ -316,6 +317,7 @@ constructor(
     private var weatherData: WeatherData? = null
     private var zenData: ZenData? = null
     private var alarmData: AlarmData? = null
+    private var omniJawsWeatherBridge: OmniJawsClockWeatherBridge? = null
 
     private val clockListener =
         object : ClockEventListener {
@@ -512,12 +514,22 @@ constructor(
             // Query ZenMode data
             zenModeCallback.onNextAlarmChanged()
         }
+
+        if (!isPreview && omniJawsWeatherBridge == null) {
+            omniJawsWeatherBridge =
+                OmniJawsClockWeatherBridge(context, keyguardUpdateMonitor, mainExecutor).also {
+                    it.start()
+                }
+        }
     }
 
     fun unregisterListeners() {
         if (!isRegistered) return
         isRegistered = false
         logger.i("unregisterListeners(isPreview = $isPreview)")
+
+        omniJawsWeatherBridge?.stop()
+        omniJawsWeatherBridge = null
 
         broadcastDispatcher.unregisterReceiver(localeBroadcastReceiver)
         configurationController.removeCallback(configListener)
