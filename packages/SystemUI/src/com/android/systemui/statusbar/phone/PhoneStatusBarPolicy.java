@@ -356,8 +356,8 @@ public class PhoneStatusBarPolicy
         updateNfc();
 
         // network traffic
-        mShowNetworkTraffic = Settings.Secure.getIntForUser(mContext.getContentResolver(),
-            NETWORK_TRAFFIC_LOCATION, 0, UserHandle.USER_CURRENT) == 1;
+        mShowNetworkTraffic = Settings.System.getIntForUser(mContext.getContentResolver(),
+            Settings.System.NETWORK_TRAFFIC_LOCATION, 0, UserHandle.USER_CURRENT) == 1;
         updateNetworkTraffic();
 
         // firewall
@@ -384,6 +384,7 @@ public class PhoneStatusBarPolicy
         mCommandQueue.addCallback(this);
 
         mTunerService.addTunable(this, BLUETOOTH_SHOW_BATTERY);
+        mTunerService.addTunable(this, NETWORK_TRAFFIC_LOCATION);
 
         // Get initial user setup state
         onUserSetupChanged();

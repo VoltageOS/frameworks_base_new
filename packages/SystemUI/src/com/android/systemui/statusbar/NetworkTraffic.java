@@ -410,6 +410,7 @@ public class NetworkTraffic extends TextView implements TunerService.Tunable {
         super.onDetachedFromWindow();
         if (mAttached) {
             clearHandlerCallbacks();
+            mSpaceTooSmall = false;
             mContext.unregisterReceiver(mIntentReceiver);
             mConnectivityManager.unregisterNetworkCallback(mDefaultNetworkCallback);
             mConnectivityManager.unregisterNetworkCallback(mNetworkCallback);
@@ -459,6 +460,11 @@ public class NetworkTraffic extends TextView implements TunerService.Tunable {
     }
 
     protected void updateSpaceTooSmall() {
+        if (!mAttached || !mEnabled) {
+            cancelPendingSpaceChange();
+            mSpaceTooSmall = false;
+            return;
+        }
         final ViewGroup parent = (ViewGroup) getParent();
         if (parent == null || parent.getWidth() <= 0) {
             return;
@@ -553,6 +559,8 @@ public class NetworkTraffic extends TextView implements TunerService.Tunable {
                 mLocation =
                         TunerService.parseInteger(newValue, 0);
                 setEnabled();
+                cancelPendingSpaceChange();
+                mSpaceTooSmall = false;
                 if (mEnabled) {
                     setLines(2);
                     String txtFont = getResources().getString(com.android.internal.R.string.config_bodyFontFamily);
